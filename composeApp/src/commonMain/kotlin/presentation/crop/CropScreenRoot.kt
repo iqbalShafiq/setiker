@@ -1,0 +1,43 @@
+package presentation.crop
+
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.koin.compose.koinInject
+
+@Composable
+fun CropScreenRoot(
+    imagePath: String,
+    onBackClick: () -> Unit,
+    onImageCropped: (String) -> Unit,
+    viewModel: CropViewModel = koinInject()
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(imagePath) {
+        viewModel.onIntent(CropIntent.LoadImage(imagePath))
+    }
+
+    LaunchedEffect(viewModel.effect) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                is CropEffect.ImageCropped -> onImageCropped(effect.path)
+                is CropEffect.NavigateBack -> onBackClick()
+                is CropEffect.ShowError -> {
+                    snackbarHostState.showSnackbar(effect.message)
+                }
+            }
+        }
+    }
+
+    CropScreen(
+        state = state,
+        onIntent = viewModel::onIntent,
+        onBackClick = onBackClick,
+        snackbarHostState = snackbarHostState
+    )
+}
