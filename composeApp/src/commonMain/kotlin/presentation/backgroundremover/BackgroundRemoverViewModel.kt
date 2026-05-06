@@ -1,7 +1,9 @@
 package presentation.backgroundremover
 
+import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import data.util.applyMaskToImage
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -60,12 +62,12 @@ class BackgroundRemoverViewModel : ViewModel() {
     private fun autoRemove() {
         viewModelScope.launch {
             _state.update { it.copy(isProcessing = true) }
-            
+
             try {
                 // TODO: Implement auto-remove logic using platform-specific ML/image processing
                 val currentState = _state.value
                 val resultPath = currentState.imagePath // Placeholder
-                
+
                 _state.update { it.copy(isProcessing = false, removedBackgroundPath = resultPath) }
             } catch (e: Exception) {
                 _state.update { it.copy(isProcessing = false, error = e.message) }
@@ -77,12 +79,15 @@ class BackgroundRemoverViewModel : ViewModel() {
     private fun applyRemoval() {
         viewModelScope.launch {
             _state.update { it.copy(isProcessing = true) }
-            
+
             try {
-                // TODO: Implement actual background removal logic
                 val currentState = _state.value
-                val resultPath = currentState.imagePath // Placeholder
-                
+                val resultPath = applyMaskToImage(
+                    imagePath = currentState.imagePath,
+                    paths = currentState.paths,
+                    canvasSize = androidx.compose.ui.unit.IntSize(512, 512)
+                )
+
                 _state.update { it.copy(isProcessing = false, removedBackgroundPath = resultPath) }
                 _effect.send(BackgroundRemoverEffect.BackgroundRemoved(resultPath))
             } catch (e: Exception) {
