@@ -33,6 +33,31 @@ actual fun rememberImagePicker(onImagePicked: (String?) -> Unit): ImagePickerLau
     }
 }
 
+@Composable
+actual fun rememberMultipleImagePicker(onImagesPicked: (List<String>) -> Unit): MultipleImagePickerLauncher {
+    val context = LocalContext.current
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris: List<Uri> ->
+        if (uris.isNotEmpty()) {
+            val paths = uris.mapNotNull { uri ->
+                copyUriToInternalStorage(context, uri)
+            }
+            onImagesPicked(paths)
+        } else {
+            onImagesPicked(emptyList())
+        }
+    }
+
+    return remember {
+        object : MultipleImagePickerLauncher {
+            override fun launch() {
+                launcher.launch("image/*")
+            }
+        }
+    }
+}
+
 private fun copyUriToInternalStorage(context: Context, uri: Uri): String? {
     return try {
         val fileName = "picked_${System.currentTimeMillis()}.jpg"

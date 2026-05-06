@@ -11,9 +11,24 @@ interface ImagePickerLauncher {
 }
 
 /**
- * Remember a platform-specific image picker.
+ * Platform-agnostic multiple image picker launcher.
+ */
+interface MultipleImagePickerLauncher {
+    fun launch()
+}
+
+/**
+ * Remember a platform-specific single image picker.
  *
  * @param onImagePicked Callback dengan path file lokal, atau null jika user cancel/error.
  */
 @Composable
 expect fun rememberImagePicker(onImagePicked: (String?) -> Unit): ImagePickerLauncher
+
+/**
+ * Remember a platform-specific multiple image picker.
+ *
+ * @param onImagesPicked Callback dengan list path file lokal yang dipilih.
+ */
+@Composable
+expect fun rememberMultipleImagePicker(onImagesPicked: (List<String>) -> Unit): MultipleImagePickerLauncher

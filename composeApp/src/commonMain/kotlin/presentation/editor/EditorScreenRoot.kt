@@ -29,6 +29,7 @@ fun EditorScreenRoot(
         // This prevents the original sticker from overwriting the edited image path
         // when EditorScreenRoot re-enters composition after returning from crop/bg screens.
         if (croppedImagePath == null && removedBgImagePath == null) {
+            viewModel.onIntent(EditorIntent.SetPackId(packId))
             stickerIndex?.let { viewModel.onIntent(EditorIntent.LoadSticker(it, packId)) }
         }
     }

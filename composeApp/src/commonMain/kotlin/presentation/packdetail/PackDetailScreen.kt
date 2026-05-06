@@ -51,6 +51,7 @@ import presentation.components.ClayFab
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
 import presentation.components.StickerCard
+import presentation.components.rememberMultipleImagePicker
 import presentation.theme.NeubrutalBg
 import presentation.theme.NeubrutalBlack
 import presentation.theme.NeubrutalGray
@@ -71,6 +72,12 @@ fun PackDetailScreen(
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     var deleteStickerIndex by remember { mutableStateOf(-1) }
+
+    val multipleImagePicker = rememberMultipleImagePicker { imagePaths ->
+        if (imagePaths.isNotEmpty()) {
+            onIntent(PackDetailIntent.AddMultipleStickers(imagePaths))
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -94,7 +101,7 @@ fun PackDetailScreen(
             )
         },
         floatingActionButton = {
-            ClayFab(onClick = onAddSticker)
+            ClayFab(onClick = { multipleImagePicker.launch() })
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = NeubrutalBg

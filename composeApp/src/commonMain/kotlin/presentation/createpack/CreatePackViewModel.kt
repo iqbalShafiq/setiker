@@ -90,11 +90,6 @@ class CreatePackViewModel(
                 _effect.send(CreatePackEffect.ShowError("Tray icon is required"))
                 return@launch
             }
-            
-            if (currentState.stickers.size < StickerPack.MIN_STICKERS) {
-                _effect.send(CreatePackEffect.ShowError("Pack must have at least ${StickerPack.MIN_STICKERS} stickers"))
-                return@launch
-            }
 
             if (currentState.stickers.size > StickerPack.MAX_STICKERS) {
                 _effect.send(CreatePackEffect.ShowError("Pack can have at most ${StickerPack.MAX_STICKERS} stickers"))

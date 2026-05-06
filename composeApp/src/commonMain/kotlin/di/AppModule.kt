@@ -24,7 +24,13 @@ val appModule = module {
 
     // ViewModels
     factoryOf(::HomeViewModel)
-    factoryOf(::PackDetailViewModel)
+    factory {
+        PackDetailViewModel(
+            repository = get(),
+            packActions = get(),
+            fileStorage = get()
+        )
+    }
     factory { params ->
         CreatePackViewModel(
             repository = get(),

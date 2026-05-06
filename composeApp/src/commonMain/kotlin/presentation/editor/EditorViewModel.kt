@@ -61,6 +61,9 @@ class EditorViewModel(
                     _effect.send(EditorEffect.NavigateToBackgroundRemover(_state.value.imagePath))
                 }
             }
+            is EditorIntent.SetPackId -> {
+                this.packId = intent.packId
+            }
             is EditorIntent.LoadSticker -> loadSticker(intent.stickerIndex, intent.packId)
             is EditorIntent.ShowEmojiPicker -> {
                 viewModelScope.launch {
@@ -125,11 +128,6 @@ class EditorViewModel(
 
             if (currentState.imagePath.isBlank()) {
                 _effect.send(EditorEffect.ShowError("Please select an image"))
-                return@launch
-            }
-
-            if (currentState.emojis.isEmpty()) {
-                _effect.send(EditorEffect.ShowError("Please add at least one emoji"))
                 return@launch
             }
 

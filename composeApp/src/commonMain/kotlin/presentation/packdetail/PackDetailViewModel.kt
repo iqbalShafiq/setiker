@@ -2,7 +2,9 @@ package presentation.packdetail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import data.storage.StickerFileStorage
 import domain.actions.PackActions
+import domain.model.Sticker
 import domain.model.StickerPack
 import domain.repository.StickerRepository
 import kotlinx.coroutines.channels.Channel
@@ -15,7 +17,8 @@ import kotlinx.coroutines.launch
 
 class PackDetailViewModel(
     private val repository: StickerRepository,
-    private val packActions: PackActions
+    private val packActions: PackActions,
+    private val fileStorage: StickerFileStorage
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(PackDetailState())
@@ -40,6 +43,7 @@ class PackDetailViewModel(
                     _effect.send(PackDetailEffect.NavigateToAddSticker)
                 }
             }
+            is PackDetailIntent.AddMultipleStickers -> addMultipleStickers(intent.imagePaths)
             is PackDetailIntent.EditSticker -> {
                 viewModelScope.launch {
                     _effect.send(PackDetailEffect.NavigateToEditSticker(intent.index))
@@ -83,6 +87,15 @@ class PackDetailViewModel(
     private fun sharePack(packId: String) {
         viewModelScope.launch {
             try {
+                val pack = repository.getPack(packId)
+                if (pack.stickers.size < StickerPack.MIN_STICKERS) {
+                    _effect.send(
+                        PackDetailEffect.ShowError(
+                            "Pack must have at least ${StickerPack.MIN_STICKERS} stickers to share"
+                        )
+                    )
+                    return@launch
+                }
                 packActions.sharePack(packId)
                 _effect.send(PackDetailEffect.ShowSuccess("Pack shared successfully"))
             } catch (e: Exception) {
@@ -110,6 +123,42 @@ class PackDetailViewModel(
                 loadPack(pack.identifier)
             } catch (e: Exception) {
                 _effect.send(PackDetailEffect.ShowError(e.message ?: "Failed to delete sticker"))
+            }
+        }
+    }
+
+    private fun addMultipleStickers(imagePaths: List<String>) {
+        viewModelScope.launch {
+            try {
+                val pack = _state.value.pack ?: return@launch
+                
+                var successCount = 0
+                imagePaths.forEach { imagePath ->
+                    try {
+                        val fileName = "sticker_${pack.identifier}_${System.currentTimeMillis()}_${successCount}.webp"
+                        val savedPath = fileStorage.saveStickerImage(imagePath, fileName)
+                        
+                        val sticker = Sticker(
+                            imageFile = savedPath,
+                            emojis = listOf("\u2b50"),
+                            accessibilityText = null
+                        )
+                        
+                        repository.addStickerToPack(pack.identifier, sticker)
+                        successCount++
+                    } catch (e: Exception) {
+                        android.util.Log.e("PackDetailViewModel", "Failed to add sticker: ${e.message}")
+                    }
+                }
+                
+                if (successCount > 0) {
+                    loadPack(pack.identifier)
+                    _effect.send(PackDetailEffect.ShowSuccess("$successCount stickers added"))
+                } else {
+                    _effect.send(PackDetailEffect.ShowError("Failed to add stickers"))
+                }
+            } catch (e: Exception) {
+                _effect.send(PackDetailEffect.ShowError(e.message ?: "Failed to add stickers"))
             }
         }
     }
