@@ -43,6 +43,11 @@ class PackDetailViewModel(
                     _effect.send(PackDetailEffect.NavigateToEditSticker(intent.index))
                 }
             }
+            is PackDetailIntent.SharePack -> {
+                viewModelScope.launch {
+                    _effect.send(PackDetailEffect.ShowShareSheet(intent.packId))
+                }
+            }
         }
     }
 

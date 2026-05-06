@@ -7,4 +7,5 @@ sealed interface PackDetailEffect {
     data class NavigateToEditSticker(val index: Int) : PackDetailEffect
     data class ShowError(val message: String) : PackDetailEffect
     data class ShowSuccess(val message: String) : PackDetailEffect
+    data class ShowShareSheet(val packId: String) : PackDetailEffect
 }

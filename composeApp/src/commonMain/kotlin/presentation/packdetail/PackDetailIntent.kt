@@ -8,4 +8,5 @@ sealed interface PackDetailIntent {
     data class DeleteSticker(val index: Int) : PackDetailIntent
     data object AddSticker : PackDetailIntent
     data class EditSticker(val index: Int) : PackDetailIntent
+    data class SharePack(val packId: String) : PackDetailIntent
 }

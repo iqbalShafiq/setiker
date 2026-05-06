@@ -37,6 +37,11 @@ fun PackDetailScreenRoot(
                 is PackDetailEffect.ShowSuccess -> {
                     snackbarHostState.showSnackbar(effect.message)
                 }
+                is PackDetailEffect.ShowShareSheet -> {
+                    // Platform-specific share will be handled by the caller
+                    // For now, just show a success message
+                    snackbarHostState.showSnackbar("Share functionality coming soon")
+                }
             }
         }
     }

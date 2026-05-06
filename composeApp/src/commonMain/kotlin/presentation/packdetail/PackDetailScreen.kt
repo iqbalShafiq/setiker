@@ -225,7 +225,7 @@ private fun PackDetailContent(
         
         AppSecondaryButton(
             text = "Share Pack",
-            onClick = { /* TODO: Implement share */ }
+            onClick = { onIntent(PackDetailIntent.SharePack(pack.identifier)) }
         )
         
         Spacer(modifier = Modifier.height(24.dp))
