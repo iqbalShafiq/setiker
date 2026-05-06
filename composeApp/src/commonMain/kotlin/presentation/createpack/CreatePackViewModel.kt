@@ -96,6 +96,11 @@ class CreatePackViewModel(
                 return@launch
             }
 
+            if (currentState.stickers.size > StickerPack.MAX_STICKERS) {
+                _effect.send(CreatePackEffect.ShowError("Pack can have at most ${StickerPack.MAX_STICKERS} stickers"))
+                return@launch
+            }
+
             try {
                 val identifier = if (currentState.isEditing && currentState.packId.isNotBlank()) {
                     currentState.packId
@@ -111,7 +116,10 @@ class CreatePackViewModel(
                 val stickers = currentState.stickers.mapIndexed { index, imagePath ->
                     val stickerFileName = "sticker_${identifier}_${index}.webp"
                     val stickerPath = fileStorage.saveStickerImage(imagePath, stickerFileName)
-                    Sticker(stickerPath)
+                    Sticker(
+                        imageFile = stickerPath,
+                        emojis = listOf("⭐") // WhatsApp requires at least 1 emoji per sticker
+                    )
                 }
                 
                 val pack = StickerPack(

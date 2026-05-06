@@ -36,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -116,14 +117,17 @@ fun EditorScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     if (state.imagePath.isNotBlank()) {
-                        Image(
-                            painter = rememberAsyncImagePainter(state.imagePath),
-                            contentDescription = "Sticker preview",
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(RoundedCornerShape(16.dp)),
-                            contentScale = ContentScale.Fit
-                        )
+                        android.util.Log.d("EditorScreen", "Loading image: ${state.imagePath}")
+                        key(state.imagePath) {
+                            Image(
+                                painter = rememberAsyncImagePainter(state.imagePath),
+                                contentDescription = "Sticker preview",
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(RoundedCornerShape(16.dp)),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
                     } else {
                         Text(
                             text = "Select an image",

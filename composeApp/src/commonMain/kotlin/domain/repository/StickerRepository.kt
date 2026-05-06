@@ -8,5 +8,6 @@ interface StickerRepository {
     suspend fun savePack(pack: StickerPack)
     suspend fun deletePack(identifier: String)
     suspend fun addStickerToPack(packId: String, sticker: domain.model.Sticker)
+    suspend fun updateStickerInPack(packId: String, index: Int, sticker: domain.model.Sticker)
     suspend fun removeStickerFromPack(packId: String, index: Int)
 }

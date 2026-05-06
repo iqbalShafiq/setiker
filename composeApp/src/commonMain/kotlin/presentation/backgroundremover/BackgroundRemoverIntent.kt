@@ -10,4 +10,5 @@ sealed interface BackgroundRemoverIntent {
     data object AutoRemove : BackgroundRemoverIntent
     data object ApplyRemoval : BackgroundRemoverIntent
     data object Reset : BackgroundRemoverIntent
+    data class UpdateCanvasSize(val width: Int, val height: Int) : BackgroundRemoverIntent
 }

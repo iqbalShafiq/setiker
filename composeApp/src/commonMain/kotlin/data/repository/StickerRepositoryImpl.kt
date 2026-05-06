@@ -99,6 +99,26 @@ class StickerRepositoryImpl(
         }
     }
 
+    override suspend fun updateStickerInPack(packId: String, index: Int, sticker: Sticker) {
+        withContext(Dispatchers.IO) {
+        val stickers = stickerDao.getByPackId(packId)
+        val existing = stickers.getOrNull(index)
+            ?: throw IllegalArgumentException("Sticker not found at index $index in pack $packId")
+
+        val updatedEntity = existing.copy(
+            imageFile = sticker.imageFile,
+            emojis = Json.encodeToString(sticker.emojis),
+            accessibilityText = sticker.accessibilityText
+        )
+        stickerDao.insert(updatedEntity)
+
+        // Update pack timestamp
+        packDao.getById(packId)?.let { pack ->
+            packDao.insert(pack.copy(updatedAt = System.currentTimeMillis()))
+        }
+        }
+    }
+
     override suspend fun removeStickerFromPack(packId: String, index: Int) = withContext(Dispatchers.IO) {
         val stickers = stickerDao.getByPackId(packId)
         val stickerToDelete = stickers.getOrNull(index) ?: return@withContext

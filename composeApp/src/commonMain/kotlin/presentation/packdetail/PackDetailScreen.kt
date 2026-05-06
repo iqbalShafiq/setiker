@@ -72,12 +72,6 @@ fun PackDetailScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var deleteStickerIndex by remember { mutableStateOf(-1) }
 
-    LaunchedEffect(state.pack) {
-        state.pack?.let { pack ->
-            onIntent(PackDetailIntent.LoadPack(pack.identifier))
-        }
-    }
-
     Scaffold(
         topBar = {
             AppTopBar(

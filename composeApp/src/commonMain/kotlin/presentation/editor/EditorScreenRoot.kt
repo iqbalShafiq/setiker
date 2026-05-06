@@ -12,6 +12,9 @@ import org.koin.compose.koinInject
 fun EditorScreenRoot(
     stickerIndex: Int?,
     packId: String,
+    croppedImagePath: String? = null,
+    removedBgImagePath: String? = null,
+    onResultProcessed: () -> Unit = {},
     onBackClick: () -> Unit,
     onNavigateToCrop: (String) -> Unit,
     onNavigateToBackgroundRemover: (String) -> Unit,
@@ -22,7 +25,33 @@ fun EditorScreenRoot(
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(stickerIndex, packId) {
-        stickerIndex?.let { viewModel.onIntent(EditorIntent.LoadSticker(it, packId)) }
+        // Only load sticker if we're not processing a crop/bg result.
+        // This prevents the original sticker from overwriting the edited image path
+        // when EditorScreenRoot re-enters composition after returning from crop/bg screens.
+        if (croppedImagePath == null && removedBgImagePath == null) {
+            stickerIndex?.let { viewModel.onIntent(EditorIntent.LoadSticker(it, packId)) }
+        }
+    }
+
+    // Handle results from crop or background remover
+    LaunchedEffect(croppedImagePath, removedBgImagePath) {
+        var processed = false
+
+        croppedImagePath?.let { path ->
+            android.util.Log.d("EditorScreenRoot", "Processing crop result: $path")
+            viewModel.onIntent(EditorIntent.UpdateImagePath(path))
+            processed = true
+        }
+
+        removedBgImagePath?.let { path ->
+            android.util.Log.d("EditorScreenRoot", "Processing BG remove result: $path")
+            viewModel.onIntent(EditorIntent.UpdateImagePath(path))
+            processed = true
+        }
+
+        if (processed) {
+            onResultProcessed()
+        }
     }
 
     LaunchedEffect(viewModel.effect) {

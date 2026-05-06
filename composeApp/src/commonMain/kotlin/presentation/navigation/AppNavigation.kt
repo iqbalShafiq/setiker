@@ -1,6 +1,8 @@
 package presentation.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -19,6 +21,11 @@ fun AppNavigation(
     navController: NavHostController = rememberNavController(),
     onAddToWhatsApp: ((String, String) -> Unit)? = null
 ) {
+    // Shared state for crop/background remover results
+    // This ensures the editor recomposes when results are available
+    val cropResult = remember { mutableStateOf<String?>(null) }
+    val bgResult = remember { mutableStateOf<String?>(null) }
+
     NavHost(
         navController = navController,
         startDestination = "home"
@@ -85,14 +92,32 @@ fun AppNavigation(
         ) { backStackEntry ->
             val packId = backStackEntry.arguments?.getString("packId") ?: return@composable
             val stickerIndex = backStackEntry.arguments?.getInt("stickerIndex")?.takeIf { it >= 0 }
+            
+            // Read shared results from crop or bg remover
+            val croppedImagePath = cropResult.value
+            val removedBgImagePath = bgResult.value
+            
             EditorScreenRoot(
                 stickerIndex = stickerIndex,
                 packId = packId,
+                croppedImagePath = croppedImagePath,
+                removedBgImagePath = removedBgImagePath,
+                onResultProcessed = {
+                    // Clear results after processing to prevent re-processing
+                    cropResult.value = null
+                    bgResult.value = null
+                },
                 onBackClick = { navController.popBackStack() },
                 onNavigateToCrop = { imagePath ->
+                    // Clear any previous results before navigating
+                    cropResult.value = null
+                    bgResult.value = null
                     navController.navigate("crop/${PathEncoder.encode(imagePath)}")
                 },
                 onNavigateToBackgroundRemover = { imagePath ->
+                    // Clear any previous results before navigating
+                    cropResult.value = null
+                    bgResult.value = null
                     navController.navigate("bgRemover/${PathEncoder.encode(imagePath)}")
                 },
                 onStickerSaved = { navController.popBackStack() }
@@ -109,9 +134,7 @@ fun AppNavigation(
                 imagePath = imagePath,
                 onBackClick = { navController.popBackStack() },
                 onImageCropped = { croppedPath ->
-                    navController.previousBackStackEntry
-                        ?.savedStateHandle
-                        ?.set("croppedImagePath", croppedPath)
+                    cropResult.value = croppedPath
                     navController.popBackStack()
                 }
             )
@@ -127,9 +150,7 @@ fun AppNavigation(
                 imagePath = imagePath,
                 onBackClick = { navController.popBackStack() },
                 onBackgroundRemoved = { resultPath ->
-                    navController.previousBackStackEntry
-                        ?.savedStateHandle
-                        ?.set("removedBgImagePath", resultPath)
+                    bgResult.value = resultPath
                     navController.popBackStack()
                 }
             )

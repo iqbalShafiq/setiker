@@ -30,8 +30,11 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -68,12 +71,6 @@ fun CropScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     modifier: Modifier = Modifier
 ) {
-    LaunchedEffect(state.imagePath) {
-        if (state.imagePath.isNotBlank()) {
-            onIntent(CropIntent.LoadImage(state.imagePath))
-        }
-    }
-
     Scaffold(
         topBar = {
             AppTopBar(
@@ -271,15 +268,21 @@ private fun CropImagePreview(
     onTransform: (Float, Float, Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Use rememberUpdatedState to always have latest values in gesture handler
+    val currentScale by rememberUpdatedState(scale)
+    val currentOffsetX by rememberUpdatedState(offsetX)
+    val currentOffsetY by rememberUpdatedState(offsetY)
+    val currentOnTransform by rememberUpdatedState(onTransform)
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .pointerInput(Unit) {
                 detectTransformGestures { _, pan, zoom, _ ->
-                    onTransform(
-                        scale * zoom,
-                        offsetX + pan.x,
-                        offsetY + pan.y
+                    currentOnTransform(
+                        currentScale * zoom,
+                        currentOffsetX + pan.x,
+                        currentOffsetY + pan.y
                     )
                 }
             }
@@ -299,59 +302,65 @@ private fun CropImagePreview(
             contentScale = ContentScale.Fit
         )
 
-        // Crop overlay
+        // Crop overlay - using 4 rectangles instead of BlendMode.Clear
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .drawWithContent {
-                    drawContent()
-
                     val cropSize = size.minDimension * 0.8f
-                    val cropRect = Rect(
-                        Offset(
-                            (size.width - cropSize) / 2,
-                            (size.height - cropSize) / 2
-                        ),
-                        Size(cropSize, cropSize)
-                    )
+                    val cropLeft = (size.width - cropSize) / 2
+                    val cropTop = (size.height - cropSize) / 2
+                    val cropRight = cropLeft + cropSize
+                    val cropBottom = cropTop + cropSize
 
-                    // Draw semi-transparent overlay
+                    // Top overlay
                     drawRect(
                         color = Color.Black.copy(alpha = 0.45f),
-                        size = size
+                        topLeft = Offset(0f, 0f),
+                        size = Size(size.width, cropTop)
                     )
-
-                    // Draw crop area (transparent)
+                    // Bottom overlay
                     drawRect(
-                        color = Color.Transparent,
-                        topLeft = cropRect.topLeft,
-                        size = cropRect.size,
-                        blendMode = BlendMode.Clear
+                        color = Color.Black.copy(alpha = 0.45f),
+                        topLeft = Offset(0f, cropBottom),
+                        size = Size(size.width, size.height - cropBottom)
+                    )
+                    // Left overlay
+                    drawRect(
+                        color = Color.Black.copy(alpha = 0.45f),
+                        topLeft = Offset(0f, cropTop),
+                        size = Size(cropLeft, cropSize)
+                    )
+                    // Right overlay
+                    drawRect(
+                        color = Color.Black.copy(alpha = 0.45f),
+                        topLeft = Offset(cropRight, cropTop),
+                        size = Size(size.width - cropRight, cropSize)
                     )
 
                     // Draw crop border
                     drawRect(
                         color = Color.White,
-                        topLeft = cropRect.topLeft,
-                        size = cropRect.size,
+                        topLeft = Offset(cropLeft, cropTop),
+                        size = Size(cropSize, cropSize),
                         style = Stroke(width = 2.dp.toPx())
                     )
 
                     // Draw grid lines
-                    val thirdWidth = cropRect.width / 3
-                    val thirdHeight = cropRect.height / 3
+                    val thirdWidth = cropSize / 3
+                    val thirdHeight = cropSize / 3
 
                     repeat(2) { i ->
                         drawLine(
                             color = Color.White.copy(alpha = 0.5f),
-                            start = Offset(cropRect.left + (i + 1) * thirdWidth, cropRect.top),
-                            end = Offset(cropRect.left + (i + 1) * thirdWidth, cropRect.bottom),
+                            start = Offset(cropLeft + (i + 1) * thirdWidth, cropTop),
+                            end = Offset(cropLeft + (i + 1) * thirdWidth, cropBottom),
                             strokeWidth = 1.dp.toPx()
                         )
                         drawLine(
                             color = Color.White.copy(alpha = 0.5f),
-                            start = Offset(cropRect.left, cropRect.top + (i + 1) * thirdHeight),
-                            end = Offset(cropRect.right, cropRect.top + (i + 1) * thirdHeight),
+                            start = Offset(cropLeft, cropTop + (i + 1) * thirdHeight),
+                            end = Offset(cropRight, cropTop + (i + 1) * thirdHeight),
                             strokeWidth = 1.dp.toPx()
                         )
                     }

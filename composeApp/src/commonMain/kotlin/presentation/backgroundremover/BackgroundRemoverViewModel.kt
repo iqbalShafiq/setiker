@@ -56,6 +56,14 @@ class BackgroundRemoverViewModel : ViewModel() {
                     )
                 }
             }
+            is BackgroundRemoverIntent.UpdateCanvasSize -> {
+                _state.update {
+                    it.copy(
+                        canvasWidth = intent.width,
+                        canvasHeight = intent.height
+                    )
+                }
+            }
         }
     }
 
@@ -94,7 +102,7 @@ class BackgroundRemoverViewModel : ViewModel() {
                 val resultPath = applyMaskToImage(
                     imagePath = currentState.imagePath,
                     paths = currentState.paths,
-                    canvasSize = androidx.compose.ui.unit.IntSize(512, 512)
+                    canvasSize = androidx.compose.ui.unit.IntSize(currentState.canvasWidth, currentState.canvasHeight)
                 )
 
                 _state.update { it.copy(isProcessing = false, removedBackgroundPath = resultPath) }

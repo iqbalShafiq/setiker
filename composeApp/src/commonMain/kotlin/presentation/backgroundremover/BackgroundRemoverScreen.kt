@@ -30,7 +30,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,14 +37,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.toSize
 import coil3.compose.rememberAsyncImagePainter
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
@@ -70,12 +73,6 @@ fun BackgroundRemoverScreen(
 ) {
     var currentPath by remember { mutableStateOf<List<Pair<Float, Float>>>(emptyList()) }
     var isDrawing by remember { mutableStateOf(false) }
-
-    LaunchedEffect(state.imagePath) {
-        if (state.imagePath.isNotBlank()) {
-            onIntent(BackgroundRemoverIntent.LoadImage(state.imagePath))
-        }
-    }
 
     Scaffold(
         topBar = {
@@ -118,10 +115,30 @@ fun BackgroundRemoverScreen(
                             color = NeubrutalBlack,
                             shape = RoundedCornerShape(20.dp)
                         )
-                        .padding(4.dp),
+                        .padding(4.dp)
+                        .onGloballyPositioned { coordinates ->
+                            val size = coordinates.size.toSize()
+                            if (size.width > 0 && size.height > 0) {
+                                android.util.Log.d(
+                                    "BackgroundRemover",
+                                    "Canvas size: ${size.width}x${size.height}"
+                                )
+                                onIntent(
+                                    BackgroundRemoverIntent.UpdateCanvasSize(
+                                        size.width.toInt(),
+                                        size.height.toInt()
+                                    )
+                                )
+                            }
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     if (state.imagePath.isNotBlank()) {
+                        // Checkerboard background to show transparency
+                        CheckerboardBackground(
+                            modifier = Modifier.fillMaxSize()
+                        )
+
                         Image(
                             painter = rememberAsyncImagePainter(state.imagePath),
                             contentDescription = "Image to edit",
@@ -132,6 +149,10 @@ fun BackgroundRemoverScreen(
                                         onDragStart = {
                                             isDrawing = true
                                             currentPath = listOf(it.x to it.y)
+                                            android.util.Log.d(
+                                                "BackgroundRemover",
+                                                "Drag start: ${it.x}, ${it.y}"
+                                            )
                                         },
                                         onDrag = { change, _ ->
                                             if (isDrawing) {
@@ -141,6 +162,10 @@ fun BackgroundRemoverScreen(
                                         onDragEnd = {
                                             isDrawing = false
                                             if (currentPath.isNotEmpty()) {
+                                                android.util.Log.d(
+                                                    "BackgroundRemover",
+                                                    "Drag end: ${currentPath.size} points"
+                                                )
                                                 onIntent(
                                                     BackgroundRemoverIntent.AddPath(
                                                         DrawPath(
@@ -256,9 +281,9 @@ fun BackgroundRemoverScreen(
                     )
                     NeubrutalToolButton(
                         icon = Icons.Default.Refresh,
-                        label = "Auto",
+                        label = "Clear",
                         isSelected = false,
-                        onClick = { onIntent(BackgroundRemoverIntent.AutoRemove) }
+                        onClick = { onIntent(BackgroundRemoverIntent.ClearAll) }
                     )
                 }
 
@@ -267,7 +292,10 @@ fun BackgroundRemoverScreen(
                 // Action Buttons
                 AppPrimaryButton(
                     text = "Apply",
-                    onClick = { onIntent(BackgroundRemoverIntent.ApplyRemoval) }
+                    onClick = {
+                        android.util.Log.d("BackgroundRemover", "Apply clicked with ${state.paths.size} paths")
+                        onIntent(BackgroundRemoverIntent.ApplyRemoval)
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -279,6 +307,34 @@ fun BackgroundRemoverScreen(
             }
         }
     }
+}
+
+@Composable
+private fun CheckerboardBackground(
+    modifier: Modifier = Modifier,
+    checkerColor: Color = Color.LightGray,
+    squareSize: Float = 20f
+) {
+    Box(
+        modifier = modifier
+            .background(Color.White)
+            .drawBehind {
+                val numSquaresX = (size.width / squareSize).toInt() + 1
+                val numSquaresY = (size.height / squareSize).toInt() + 1
+
+                for (x in 0 until numSquaresX) {
+                    for (y in 0 until numSquaresY) {
+                        if ((x + y) % 2 == 0) {
+                            drawRect(
+                                color = checkerColor,
+                                topLeft = Offset(x * squareSize, y * squareSize),
+                                size = Size(squareSize, squareSize)
+                            )
+                        }
+                    }
+                }
+            }
+    )
 }
 
 @Composable
