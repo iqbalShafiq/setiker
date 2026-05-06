@@ -28,7 +28,7 @@ object WhatsAppIntegration {
         try {
             activity.startActivityForResult(intent, 200)
         } catch (e: Exception) {
-            // WhatsApp not installed
+            throw IllegalStateException("WhatsApp is not installed or unable to handle sticker packs")
         }
     }
     

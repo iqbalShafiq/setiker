@@ -60,7 +60,8 @@ class CreatePackViewModel(
                         publisher = pack.publisher,
                         trayImagePath = pack.trayImageFile,
                         stickers = pack.stickers.map { sticker -> sticker.imageFile },
-                        isEditing = true
+                        isEditing = true,
+                        packId = pack.identifier
                     )
                 }
             } catch (e: Exception) {
@@ -94,9 +95,8 @@ class CreatePackViewModel(
             }
 
             try {
-                val identifier = if (currentState.isEditing) {
-                    // Extract identifier from existing pack
-                    currentState.name.lowercase().replace(" ", "_")
+                val identifier = if (currentState.isEditing && currentState.packId.isNotBlank()) {
+                    currentState.packId
                 } else {
                     "${currentState.name.lowercase().replace(" ", "_")}_${Random.nextInt(1000, 9999)}"
                 }

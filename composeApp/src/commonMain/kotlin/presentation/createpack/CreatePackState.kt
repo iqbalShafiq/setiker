@@ -7,5 +7,6 @@ data class CreatePackState(
     val trayImagePath: String = "",
     val stickers: List<String> = emptyList(),
     val isEditing: Boolean = false,
+    val packId: String = "",
     val error: String? = null
 )

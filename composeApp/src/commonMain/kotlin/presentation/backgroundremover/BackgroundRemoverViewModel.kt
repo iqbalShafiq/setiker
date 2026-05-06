@@ -64,9 +64,18 @@ class BackgroundRemoverViewModel : ViewModel() {
             _state.update { it.copy(isProcessing = true) }
 
             try {
-                // TODO: Implement auto-remove logic using platform-specific ML/image processing
+                // Auto-remove requires platform-specific ML library (e.g., ML Kit on Android, Vision on iOS)
+                // For now, apply the current brush paths as a basic removal
                 val currentState = _state.value
-                val resultPath = currentState.imagePath // Placeholder
+                val resultPath = if (currentState.paths.isNotEmpty()) {
+                    applyMaskToImage(
+                        imagePath = currentState.imagePath,
+                        paths = currentState.paths,
+                        canvasSize = IntSize(512, 512)
+                    )
+                } else {
+                    currentState.imagePath
+                }
 
                 _state.update { it.copy(isProcessing = false, removedBackgroundPath = resultPath) }
             } catch (e: Exception) {
