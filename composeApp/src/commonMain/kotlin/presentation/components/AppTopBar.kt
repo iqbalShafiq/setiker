@@ -16,9 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.ui.tooling.preview.Preview
-import presentation.theme.NeubrutalBg
-import presentation.theme.NeubrutalBlack
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppTopBar(
@@ -36,7 +33,7 @@ fun AppTopBar(
                     fontSize = androidx.compose.ui.unit.TextUnit.Unspecified
                 ),
                 fontSize = 28.sp,
-                color = NeubrutalBlack
+                color = MaterialTheme.colorScheme.onSurface
             )
         },
         modifier = modifier,
@@ -46,17 +43,17 @@ fun AppTopBar(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = NeubrutalBlack
+                        tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
         },
         actions = actions,
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = NeubrutalBg,
-            titleContentColor = NeubrutalBlack,
-            navigationIconContentColor = NeubrutalBlack,
-            actionIconContentColor = NeubrutalBlack
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+            actionIconContentColor = MaterialTheme.colorScheme.onSurface
         )
     )
 }

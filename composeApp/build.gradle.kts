@@ -46,7 +46,7 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.room.runtime)
-            implementation("androidx.sqlite:sqlite-bundled:2.5.0")
+            implementation(libs.androidx.sqlite.bundled)
         }
         
         androidMain.dependencies {

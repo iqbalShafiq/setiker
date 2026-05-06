@@ -51,7 +51,6 @@ import presentation.components.ClayFab
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
 import presentation.components.StickerCard
-import presentation.theme.ErrorRed
 import presentation.theme.NeubrutalBg
 import presentation.theme.NeubrutalBlack
 import presentation.theme.NeubrutalGray
@@ -88,15 +87,13 @@ fun PackDetailScreen(
                     IconButton(onClick = { showDeleteDialog = true }) {
                         Icon(
                             imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete pack",
-                            tint = ErrorRed
+                            contentDescription = "Delete pack"
                         )
                     }
                     IconButton(onClick = onEditPack) {
                         Icon(
                             imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit pack",
-                            tint = NeubrutalBlack
+                            contentDescription = "Edit pack"
                         )
                     }
                 }
