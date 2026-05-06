@@ -1,5 +1,7 @@
 package presentation.packdetail
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,13 +15,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -47,9 +47,16 @@ import presentation.components.AppDialog
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
 import presentation.components.AppTopBar
+import presentation.components.ClayFab
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
 import presentation.components.StickerCard
+import presentation.theme.ErrorRed
+import presentation.theme.NeubrutalBg
+import presentation.theme.NeubrutalBlack
+import presentation.theme.NeubrutalGray
+import presentation.theme.NeubrutalWhite
+import presentation.theme.neubrutalShadow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,31 +88,25 @@ fun PackDetailScreen(
                     IconButton(onClick = { showDeleteDialog = true }) {
                         Icon(
                             imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete pack"
+                            contentDescription = "Delete pack",
+                            tint = ErrorRed
                         )
                     }
                     IconButton(onClick = onEditPack) {
                         Icon(
                             imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit pack"
+                            contentDescription = "Edit pack",
+                            tint = NeubrutalBlack
                         )
                     }
                 }
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onAddSticker,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add sticker"
-                )
-            }
+            ClayFab(onClick = onAddSticker)
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = NeubrutalBg
     ) { innerPadding ->
         when {
             state.isLoading -> {
@@ -176,11 +177,26 @@ private fun PackDetailContent(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
-        // Pack Info Card
+        // Pack Info Card (Neubrutal)
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .neubrutalShadow(
+                    offsetX = 4.dp,
+                    offsetY = 4.dp,
+                    cornerRadius = 20.dp,
+                    color = NeubrutalBlack
+                )
+                .clip(RoundedCornerShape(20.dp))
+                .background(NeubrutalWhite)
+                .border(
+                    width = 2.dp,
+                    color = NeubrutalBlack,
+                    shape = RoundedCornerShape(20.dp)
+                )
+                .padding(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
@@ -188,59 +204,73 @@ private fun PackDetailContent(
                 contentDescription = pack.name,
                 modifier = Modifier
                     .size(96.dp)
-                    .clip(MaterialTheme.shapes.medium),
+                    .neubrutalShadow(
+                        offsetX = 2.dp,
+                        offsetY = 2.dp,
+                        cornerRadius = 16.dp,
+                        color = NeubrutalBlack
+                    )
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(NeubrutalWhite)
+                    .border(
+                        width = 2.dp,
+                        color = NeubrutalBlack,
+                        shape = RoundedCornerShape(16.dp)
+                    ),
                 contentScale = ContentScale.Crop
             )
-            
+
             Column(
                 modifier = Modifier
-                    .padding(start = 16.dp)
+                    .padding(start = 20.dp)
                     .weight(1f)
             ) {
                 Text(
                     text = pack.name,
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = NeubrutalBlack
                 )
                 Text(
                     text = pack.publisher,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = NeubrutalGray
                 )
                 Text(
                     text = "${pack.stickers.size} stickers",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = NeubrutalGray
                 )
             }
         }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
+
+        Spacer(modifier = Modifier.height(20.dp))
+
         // Action Buttons
         AppPrimaryButton(
             text = "Add to WhatsApp",
             onClick = { onIntent(PackDetailIntent.AddToWhatsApp(pack.identifier)) }
         )
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
+
+        Spacer(modifier = Modifier.height(12.dp))
+
         AppSecondaryButton(
             text = "Share Pack",
             onClick = { onIntent(PackDetailIntent.SharePack(pack.identifier)) }
         )
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
+
+        Spacer(modifier = Modifier.height(28.dp))
+
         // Stickers Grid
         Text(
             text = "Stickers",
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
+            color = NeubrutalBlack
         )
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
+
+        Spacer(modifier = Modifier.height(10.dp))
+
         if (pack.stickers.isEmpty()) {
             EmptyState(
                 title = "No Stickers",
@@ -250,9 +280,9 @@ private fun PackDetailContent(
         } else {
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(vertical = 8.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(vertical = 10.dp)
             ) {
                 itemsIndexed(
                     items = pack.stickers,

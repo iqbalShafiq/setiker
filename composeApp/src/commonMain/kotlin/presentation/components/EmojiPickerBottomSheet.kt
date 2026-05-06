@@ -1,33 +1,47 @@
 package presentation.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import presentation.theme.AccentCoral
+import presentation.theme.NeubrutalBg
+import presentation.theme.NeubrutalBlack
+import presentation.theme.NeubrutalGray
+import presentation.theme.NeubrutalWhite
+import presentation.theme.neubrutalShadow
 
 private val EMOJI_CATEGORIES = listOf(
     "Recent" to emptyList<String>(),
@@ -61,28 +75,50 @@ fun EmojiPickerBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        modifier = modifier
+        modifier = modifier,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        containerColor = NeubrutalBg,
+        scrimColor = NeubrutalBlack.copy(alpha = 0.3f)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(max = 500.dp)
+                .heightIn(max = 520.dp)
         ) {
             Text(
                 text = "Select Emoji",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(16.dp)
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                ),
+                color = NeubrutalBlack,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
             )
 
             TabRow(
                 selectedTabIndex = selectedTab,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                containerColor = NeubrutalBg,
+                contentColor = AccentCoral,
+                indicator = { tabPositions ->
+                    TabRowDefaults.SecondaryIndicator(
+                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                        color = AccentCoral,
+                        height = 3.dp
+                    )
+                }
             ) {
                 categories.forEachIndexed { index, (title, _) ->
                     Tab(
                         selected = selectedTab == index,
                         onClick = { selectedTab = index },
-                        text = { Text(title, maxLines = 1) }
+                        text = {
+                            Text(
+                                title,
+                                maxLines = 1,
+                                style = MaterialTheme.typography.labelLarge,
+                                color = if (selectedTab == index) AccentCoral else NeubrutalGray
+                            )
+                        }
                     )
                 }
             }
@@ -93,7 +129,7 @@ fun EmojiPickerBottomSheet(
                 Text(
                     text = "No recent emojis",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = NeubrutalGray,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(32.dp),
@@ -103,19 +139,31 @@ fun EmojiPickerBottomSheet(
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(8),
                     modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    contentPadding = PaddingValues(20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     items(currentEmojis) { emoji ->
-                        Text(
-                            text = emoji,
-                            style = MaterialTheme.typography.headlineSmall,
+                        Box(
                             modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(NeubrutalWhite)
+                                .border(
+                                    width = 2.dp,
+                                    color = NeubrutalBlack,
+                                    shape = RoundedCornerShape(10.dp)
+                                )
                                 .clickable { onEmojiSelected(emoji) }
                                 .padding(4.dp),
-                            textAlign = TextAlign.Center
-                        )
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = emoji,
+                                style = MaterialTheme.typography.headlineSmall,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
             }

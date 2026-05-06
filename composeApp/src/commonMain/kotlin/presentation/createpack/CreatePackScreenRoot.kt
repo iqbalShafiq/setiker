@@ -5,7 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import org.koin.compose.koinInject
 
 @Composable
@@ -15,7 +15,7 @@ fun CreatePackScreenRoot(
     onPackSaved: (String) -> Unit,
     viewModel: CreatePackViewModel = koinInject()
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
+    val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(packId) {

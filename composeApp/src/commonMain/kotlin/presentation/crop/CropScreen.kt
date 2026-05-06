@@ -2,6 +2,8 @@ package presentation.crop
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,9 +22,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -50,6 +52,12 @@ import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
 import presentation.components.AppTopBar
 import presentation.components.LoadingIndicator
+import presentation.theme.AccentCoral
+import presentation.theme.NeubrutalBg
+import presentation.theme.NeubrutalBlack
+import presentation.theme.NeubrutalGray
+import presentation.theme.NeubrutalWhite
+import presentation.theme.neubrutalShadow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,7 +81,8 @@ fun CropScreen(
                 onBackClick = onBackClick
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = NeubrutalBg
     ) { innerPadding ->
         if (state.isProcessing) {
             LoadingIndicator(
@@ -86,15 +95,27 @@ fun CropScreen(
                 modifier = modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .padding(16.dp)
+                    .padding(horizontal = 20.dp, vertical = 16.dp)
             ) {
-                // Crop Area
+                // Crop Area (Neubrutal Frame)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(1f)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                        .neubrutalShadow(
+                            offsetX = 4.dp,
+                            offsetY = 4.dp,
+                            cornerRadius = 20.dp,
+                            color = NeubrutalBlack
+                        )
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(NeubrutalWhite)
+                        .border(
+                            width = 2.dp,
+                            color = NeubrutalBlack,
+                            shape = RoundedCornerShape(20.dp)
+                        )
+                        .padding(4.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     if (state.imagePath.isNotBlank()) {
@@ -115,72 +136,126 @@ fun CropScreen(
                         Text(
                             text = "No image selected",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = NeubrutalGray
                         )
                     }
                 }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
+
+                Spacer(modifier = Modifier.height(20.dp))
+
                 // Zoom Slider
                 Text(
                     text = "Zoom",
                     style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    color = NeubrutalBlack
                 )
-                
+
                 Slider(
                     value = state.scale,
                     onValueChange = { onIntent(CropIntent.UpdateScale(it)) },
                     valueRange = 0.5f..3f,
                     modifier = Modifier.fillMaxWidth()
                 )
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 // Action Buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    CropActionButton(
+                    NeubrutalToolButton(
                         icon = Icons.Default.Refresh,
                         label = "Rotate L",
+                        isSelected = false,
                         onClick = { onIntent(CropIntent.RotateLeft) }
                     )
-                    CropActionButton(
+                    NeubrutalToolButton(
                         icon = Icons.Default.Refresh,
                         label = "Rotate R",
+                        isSelected = false,
                         onClick = { onIntent(CropIntent.RotateRight) }
                     )
-                    CropActionButton(
+                    NeubrutalToolButton(
                         icon = Icons.Default.Refresh,
                         label = "Flip H",
+                        isSelected = false,
                         onClick = { onIntent(CropIntent.FlipHorizontal) }
                     )
-                    CropActionButton(
+                    NeubrutalToolButton(
                         icon = Icons.Default.Refresh,
                         label = "Reset",
+                        isSelected = false,
                         onClick = { onIntent(CropIntent.Reset) }
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.height(32.dp))
-                
+
                 // Apply Button
                 AppPrimaryButton(
                     text = "Apply Crop",
                     onClick = { onIntent(CropIntent.ApplyCrop) }
                 )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
+
+                Spacer(modifier = Modifier.height(12.dp))
+
                 AppSecondaryButton(
                     text = "Cancel",
                     onClick = onBackClick
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun NeubrutalToolButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .neubrutalShadow(
+                    offsetX = 2.dp,
+                    offsetY = 2.dp,
+                    cornerRadius = 24.dp,
+                    color = NeubrutalBlack
+                )
+                .clip(CircleShape)
+                .background(if (isSelected) AccentCoral else NeubrutalWhite)
+                .border(
+                    width = 2.dp,
+                    color = NeubrutalBlack,
+                    shape = CircleShape
+                )
+                .clickable(onClick = onClick),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                modifier = Modifier.size(22.dp),
+                tint = if (isSelected) NeubrutalWhite else NeubrutalBlack
+            )
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = NeubrutalGray
+        )
     }
 }
 
@@ -223,14 +298,14 @@ private fun CropImagePreview(
                 },
             contentScale = ContentScale.Fit
         )
-        
+
         // Crop overlay
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .drawWithContent {
                     drawContent()
-                    
+
                     val cropSize = size.minDimension * 0.8f
                     val cropRect = Rect(
                         Offset(
@@ -239,13 +314,13 @@ private fun CropImagePreview(
                         ),
                         Size(cropSize, cropSize)
                     )
-                    
+
                     // Draw semi-transparent overlay
                     drawRect(
-                        color = Color.Black.copy(alpha = 0.5f),
+                        color = Color.Black.copy(alpha = 0.45f),
                         size = size
                     )
-                    
+
                     // Draw crop area (transparent)
                     drawRect(
                         color = Color.Transparent,
@@ -253,7 +328,7 @@ private fun CropImagePreview(
                         size = cropRect.size,
                         blendMode = BlendMode.Clear
                     )
-                    
+
                     // Draw crop border
                     drawRect(
                         color = Color.White,
@@ -261,11 +336,11 @@ private fun CropImagePreview(
                         size = cropRect.size,
                         style = Stroke(width = 2.dp.toPx())
                     )
-                    
+
                     // Draw grid lines
                     val thirdWidth = cropRect.width / 3
                     val thirdHeight = cropRect.height / 3
-                    
+
                     repeat(2) { i ->
                         drawLine(
                             color = Color.White.copy(alpha = 0.5f),
@@ -285,38 +360,34 @@ private fun CropImagePreview(
     }
 }
 
+// MARK: - Previews
+
+@Preview
 @Composable
-private fun CropActionButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        IconButton(
-            onClick = onClick,
-            modifier = Modifier
-                .size(48.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    shape = CircleShape
-                )
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-        
-        Spacer(modifier = Modifier.height(4.dp))
-        
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall
+private fun CropScreenPreview() {
+    MaterialTheme {
+        CropScreen(
+            state = CropState(
+                imagePath = "",
+                scale = 1.2f
+            ),
+            onIntent = {},
+            onBackClick = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun CropScreenProcessingPreview() {
+    MaterialTheme {
+        CropScreen(
+            state = CropState(
+                imagePath = "",
+                isProcessing = true
+            ),
+            onIntent = {},
+            onBackClick = {}
         )
     }
 }

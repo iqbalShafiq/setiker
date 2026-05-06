@@ -1,17 +1,18 @@
 package presentation.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,6 +22,10 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import domain.model.Sticker
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import presentation.theme.ErrorRed
+import presentation.theme.NeubrutalBlack
+import presentation.theme.NeubrutalWhite
+import presentation.theme.neubrutalShadow
 
 @Composable
 fun StickerCard(
@@ -32,34 +37,53 @@ fun StickerCard(
     Box(
         modifier = modifier
             .aspectRatio(1f)
+            .neubrutalShadow(
+                offsetX = 3.dp,
+                offsetY = 3.dp,
+                cornerRadius = 12.dp,
+                color = NeubrutalBlack
+            )
             .clip(RoundedCornerShape(12.dp))
+            .background(NeubrutalWhite)
+            .border(
+                width = 2.dp,
+                color = NeubrutalBlack,
+                shape = RoundedCornerShape(12.dp)
+            )
             .clickable(onClick = onClick)
+            .padding(4.dp)
     ) {
         AsyncImage(
             model = sticker.imageFile,
             contentDescription = sticker.accessibilityText ?: "Sticker",
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(RoundedCornerShape(8.dp)),
             contentScale = ContentScale.Crop
         )
-        
+
         if (onDeleteClick != null) {
-            Surface(
+            Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(4.dp),
-                shape = RoundedCornerShape(8.dp),
-                color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
-            ) {
-                IconButton(
-                    onClick = onDeleteClick,
-                    modifier = Modifier.padding(4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete sticker",
-                        tint = MaterialTheme.colorScheme.onError
+                    .padding(2.dp)
+                    .size(28.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(ErrorRed)
+                    .border(
+                        width = 1.5.dp,
+                        color = NeubrutalBlack,
+                        shape = RoundedCornerShape(8.dp)
                     )
-                }
+                    .clickable(onClick = onDeleteClick),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete sticker",
+                    modifier = Modifier.size(16.dp),
+                    tint = NeubrutalWhite
+                )
             }
         }
     }

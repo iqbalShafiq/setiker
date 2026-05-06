@@ -7,11 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -25,9 +21,11 @@ import domain.model.Sticker
 import domain.model.StickerPack
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import presentation.components.AppTopBar
+import presentation.components.ClayFab
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
 import presentation.components.StickerPackCard
+import presentation.theme.NeubrutalBg
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,24 +44,14 @@ fun HomeScreen(
         topBar = {
             AppTopBar(
                 title = "My Stickers",
-                actions = {
-                    // Add settings or other actions here
-                }
+                actions = {}
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { onIntent(HomeIntent.CreateNewPack) },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Create new pack"
-                )
-            }
+            ClayFab(onClick = { onIntent(HomeIntent.CreateNewPack) })
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = NeubrutalBg
     ) { innerPadding ->
         when {
             state.isLoading -> {
@@ -88,7 +76,7 @@ fun HomeScreen(
                     modifier = modifier
                         .fillMaxSize()
                         .padding(innerPadding),
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding = PaddingValues(20.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {

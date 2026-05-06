@@ -1,5 +1,7 @@
 package presentation.createpack
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,8 +23,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,11 +32,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,11 +40,21 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
 import presentation.components.AppTextField
 import presentation.components.AppTopBar
+import presentation.components.ImagePickerLauncher
 import presentation.components.LoadingIndicator
+import presentation.components.rememberImagePicker
+import presentation.theme.AccentCoral
+import presentation.theme.AccentCoralLight
+import presentation.theme.ErrorRed
+import presentation.theme.NeubrutalBg
+import presentation.theme.NeubrutalBlack
+import presentation.theme.NeubrutalWhite
+import presentation.theme.neubrutalShadow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,8 +65,15 @@ fun CreatePackScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     modifier: Modifier = Modifier
 ) {
-    var showImagePicker by remember { mutableStateOf(false) }
-    var isPickingTrayIcon by remember { mutableStateOf(false) }
+    // Image picker for tray icon
+    val trayIconPicker = rememberImagePicker { path ->
+        path?.let { onIntent(CreatePackIntent.UpdateTrayImage(it)) }
+    }
+
+    // Image picker for adding stickers
+    val stickerPicker = rememberImagePicker { path ->
+        path?.let { onIntent(CreatePackIntent.AddSticker(it)) }
+    }
 
     Scaffold(
         topBar = {
@@ -69,7 +82,8 @@ fun CreatePackScreen(
                 onBackClick = onBackClick
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = NeubrutalBg
     ) { innerPadding ->
         if (state.isLoading) {
             LoadingIndicator(
@@ -82,49 +96,43 @@ fun CreatePackScreen(
                 modifier = modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .padding(16.dp)
+                    .padding(horizontal = 20.dp, vertical = 16.dp)
                     .verticalScroll(rememberScrollState())
             ) {
-                // Pack Name
                 AppTextField(
                     value = state.name,
                     onValueChange = { onIntent(CreatePackIntent.UpdateName(it)) },
                     label = "Pack Name",
                     placeholder = "Enter pack name"
                 )
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Publisher
+
+                Spacer(modifier = Modifier.height(20.dp))
+
                 AppTextField(
                     value = state.publisher,
                     onValueChange = { onIntent(CreatePackIntent.UpdatePublisher(it)) },
                     label = "Publisher",
                     placeholder = "Enter publisher name"
                 )
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Tray Icon
+
+                Spacer(modifier = Modifier.height(24.dp))
+
                 Text(
                     text = "Tray Icon",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    color = NeubrutalBlack
                 )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
+
+                Spacer(modifier = Modifier.height(10.dp))
+
                 TrayIconSelector(
                     imagePath = state.trayImagePath,
-                    onClick = {
-                        isPickingTrayIcon = true
-                        showImagePicker = true
-                    }
+                    onClick = { trayIconPicker.launch() }
                 )
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                // Stickers
+
+                Spacer(modifier = Modifier.height(28.dp))
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -133,28 +141,26 @@ fun CreatePackScreen(
                     Text(
                         text = "Stickers (${state.stickers.size})",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        color = NeubrutalBlack
                     )
-                    
+
                     IconButton(
-                        onClick = {
-                            isPickingTrayIcon = false
-                            showImagePicker = true
-                        }
+                        onClick = { stickerPicker.launch() }
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
-                            contentDescription = "Add sticker"
+                            contentDescription = "Add sticker",
+                            tint = AccentCoral
                         )
                     }
                 }
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                // Stickers Row
+
+                Spacer(modifier = Modifier.height(10.dp))
+
                 LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(vertical = 8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    contentPadding = PaddingValues(vertical = 10.dp)
                 ) {
                     itemsIndexed(state.stickers) { index, stickerPath ->
                         StickerPreviewItem(
@@ -163,17 +169,16 @@ fun CreatePackScreen(
                         )
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(32.dp))
-                
-                // Save Button
+
                 AppPrimaryButton(
                     text = if (state.isEditing) "Update Pack" else "Create Pack",
                     onClick = { onIntent(CreatePackIntent.SavePack) }
                 )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
+
+                Spacer(modifier = Modifier.height(12.dp))
+
                 AppSecondaryButton(
                     text = "Cancel",
                     onClick = onBackClick
@@ -189,39 +194,59 @@ private fun TrayIconSelector(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(
-        modifier = modifier
-            .size(96.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        if (imagePath.isNotBlank()) {
+    if (imagePath.isNotBlank()) {
+        Box(
+            modifier = modifier
+                .size(96.dp)
+                .neubrutalShadow(
+                    offsetX = 3.dp,
+                    offsetY = 3.dp,
+                    cornerRadius = 16.dp,
+                    color = NeubrutalBlack
+                )
+                .clip(RoundedCornerShape(16.dp))
+                .background(NeubrutalWhite)
+                .border(
+                    width = 2.dp,
+                    color = NeubrutalBlack,
+                    shape = RoundedCornerShape(16.dp)
+                )
+                .clickable(onClick = onClick),
+            contentAlignment = Alignment.Center
+        ) {
             AsyncImage(
                 model = imagePath,
                 contentDescription = "Tray icon",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
-        } else {
-            Card(
-                modifier = Modifier.fillMaxSize(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+        }
+    } else {
+        Box(
+            modifier = modifier
+                .size(96.dp)
+                .neubrutalShadow(
+                    offsetX = 3.dp,
+                    offsetY = 3.dp,
+                    cornerRadius = 16.dp,
+                    color = NeubrutalBlack
                 )
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Select tray icon",
-                        modifier = Modifier.size(32.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+                .clip(RoundedCornerShape(16.dp))
+                .background(AccentCoralLight)
+                .border(
+                    width = 2.dp,
+                    color = NeubrutalBlack,
+                    shape = RoundedCornerShape(16.dp)
+                )
+                .clickable(onClick = onClick),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "Select tray icon",
+                modifier = Modifier.size(32.dp),
+                tint = NeubrutalBlack
+            )
         }
     }
 }
@@ -233,28 +258,101 @@ private fun StickerPreviewItem(
     modifier: Modifier = Modifier
 ) {
     Box(
-        modifier = modifier.size(80.dp)
+        modifier = modifier.size(72.dp)
     ) {
         AsyncImage(
             model = imagePath,
             contentDescription = "Sticker preview",
             modifier = Modifier
                 .fillMaxSize()
-                .clip(RoundedCornerShape(8.dp)),
+                .neubrutalShadow(
+                    offsetX = 2.dp,
+                    offsetY = 2.dp,
+                    cornerRadius = 12.dp,
+                    color = NeubrutalBlack
+                )
+                .clip(RoundedCornerShape(12.dp))
+                .background(NeubrutalWhite)
+                .border(
+                    width = 2.dp,
+                    color = NeubrutalBlack,
+                    shape = RoundedCornerShape(12.dp)
+                )
+                .padding(2.dp),
             contentScale = ContentScale.Crop
         )
-        
-        IconButton(
-            onClick = onRemove,
+
+        Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .size(24.dp)
+                .padding(2.dp)
+                .size(22.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .background(ErrorRed)
+                .border(
+                    width = 1.5.dp,
+                    color = NeubrutalBlack,
+                    shape = RoundedCornerShape(6.dp)
+                )
+                .clickable(onClick = onRemove),
+            contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.Close,
                 contentDescription = "Remove sticker",
-                tint = MaterialTheme.colorScheme.error
+                modifier = Modifier.size(14.dp),
+                tint = NeubrutalWhite
             )
         }
+    }
+}
+
+// MARK: - Previews
+
+@Preview
+@Composable
+private fun CreatePackScreenPreview() {
+    MaterialTheme {
+        CreatePackScreen(
+            state = CreatePackState(
+                name = "My Awesome Pack",
+                publisher = "StickerFan",
+                trayImagePath = "",
+                stickers = listOf("", "", ""),
+                isEditing = false
+            ),
+            onIntent = {},
+            onBackClick = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun CreatePackScreenEditingPreview() {
+    MaterialTheme {
+        CreatePackScreen(
+            state = CreatePackState(
+                name = "Funny Cats",
+                publisher = "CatLover",
+                trayImagePath = "",
+                stickers = listOf("", ""),
+                isEditing = true
+            ),
+            onIntent = {},
+            onBackClick = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun CreatePackScreenLoadingPreview() {
+    MaterialTheme {
+        CreatePackScreen(
+            state = CreatePackState(isLoading = true),
+            onIntent = {},
+            onBackClick = {}
+        )
     }
 }

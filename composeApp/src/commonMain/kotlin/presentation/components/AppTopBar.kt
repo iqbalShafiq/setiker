@@ -13,7 +13,11 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import presentation.theme.NeubrutalBg
+import presentation.theme.NeubrutalBlack
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,7 +31,12 @@ fun AppTopBar(
         title = {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleLarge
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = androidx.compose.ui.unit.TextUnit.Unspecified
+                ),
+                fontSize = 28.sp,
+                color = NeubrutalBlack
             )
         },
         modifier = modifier,
@@ -36,17 +45,18 @@ fun AppTopBar(
                 IconButton(onClick = onBackClick) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back"
+                        contentDescription = "Back",
+                        tint = NeubrutalBlack
                     )
                 }
             }
         },
         actions = actions,
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.background,
-            titleContentColor = MaterialTheme.colorScheme.onBackground,
-            navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
-            actionIconContentColor = MaterialTheme.colorScheme.onBackground
+            containerColor = NeubrutalBg,
+            titleContentColor = NeubrutalBlack,
+            navigationIconContentColor = NeubrutalBlack,
+            actionIconContentColor = NeubrutalBlack
         )
     )
 }
