@@ -24,12 +24,18 @@ fun EditorScreenRoot(
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // Always set packId and stickerIndex when entering the screen or recomposing.
+    // This ensures both are set even when returning from crop/bg screens
+    // where the ViewModel may have been recreated.
+    LaunchedEffect(packId, stickerIndex) {
+        viewModel.onIntent(EditorIntent.SetPackId(packId, stickerIndex))
+    }
+
     LaunchedEffect(stickerIndex, packId) {
-        // Only load sticker if we're not processing a crop/bg result.
+        // Only load sticker data if we're not processing a crop/bg result.
         // This prevents the original sticker from overwriting the edited image path
         // when EditorScreenRoot re-enters composition after returning from crop/bg screens.
         if (croppedImagePath == null && removedBgImagePath == null) {
-            viewModel.onIntent(EditorIntent.SetPackId(packId))
             stickerIndex?.let { viewModel.onIntent(EditorIntent.LoadSticker(it, packId)) }
         }
     }

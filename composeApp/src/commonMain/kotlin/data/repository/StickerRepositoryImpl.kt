@@ -94,7 +94,7 @@ class StickerRepositoryImpl(
 
             // Update pack timestamp
             packDao.getById(packId)?.let { pack ->
-                packDao.insert(pack.copy(updatedAt = System.currentTimeMillis()))
+                packDao.update(pack.copy(updatedAt = System.currentTimeMillis()))
             }
         }
     }
@@ -114,7 +114,7 @@ class StickerRepositoryImpl(
 
         // Update pack timestamp
         packDao.getById(packId)?.let { pack ->
-            packDao.insert(pack.copy(updatedAt = System.currentTimeMillis()))
+            packDao.update(pack.copy(updatedAt = System.currentTimeMillis()))
         }
         }
     }

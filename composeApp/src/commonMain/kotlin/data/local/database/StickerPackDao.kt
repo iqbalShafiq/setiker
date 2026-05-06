@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import data.local.entity.StickerPackEntity
 
 @Dao
@@ -17,6 +18,9 @@ interface StickerPackDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(pack: StickerPackEntity)
+
+    @Update
+    suspend fun update(pack: StickerPackEntity)
 
     @Delete
     suspend fun delete(pack: StickerPackEntity)

@@ -8,7 +8,7 @@ sealed interface EditorIntent {
     data object SaveSticker : EditorIntent
     data object NavigateToCrop : EditorIntent
     data object NavigateToBackgroundRemover : EditorIntent
-    data class SetPackId(val packId: String) : EditorIntent
+    data class SetPackId(val packId: String, val stickerIndex: Int? = null) : EditorIntent
     data class LoadSticker(val stickerIndex: Int, val packId: String) : EditorIntent
     data object ShowEmojiPicker : EditorIntent
     data object HideEmojiPicker : EditorIntent
