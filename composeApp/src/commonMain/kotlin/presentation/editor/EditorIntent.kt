@@ -9,4 +9,7 @@ sealed interface EditorIntent {
     data object NavigateToCrop : EditorIntent
     data object NavigateToBackgroundRemover : EditorIntent
     data class LoadSticker(val stickerIndex: Int, val packId: String) : EditorIntent
+    data object ShowEmojiPicker : EditorIntent
+    data object HideEmojiPicker : EditorIntent
+    data class LoadRecentEmojis(val emojis: List<String>) : EditorIntent
 }

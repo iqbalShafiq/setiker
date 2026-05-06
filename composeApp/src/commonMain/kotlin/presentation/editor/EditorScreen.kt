@@ -50,6 +50,7 @@ import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
 import presentation.components.AppTextField
 import presentation.components.AppTopBar
+import presentation.components.EmojiPickerBottomSheet
 import presentation.components.LoadingIndicator
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -61,8 +62,6 @@ fun EditorScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     modifier: Modifier = Modifier
 ) {
-    var showEmojiPicker by remember { mutableStateOf(false) }
-
     Scaffold(
         topBar = {
             AppTopBar(
@@ -162,7 +161,7 @@ fun EditorScreen(
                     if (state.emojis.size < Sticker.MAX_EMOJIS) {
                         FilterChip(
                             selected = false,
-                            onClick = { showEmojiPicker = true },
+                            onClick = { onIntent(EditorIntent.ShowEmojiPicker) },
                             label = { Text("+ Add") }
                         )
                     }
@@ -198,13 +197,14 @@ fun EditorScreen(
         }
     }
     
-    if (showEmojiPicker) {
-        EmojiPickerDialog(
+    if (state.showEmojiPicker) {
+        EmojiPickerBottomSheet(
+            recentEmojis = state.recentEmojis,
             onEmojiSelected = { emoji ->
                 onIntent(EditorIntent.AddEmoji(emoji))
-                showEmojiPicker = false
+                onIntent(EditorIntent.HideEmojiPicker)
             },
-            onDismiss = { showEmojiPicker = false }
+            onDismiss = { onIntent(EditorIntent.HideEmojiPicker) }
         )
     }
 }
@@ -239,12 +239,4 @@ private fun EmojiChip(
     }
 }
 
-@Composable
-private fun EmojiPickerDialog(
-    onEmojiSelected: (String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    // TODO: Implement full emoji picker dialog
-    // For now, just call onDismiss
-    onDismiss()
-}
+

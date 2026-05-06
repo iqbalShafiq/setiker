@@ -2,6 +2,7 @@ package presentation.editor
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import data.util.EmojiPreferences
 import domain.model.Sticker
 import domain.repository.StickerRepository
 import kotlinx.coroutines.channels.Channel
@@ -13,7 +14,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class EditorViewModel(
-    private val repository: StickerRepository
+    private val repository: StickerRepository,
+    private val emojiPreferences: EmojiPreferences
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(EditorState())
@@ -55,19 +57,31 @@ class EditorViewModel(
                 }
             }
             is EditorIntent.LoadSticker -> loadSticker(intent.stickerIndex, intent.packId)
+            is EditorIntent.ShowEmojiPicker -> {
+                viewModelScope.launch {
+                    val recent = emojiPreferences.getRecentEmojis()
+                    _state.update { it.copy(showEmojiPicker = true, recentEmojis = recent) }
+                }
+            }
+            is EditorIntent.HideEmojiPicker -> {
+                _state.update { it.copy(showEmojiPicker = false) }
+            }
+            is EditorIntent.LoadRecentEmojis -> {
+                _state.update { it.copy(recentEmojis = intent.emojis) }
+            }
         }
     }
 
     private fun loadSticker(index: Int, packId: String) {
         this.packId = packId
         this.stickerIndex = index
-        
+
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
             try {
                 val pack = repository.getPack(packId)
                 val sticker = pack.stickers.getOrNull(index)
-                
+
                 if (sticker != null) {
                     _state.update {
                         it.copy(
@@ -87,12 +101,12 @@ class EditorViewModel(
     private fun saveSticker() {
         viewModelScope.launch {
             val currentState = _state.value
-            
+
             if (currentState.imagePath.isBlank()) {
                 _effect.send(EditorEffect.ShowError("Please select an image"))
                 return@launch
             }
-            
+
             if (currentState.emojis.isEmpty()) {
                 _effect.send(EditorEffect.ShowError("Please add at least one emoji"))
                 return@launch
@@ -104,7 +118,12 @@ class EditorViewModel(
                     emojis = currentState.emojis,
                     accessibilityText = currentState.accessibilityText.ifBlank { null }
                 )
-                
+
+                // Save recent emojis
+                currentState.emojis.forEach { emoji ->
+                    emojiPreferences.addRecentEmoji(emoji)
+                }
+
                 repository.addStickerToPack(packId, sticker)
                 _effect.send(EditorEffect.StickerSaved)
             } catch (e: Exception) {
