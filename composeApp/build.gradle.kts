@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.ksp)
 }
 
 kotlin {
@@ -43,6 +44,8 @@ kotlin {
             implementation(libs.koin.compose)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.room.runtime)
+            implementation("androidx.sqlite:sqlite-bundled:2.5.0")
         }
         
         androidMain.dependencies {
@@ -55,6 +58,10 @@ kotlin {
             implementation(kotlin("test"))
         }
     }
+}
+
+dependencies {
+    add("kspAndroid", libs.room.compiler)
 }
 
 android {
