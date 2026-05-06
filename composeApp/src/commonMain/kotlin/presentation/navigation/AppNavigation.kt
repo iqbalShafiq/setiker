@@ -93,10 +93,10 @@ fun AppNavigation(
                     packId = packId,
                     onBackClick = { navController.popBackStack() },
                     onNavigateToCrop = { imagePath ->
-                        navController.navigate("crop/$imagePath")
+                        navController.navigate("crop/${PathEncoder.encode(imagePath)}")
                     },
                     onNavigateToBackgroundRemover = { imagePath ->
-                        navController.navigate("bgRemover/$imagePath")
+                        navController.navigate("bgRemover/${PathEncoder.encode(imagePath)}")
                     },
                     onStickerSaved = { navController.popBackStack() }
                 )
@@ -106,7 +106,8 @@ fun AppNavigation(
                 route = "crop/{imagePath}",
                 arguments = listOf(navArgument("imagePath") { type = NavType.StringType })
             ) { backStackEntry ->
-                val imagePath = backStackEntry.arguments?.getString("imagePath") ?: return@composable
+                val encodedPath = backStackEntry.arguments?.getString("imagePath") ?: return@composable
+                val imagePath = PathEncoder.decode(encodedPath)
                 CropScreenRoot(
                     imagePath = imagePath,
                     onBackClick = { navController.popBackStack() },
@@ -123,7 +124,8 @@ fun AppNavigation(
                 route = "bgRemover/{imagePath}",
                 arguments = listOf(navArgument("imagePath") { type = NavType.StringType })
             ) { backStackEntry ->
-                val imagePath = backStackEntry.arguments?.getString("imagePath") ?: return@composable
+                val encodedPath = backStackEntry.arguments?.getString("imagePath") ?: return@composable
+                val imagePath = PathEncoder.decode(encodedPath)
                 BackgroundRemoverScreenRoot(
                     imagePath = imagePath,
                     onBackClick = { navController.popBackStack() },
