@@ -2,6 +2,7 @@ package presentation.crop
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import data.util.applyCropTransformation
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -60,12 +61,19 @@ class CropViewModel : ViewModel() {
     private fun applyCrop() {
         viewModelScope.launch {
             _state.update { it.copy(isProcessing = true) }
-            
+
             try {
-                // TODO: Implement actual crop logic using platform-specific image processing
                 val currentState = _state.value
-                val croppedPath = currentState.imagePath // Placeholder
-                
+                val croppedPath = applyCropTransformation(
+                    sourcePath = currentState.imagePath,
+                    scale = currentState.scale,
+                    rotation = currentState.rotation,
+                    offsetX = currentState.offsetX,
+                    offsetY = currentState.offsetY,
+                    flipHorizontal = currentState.isFlippedHorizontal,
+                    flipVertical = currentState.isFlippedVertical
+                )
+
                 _state.update { it.copy(isProcessing = false, croppedImagePath = croppedPath) }
                 _effect.send(CropEffect.ImageCropped(croppedPath))
             } catch (e: Exception) {
