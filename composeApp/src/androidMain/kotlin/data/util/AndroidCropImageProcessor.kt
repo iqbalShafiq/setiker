@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.Paint
+import android.os.Build
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -53,7 +54,13 @@ actual suspend fun applyCropTransformation(
     } ?: File("cropped_${System.currentTimeMillis()}.webp")
 
     FileOutputStream(outputFile).use { out ->
-        outputBitmap.compress(Bitmap.CompressFormat.WEBP_LOSSY, 90, out)
+        val format = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Bitmap.CompressFormat.WEBP_LOSSY
+        } else {
+            @Suppress("DEPRECATION")
+            Bitmap.CompressFormat.WEBP
+        }
+        outputBitmap.compress(format, 90, out)
     }
 
     // Cleanup

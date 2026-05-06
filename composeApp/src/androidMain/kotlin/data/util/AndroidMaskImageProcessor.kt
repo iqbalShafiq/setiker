@@ -6,6 +6,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
+import android.os.Build
 import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -65,7 +66,13 @@ actual suspend fun applyMaskToImage(
     } ?: File("masked_${System.currentTimeMillis()}.webp")
 
     FileOutputStream(outputFile).use { out ->
-        resultBitmap.compress(Bitmap.CompressFormat.WEBP_LOSSY, 90, out)
+        val format = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Bitmap.CompressFormat.WEBP_LOSSY
+        } else {
+            @Suppress("DEPRECATION")
+            Bitmap.CompressFormat.WEBP
+        }
+        resultBitmap.compress(format, 90, out)
     }
 
     sourceBitmap.recycle()

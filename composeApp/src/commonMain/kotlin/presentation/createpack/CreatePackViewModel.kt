@@ -2,6 +2,7 @@ package presentation.createpack
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import data.storage.StickerFileStorage
 import domain.model.Sticker
 import domain.model.StickerPack
 import domain.repository.StickerRepository
@@ -15,7 +16,8 @@ import kotlinx.coroutines.launch
 import kotlin.random.Random
 
 class CreatePackViewModel(
-    private val repository: StickerRepository
+    private val repository: StickerRepository,
+    private val fileStorage: StickerFileStorage
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CreatePackState())
@@ -101,12 +103,23 @@ class CreatePackViewModel(
                     "${currentState.name.lowercase().replace(" ", "_")}_${Random.nextInt(1000, 9999)}"
                 }
                 
+                // Save tray image to stickers directory (96x96, PNG, <50KB)
+                val trayFileName = "tray_${identifier}.png"
+                val trayPath = fileStorage.saveTrayImage(currentState.trayImagePath, trayFileName)
+                
+                // Save stickers to stickers directory (512x512, WebP, <100KB)
+                val stickers = currentState.stickers.mapIndexed { index, imagePath ->
+                    val stickerFileName = "sticker_${identifier}_${index}.webp"
+                    val stickerPath = fileStorage.saveStickerImage(imagePath, stickerFileName)
+                    Sticker(stickerPath)
+                }
+                
                 val pack = StickerPack(
                     identifier = identifier,
                     name = currentState.name,
                     publisher = currentState.publisher,
-                    trayImageFile = currentState.trayImagePath,
-                    stickers = currentState.stickers.map { Sticker(it) }
+                    trayImageFile = trayPath,
+                    stickers = stickers
                 )
                 
                 repository.savePack(pack)

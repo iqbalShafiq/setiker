@@ -5,6 +5,8 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import data.local.database.StickerDatabase
 import data.storage.StickerFileStorage
 import data.util.EmojiPreferences
+import domain.actions.IosPackActions
+import domain.actions.PackActions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import org.koin.core.module.Module
@@ -33,4 +35,5 @@ actual fun platformModule(): Module = module {
     single { get<StickerDatabase>().stickerDao() }
     single<StickerFileStorage> { StickerFileStorage() }
     single<EmojiPreferences> { EmojiPreferences() }
+    single<PackActions> { IosPackActions() }
 }

@@ -5,8 +5,10 @@ import presentation.navigation.AppNavigation
 import presentation.theme.SetikerTheme
 
 @Composable
-fun App() {
+fun App(
+    onAddToWhatsApp: ((String, String) -> Unit)? = null
+) {
     SetikerTheme {
-        AppNavigation()
+        AppNavigation(onAddToWhatsApp = onAddToWhatsApp)
     }
 }

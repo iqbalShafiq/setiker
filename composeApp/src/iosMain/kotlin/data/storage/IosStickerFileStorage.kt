@@ -60,6 +60,24 @@ actual class StickerFileStorage {
 
     actual suspend fun imageExists(fileName: String): Boolean =
         NSFileManager.defaultManager.fileExistsAtPath("$stickersDir/$fileName")
+
+    actual suspend fun convertToWebP(sourcePath: String, outputFileName: String): String =
+        withContext(Dispatchers.IO) {
+            // iOS: For now, just copy the file. iOS WebP conversion would require platform-specific implementation
+            saveImage(sourcePath, outputFileName)
+        }
+
+    actual suspend fun saveTrayImage(sourcePath: String, fileName: String): String =
+        withContext(Dispatchers.IO) {
+            // iOS: For now, just copy the file
+            saveImage(sourcePath, fileName)
+        }
+
+    actual suspend fun saveStickerImage(sourcePath: String, fileName: String): String =
+        withContext(Dispatchers.IO) {
+            // iOS: For now, just copy the file
+            saveImage(sourcePath, fileName)
+        }
 }
 
 @kotlinx.cinterop.ExperimentalForeignApi

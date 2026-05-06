@@ -15,6 +15,7 @@ fun PackDetailScreenRoot(
     onEditPack: (String) -> Unit,
     onAddSticker: (String) -> Unit,
     onEditSticker: (Int, String) -> Unit,
+    onAddToWhatsApp: ((String, String) -> Unit)? = null,
     viewModel: PackDetailViewModel = koinInject()
 ) {
     val state by viewModel.state.collectAsState()
@@ -37,8 +38,8 @@ fun PackDetailScreenRoot(
                 is PackDetailEffect.ShowSuccess -> {
                     snackbarHostState.showSnackbar(effect.message)
                 }
-                is PackDetailEffect.ShowShareSheet -> {
-                    snackbarHostState.showSnackbar("Sharing pack: $packId")
+                is PackDetailEffect.LaunchAddToWhatsApp -> {
+                    onAddToWhatsApp?.invoke(effect.packId, effect.packName)
                 }
             }
         }

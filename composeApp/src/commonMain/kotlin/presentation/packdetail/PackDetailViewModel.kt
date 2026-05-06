@@ -2,6 +2,7 @@ package presentation.packdetail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import domain.actions.PackActions
 import domain.model.StickerPack
 import domain.repository.StickerRepository
 import kotlinx.coroutines.channels.Channel
@@ -13,7 +14,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class PackDetailViewModel(
-    private val repository: StickerRepository
+    private val repository: StickerRepository,
+    private val packActions: PackActions
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(PackDetailState())
@@ -43,11 +45,7 @@ class PackDetailViewModel(
                     _effect.send(PackDetailEffect.NavigateToEditSticker(intent.index))
                 }
             }
-            is PackDetailIntent.SharePack -> {
-                viewModelScope.launch {
-                    _effect.send(PackDetailEffect.ShowShareSheet(intent.packId))
-                }
-            }
+            is PackDetailIntent.SharePack -> sharePack(intent.packId)
         }
     }
 
@@ -75,9 +73,20 @@ class PackDetailViewModel(
                     )
                     return@launch
                 }
-                _effect.send(PackDetailEffect.ShowSuccess("Pack added to WhatsApp"))
+                _effect.send(PackDetailEffect.LaunchAddToWhatsApp(packId, pack.name))
             } catch (e: Exception) {
                 _effect.send(PackDetailEffect.ShowError(e.message ?: "Failed to add pack"))
+            }
+        }
+    }
+
+    private fun sharePack(packId: String) {
+        viewModelScope.launch {
+            try {
+                packActions.sharePack(packId)
+                _effect.send(PackDetailEffect.ShowSuccess("Pack shared successfully"))
+            } catch (e: Exception) {
+                _effect.send(PackDetailEffect.ShowError(e.message ?: "Failed to share pack"))
             }
         }
     }

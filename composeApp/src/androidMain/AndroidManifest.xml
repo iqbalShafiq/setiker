@@ -58,16 +58,6 @@
             android:exported="true"
             android:readPermission="com.whatsapp.sticker.READ" />
 
-        <!-- WhatsApp Intent Filter -->
-        <activity-alias
-            android:name=".StickerPackLauncher"
-            android:targetActivity=".MainActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="image/webp" />
-            </intent-filter>
-        </activity-alias>
+
     </application>
 </manifest>

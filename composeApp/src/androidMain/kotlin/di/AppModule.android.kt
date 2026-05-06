@@ -5,6 +5,8 @@ import androidx.room.Room
 import data.local.database.StickerDatabase
 import data.storage.StickerFileStorage
 import data.util.EmojiPreferences
+import domain.actions.AndroidPackActions
+import domain.actions.PackActions
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.Module
 import org.koin.dsl.module
@@ -22,4 +24,5 @@ actual fun platformModule(): Module = module {
     single { get<StickerDatabase>().stickerDao() }
     single<StickerFileStorage> { StickerFileStorage(androidContext()) }
     single<EmojiPreferences> { EmojiPreferences(androidContext()) }
+    single<PackActions> { AndroidPackActions(androidContext(), get(), get()) }
 }

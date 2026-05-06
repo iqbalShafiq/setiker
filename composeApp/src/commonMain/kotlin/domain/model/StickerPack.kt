@@ -13,6 +13,7 @@ data class StickerPack(
     val isAnimated: Boolean = false,
     val iosAppStoreLink: String? = null,
     val androidPlayStoreLink: String? = null,
+    val publisherEmail: String? = null,
     val publisherWebsite: String? = null,
     val privacyPolicyWebsite: String? = null,
     val licenseAgreementWebsite: String? = null

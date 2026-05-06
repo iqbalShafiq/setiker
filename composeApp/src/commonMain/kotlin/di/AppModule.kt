@@ -25,8 +25,19 @@ val appModule = module {
     // ViewModels
     factoryOf(::HomeViewModel)
     factoryOf(::PackDetailViewModel)
-    factoryOf(::CreatePackViewModel)
-    factoryOf(::EditorViewModel)
+    factory { params ->
+        CreatePackViewModel(
+            repository = get(),
+            fileStorage = get()
+        )
+    }
+    factory { params ->
+        EditorViewModel(
+            repository = get(),
+            emojiPreferences = get(),
+            fileStorage = get()
+        )
+    }
     factoryOf(::CropViewModel)
     factoryOf(::BackgroundRemoverViewModel)
 }

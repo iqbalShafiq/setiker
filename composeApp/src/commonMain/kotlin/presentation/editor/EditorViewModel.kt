@@ -2,6 +2,7 @@ package presentation.editor
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import data.storage.StickerFileStorage
 import data.util.EmojiPreferences
 import domain.model.Sticker
 import domain.repository.StickerRepository
@@ -15,7 +16,8 @@ import kotlinx.coroutines.launch
 
 class EditorViewModel(
     private val repository: StickerRepository,
-    private val emojiPreferences: EmojiPreferences
+    private val emojiPreferences: EmojiPreferences,
+    private val fileStorage: StickerFileStorage
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(EditorState())
@@ -113,8 +115,12 @@ class EditorViewModel(
             }
 
             try {
+                // Save image to stickers directory (512x512, WebP, <100KB)
+                val fileName = "sticker_${packId}_${System.currentTimeMillis()}.webp"
+                val savedPath = fileStorage.saveStickerImage(currentState.imagePath, fileName)
+                
                 val sticker = Sticker(
-                    imageFile = currentState.imagePath,
+                    imageFile = savedPath,
                     emojis = currentState.emojis,
                     accessibilityText = currentState.accessibilityText.ifBlank { null }
                 )

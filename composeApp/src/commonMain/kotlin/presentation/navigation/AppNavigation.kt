@@ -16,7 +16,8 @@ import presentation.backgroundremover.BackgroundRemoverScreenRoot
 
 @Composable
 fun AppNavigation(
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController(),
+    onAddToWhatsApp: ((String, String) -> Unit)? = null
 ) {
     NavHost(
         navController = navController,
@@ -45,7 +46,8 @@ fun AppNavigation(
                 onAddSticker = { navController.navigate("editor?packId=$it") },
                 onEditSticker = { index, packId ->
                     navController.navigate("editor?packId=$packId&stickerIndex=$index")
-                }
+                },
+                onAddToWhatsApp = onAddToWhatsApp
             )
         }
         
