@@ -9,6 +9,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
 fun AppTextField(
@@ -42,4 +43,33 @@ fun AppTextField(
             focusedLabelColor = MaterialTheme.colorScheme.primary
         )
     )
+}
+
+// MARK: - Previews
+
+@Preview
+@Composable
+private fun AppTextFieldPreview() {
+    MaterialTheme {
+        AppTextField(
+            value = "My Sticker Pack",
+            onValueChange = {},
+            label = "Pack Name",
+            placeholder = "Enter pack name"
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun AppTextFieldErrorPreview() {
+    MaterialTheme {
+        AppTextField(
+            value = "",
+            onValueChange = {},
+            label = "Pack Name",
+            placeholder = "Enter pack name",
+            isError = true
+        )
+    }
 }

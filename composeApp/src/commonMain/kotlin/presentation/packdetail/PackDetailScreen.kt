@@ -40,7 +40,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import domain.model.Sticker
 import domain.model.StickerPack
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import presentation.components.AppDialog
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
@@ -264,5 +266,50 @@ private fun PackDetailContent(
                 }
             }
         }
+    }
+}
+
+// MARK: - Previews
+
+private val mockPack = StickerPack(
+    identifier = "pack_preview",
+    name = "Funny Cats",
+    publisher = "CatLover",
+    trayImageFile = "",
+    stickers = listOf(
+        Sticker(imageFile = "", emojis = listOf("😂", "🐱")),
+        Sticker(imageFile = "", emojis = listOf("😻")),
+        Sticker(imageFile = "", emojis = listOf("🙀", "❤️")),
+        Sticker(imageFile = "", emojis = listOf("😹"))
+    )
+)
+
+@Preview
+@Composable
+private fun PackDetailScreenLoadingPreview() {
+    MaterialTheme {
+        PackDetailScreen(
+            state = PackDetailState(isLoading = true),
+            onIntent = {},
+            onBackClick = {},
+            onEditPack = {},
+            onAddSticker = {},
+            onEditSticker = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun PackDetailScreenPreview() {
+    MaterialTheme {
+        PackDetailScreen(
+            state = PackDetailState(pack = mockPack),
+            onIntent = {},
+            onBackClick = {},
+            onEditPack = {},
+            onAddSticker = {},
+            onEditSticker = {}
+        )
     }
 }

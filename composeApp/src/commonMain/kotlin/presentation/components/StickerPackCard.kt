@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import domain.model.StickerPack
+import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
 fun StickerPackCard(
@@ -67,5 +68,26 @@ fun StickerPackCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+// MARK: - Preview
+
+@Preview
+@Composable
+private fun StickerPackCardPreview() {
+    val mockPack = StickerPack(
+        identifier = "pack_preview",
+        name = "Funny Cats",
+        publisher = "CatLover",
+        trayImageFile = "",
+        stickers = listOf(
+            domain.model.Sticker(imageFile = ""),
+            domain.model.Sticker(imageFile = ""),
+            domain.model.Sticker(imageFile = "")
+        )
+    )
+    MaterialTheme {
+        StickerPackCard(pack = mockPack, onClick = {})
     }
 }

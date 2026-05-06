@@ -27,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.ui.tooling.preview.Preview
 
 private val EMOJI_CATEGORIES = listOf(
     "Recent" to emptyList<String>(),
@@ -119,5 +120,33 @@ fun EmojiPickerBottomSheet(
                 }
             }
         }
+    }
+}
+
+// MARK: - Previews
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview
+@Composable
+private fun EmojiPickerBottomSheetPreview() {
+    MaterialTheme {
+        EmojiPickerBottomSheet(
+            recentEmojis = listOf("😂", "🐱", "❤️", "🔥", "👍"),
+            onEmojiSelected = {},
+            onDismiss = {}
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview
+@Composable
+private fun EmojiPickerBottomSheetEmptyRecentPreview() {
+    MaterialTheme {
+        EmojiPickerBottomSheet(
+            recentEmojis = emptyList(),
+            onEmojiSelected = {},
+            onDismiss = {}
+        )
     }
 }

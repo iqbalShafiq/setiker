@@ -21,6 +21,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import domain.model.Sticker
+import domain.model.StickerPack
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import presentation.components.AppTopBar
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
@@ -101,5 +104,67 @@ fun HomeScreen(
                 }
             }
         }
+    }
+}
+
+// MARK: - Previews
+
+private val mockPacks = listOf(
+    StickerPack(
+        identifier = "pack_1",
+        name = "Funny Cats",
+        publisher = "CatLover",
+        trayImageFile = "",
+        stickers = listOf(Sticker(imageFile = ""), Sticker(imageFile = ""), Sticker(imageFile = ""))
+    ),
+    StickerPack(
+        identifier = "pack_2",
+        name = "Dogs",
+        publisher = "DogLover",
+        trayImageFile = "",
+        stickers = listOf(Sticker(imageFile = ""))
+    ),
+    StickerPack(
+        identifier = "pack_3",
+        name = "Reactions",
+        publisher = "MemeMaster",
+        trayImageFile = "",
+        stickers = listOf(Sticker(imageFile = ""), Sticker(imageFile = ""))
+    )
+)
+
+@Preview
+@Composable
+private fun HomeScreenLoadingPreview() {
+    MaterialTheme {
+        HomeScreen(
+            state = HomeState(isLoading = true),
+            onIntent = {},
+            onPackClick = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun HomeScreenEmptyPreview() {
+    MaterialTheme {
+        HomeScreen(
+            state = HomeState(),
+            onIntent = {},
+            onPackClick = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun HomeScreenWithPacksPreview() {
+    MaterialTheme {
+        HomeScreen(
+            state = HomeState(packs = mockPacks),
+            onIntent = {},
+            onPackClick = {}
+        )
     }
 }

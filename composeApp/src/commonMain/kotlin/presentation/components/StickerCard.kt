@@ -20,6 +20,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import domain.model.Sticker
+import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
 fun StickerCard(
@@ -61,5 +62,33 @@ fun StickerCard(
                 }
             }
         }
+    }
+}
+
+// MARK: - Previews
+
+@Preview
+@Composable
+private fun StickerCardPreview() {
+    val mockSticker = Sticker(
+        imageFile = "",
+        emojis = listOf("😂", "🐱"),
+        accessibilityText = "Laughing cat"
+    )
+    MaterialTheme {
+        StickerCard(
+            sticker = mockSticker,
+            onClick = {},
+            onDeleteClick = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun StickerCardWithoutDeletePreview() {
+    val mockSticker = Sticker(imageFile = "", emojis = listOf("😂"))
+    MaterialTheme {
+        StickerCard(sticker = mockSticker, onClick = {})
     }
 }

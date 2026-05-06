@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
 fun EmptyState(
@@ -61,5 +62,30 @@ fun EmptyState(
             Spacer(modifier = Modifier.height(24.dp))
             action()
         }
+    }
+}
+
+// MARK: - Previews
+
+@Preview
+@Composable
+private fun EmptyStatePreview() {
+    MaterialTheme {
+        EmptyState(
+            title = "No Stickers Yet",
+            description = "Create your first sticker pack to get started"
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun EmptyStateWithActionPreview() {
+    MaterialTheme {
+        EmptyState(
+            title = "No Stickers Yet",
+            description = "Create your first sticker pack to get started",
+            action = { AppPrimaryButton(text = "Create Pack", onClick = {}) }
+        )
     }
 }

@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
 fun AppDialog(
@@ -82,5 +83,21 @@ fun AppDialog(
                 }
             }
         }
+    }
+}
+
+// MARK: - Previews
+
+@Preview
+@Composable
+private fun AppDialogPreview() {
+    MaterialTheme {
+        AppDialog(
+            title = "Delete Pack",
+            message = "Are you sure you want to delete this pack? This action cannot be undone.",
+            confirmText = "Delete",
+            onConfirm = {},
+            onDismiss = {}
+        )
     }
 }
