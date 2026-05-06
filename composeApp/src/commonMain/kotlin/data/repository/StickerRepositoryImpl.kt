@@ -79,21 +79,23 @@ class StickerRepositoryImpl(
     }
 
     @OptIn(ExperimentalUuidApi::class)
-    override suspend fun addStickerToPack(packId: String, sticker: Sticker) = withContext(Dispatchers.IO) {
-        val count = stickerDao.getCountByPackId(packId)
-        val entity = StickerEntity(
-            id = Uuid.random().toString(),
-            packId = packId,
-            imageFile = sticker.imageFile,
-            emojis = Json.encodeToString(sticker.emojis),
-            accessibilityText = sticker.accessibilityText,
-            sortOrder = count
-        )
-        stickerDao.insert(entity)
+    override suspend fun addStickerToPack(packId: String, sticker: Sticker) {
+        withContext(Dispatchers.IO) {
+            val count = stickerDao.getCountByPackId(packId)
+            val entity = StickerEntity(
+                id = Uuid.random().toString(),
+                packId = packId,
+                imageFile = sticker.imageFile,
+                emojis = Json.encodeToString(sticker.emojis),
+                accessibilityText = sticker.accessibilityText,
+                sortOrder = count
+            )
+            stickerDao.insert(entity)
 
-        // Update pack timestamp
-        packDao.getById(packId)?.let { pack ->
-            packDao.insert(pack.copy(updatedAt = System.currentTimeMillis()))
+            // Update pack timestamp
+            packDao.getById(packId)?.let { pack ->
+                packDao.insert(pack.copy(updatedAt = System.currentTimeMillis()))
+            }
         }
     }
 
