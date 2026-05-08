@@ -11,6 +11,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import presentation.common.UiText
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.error_failed_add_pack
+import setiker.composeapp.generated.resources.error_failed_delete_pack
+import setiker.composeapp.generated.resources.error_pack_min_stickers_whatsapp
+import setiker.composeapp.generated.resources.success_pack_added_whatsapp
 
 class HomeViewModel(
     private val repository: StickerRepository
@@ -53,7 +59,12 @@ class HomeViewModel(
                 repository.deletePack(packId)
                 loadPacks()
             } catch (e: Exception) {
-                _effect.send(HomeEffect.ShowError(e.message ?: "Failed to delete pack"))
+                _effect.send(
+                    HomeEffect.ShowError(
+                        e.message?.let(UiText::DynamicString)
+                            ?: UiText.StringRes(Res.string.error_failed_delete_pack)
+                    )
+                )
             }
         }
     }
@@ -65,14 +76,22 @@ class HomeViewModel(
                 if (pack.stickers.size < StickerPack.MIN_STICKERS) {
                     _effect.send(
                         HomeEffect.ShowError(
-                            "Pack must have at least ${StickerPack.MIN_STICKERS} stickers"
+                            UiText.StringRes(
+                                Res.string.error_pack_min_stickers_whatsapp,
+                                listOf(StickerPack.MIN_STICKERS)
+                            )
                         )
                     )
                     return@launch
                 }
-                _effect.send(HomeEffect.ShowSuccess("Pack added to WhatsApp"))
+                _effect.send(HomeEffect.ShowSuccess(UiText.StringRes(Res.string.success_pack_added_whatsapp)))
             } catch (e: Exception) {
-                _effect.send(HomeEffect.ShowError(e.message ?: "Failed to add pack"))
+                _effect.send(
+                    HomeEffect.ShowError(
+                        e.message?.let(UiText::DynamicString)
+                            ?: UiText.StringRes(Res.string.error_failed_add_pack)
+                    )
+                )
             }
         }
     }

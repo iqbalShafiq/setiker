@@ -21,11 +21,15 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import domain.model.Sticker
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
+import org.jetbrains.compose.resources.stringResource
 import presentation.theme.ErrorRed
 import presentation.theme.NeubrutalBlack
 import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalShadow
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.delete_sticker
+import setiker.composeapp.generated.resources.sticker_fallback
 
 @Composable
 fun StickerCard(
@@ -55,7 +59,7 @@ fun StickerCard(
     ) {
         AsyncImage(
             model = sticker.imageFile,
-            contentDescription = sticker.accessibilityText ?: "Sticker",
+            contentDescription = sticker.accessibilityText ?: stringResource(Res.string.sticker_fallback),
             modifier = Modifier
                 .fillMaxSize()
                 .clip(RoundedCornerShape(8.dp)),
@@ -80,7 +84,7 @@ fun StickerCard(
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete sticker",
+                    contentDescription = stringResource(Res.string.delete_sticker),
                     modifier = Modifier.size(16.dp),
                     tint = NeubrutalWhite
                 )

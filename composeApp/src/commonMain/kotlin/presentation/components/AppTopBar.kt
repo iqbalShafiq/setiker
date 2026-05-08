@@ -15,7 +15,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
+import org.jetbrains.compose.resources.stringResource
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.back_content_description
+import setiker.composeapp.generated.resources.my_stickers_title
+import setiker.composeapp.generated.resources.pack_details_title
+import setiker.composeapp.generated.resources.settings
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppTopBar(
@@ -42,7 +48,7 @@ fun AppTopBar(
                 IconButton(onClick = onBackClick) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(Res.string.back_content_description),
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
@@ -64,7 +70,7 @@ fun AppTopBar(
 @Composable
 private fun AppTopBarPreview() {
     MaterialTheme {
-        AppTopBar(title = "My Stickers")
+        AppTopBar(title = stringResource(Res.string.my_stickers_title))
     }
 }
 
@@ -72,7 +78,7 @@ private fun AppTopBarPreview() {
 @Composable
 private fun AppTopBarWithBackPreview() {
     MaterialTheme {
-        AppTopBar(title = "Pack Details", onBackClick = {})
+        AppTopBar(title = stringResource(Res.string.pack_details_title), onBackClick = {})
     }
 }
 
@@ -82,11 +88,11 @@ private fun AppTopBarWithBackPreview() {
 private fun AppTopBarWithActionsPreview() {
     MaterialTheme {
         AppTopBar(
-            title = "Settings",
+            title = stringResource(Res.string.settings),
             onBackClick = {},
             actions = {
                 IconButton(onClick = {}) {
-                    Icon(imageVector = Icons.Default.Settings, contentDescription = "Settings")
+                    Icon(imageVector = Icons.Default.Settings, contentDescription = null)
                 }
             }
         )

@@ -1,5 +1,7 @@
 package data.storage
 
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.usePinned
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import platform.Foundation.NSData
@@ -33,6 +35,15 @@ actual class StickerFileStorage {
             val destPath = "$stickersDir/$fileName"
             val sourceData = NSData.dataWithContentsOfFile(sourcePath)
             sourceData?.writeToFile(destPath, atomically = true)
+            destPath
+        }
+
+    actual suspend fun saveBytes(bytes: ByteArray, fileName: String): String =
+        withContext(Dispatchers.IO) {
+            val destPath = "$stickersDir/$fileName"
+            bytes.usePinned { pinned ->
+                NSData.create(bytes = pinned.addressOf(0), length = bytes.size.toULong())
+            }?.writeToFile(destPath, atomically = true)
             destPath
         }
 

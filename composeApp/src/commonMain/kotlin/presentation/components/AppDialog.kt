@@ -17,11 +17,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
+import org.jetbrains.compose.resources.stringResource
 import presentation.theme.NeubrutalBlack
 import presentation.theme.NeubrutalGray
 import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalShadow
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.cancel
+import setiker.composeapp.generated.resources.delete
+import setiker.composeapp.generated.resources.delete_pack_dialog_message
+import setiker.composeapp.generated.resources.delete_pack_dialog_title
 
 @Composable
 fun AppDialog(
@@ -31,9 +37,10 @@ fun AppDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
-    dismissText: String = "Cancel",
+    dismissText: String? = null,
     isDanger: Boolean = true
 ) {
+    val resolvedDismissText = dismissText ?: stringResource(Res.string.cancel)
     Dialog(onDismissRequest = onDismiss) {
         Column(
             modifier = modifier
@@ -80,7 +87,7 @@ fun AppDialog(
             Spacer(modifier = Modifier.height(10.dp))
 
             AppSecondaryButton(
-                text = dismissText,
+                text = resolvedDismissText,
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -95,9 +102,9 @@ fun AppDialog(
 private fun AppDialogPreview() {
     MaterialTheme {
         AppDialog(
-            title = "Delete Pack",
-            message = "Are you sure you want to delete this pack? This action cannot be undone.",
-            confirmText = "Delete",
+            title = stringResource(Res.string.delete_pack_dialog_title),
+            message = stringResource(Res.string.delete_pack_dialog_message, "Sample Pack"),
+            confirmText = stringResource(Res.string.delete),
             onConfirm = {},
             onDismiss = {}
         )

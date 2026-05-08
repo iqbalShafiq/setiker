@@ -22,10 +22,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.stringResource
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalBlack
 import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalShadow
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.create_new_pack
 
 @Composable
 fun ClayFab(
@@ -69,7 +72,7 @@ fun ClayFab(
     ) {
         Icon(
             imageVector = Icons.Default.Add,
-            contentDescription = "Create new pack",
+            contentDescription = stringResource(Res.string.create_new_pack),
             tint = NeubrutalWhite,
             modifier = Modifier.size(28.dp)
         )

@@ -12,20 +12,29 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import domain.model.Sticker
 import domain.model.StickerPack
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
+import org.jetbrains.compose.resources.stringResource
 import presentation.components.AppTopBar
 import presentation.components.ClayFab
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
 import presentation.components.StickerPackCard
+import presentation.theme.NeubrutalBlack
 import presentation.theme.NeubrutalBg
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.home_hint
+import setiker.composeapp.generated.resources.my_stickers_title
+import setiker.composeapp.generated.resources.no_stickers_yet_desc
+import setiker.composeapp.generated.resources.no_stickers_yet_title
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,7 +52,7 @@ fun HomeScreen(
     Scaffold(
         topBar = {
             AppTopBar(
-                title = "My Stickers",
+                title = stringResource(Res.string.my_stickers_title),
                 actions = {}
             )
         },
@@ -63,31 +72,42 @@ fun HomeScreen(
             }
             state.packs.isEmpty() -> {
                 EmptyState(
-                    title = "No Stickers Yet",
-                    description = "Create your first sticker pack to get started",
+                    title = stringResource(Res.string.no_stickers_yet_title),
+                    description = stringResource(Res.string.no_stickers_yet_desc),
                     modifier = modifier
                         .fillMaxSize()
                         .padding(innerPadding)
                 )
             }
             else -> {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
+                androidx.compose.foundation.layout.Column(
                     modifier = modifier
                         .fillMaxSize()
-                        .padding(innerPadding),
-                    contentPadding = PaddingValues(20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                        .padding(innerPadding)
                 ) {
-                    items(
-                        items = state.packs,
-                        key = { it.identifier }
-                    ) { pack ->
-                        StickerPackCard(
-                            pack = pack,
-                            onClick = { onPackClick(pack.identifier) }
-                        )
+                    Text(
+                        text = stringResource(Res.string.home_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = NeubrutalBlack.copy(alpha = 0.72f),
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
+                    )
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(
+                            items = state.packs,
+                            key = { it.identifier }
+                        ) { pack ->
+                            StickerPackCard(
+                                pack = pack,
+                                onClick = { onPackClick(pack.identifier) }
+                            )
+                        }
                     }
                 }
             }

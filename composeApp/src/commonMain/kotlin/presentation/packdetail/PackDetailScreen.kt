@@ -42,7 +42,8 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import domain.model.Sticker
 import domain.model.StickerPack
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
+import org.jetbrains.compose.resources.stringResource
 import presentation.components.AppDialog
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
@@ -57,6 +58,24 @@ import presentation.theme.NeubrutalBlack
 import presentation.theme.NeubrutalGray
 import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalShadow
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.add_to_whatsapp
+import setiker.composeapp.generated.resources.delete
+import setiker.composeapp.generated.resources.delete_pack
+import setiker.composeapp.generated.resources.delete_pack_dialog_message
+import setiker.composeapp.generated.resources.delete_pack_dialog_title
+import setiker.composeapp.generated.resources.delete_sticker_dialog_message
+import setiker.composeapp.generated.resources.delete_sticker_dialog_title
+import setiker.composeapp.generated.resources.edit_pack
+import setiker.composeapp.generated.resources.no_stickers_desc
+import setiker.composeapp.generated.resources.no_stickers_title
+import setiker.composeapp.generated.resources.pack_details_title
+import setiker.composeapp.generated.resources.pack_not_found_desc
+import setiker.composeapp.generated.resources.pack_not_found_title
+import setiker.composeapp.generated.resources.pack_stickers_hint
+import setiker.composeapp.generated.resources.share_pack
+import setiker.composeapp.generated.resources.stickers_title
+import setiker.composeapp.generated.resources.stickers_with_count
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,19 +101,19 @@ fun PackDetailScreen(
     Scaffold(
         topBar = {
             AppTopBar(
-                title = state.pack?.name ?: "Pack Details",
+                title = state.pack?.name ?: stringResource(Res.string.pack_details_title),
                 onBackClick = onBackClick,
                 actions = {
                     IconButton(onClick = { showDeleteDialog = true }) {
                         Icon(
                             imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete pack"
+                            contentDescription = stringResource(Res.string.delete_pack)
                         )
                     }
                     IconButton(onClick = onEditPack) {
                         Icon(
                             imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit pack"
+                            contentDescription = stringResource(Res.string.edit_pack)
                         )
                     }
                 }
@@ -116,8 +135,8 @@ fun PackDetailScreen(
             }
             state.pack == null -> {
                 EmptyState(
-                    title = "Pack Not Found",
-                    description = "The sticker pack you're looking for doesn't exist",
+                    title = stringResource(Res.string.pack_not_found_title),
+                    description = stringResource(Res.string.pack_not_found_desc),
                     modifier = modifier
                         .fillMaxSize()
                         .padding(innerPadding)
@@ -138,9 +157,9 @@ fun PackDetailScreen(
 
     if (showDeleteDialog) {
         AppDialog(
-            title = "Delete Pack",
-            message = "Are you sure you want to delete \"${state.pack?.name}\"? This action cannot be undone.",
-            confirmText = "Delete",
+            title = stringResource(Res.string.delete_pack_dialog_title),
+            message = stringResource(Res.string.delete_pack_dialog_message, state.pack?.name ?: ""),
+            confirmText = stringResource(Res.string.delete),
             onConfirm = {
                 state.pack?.let { pack ->
                     onIntent(PackDetailIntent.DeletePack(pack.identifier))
@@ -153,9 +172,9 @@ fun PackDetailScreen(
 
     if (deleteStickerIndex >= 0) {
         AppDialog(
-            title = "Delete Sticker",
-            message = "Are you sure you want to delete this sticker?",
-            confirmText = "Delete",
+            title = stringResource(Res.string.delete_sticker_dialog_title),
+            message = stringResource(Res.string.delete_sticker_dialog_message),
+            confirmText = stringResource(Res.string.delete),
             onConfirm = {
                 onIntent(PackDetailIntent.DeleteSticker(deleteStickerIndex))
                 deleteStickerIndex = -1
@@ -235,7 +254,7 @@ private fun PackDetailContent(
                     color = NeubrutalGray
                 )
                 Text(
-                    text = "${pack.stickers.size} stickers",
+                    text = stringResource(Res.string.stickers_with_count, pack.stickers.size),
                     style = MaterialTheme.typography.bodySmall,
                     color = NeubrutalGray
                 )
@@ -246,14 +265,14 @@ private fun PackDetailContent(
 
         // Action Buttons
         AppPrimaryButton(
-            text = "Add to WhatsApp",
+            text = stringResource(Res.string.add_to_whatsapp),
             onClick = { onIntent(PackDetailIntent.AddToWhatsApp(pack.identifier)) }
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         AppSecondaryButton(
-            text = "Share Pack",
+            text = stringResource(Res.string.share_pack),
             onClick = { onIntent(PackDetailIntent.SharePack(pack.identifier)) }
         )
 
@@ -261,18 +280,24 @@ private fun PackDetailContent(
 
         // Stickers Grid
         Text(
-            text = "Stickers",
+            text = stringResource(Res.string.stickers_title),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.SemiBold,
             color = NeubrutalBlack
         )
 
         Spacer(modifier = Modifier.height(10.dp))
+        Text(
+            text = stringResource(Res.string.pack_stickers_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = NeubrutalGray
+        )
+        Spacer(modifier = Modifier.height(6.dp))
 
         if (pack.stickers.isEmpty()) {
             EmptyState(
-                title = "No Stickers",
-                description = "Add stickers to this pack",
+                title = stringResource(Res.string.no_stickers_title),
+                description = stringResource(Res.string.no_stickers_desc),
                 modifier = Modifier.fillMaxWidth()
             )
         } else {

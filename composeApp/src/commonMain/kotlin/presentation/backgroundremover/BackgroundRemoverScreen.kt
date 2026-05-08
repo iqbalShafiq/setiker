@@ -23,12 +23,14 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import coil3.compose.rememberAsyncImagePainter
+import org.jetbrains.compose.resources.stringResource
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
 import presentation.components.AppTopBar
@@ -61,6 +64,23 @@ import presentation.theme.NeubrutalBlack
 import presentation.theme.NeubrutalGray
 import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalShadow
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.apply_remove_background
+import setiker.composeapp.generated.resources.brush_size_px
+import setiker.composeapp.generated.resources.cancel
+import setiker.composeapp.generated.resources.clear
+import setiker.composeapp.generated.resources.erase
+import setiker.composeapp.generated.resources.image_to_edit
+import setiker.composeapp.generated.resources.no_image_selected
+import setiker.composeapp.generated.resources.remove_background_title
+import setiker.composeapp.generated.resources.remove_bg_canvas_hint
+import setiker.composeapp.generated.resources.remove_bg_preview_content_description
+import setiker.composeapp.generated.resources.remove_bg_result_hint
+import setiker.composeapp.generated.resources.reset
+import setiker.composeapp.generated.resources.restore
+import setiker.composeapp.generated.resources.result_confirmation_title
+import setiker.composeapp.generated.resources.undo
+import setiker.composeapp.generated.resources.use_result
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,11 +93,69 @@ fun BackgroundRemoverScreen(
 ) {
     var currentPath by remember { mutableStateOf<List<Pair<Float, Float>>>(emptyList()) }
     var isDrawing by remember { mutableStateOf(false) }
+    val resultSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    if (state.isResultSheetOpen && !state.removedBackgroundPath.isNullOrBlank()) {
+        ModalBottomSheet(
+            onDismissRequest = { onIntent(BackgroundRemoverIntent.DismissResultSheet) },
+            sheetState = resultSheetState,
+            containerColor = NeubrutalBg,
+            scrimColor = NeubrutalBlack.copy(alpha = 0.35f)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 8.dp)
+                    .padding(bottom = 24.dp)
+            ) {
+                Text(
+                    text = stringResource(Res.string.result_confirmation_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = NeubrutalBlack
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = stringResource(Res.string.remove_bg_result_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = NeubrutalBlack.copy(alpha = 0.75f)
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(NeubrutalWhite)
+                        .border(2.dp, NeubrutalBlack, RoundedCornerShape(16.dp))
+                        .padding(4.dp)
+                ) {
+                    CheckerboardBackground(modifier = Modifier.fillMaxSize())
+                    Image(
+                        painter = rememberAsyncImagePainter(state.removedBackgroundPath),
+                        contentDescription = stringResource(Res.string.remove_bg_preview_content_description),
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                AppPrimaryButton(
+                    text = stringResource(Res.string.use_result),
+                    onClick = { onIntent(BackgroundRemoverIntent.ConfirmResult) }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                AppSecondaryButton(
+                    text = stringResource(Res.string.cancel),
+                    onClick = { onIntent(BackgroundRemoverIntent.DismissResultSheet) }
+                )
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
             AppTopBar(
-                title = "Remove Background",
+                title = stringResource(Res.string.remove_background_title),
                 onBackClick = onBackClick
             )
         },
@@ -141,7 +219,7 @@ fun BackgroundRemoverScreen(
 
                         Image(
                             painter = rememberAsyncImagePainter(state.imagePath),
-                            contentDescription = "Image to edit",
+                            contentDescription = stringResource(Res.string.image_to_edit),
                             modifier = Modifier
                                 .fillMaxSize()
                                 .pointerInput(Unit) {
@@ -236,7 +314,7 @@ fun BackgroundRemoverScreen(
                         }
                     } else {
                         Text(
-                            text = "No image selected",
+                            text = stringResource(Res.string.no_image_selected),
                             style = MaterialTheme.typography.bodyLarge,
                             color = NeubrutalGray
                         )
@@ -244,10 +322,16 @@ fun BackgroundRemoverScreen(
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
+                Text(
+                    text = stringResource(Res.string.remove_bg_canvas_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = NeubrutalBlack.copy(alpha = 0.7f)
+                )
+                Spacer(modifier = Modifier.height(10.dp))
 
                 // Brush Size
                 Text(
-                    text = "Brush Size: ${state.brushSize.toInt()}px",
+                    text = stringResource(Res.string.brush_size_px, state.brushSize.toInt()),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Medium,
                     color = NeubrutalBlack
@@ -269,19 +353,19 @@ fun BackgroundRemoverScreen(
                 ) {
                     NeubrutalToolButton(
                         icon = Icons.Default.Refresh,
-                        label = if (state.isErasing) "Erase" else "Restore",
+                        label = stringResource(if (state.isErasing) Res.string.erase else Res.string.restore),
                         isSelected = state.isErasing,
                         onClick = { onIntent(BackgroundRemoverIntent.ToggleMode) }
                     )
                     NeubrutalToolButton(
                         icon = Icons.Default.Refresh,
-                        label = "Undo",
+                        label = stringResource(Res.string.undo),
                         isSelected = false,
                         onClick = { onIntent(BackgroundRemoverIntent.Undo) }
                     )
                     NeubrutalToolButton(
                         icon = Icons.Default.Refresh,
-                        label = "Clear",
+                        label = stringResource(Res.string.clear),
                         isSelected = false,
                         onClick = { onIntent(BackgroundRemoverIntent.ClearAll) }
                     )
@@ -291,7 +375,8 @@ fun BackgroundRemoverScreen(
 
                 // Action Buttons
                 AppPrimaryButton(
-                    text = "Apply",
+                    text = stringResource(Res.string.apply_remove_background),
+                    enabled = state.imagePath.isNotBlank(),
                     onClick = {
                         android.util.Log.d("BackgroundRemover", "Apply clicked with ${state.paths.size} paths")
                         onIntent(BackgroundRemoverIntent.ApplyRemoval)
@@ -301,7 +386,7 @@ fun BackgroundRemoverScreen(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 AppSecondaryButton(
-                    text = "Reset",
+                    text = stringResource(Res.string.reset),
                     onClick = { onIntent(BackgroundRemoverIntent.Reset) }
                 )
             }

@@ -184,9 +184,9 @@ class StickerContentProvider : ContentProvider() {
             Log.d(TAG, "Found ${packs.size} packs in database")
             packs.forEach { entity ->
                 val stickers = getDatabase().stickerDao().getByPackId(entity.identifier)
-                val trayFileName = File(entity.trayImageFile ?: "").name
+                val trayFileName = File(entity.trayImageFile).name
                 Log.d(TAG, "Pack: ${entity.identifier}, trayImage: $trayFileName (original: ${entity.trayImageFile})")
-                cursor.addRow(arrayOf(
+                cursor.addRow(arrayOf<Any?>(
                     entity.identifier,
                     entity.name,
                     entity.publisher,
@@ -221,9 +221,9 @@ class StickerContentProvider : ContentProvider() {
         try {
             val entity = getDatabase().stickerPackDao().getById(identifier)
             if (entity != null) {
-                val trayFileName = File(entity.trayImageFile ?: "").name
+                val trayFileName = File(entity.trayImageFile).name
                 Log.d(TAG, "Pack: ${entity.identifier}, trayImage: $trayFileName (original: ${entity.trayImageFile})")
-                cursor.addRow(arrayOf(
+                cursor.addRow(arrayOf<Any?>(
                     entity.identifier,
                     entity.name,
                     entity.publisher,
@@ -249,11 +249,11 @@ class StickerContentProvider : ContentProvider() {
             val stickers = getDatabase().stickerDao().getByPackId(identifier)
             Log.d(TAG, "Found ${stickers.size} stickers for pack: $identifier")
             stickers.forEach { sticker ->
-                val fileName = File(sticker.imageFile ?: "").name
+                val fileName = File(sticker.imageFile).name
                 Log.d(TAG, "Sticker: $fileName (original: ${sticker.imageFile})")
                 cursor.addRow(arrayOf(
                     fileName,
-                    sticker.emojis ?: "",
+                    sticker.emojis,
                     sticker.accessibilityText ?: ""
                 ))
             }

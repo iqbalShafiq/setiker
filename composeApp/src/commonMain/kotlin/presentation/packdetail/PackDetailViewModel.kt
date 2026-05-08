@@ -14,6 +14,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import presentation.common.UiText
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.error_failed_add_pack
+import setiker.composeapp.generated.resources.error_failed_add_stickers
+import setiker.composeapp.generated.resources.error_failed_delete_pack
+import setiker.composeapp.generated.resources.error_failed_delete_sticker
+import setiker.composeapp.generated.resources.error_failed_share_pack
+import setiker.composeapp.generated.resources.error_pack_min_stickers_share
+import setiker.composeapp.generated.resources.error_pack_min_stickers_whatsapp
+import setiker.composeapp.generated.resources.success_pack_shared
+import setiker.composeapp.generated.resources.success_stickers_added
 
 class PackDetailViewModel(
     private val repository: StickerRepository,
@@ -72,14 +83,22 @@ class PackDetailViewModel(
                 if (pack.stickers.size < StickerPack.MIN_STICKERS) {
                     _effect.send(
                         PackDetailEffect.ShowError(
-                            "Pack must have at least ${StickerPack.MIN_STICKERS} stickers"
+                            UiText.StringRes(
+                                Res.string.error_pack_min_stickers_whatsapp,
+                                listOf(StickerPack.MIN_STICKERS)
+                            )
                         )
                     )
                     return@launch
                 }
                 _effect.send(PackDetailEffect.LaunchAddToWhatsApp(packId, pack.name))
             } catch (e: Exception) {
-                _effect.send(PackDetailEffect.ShowError(e.message ?: "Failed to add pack"))
+                _effect.send(
+                    PackDetailEffect.ShowError(
+                        e.message?.let(UiText::DynamicString)
+                            ?: UiText.StringRes(Res.string.error_failed_add_pack)
+                    )
+                )
             }
         }
     }
@@ -91,15 +110,23 @@ class PackDetailViewModel(
                 if (pack.stickers.size < StickerPack.MIN_STICKERS) {
                     _effect.send(
                         PackDetailEffect.ShowError(
-                            "Pack must have at least ${StickerPack.MIN_STICKERS} stickers to share"
+                            UiText.StringRes(
+                                Res.string.error_pack_min_stickers_share,
+                                listOf(StickerPack.MIN_STICKERS)
+                            )
                         )
                     )
                     return@launch
                 }
                 packActions.sharePack(packId)
-                _effect.send(PackDetailEffect.ShowSuccess("Pack shared successfully"))
+                _effect.send(PackDetailEffect.ShowSuccess(UiText.StringRes(Res.string.success_pack_shared)))
             } catch (e: Exception) {
-                _effect.send(PackDetailEffect.ShowError(e.message ?: "Failed to share pack"))
+                _effect.send(
+                    PackDetailEffect.ShowError(
+                        e.message?.let(UiText::DynamicString)
+                            ?: UiText.StringRes(Res.string.error_failed_share_pack)
+                    )
+                )
             }
         }
     }
@@ -110,7 +137,12 @@ class PackDetailViewModel(
                 repository.deletePack(packId)
                 _effect.send(PackDetailEffect.NavigateBack)
             } catch (e: Exception) {
-                _effect.send(PackDetailEffect.ShowError(e.message ?: "Failed to delete pack"))
+                _effect.send(
+                    PackDetailEffect.ShowError(
+                        e.message?.let(UiText::DynamicString)
+                            ?: UiText.StringRes(Res.string.error_failed_delete_pack)
+                    )
+                )
             }
         }
     }
@@ -122,7 +154,12 @@ class PackDetailViewModel(
                 repository.removeStickerFromPack(pack.identifier, index)
                 loadPack(pack.identifier)
             } catch (e: Exception) {
-                _effect.send(PackDetailEffect.ShowError(e.message ?: "Failed to delete sticker"))
+                _effect.send(
+                    PackDetailEffect.ShowError(
+                        e.message?.let(UiText::DynamicString)
+                            ?: UiText.StringRes(Res.string.error_failed_delete_sticker)
+                    )
+                )
             }
         }
     }
@@ -153,12 +190,21 @@ class PackDetailViewModel(
                 
                 if (successCount > 0) {
                     loadPack(pack.identifier)
-                    _effect.send(PackDetailEffect.ShowSuccess("$successCount stickers added"))
+                    _effect.send(
+                        PackDetailEffect.ShowSuccess(
+                            UiText.StringRes(Res.string.success_stickers_added, listOf(successCount))
+                        )
+                    )
                 } else {
-                    _effect.send(PackDetailEffect.ShowError("Failed to add stickers"))
+                    _effect.send(PackDetailEffect.ShowError(UiText.StringRes(Res.string.error_failed_add_stickers)))
                 }
             } catch (e: Exception) {
-                _effect.send(PackDetailEffect.ShowError(e.message ?: "Failed to add stickers"))
+                _effect.send(
+                    PackDetailEffect.ShowError(
+                        e.message?.let(UiText::DynamicString)
+                            ?: UiText.StringRes(Res.string.error_failed_add_stickers)
+                    )
+                )
             }
         }
     }

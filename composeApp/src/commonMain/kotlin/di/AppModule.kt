@@ -1,6 +1,8 @@
 package di
 
 import data.repository.StickerRepositoryImpl
+import data.remote.SetikerApiService
+import data.remote.StickerApiRepository
 import domain.repository.StickerRepository
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.factoryOf
@@ -21,6 +23,8 @@ val appModule = module {
 
     // Repository
     singleOf(::StickerRepositoryImpl) bind StickerRepository::class
+    single { SetikerApiService() }
+    single { StickerApiRepository(api = get(), fileStorage = get()) }
 
     // ViewModels
     factoryOf(::HomeViewModel)
@@ -34,7 +38,8 @@ val appModule = module {
     factory { params ->
         CreatePackViewModel(
             repository = get(),
-            fileStorage = get()
+            fileStorage = get(),
+            apiRepository = get()
         )
     }
     factory { params ->
@@ -45,5 +50,9 @@ val appModule = module {
         )
     }
     factoryOf(::CropViewModel)
-    factoryOf(::BackgroundRemoverViewModel)
+    factory {
+        BackgroundRemoverViewModel(
+            apiRepository = get()
+        )
+    }
 }

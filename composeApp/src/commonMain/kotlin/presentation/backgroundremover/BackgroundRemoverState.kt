@@ -7,6 +7,7 @@ data class BackgroundRemoverState(
     val isErasing: Boolean = true,
     val paths: List<DrawPath> = emptyList(),
     val removedBackgroundPath: String? = null,
+    val isResultSheetOpen: Boolean = false,
     val error: String? = null,
     val canvasWidth: Int = 512,
     val canvasHeight: Int = 512

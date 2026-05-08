@@ -13,6 +13,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import presentation.common.UiText
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.error_failed_save_sticker
+import setiker.composeapp.generated.resources.error_pack_id_missing
+import setiker.composeapp.generated.resources.error_select_image
 
 class EditorViewModel(
     private val repository: StickerRepository,
@@ -130,14 +135,14 @@ class EditorViewModel(
             val currentState = _state.value
 
             if (currentState.imagePath.isBlank()) {
-                _effect.send(EditorEffect.ShowError("Please select an image"))
+                _effect.send(EditorEffect.ShowError(UiText.StringRes(Res.string.error_select_image)))
                 return@launch
             }
 
             val effectivePackId = currentState.packId.ifBlank { packId }
             
             if (effectivePackId.isBlank()) {
-                _effect.send(EditorEffect.ShowError("Pack ID is missing. Please try again."))
+                _effect.send(EditorEffect.ShowError(UiText.StringRes(Res.string.error_pack_id_missing)))
                 android.util.Log.e("EditorViewModel", "Cannot save sticker: packId is blank! state.packId='${currentState.packId}', field.packId='$packId'")
                 return@launch
             }
@@ -173,7 +178,12 @@ class EditorViewModel(
                 _effect.send(EditorEffect.StickerSaved)
             } catch (e: Exception) {
                 android.util.Log.e("EditorViewModel", "Failed to save sticker: ${e.message}", e)
-                _effect.send(EditorEffect.ShowError(e.message ?: "Failed to save sticker"))
+                _effect.send(
+                    EditorEffect.ShowError(
+                        e.message?.let(UiText::DynamicString)
+                            ?: UiText.StringRes(Res.string.error_failed_save_sticker)
+                    )
+                )
             }
         }
     }

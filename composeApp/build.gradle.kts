@@ -39,7 +39,8 @@ kotlin {
             implementation(libs.material3)
             implementation(libs.ui)
             implementation(libs.components.resources)
-            implementation(libs.ui.tooling.preview)
+            implementation(libs.components.ui.tooling.preview)
+            implementation(libs.material.icons.extended)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.viewmodel.compose)
             implementation(libs.androidx.lifecycle.runtime.compose)
@@ -51,6 +52,10 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.room.runtime)
             implementation(libs.androidx.sqlite.bundled)
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.client.logging)
+            implementation(libs.ktor.serialization.kotlinx.json)
         }
         
         androidMain.dependencies {
@@ -59,6 +64,11 @@ kotlin {
             implementation(libs.koin.androidx.compose)
             implementation(libs.ui.tooling)
             implementation(libs.ui.tooling.preview)
+            implementation(libs.ktor.client.okhttp)
+        }
+
+        iosMain.dependencies {
+            implementation(libs.ktor.client.darwin)
         }
         
         commonTest.dependencies {

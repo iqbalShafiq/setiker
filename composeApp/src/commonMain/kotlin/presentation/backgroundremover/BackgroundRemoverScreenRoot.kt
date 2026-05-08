@@ -7,6 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
 import org.koin.compose.koinInject
+import presentation.common.resolve
 
 @Composable
 fun BackgroundRemoverScreenRoot(
@@ -28,7 +29,7 @@ fun BackgroundRemoverScreenRoot(
                 is BackgroundRemoverEffect.BackgroundRemoved -> onBackgroundRemoved(effect.path)
                 is BackgroundRemoverEffect.NavigateBack -> onBackClick()
                 is BackgroundRemoverEffect.ShowError -> {
-                    snackbarHostState.showSnackbar(effect.message)
+                    snackbarHostState.showSnackbar(effect.message.resolve())
                 }
             }
         }

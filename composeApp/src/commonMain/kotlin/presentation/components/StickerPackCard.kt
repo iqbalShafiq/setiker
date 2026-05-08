@@ -21,7 +21,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import domain.model.StickerPack
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
 import presentation.theme.NeubrutalBlack
 import presentation.theme.NeubrutalGray
 import presentation.theme.NeubrutalWhite

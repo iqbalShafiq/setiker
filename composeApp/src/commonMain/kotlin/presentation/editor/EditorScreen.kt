@@ -29,7 +29,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -47,6 +47,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
+import org.jetbrains.compose.resources.stringResource
 import domain.model.Sticker
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
@@ -61,6 +62,21 @@ import presentation.theme.NeubrutalBlack
 import presentation.theme.NeubrutalGray
 import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalShadow
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.accessibility_text
+import setiker.composeapp.generated.resources.accessibility_text_example
+import setiker.composeapp.generated.resources.accessibility_text_placeholder
+import setiker.composeapp.generated.resources.add
+import setiker.composeapp.generated.resources.cancel
+import setiker.composeapp.generated.resources.crop
+import setiker.composeapp.generated.resources.edit_sticker_title
+import setiker.composeapp.generated.resources.editor_action_hint
+import setiker.composeapp.generated.resources.remove_bg
+import setiker.composeapp.generated.resources.remove_emoji
+import setiker.composeapp.generated.resources.save_sticker
+import setiker.composeapp.generated.resources.select_image
+import setiker.composeapp.generated.resources.sticker_preview
+import setiker.composeapp.generated.resources.tags_with_count
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -74,7 +90,7 @@ fun EditorScreen(
     Scaffold(
         topBar = {
             AppTopBar(
-                title = "Edit Sticker",
+                title = stringResource(Res.string.edit_sticker_title),
                 onBackClick = onBackClick
             )
         },
@@ -121,7 +137,7 @@ fun EditorScreen(
                         key(state.imagePath) {
                             Image(
                                 painter = rememberAsyncImagePainter(state.imagePath),
-                                contentDescription = "Sticker preview",
+                                contentDescription = stringResource(Res.string.sticker_preview),
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .clip(RoundedCornerShape(16.dp)),
@@ -130,7 +146,7 @@ fun EditorScreen(
                         }
                     } else {
                         Text(
-                            text = "Select an image",
+                            text = stringResource(Res.string.select_image),
                             style = MaterialTheme.typography.bodyLarge,
                             color = NeubrutalGray
                         )
@@ -146,21 +162,27 @@ fun EditorScreen(
                 ) {
                     NeubrutalCircleActionButton(
                         icon = Icons.Default.Edit,
-                        label = "Crop",
+                        label = stringResource(Res.string.crop),
                         onClick = { onIntent(EditorIntent.NavigateToCrop) }
                     )
                     NeubrutalCircleActionButton(
                         icon = Icons.Default.Delete,
-                        label = "Remove BG",
+                        label = stringResource(Res.string.remove_bg),
                         onClick = { onIntent(EditorIntent.NavigateToBackgroundRemover) }
                     )
                 }
 
                 Spacer(modifier = Modifier.height(28.dp))
+                Text(
+                    text = stringResource(Res.string.editor_action_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = NeubrutalGray
+                )
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // Emoji Tags
                 Text(
-                    text = "Tags (${state.emojis.size}/${Sticker.MAX_EMOJIS})",
+                    text = stringResource(Res.string.tags_with_count, state.emojis.size, Sticker.MAX_EMOJIS),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = NeubrutalBlack
@@ -183,7 +205,7 @@ fun EditorScreen(
                     if (state.emojis.size < Sticker.MAX_EMOJIS) {
                         NeubrutalOutlinedPill(
                             onClick = { onIntent(EditorIntent.ShowEmojiPicker) },
-                            label = "+ Add"
+                            label = stringResource(Res.string.add)
                         )
                     }
                 }
@@ -194,24 +216,30 @@ fun EditorScreen(
                 AppTextField(
                     value = state.accessibilityText,
                     onValueChange = { onIntent(EditorIntent.UpdateAccessibilityText(it)) },
-                    label = "Accessibility Text",
-                    placeholder = "Describe this sticker for screen readers",
+                    label = stringResource(Res.string.accessibility_text),
+                    placeholder = stringResource(Res.string.accessibility_text_placeholder),
                     singleLine = false,
                     maxLines = 3
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(Res.string.accessibility_text_example),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = NeubrutalGray
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
 
                 // Save Button
                 AppPrimaryButton(
-                    text = "Save Sticker",
+                    text = stringResource(Res.string.save_sticker),
                     onClick = { onIntent(EditorIntent.SaveSticker) }
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
                 AppSecondaryButton(
-                    text = "Cancel",
+                    text = stringResource(Res.string.cancel),
                     onClick = onBackClick
                 )
             }
@@ -306,7 +334,7 @@ private fun EmojiChip(
         ) {
             Icon(
                 imageVector = Icons.Default.Close,
-                contentDescription = "Remove emoji",
+                contentDescription = stringResource(Res.string.remove_emoji),
                 modifier = Modifier.size(12.dp),
                 tint = NeubrutalGray
             )

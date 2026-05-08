@@ -1,8 +1,10 @@
 package presentation.home
 
+import presentation.common.UiText
+
 sealed interface HomeEffect {
     data class NavigateToPackDetail(val packId: String) : HomeEffect
     data object NavigateToCreatePack : HomeEffect
-    data class ShowError(val message: String) : HomeEffect
-    data class ShowSuccess(val message: String) : HomeEffect
+    data class ShowError(val message: UiText) : HomeEffect
+    data class ShowSuccess(val message: UiText) : HomeEffect
 }

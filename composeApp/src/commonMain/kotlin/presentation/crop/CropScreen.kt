@@ -24,7 +24,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -51,6 +51,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
+import org.jetbrains.compose.resources.stringResource
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
 import presentation.components.AppTopBar
@@ -61,6 +62,17 @@ import presentation.theme.NeubrutalBlack
 import presentation.theme.NeubrutalGray
 import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalShadow
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.apply_crop
+import setiker.composeapp.generated.resources.cancel
+import setiker.composeapp.generated.resources.crop_image_title
+import setiker.composeapp.generated.resources.flip_horizontal
+import setiker.composeapp.generated.resources.image_to_crop
+import setiker.composeapp.generated.resources.no_image_selected
+import setiker.composeapp.generated.resources.reset
+import setiker.composeapp.generated.resources.rotate_left
+import setiker.composeapp.generated.resources.rotate_right
+import setiker.composeapp.generated.resources.zoom
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,7 +86,7 @@ fun CropScreen(
     Scaffold(
         topBar = {
             AppTopBar(
-                title = "Crop Image",
+                title = stringResource(Res.string.crop_image_title),
                 onBackClick = onBackClick
             )
         },
@@ -131,7 +143,7 @@ fun CropScreen(
                         )
                     } else {
                         Text(
-                            text = "No image selected",
+                            text = stringResource(Res.string.no_image_selected),
                             style = MaterialTheme.typography.bodyLarge,
                             color = NeubrutalGray
                         )
@@ -142,7 +154,7 @@ fun CropScreen(
 
                 // Zoom Slider
                 Text(
-                    text = "Zoom",
+                    text = stringResource(Res.string.zoom),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Medium,
                     color = NeubrutalBlack
@@ -164,25 +176,25 @@ fun CropScreen(
                 ) {
                     NeubrutalToolButton(
                         icon = Icons.Default.Refresh,
-                        label = "Rotate L",
+                        label = stringResource(Res.string.rotate_left),
                         isSelected = false,
                         onClick = { onIntent(CropIntent.RotateLeft) }
                     )
                     NeubrutalToolButton(
                         icon = Icons.Default.Refresh,
-                        label = "Rotate R",
+                        label = stringResource(Res.string.rotate_right),
                         isSelected = false,
                         onClick = { onIntent(CropIntent.RotateRight) }
                     )
                     NeubrutalToolButton(
                         icon = Icons.Default.Refresh,
-                        label = "Flip H",
+                        label = stringResource(Res.string.flip_horizontal),
                         isSelected = false,
                         onClick = { onIntent(CropIntent.FlipHorizontal) }
                     )
                     NeubrutalToolButton(
                         icon = Icons.Default.Refresh,
-                        label = "Reset",
+                        label = stringResource(Res.string.reset),
                         isSelected = false,
                         onClick = { onIntent(CropIntent.Reset) }
                     )
@@ -192,14 +204,14 @@ fun CropScreen(
 
                 // Apply Button
                 AppPrimaryButton(
-                    text = "Apply Crop",
+                    text = stringResource(Res.string.apply_crop),
                     onClick = { onIntent(CropIntent.ApplyCrop) }
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
                 AppSecondaryButton(
-                    text = "Cancel",
+                    text = stringResource(Res.string.cancel),
                     onClick = onBackClick
                 )
             }
@@ -289,7 +301,7 @@ private fun CropImagePreview(
     ) {
         Image(
             painter = rememberAsyncImagePainter(imagePath),
-            contentDescription = "Image to crop",
+            contentDescription = stringResource(Res.string.image_to_crop),
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer {

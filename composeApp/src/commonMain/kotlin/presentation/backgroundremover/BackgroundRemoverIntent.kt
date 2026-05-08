@@ -9,6 +9,8 @@ sealed interface BackgroundRemoverIntent {
     data object ClearAll : BackgroundRemoverIntent
     data object AutoRemove : BackgroundRemoverIntent
     data object ApplyRemoval : BackgroundRemoverIntent
+    data object ConfirmResult : BackgroundRemoverIntent
+    data object DismissResultSheet : BackgroundRemoverIntent
     data object Reset : BackgroundRemoverIntent
     data class UpdateCanvasSize(val width: Int, val height: Int) : BackgroundRemoverIntent
 }

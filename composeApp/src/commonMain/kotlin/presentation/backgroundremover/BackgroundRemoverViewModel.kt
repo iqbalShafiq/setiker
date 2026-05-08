@@ -3,6 +3,7 @@ package presentation.backgroundremover
 import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import data.remote.StickerApiRepository
 import data.util.applyMaskToImage
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,8 +12,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import presentation.common.UiText
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.error_failed_apply_removal
+import setiker.composeapp.generated.resources.error_failed_remove_background
 
-class BackgroundRemoverViewModel : ViewModel() {
+class BackgroundRemoverViewModel(
+    private val apiRepository: StickerApiRepository
+) : ViewModel() {
 
     private val _state = MutableStateFlow(BackgroundRemoverState())
     val state: StateFlow<BackgroundRemoverState> = _state.asStateFlow()
@@ -46,11 +53,16 @@ class BackgroundRemoverViewModel : ViewModel() {
             }
             is BackgroundRemoverIntent.AutoRemove -> autoRemove()
             is BackgroundRemoverIntent.ApplyRemoval -> applyRemoval()
+            is BackgroundRemoverIntent.ConfirmResult -> confirmResult()
+            is BackgroundRemoverIntent.DismissResultSheet -> {
+                _state.update { it.copy(isResultSheetOpen = false, removedBackgroundPath = null) }
+            }
             is BackgroundRemoverIntent.Reset -> {
                 _state.update {
                     it.copy(
                         paths = emptyList(),
                         removedBackgroundPath = null,
+                        isResultSheetOpen = false,
                         brushSize = 20f,
                         isErasing = true
                     )
@@ -88,7 +100,12 @@ class BackgroundRemoverViewModel : ViewModel() {
                 _state.update { it.copy(isProcessing = false, removedBackgroundPath = resultPath) }
             } catch (e: Exception) {
                 _state.update { it.copy(isProcessing = false, error = e.message) }
-                _effect.send(BackgroundRemoverEffect.ShowError(e.message ?: "Failed to remove background"))
+                _effect.send(
+                    BackgroundRemoverEffect.ShowError(
+                        e.message?.let(UiText::DynamicString)
+                            ?: UiText.StringRes(Res.string.error_failed_remove_background)
+                    )
+                )
             }
         }
     }
@@ -99,18 +116,32 @@ class BackgroundRemoverViewModel : ViewModel() {
 
             try {
                 val currentState = _state.value
-                val resultPath = applyMaskToImage(
-                    imagePath = currentState.imagePath,
-                    paths = currentState.paths,
-                    canvasSize = androidx.compose.ui.unit.IntSize(currentState.canvasWidth, currentState.canvasHeight)
-                )
+                val resultPath = apiRepository.removeBackground(currentState.imagePath)
 
-                _state.update { it.copy(isProcessing = false, removedBackgroundPath = resultPath) }
-                _effect.send(BackgroundRemoverEffect.BackgroundRemoved(resultPath))
+                _state.update {
+                    it.copy(
+                        isProcessing = false,
+                        removedBackgroundPath = resultPath,
+                        isResultSheetOpen = true
+                    )
+                }
             } catch (e: Exception) {
                 _state.update { it.copy(isProcessing = false, error = e.message) }
-                _effect.send(BackgroundRemoverEffect.ShowError(e.message ?: "Failed to apply removal"))
+                _effect.send(
+                    BackgroundRemoverEffect.ShowError(
+                        e.message?.let(UiText::DynamicString)
+                            ?: UiText.StringRes(Res.string.error_failed_apply_removal)
+                    )
+                )
             }
+        }
+    }
+
+    private fun confirmResult() {
+        viewModelScope.launch {
+            val resultPath = _state.value.removedBackgroundPath ?: return@launch
+            _state.update { it.copy(isResultSheetOpen = false) }
+            _effect.send(BackgroundRemoverEffect.BackgroundRemoved(resultPath))
         }
     }
 }

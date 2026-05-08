@@ -22,11 +22,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
+import org.jetbrains.compose.resources.stringResource
 import presentation.theme.NeubrutalBlack
 import presentation.theme.NeubrutalGray
 import presentation.theme.PastelMint
 import presentation.theme.neubrutalShadow
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.create_pack_title
+import setiker.composeapp.generated.resources.no_stickers_yet_desc
+import setiker.composeapp.generated.resources.no_stickers_yet_title
 
 @Composable
 fun EmptyState(
@@ -100,8 +105,8 @@ fun EmptyState(
 private fun EmptyStatePreview() {
     MaterialTheme {
         EmptyState(
-            title = "No Stickers Yet",
-            description = "Create your first sticker pack to get started"
+            title = stringResource(Res.string.no_stickers_yet_title),
+            description = stringResource(Res.string.no_stickers_yet_desc)
         )
     }
 }
@@ -111,9 +116,9 @@ private fun EmptyStatePreview() {
 private fun EmptyStateWithActionPreview() {
     MaterialTheme {
         EmptyState(
-            title = "No Stickers Yet",
-            description = "Create your first sticker pack to get started",
-            action = { AppPrimaryButton(text = "Create Pack", onClick = {}) }
+            title = stringResource(Res.string.no_stickers_yet_title),
+            description = stringResource(Res.string.no_stickers_yet_desc),
+            action = { AppPrimaryButton(text = stringResource(Res.string.create_pack_title), onClick = {}) }
         )
     }
 }

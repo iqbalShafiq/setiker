@@ -18,11 +18,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -35,7 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalBg
 import presentation.theme.NeubrutalBlack
@@ -94,18 +92,11 @@ fun EmojiPickerBottomSheet(
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
             )
 
-            TabRow(
+            SecondaryTabRow(
                 selectedTabIndex = selectedTab,
                 modifier = Modifier.fillMaxWidth(),
                 containerColor = NeubrutalBg,
-                contentColor = AccentCoral,
-                indicator = { tabPositions ->
-                    TabRowDefaults.SecondaryIndicator(
-                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                        color = AccentCoral,
-                        height = 3.dp
-                    )
-                }
+                contentColor = AccentCoral
             ) {
                 categories.forEachIndexed { index, (title, _) ->
                     Tab(

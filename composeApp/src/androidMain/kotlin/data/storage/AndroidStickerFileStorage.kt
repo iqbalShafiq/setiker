@@ -26,6 +26,13 @@ actual class StickerFileStorage(private val context: Context) {
             destFile.absolutePath
         }
 
+    actual suspend fun saveBytes(bytes: ByteArray, fileName: String): String =
+        withContext(Dispatchers.IO) {
+            val destFile = File(stickersDir, fileName)
+            destFile.writeBytes(bytes)
+            destFile.absolutePath
+        }
+
     actual suspend fun loadImage(fileName: String): ByteArray? =
         withContext(Dispatchers.IO) {
             val file = File(stickersDir, fileName)
