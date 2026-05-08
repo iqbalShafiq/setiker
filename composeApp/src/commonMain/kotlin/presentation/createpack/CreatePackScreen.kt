@@ -27,11 +27,8 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ViewModule
-import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -57,6 +54,9 @@ import presentation.components.AppSecondaryButton
 import presentation.components.AppTextField
 import presentation.components.AppTopBar
 import presentation.components.LoadingIndicator
+import presentation.components.PackBottomBar
+import presentation.components.PackBottomBarFab
+import presentation.components.PackBottomBarIconButton
 import presentation.components.SelectableStickerGrid
 import presentation.components.rememberImagePicker
 import presentation.theme.AccentCoral
@@ -415,51 +415,36 @@ fun CreatePackScreen(
             )
         },
         bottomBar = {
-            BottomAppBar(
-                containerColor = NeubrutalWhite,
-                contentColor = NeubrutalBlack,
-                tonalElevation = 0.dp,
+            PackBottomBar(
                 actions = {
-                    IconButton(onClick = onBackClick, enabled = !state.isApiLoading) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(Res.string.back)
-                        )
-                    }
-                    IconButton(
+                    PackBottomBarIconButton(
+                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(Res.string.back),
+                        onClick = onBackClick,
+                        enabled = !state.isApiLoading
+                    )
+                    PackBottomBarIconButton(
+                        icon = Icons.Filled.AutoAwesome,
+                        contentDescription = stringResource(Res.string.generate_ai),
                         onClick = { onIntent(CreatePackIntent.OpenAiGenerateSheet) },
                         enabled = !state.isApiLoading
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.AutoAwesome,
-                            contentDescription = stringResource(Res.string.generate_ai)
-                        )
-                    }
-                    IconButton(
+                    )
+                    PackBottomBarIconButton(
+                        icon = Icons.Filled.ViewModule,
+                        contentDescription = stringResource(Res.string.grid_split),
                         onClick = { gridSourcePicker.launch() },
                         enabled = !state.isApiLoading
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.ViewModule,
-                            contentDescription = stringResource(Res.string.grid_split)
-                        )
-                    }
+                    )
                 },
                 floatingActionButton = {
-                    val fabShape = RoundedCornerShape(16.dp)
-                    FloatingActionButton(
+                    PackBottomBarFab(
+                        icon = Icons.Filled.Check,
+                        contentDescription = stringResource(
+                            if (state.isEditing) Res.string.update_pack else Res.string.save_pack
+                        ),
                         onClick = { onIntent(CreatePackIntent.SavePack) },
-                        containerColor = AccentCoral,
-                        contentColor = NeubrutalWhite,
-                        shape = fabShape,
-                        elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 2.dp),
-                        modifier = Modifier.border(2.dp, NeubrutalBlack, fabShape)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Check,
-                            contentDescription = stringResource(if (state.isEditing) Res.string.update_pack else Res.string.save_pack)
-                        )
-                    }
+                        enabled = !state.isApiLoading
+                    )
                 }
             )
         },

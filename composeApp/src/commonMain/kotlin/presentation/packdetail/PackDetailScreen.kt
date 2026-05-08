@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -48,9 +49,11 @@ import presentation.components.AppDialog
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
 import presentation.components.AppTopBar
-import presentation.components.ClayFab
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
+import presentation.components.PackBottomBar
+import presentation.components.PackBottomBarFab
+import presentation.components.PackBottomBarIconButton
 import presentation.components.StickerCard
 import presentation.components.rememberMultipleImagePicker
 import presentation.theme.NeubrutalBg
@@ -76,6 +79,8 @@ import setiker.composeapp.generated.resources.pack_stickers_hint
 import setiker.composeapp.generated.resources.share_pack
 import setiker.composeapp.generated.resources.stickers_title
 import setiker.composeapp.generated.resources.stickers_with_count
+import setiker.composeapp.generated.resources.back
+import setiker.composeapp.generated.resources.add_sticker
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,25 +107,34 @@ fun PackDetailScreen(
         topBar = {
             AppTopBar(
                 title = state.pack?.name ?: stringResource(Res.string.pack_details_title),
-                onBackClick = onBackClick,
-                actions = {
-                    IconButton(onClick = { showDeleteDialog = true }) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = stringResource(Res.string.delete_pack)
-                        )
-                    }
-                    IconButton(onClick = onEditPack) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = stringResource(Res.string.edit_pack)
-                        )
-                    }
-                }
+                onBackClick = null
             )
         },
-        floatingActionButton = {
-            ClayFab(onClick = { multipleImagePicker.launch() })
+        bottomBar = {
+            PackBottomBar(
+                actions = {
+                    PackBottomBarIconButton(
+                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(Res.string.back),
+                        onClick = onBackClick,
+                        enabled = !state.isLoading
+                    )
+                    PackBottomBarIconButton(
+                        icon = Icons.Default.Delete,
+                        contentDescription = stringResource(Res.string.delete_pack),
+                        onClick = { showDeleteDialog = true },
+                        enabled = !state.isLoading
+                    )
+                },
+                floatingActionButton = {
+                    PackBottomBarFab(
+                        icon = Icons.Default.Edit,
+                        contentDescription = stringResource(Res.string.edit_pack),
+                        onClick = onEditPack,
+                        enabled = !state.isLoading
+                    )
+                }
+            )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = NeubrutalBg
