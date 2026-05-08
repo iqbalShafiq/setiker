@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import presentation.common.UiText
+import presentation.common.toUiText
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_failed_add_pack
 import setiker.composeapp.generated.resources.error_failed_add_stickers
@@ -95,8 +96,7 @@ class PackDetailViewModel(
             } catch (e: Exception) {
                 _effect.send(
                     PackDetailEffect.ShowError(
-                        e.message?.let(UiText::DynamicString)
-                            ?: UiText.StringRes(Res.string.error_failed_add_pack)
+                        e.toUiText(Res.string.error_failed_add_pack)
                     )
                 )
             }
@@ -123,8 +123,7 @@ class PackDetailViewModel(
             } catch (e: Exception) {
                 _effect.send(
                     PackDetailEffect.ShowError(
-                        e.message?.let(UiText::DynamicString)
-                            ?: UiText.StringRes(Res.string.error_failed_share_pack)
+                        e.toUiText(Res.string.error_failed_share_pack)
                     )
                 )
             }
@@ -139,8 +138,7 @@ class PackDetailViewModel(
             } catch (e: Exception) {
                 _effect.send(
                     PackDetailEffect.ShowError(
-                        e.message?.let(UiText::DynamicString)
-                            ?: UiText.StringRes(Res.string.error_failed_delete_pack)
+                        e.toUiText(Res.string.error_failed_delete_pack)
                     )
                 )
             }
@@ -156,8 +154,7 @@ class PackDetailViewModel(
             } catch (e: Exception) {
                 _effect.send(
                     PackDetailEffect.ShowError(
-                        e.message?.let(UiText::DynamicString)
-                            ?: UiText.StringRes(Res.string.error_failed_delete_sticker)
+                        e.toUiText(Res.string.error_failed_delete_sticker)
                     )
                 )
             }
@@ -201,8 +198,7 @@ class PackDetailViewModel(
             } catch (e: Exception) {
                 _effect.send(
                     PackDetailEffect.ShowError(
-                        e.message?.let(UiText::DynamicString)
-                            ?: UiText.StringRes(Res.string.error_failed_add_stickers)
+                        e.toUiText(Res.string.error_failed_add_stickers)
                     )
                 )
             }

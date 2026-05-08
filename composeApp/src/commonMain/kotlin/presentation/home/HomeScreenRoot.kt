@@ -7,7 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
 import org.koin.compose.koinInject
-import presentation.common.resolve
+import presentation.common.resolveOrDefault
 
 @Composable
 fun HomeScreenRoot(
@@ -24,10 +24,10 @@ fun HomeScreenRoot(
                 is HomeEffect.NavigateToPackDetail -> onPackClick(effect.packId)
                 is HomeEffect.NavigateToCreatePack -> onCreatePackClick()
                 is HomeEffect.ShowError -> {
-                    snackbarHostState.showSnackbar(effect.message.resolve())
+                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
                 }
                 is HomeEffect.ShowSuccess -> {
-                    snackbarHostState.showSnackbar(effect.message.resolve())
+                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
                 }
             }
         }

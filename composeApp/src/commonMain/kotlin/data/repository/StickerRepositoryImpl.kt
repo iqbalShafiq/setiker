@@ -5,6 +5,8 @@ import data.local.database.StickerPackDao
 import data.local.entity.StickerEntity
 import data.local.entity.StickerPackEntity
 import data.storage.StickerFileStorage
+import domain.error.AppErrorCode
+import domain.error.AppException
 import domain.model.Sticker
 import domain.model.StickerPack
 import domain.repository.StickerRepository
@@ -32,7 +34,7 @@ class StickerRepositoryImpl(
 
     override suspend fun getPack(identifier: String): StickerPack = withContext(Dispatchers.IO) {
         val entity = packDao.getById(identifier)
-            ?: throw IllegalArgumentException("Pack not found: $identifier")
+            ?: throw AppException(code = AppErrorCode.PackNotFound)
         val stickers = stickerDao.getByPackId(identifier)
             .map { it.toDomainModel() }
         entity.toDomainModel(stickers)
@@ -101,21 +103,21 @@ class StickerRepositoryImpl(
 
     override suspend fun updateStickerInPack(packId: String, index: Int, sticker: Sticker) {
         withContext(Dispatchers.IO) {
-        val stickers = stickerDao.getByPackId(packId)
-        val existing = stickers.getOrNull(index)
-            ?: throw IllegalArgumentException("Sticker not found at index $index in pack $packId")
+            val stickers = stickerDao.getByPackId(packId)
+            val existing = stickers.getOrNull(index)
+                ?: throw AppException(code = AppErrorCode.StickerNotFound)
 
-        val updatedEntity = existing.copy(
-            imageFile = sticker.imageFile,
-            emojis = Json.encodeToString(sticker.emojis),
-            accessibilityText = sticker.accessibilityText
-        )
-        stickerDao.insert(updatedEntity)
+            val updatedEntity = existing.copy(
+                imageFile = sticker.imageFile,
+                emojis = Json.encodeToString(sticker.emojis),
+                accessibilityText = sticker.accessibilityText
+            )
+            stickerDao.insert(updatedEntity)
 
-        // Update pack timestamp
-        packDao.getById(packId)?.let { pack ->
-            packDao.update(pack.copy(updatedAt = System.currentTimeMillis()))
-        }
+            // Update pack timestamp
+            packDao.getById(packId)?.let { pack ->
+                packDao.update(pack.copy(updatedAt = System.currentTimeMillis()))
+            }
         }
     }
 

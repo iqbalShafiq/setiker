@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import presentation.common.UiText
+import presentation.common.toUiText
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_failed_add_pack
 import setiker.composeapp.generated.resources.error_failed_delete_pack
@@ -61,8 +62,7 @@ class HomeViewModel(
             } catch (e: Exception) {
                 _effect.send(
                     HomeEffect.ShowError(
-                        e.message?.let(UiText::DynamicString)
-                            ?: UiText.StringRes(Res.string.error_failed_delete_pack)
+                        e.toUiText(Res.string.error_failed_delete_pack)
                     )
                 )
             }
@@ -88,8 +88,7 @@ class HomeViewModel(
             } catch (e: Exception) {
                 _effect.send(
                     HomeEffect.ShowError(
-                        e.message?.let(UiText::DynamicString)
-                            ?: UiText.StringRes(Res.string.error_failed_add_pack)
+                        e.toUiText(Res.string.error_failed_add_pack)
                     )
                 )
             }

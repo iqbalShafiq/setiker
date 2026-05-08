@@ -2,6 +2,7 @@ package data.remote
 
 import data.remote.model.ApiImage
 import data.storage.StickerFileStorage
+import domain.error.AppErrorCode
 import kotlin.random.Random
 
 class StickerApiRepository(
@@ -19,22 +20,20 @@ class StickerApiRepository(
         layout: String?,
         normalize: Boolean?
     ): List<String> {
-        return api.generate(
+        val images = api.generate(
             prompt = prompt,
             grid = grid,
             gridLayout = layout,
             normalize = normalize
-        ).map { image ->
-            downloadAndPersist(image)
-        }
+        )
+        return downloadAndPersistAll(images, operationTag = "generate")
     }
 
     suspend fun splitGrid(imagePath: String): List<String> {
-        return api.splitGrid(
+        val images = api.splitGrid(
             imagePath = imagePath
-        ).map { image ->
-            downloadAndPersist(image)
-        }
+        )
+        return downloadAndPersistAll(images, operationTag = "grid-split")
     }
 
     private suspend fun downloadAndPersist(image: ApiImage): String {
@@ -44,5 +43,26 @@ class StickerApiRepository(
             bytes = bytes,
             fileName = "api_$safeId.png"
         )
+    }
+
+    private suspend fun downloadAndPersistAll(
+        images: List<ApiImage>,
+        operationTag: String
+    ): List<String> {
+        val results = mutableListOf<String>()
+        images.forEach { image ->
+            runCatching { downloadAndPersist(image) }
+                .onSuccess { results += it }
+                .onFailure {
+                    println(
+                        "StickerApiRepository[$operationTag]: failed image id=${image.id}, url=${image.url}, reason=${it.message}"
+                    )
+                }
+        }
+        if (results.isEmpty() && images.isNotEmpty()) {
+            // If every download failed, surface a controlled error to UI.
+            throw ApiException(code = AppErrorCode.ImageDownloadFailed)
+        }
+        return results
     }
 }

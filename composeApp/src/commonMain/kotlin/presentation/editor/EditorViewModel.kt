@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import presentation.common.UiText
+import presentation.common.toUiText
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_failed_save_sticker
 import setiker.composeapp.generated.resources.error_pack_id_missing
@@ -180,8 +181,7 @@ class EditorViewModel(
                 android.util.Log.e("EditorViewModel", "Failed to save sticker: ${e.message}", e)
                 _effect.send(
                     EditorEffect.ShowError(
-                        e.message?.let(UiText::DynamicString)
-                            ?: UiText.StringRes(Res.string.error_failed_save_sticker)
+                        e.toUiText(Res.string.error_failed_save_sticker)
                     )
                 )
             }

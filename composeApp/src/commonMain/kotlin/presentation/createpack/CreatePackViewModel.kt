@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import presentation.common.UiText
+import presentation.common.toUiText
 import kotlin.random.Random
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_failed_generate_sticker
@@ -225,8 +226,7 @@ class CreatePackViewModel(
             } catch (e: Exception) {
                 _effect.send(
                     CreatePackEffect.ShowError(
-                        e.message?.let(UiText::DynamicString)
-                            ?: UiText.StringRes(Res.string.error_failed_save_pack)
+                        e.toUiText(Res.string.error_failed_save_pack)
                     )
                 )
             }
@@ -265,8 +265,7 @@ class CreatePackViewModel(
                 _state.update { it.copy(isApiLoading = false, error = e.message) }
                 _effect.send(
                     CreatePackEffect.ShowError(
-                        e.message?.let(UiText::DynamicString)
-                            ?: UiText.StringRes(Res.string.error_failed_generate_sticker)
+                        e.toUiText(Res.string.error_failed_generate_sticker)
                     )
                 )
             }
@@ -295,11 +294,16 @@ class CreatePackViewModel(
                     )
                 }
             } catch (e: Exception) {
-                _state.update { it.copy(isApiLoading = false, error = e.message) }
+                _state.update {
+                    it.copy(
+                        isApiLoading = false,
+                        gridSplitSheetPhase = GridSplitSheetPhase.ConfirmPick,
+                        error = e.message ?: "Split failed. Please try again."
+                    )
+                }
                 _effect.send(
                     CreatePackEffect.ShowError(
-                        e.message?.let(UiText::DynamicString)
-                            ?: UiText.StringRes(Res.string.error_failed_split_grid)
+                        e.toUiText(Res.string.error_failed_split_grid)
                     )
                 )
             }

@@ -6,6 +6,7 @@ import data.remote.model.ApiSuccessEnvelope
 import data.remote.model.BackgroundRemoveData
 import data.remote.model.GenerateData
 import data.remote.model.GridSplitData
+import domain.error.AppErrorCode
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.DefaultRequest
@@ -25,19 +26,22 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.URLProtocol
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
+import kotlinx.coroutines.delay
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
 class SetikerApiService(
     private val baseUrl: String = ApiConfig.baseUrl
 ) {
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+    }
+
     private val client = HttpClient {
         install(ContentNegotiation) {
             json(
-                Json {
-                    ignoreUnknownKeys = true
-                    isLenient = true
-                }
+                json
             )
         }
         install(HttpTimeout) {
@@ -71,11 +75,17 @@ class SetikerApiService(
         }
         val bodyText = response.bodyAsText()
         if (!response.status.isSuccess()) {
-            val apiError = runCatching { Json.decodeFromString<ApiErrorEnvelope>(bodyText) }.getOrNull()
-            throw ApiException(apiError?.error?.message ?: "Background remover request failed")
+            throw ApiException(
+                code = AppErrorCode.BackgroundRemoveRequestFailed,
+                message = runCatching { json.decodeFromString<ApiErrorEnvelope>(bodyText) }
+                    .getOrNull()
+                    ?.error
+                    ?.message
+            )
         }
-        val parsed = Json.decodeFromString<ApiSuccessEnvelope<BackgroundRemoveData>>(bodyText)
-        return parsed.data?.image ?: throw ApiException("Invalid remove background response")
+        val parsed = json.decodeFromString<ApiSuccessEnvelope<BackgroundRemoveData>>(bodyText)
+        return parsed.data?.image
+            ?: throw ApiException(code = AppErrorCode.InvalidBackgroundRemoveResponse)
     }
 
     suspend fun generate(
@@ -100,11 +110,17 @@ class SetikerApiService(
         }
         val bodyText = response.bodyAsText()
         if (!response.status.isSuccess()) {
-            val apiError = runCatching { Json.decodeFromString<ApiErrorEnvelope>(bodyText) }.getOrNull()
-            throw ApiException(apiError?.error?.message ?: "Generate request failed")
+            throw ApiException(
+                code = AppErrorCode.GenerateRequestFailed,
+                message = runCatching { json.decodeFromString<ApiErrorEnvelope>(bodyText) }
+                    .getOrNull()
+                    ?.error
+                    ?.message
+            )
         }
-        val parsed = Json.decodeFromString<ApiSuccessEnvelope<GenerateData>>(bodyText)
-        return parsed.data?.images ?: throw ApiException("Invalid generate response")
+        val parsed = json.decodeFromString<ApiSuccessEnvelope<GenerateData>>(bodyText)
+        return parsed.data?.images
+            ?: throw ApiException(code = AppErrorCode.InvalidGenerateResponse)
     }
 
     suspend fun splitGrid(imagePath: String): List<ApiImage> {
@@ -113,19 +129,50 @@ class SetikerApiService(
         }
         val bodyText = response.bodyAsText()
         if (!response.status.isSuccess()) {
-            val apiError = runCatching { Json.decodeFromString<ApiErrorEnvelope>(bodyText) }.getOrNull()
-            throw ApiException(apiError?.error?.message ?: "Grid split request failed")
+            throw ApiException(
+                code = AppErrorCode.GridSplitRequestFailed,
+                message = runCatching { json.decodeFromString<ApiErrorEnvelope>(bodyText) }
+                    .getOrNull()
+                    ?.error
+                    ?.message
+            )
         }
-        val parsed = Json.decodeFromString<ApiSuccessEnvelope<GridSplitData>>(bodyText)
-        return parsed.data?.images ?: throw ApiException("Invalid grid split response")
+        val parsed = json.decodeFromString<ApiSuccessEnvelope<GridSplitData>>(bodyText)
+        return parsed.data?.images
+            ?: throw ApiException(code = AppErrorCode.InvalidGridSplitResponse)
     }
 
     suspend fun downloadImageBytes(urlPath: String): ByteArray {
-        val response = client.get(urlPath)
-        if (!response.status.isSuccess()) {
-            throw ApiException("Failed to download generated image")
+        var lastError: Throwable? = null
+
+        repeat(3) { attempt ->
+            try {
+                val requestUrl = normalizeDownloadPath(urlPath)
+                val response = client.get(requestUrl)
+                if (response.status.isSuccess()) {
+                    return response.body()
+                }
+                lastError = ApiException(code = AppErrorCode.ImageDownloadFailed)
+            } catch (e: Throwable) {
+                println("SetikerApiService: download attempt ${attempt + 1} failed for path=$urlPath reason=${e.message}")
+                lastError = e
+            }
+
+            if (attempt < 2) {
+                // Backend may return image URLs before the file is immediately readable.
+                delay(250L * (attempt + 1))
+            }
         }
-        return response.body()
+
+        val appError = lastError as? ApiException
+        throw ApiException(code = appError?.code ?: AppErrorCode.ImageDownloadFailed)
+    }
+
+    private fun normalizeDownloadPath(urlPath: String): String {
+        if (urlPath.startsWith("http://") || urlPath.startsWith("https://")) {
+            return urlPath
+        }
+        return if (urlPath.startsWith("/")) urlPath else "/$urlPath"
     }
 
     private fun io.ktor.client.request.HttpRequestBuilder.setMultipartBody(

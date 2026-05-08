@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import presentation.common.UiText
+import presentation.common.toUiText
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_failed_apply_removal
 import setiker.composeapp.generated.resources.error_failed_remove_background
@@ -102,8 +103,7 @@ class BackgroundRemoverViewModel(
                 _state.update { it.copy(isProcessing = false, error = e.message) }
                 _effect.send(
                     BackgroundRemoverEffect.ShowError(
-                        e.message?.let(UiText::DynamicString)
-                            ?: UiText.StringRes(Res.string.error_failed_remove_background)
+                        e.toUiText(Res.string.error_failed_remove_background)
                     )
                 )
             }
@@ -129,8 +129,7 @@ class BackgroundRemoverViewModel(
                 _state.update { it.copy(isProcessing = false, error = e.message) }
                 _effect.send(
                     BackgroundRemoverEffect.ShowError(
-                        e.message?.let(UiText::DynamicString)
-                            ?: UiText.StringRes(Res.string.error_failed_apply_removal)
+                        e.toUiText(Res.string.error_failed_apply_removal)
                     )
                 )
             }

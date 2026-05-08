@@ -6,14 +6,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -66,32 +65,48 @@ fun SelectableStickerGrid(
     onToggle: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    LazyRow(
+    Column(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        itemsIndexed(stickers) { index, path ->
-            Box(
-                modifier = Modifier
-                    .size(84.dp)
-                    .neubrutalShadow(2.dp, 2.dp, 12.dp, NeubrutalBlack)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(NeubrutalWhite)
-                    .border(
-                        width = if (selectedIndices.contains(index)) 3.dp else 2.dp,
-                        color = if (selectedIndices.contains(index)) AccentCoral else NeubrutalBlack,
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    .clickable { onToggle(index) }
-                    .padding(2.dp),
-                contentAlignment = Alignment.TopEnd
+        stickers.chunked(4).forEachIndexed { rowIndex, rowItems ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                AsyncImage(
-                    model = path,
-                    contentDescription = stringResource(Res.string.split_sticker_index, index),
-                    modifier = Modifier.matchParentSize(),
-                    contentScale = ContentScale.Crop
-                )
+                rowItems.forEachIndexed { itemIndex, path ->
+                    val index = (rowIndex * 4) + itemIndex
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .aspectRatio(1f)
+                            .neubrutalShadow(2.dp, 2.dp, 12.dp, NeubrutalBlack)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(NeubrutalWhite)
+                            .border(
+                                width = if (selectedIndices.contains(index)) 3.dp else 2.dp,
+                                color = if (selectedIndices.contains(index)) AccentCoral else NeubrutalBlack,
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .clickable { onToggle(index) }
+                            .padding(2.dp),
+                        contentAlignment = Alignment.TopEnd
+                    ) {
+                        AsyncImage(
+                            model = path,
+                            contentDescription = stringResource(Res.string.split_sticker_index, index),
+                            modifier = Modifier.matchParentSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                }
+                repeat(4 - rowItems.size) {
+                    Spacer(
+                        modifier = Modifier
+                            .weight(1f)
+                            .aspectRatio(1f)
+                    )
+                }
             }
         }
     }

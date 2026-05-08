@@ -7,7 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
 import org.koin.compose.koinInject
-import presentation.common.resolve
+import presentation.common.resolveOrDefault
 
 @Composable
 fun CreatePackScreenRoot(
@@ -29,7 +29,7 @@ fun CreatePackScreenRoot(
                 is CreatePackEffect.PackSaved -> onPackSaved(effect.packId)
                 is CreatePackEffect.NavigateBack -> onBackClick()
                 is CreatePackEffect.ShowError -> {
-                    snackbarHostState.showSnackbar(effect.message.resolve())
+                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
                 }
             }
         }

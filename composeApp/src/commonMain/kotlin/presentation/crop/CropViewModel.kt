@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import presentation.common.UiText
+import presentation.common.toUiText
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_failed_crop_image
 
@@ -83,8 +84,7 @@ class CropViewModel : ViewModel() {
                 _state.update { it.copy(isProcessing = false, error = e.message) }
                 _effect.send(
                     CropEffect.ShowError(
-                        e.message?.let(UiText::DynamicString)
-                            ?: UiText.StringRes(Res.string.error_failed_crop_image)
+                        e.toUiText(Res.string.error_failed_crop_image)
                     )
                 )
             }

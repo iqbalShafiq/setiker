@@ -7,7 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
 import org.koin.compose.koinInject
-import presentation.common.resolve
+import presentation.common.resolveOrDefault
 
 @Composable
 fun CropScreenRoot(
@@ -29,7 +29,7 @@ fun CropScreenRoot(
                 is CropEffect.ImageCropped -> onImageCropped(effect.path)
                 is CropEffect.NavigateBack -> onBackClick()
                 is CropEffect.ShowError -> {
-                    snackbarHostState.showSnackbar(effect.message.resolve())
+                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
                 }
             }
         }

@@ -7,7 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
 import org.koin.compose.koinInject
-import presentation.common.resolve
+import presentation.common.resolveOrDefault
 
 @Composable
 fun PackDetailScreenRoot(
@@ -34,10 +34,10 @@ fun PackDetailScreenRoot(
                 is PackDetailEffect.NavigateToAddSticker -> onAddSticker(packId)
                 is PackDetailEffect.NavigateToEditSticker -> onEditSticker(effect.index, packId)
                 is PackDetailEffect.ShowError -> {
-                    snackbarHostState.showSnackbar(effect.message.resolve())
+                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
                 }
                 is PackDetailEffect.ShowSuccess -> {
-                    snackbarHostState.showSnackbar(effect.message.resolve())
+                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
                 }
                 is PackDetailEffect.LaunchAddToWhatsApp -> {
                     onAddToWhatsApp?.invoke(effect.packId, effect.packName)

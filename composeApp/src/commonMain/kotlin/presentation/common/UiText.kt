@@ -17,3 +17,13 @@ suspend fun UiText.resolve(): String {
         is UiText.StringRes -> getString(resource, *args.toTypedArray())
     }
 }
+
+suspend fun UiText.resolveOrDefault(defaultValue: String = "Something went wrong"): String {
+    return runCatching { resolve() }
+        .getOrElse {
+            when (this) {
+                is UiText.DynamicString -> value.ifBlank { defaultValue }
+                is UiText.StringRes -> defaultValue
+            }
+        }
+}

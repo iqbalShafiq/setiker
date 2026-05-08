@@ -138,4 +138,13 @@
     <string name="error_failed_crop_image">Failed to crop image.</string>
     <string name="error_failed_remove_background">Failed to remove background.</string>
     <string name="error_failed_apply_removal">Failed to apply removal.</string>
+    <string name="error_background_remove_request_failed">Background removal request failed.</string>
+    <string name="error_invalid_background_remove_response">Background removal response is invalid.</string>
+    <string name="error_generate_request_failed">Generate request failed.</string>
+    <string name="error_invalid_generate_response">Generate response is invalid.</string>
+    <string name="error_grid_split_request_failed">Grid split request failed.</string>
+    <string name="error_invalid_grid_split_response">Grid split response is invalid.</string>
+    <string name="error_image_download_failed">Failed to download generated image.</string>
+    <string name="error_pack_not_found">Pack not found.</string>
+    <string name="error_sticker_not_found">Sticker not found.</string>
 </resources>

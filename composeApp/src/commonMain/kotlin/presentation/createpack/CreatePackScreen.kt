@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -336,6 +337,14 @@ fun CreatePackScreen(
                             style = MaterialTheme.typography.bodyMedium,
                             color = NeubrutalBlack
                         )
+                        if (!state.error.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = state.error,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = ErrorRed
+                            )
+                        }
                         Spacer(modifier = Modifier.height(20.dp))
                         AppPrimaryButton(
                             text = stringResource(if (state.isApiLoading) Res.string.processing else Res.string.split_grid),
@@ -366,6 +375,14 @@ fun CreatePackScreen(
                             style = MaterialTheme.typography.labelMedium,
                             color = NeubrutalBlack.copy(alpha = 0.75f)
                         )
+                        if (!state.error.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = state.error,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = ErrorRed
+                            )
+                        }
                         Spacer(modifier = Modifier.height(8.dp))
                         SelectableStickerGrid(
                             stickers = state.splitPreview,
@@ -526,15 +543,33 @@ fun CreatePackScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(vertical = 10.dp)
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    itemsIndexed(state.stickers) { index, stickerPath ->
-                        StickerPreviewItem(
-                            imagePath = stickerPath,
-                            onRemove = { onIntent(CreatePackIntent.RemoveSticker(index)) }
-                        )
+                    state.stickers.chunked(4).forEachIndexed { rowIndex, rowItems ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            rowItems.forEachIndexed { itemIndex, stickerPath ->
+                                val stickerIndex = (rowIndex * 4) + itemIndex
+                                StickerPreviewItem(
+                                    imagePath = stickerPath,
+                                    onRemove = { onIntent(CreatePackIntent.RemoveSticker(stickerIndex)) },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .aspectRatio(1f)
+                                )
+                            }
+                            repeat(4 - rowItems.size) {
+                                Spacer(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .aspectRatio(1f)
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -614,7 +649,7 @@ private fun StickerPreviewItem(
     modifier: Modifier = Modifier
 ) {
     Box(
-        modifier = modifier.size(72.dp)
+        modifier = modifier
     ) {
         AsyncImage(
             model = imagePath,

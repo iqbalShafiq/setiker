@@ -1,3 +1,9 @@
 package data.remote
 
-class ApiException(message: String) : Exception(message)
+import domain.error.AppErrorCode
+import domain.error.AppException
+
+class ApiException(
+    code: AppErrorCode,
+    message: String? = null
+) : AppException(code, message)

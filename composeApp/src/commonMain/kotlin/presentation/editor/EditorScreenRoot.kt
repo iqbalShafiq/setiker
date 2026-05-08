@@ -7,7 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
 import org.koin.compose.koinInject
-import presentation.common.resolve
+import presentation.common.resolveOrDefault
 
 @Composable
 fun EditorScreenRoot(
@@ -70,7 +70,7 @@ fun EditorScreenRoot(
                 is EditorEffect.NavigateToCrop -> onNavigateToCrop(effect.imagePath)
                 is EditorEffect.NavigateToBackgroundRemover -> onNavigateToBackgroundRemover(effect.imagePath)
                 is EditorEffect.ShowError -> {
-                    snackbarHostState.showSnackbar(effect.message.resolve())
+                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
                 }
             }
         }
