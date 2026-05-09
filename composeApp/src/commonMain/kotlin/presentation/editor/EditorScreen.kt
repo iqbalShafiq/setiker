@@ -40,6 +40,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.material3.SnackbarHost
@@ -58,6 +59,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -123,6 +125,7 @@ import setiker.composeapp.generated.resources.change_color
 import setiker.composeapp.generated.resources.edit_text_decoration
 import setiker.composeapp.generated.resources.change_emoji
 import setiker.composeapp.generated.resources.change_image
+import androidx.compose.ui.graphics.toArgb
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -701,41 +704,140 @@ private fun ColorPickerBottomSheet(
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val colorOptions = listOf(
-        0xFFFFFFFFL,
-        0xFF000000L,
-        0xFFFFEB3BL,
-        0xFFFF5252L,
-        0xFF4CAF50L,
-        0xFF2196F3L
-    )
+    val initialHsv = remember(selectedColorArgb) { argbToHsv(selectedColorArgb.toInt()) }
+    var hue by remember(selectedColorArgb) { mutableStateOf(initialHsv[0]) }
+    var saturation by remember(selectedColorArgb) { mutableStateOf(initialHsv[1]) }
+    var value by remember(selectedColorArgb) { mutableStateOf(initialHsv[2]) }
+    val selectedColor = Color.hsv(hue = hue, saturation = saturation, value = value)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = NeubrutalBg,
         scrimColor = NeubrutalBlack.copy(alpha = 0.35f)
     ) {
-        FlowRow(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp).padding(bottom = 24.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 8.dp)
+                .padding(bottom = 24.dp)
         ) {
-            colorOptions.forEach { color ->
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(Color(color.toInt()))
-                        .border(
-                            if (selectedColorArgb == color) 3.dp else 2.dp,
-                            NeubrutalBlack,
-                            CircleShape
-                        )
-                        .clickable { onSelect(color) }
-                )
-            }
+            Text(
+                text = "Color preview",
+                style = MaterialTheme.typography.labelLarge,
+                color = NeubrutalBlack
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(selectedColor)
+                    .border(2.dp, NeubrutalBlack, RoundedCornerShape(12.dp))
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            ColorSliderRow(
+                label = "Hue",
+                value = hue,
+                valueRange = 0f..360f,
+                trackBrush = Brush.horizontalGradient(
+                    listOf(
+                        Color.Red,
+                        Color.Yellow,
+                        Color.Green,
+                        Color.Cyan,
+                        Color.Blue,
+                        Color.Magenta,
+                        Color.Red
+                    )
+                ),
+                onValueChange = { hue = it }
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            ColorSliderRow(
+                label = "Saturation",
+                value = saturation,
+                valueRange = 0f..1f,
+                trackBrush = Brush.horizontalGradient(
+                    listOf(
+                        Color.hsv(hue, 0f, value),
+                        Color.hsv(hue, 1f, value)
+                    )
+                ),
+                onValueChange = { saturation = it }
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            ColorSliderRow(
+                label = "Brightness",
+                value = value,
+                valueRange = 0f..1f,
+                trackBrush = Brush.horizontalGradient(
+                    listOf(
+                        Color.Black,
+                        Color.hsv(hue, saturation, 1f)
+                    )
+                ),
+                onValueChange = { value = it }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+            AppPrimaryButton(
+                text = stringResource(Res.string.add_decoration),
+                onClick = { onSelect(selectedColor.toArgb().toLong() and 0xFFFFFFFFL) }
+            )
         }
     }
+}
+
+@Composable
+private fun ColorSliderRow(
+    label: String,
+    value: Float,
+    valueRange: ClosedFloatingPointRange<Float>,
+    trackBrush: Brush,
+    onValueChange: (Float) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = NeubrutalBlack
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(14.dp)
+                .clip(RoundedCornerShape(999.dp))
+                .background(trackBrush)
+                .border(1.dp, NeubrutalBlack, RoundedCornerShape(999.dp))
+        )
+        Slider(
+            value = value,
+            onValueChange = onValueChange,
+            valueRange = valueRange
+        )
+    }
+}
+
+private fun argbToHsv(argb: Int): FloatArray {
+    val r = ((argb shr 16) and 0xFF) / 255f
+    val g = ((argb shr 8) and 0xFF) / 255f
+    val b = (argb and 0xFF) / 255f
+
+    val max = maxOf(r, g, b)
+    val min = minOf(r, g, b)
+    val delta = max - min
+
+    val hue = when {
+        delta == 0f -> 0f
+        max == r -> ((g - b) / delta).let { if (it < 0f) it + 6f else it } * 60f
+        max == g -> (((b - r) / delta) + 2f) * 60f
+        else -> (((r - g) / delta) + 4f) * 60f
+    }
+    val saturation = if (max == 0f) 0f else delta / max
+    val value = max
+    return floatArrayOf(hue, saturation, value)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -22,7 +22,9 @@ data class StickerEntity(
     val id: String,
     val packId: String,
     val imageFile: String,
+    val sourceImageFile: String? = null,
     val emojis: String,
     val accessibilityText: String?,
+    val decorationsJson: String? = null,
     val sortOrder: Int
 )

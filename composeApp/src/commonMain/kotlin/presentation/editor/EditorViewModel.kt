@@ -412,15 +412,18 @@ class EditorViewModel(
                 val sticker = pack.stickers.getOrNull(index)
 
                 if (sticker != null) {
+                    val editableImagePath = sticker.sourceImageFile ?: sticker.imageFile
                     val currentImagePath = _state.value.imagePath
-                    val isPathModified = currentImagePath.isNotBlank() && currentImagePath != sticker.imageFile
+                    val isPathModified = currentImagePath.isNotBlank() && currentImagePath != editableImagePath
 
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            imagePath = if (isPathModified) currentImagePath else sticker.imageFile,
+                            imagePath = if (isPathModified) currentImagePath else editableImagePath,
                             emojis = sticker.emojis,
-                            accessibilityText = sticker.accessibilityText ?: ""
+                            accessibilityText = sticker.accessibilityText ?: "",
+                            decorations = sticker.decorations,
+                            selectedDecorationId = null
                         )
                     }
                     if (isPathModified) {
@@ -455,18 +458,29 @@ class EditorViewModel(
             try {
                 android.util.Log.d("EditorViewModel", "Saving sticker with packId: '$effectivePackId'")
                 
-                // Save image to stickers directory (512x512, WebP, <100KB)
-                val fileName = "sticker_${effectivePackId}_${System.currentTimeMillis()}.webp"
-                val savedPath = fileStorage.saveStickerImageWithDecorations(
+                // Save editable base image and flattened preview image separately
+                val time = System.currentTimeMillis()
+                val baseFileName = "sticker_${effectivePackId}_${time}_base.webp"
+                val basePath = fileStorage.saveStickerImage(
                     sourcePath = currentState.imagePath,
-                    fileName = fileName,
-                    decorations = currentState.decorations
+                    fileName = baseFileName
                 )
+                val flattenedPath = if (currentState.decorations.isEmpty()) {
+                    basePath
+                } else {
+                    fileStorage.saveStickerImageWithDecorations(
+                        sourcePath = basePath,
+                        fileName = "sticker_${effectivePackId}_${time}_preview.webp",
+                        decorations = currentState.decorations
+                    )
+                }
                 
                 val sticker = Sticker(
-                    imageFile = savedPath,
+                    imageFile = flattenedPath,
+                    sourceImageFile = basePath,
                     emojis = currentState.emojis,
-                    accessibilityText = currentState.accessibilityText.ifBlank { null }
+                    accessibilityText = currentState.accessibilityText.ifBlank { null },
+                    decorations = currentState.decorations
                 )
 
                 // Save recent emojis

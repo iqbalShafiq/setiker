@@ -8,6 +8,7 @@ import data.storage.StickerFileStorage
 import domain.error.AppErrorCode
 import domain.error.AppException
 import domain.model.Sticker
+import domain.model.StickerDecoration
 import domain.model.StickerPack
 import domain.repository.StickerRepository
 import kotlinx.coroutines.Dispatchers
@@ -57,8 +58,10 @@ class StickerRepositoryImpl(
                 id = Uuid.random().toString(),
                 packId = entity.identifier,
                 imageFile = sticker.imageFile,
+                sourceImageFile = sticker.sourceImageFile,
                 emojis = Json.encodeToString(sticker.emojis),
                 accessibilityText = sticker.accessibilityText,
+                decorationsJson = Json.encodeToString(sticker.decorations),
                 sortOrder = index
             )
             stickerDao.insert(stickerEntity)
@@ -88,8 +91,10 @@ class StickerRepositoryImpl(
                 id = Uuid.random().toString(),
                 packId = packId,
                 imageFile = sticker.imageFile,
+                sourceImageFile = sticker.sourceImageFile,
                 emojis = Json.encodeToString(sticker.emojis),
                 accessibilityText = sticker.accessibilityText,
+                decorationsJson = Json.encodeToString(sticker.decorations),
                 sortOrder = count
             )
             stickerDao.insert(entity)
@@ -109,8 +114,10 @@ class StickerRepositoryImpl(
 
             val updatedEntity = existing.copy(
                 imageFile = sticker.imageFile,
+                sourceImageFile = sticker.sourceImageFile,
                 emojis = Json.encodeToString(sticker.emojis),
-                accessibilityText = sticker.accessibilityText
+                accessibilityText = sticker.accessibilityText,
+                decorationsJson = Json.encodeToString(sticker.decorations)
             )
             stickerDao.insert(updatedEntity)
 
@@ -139,7 +146,18 @@ class StickerRepositoryImpl(
 
     private fun StickerEntity.toDomainModel() = Sticker(
         imageFile = imageFile,
+        sourceImageFile = sourceImageFile,
         emojis = Json.decodeFromString(emojis),
-        accessibilityText = accessibilityText
+        accessibilityText = accessibilityText,
+        decorations = parseDecorations(decorationsJson)
     )
+
+    private fun parseDecorations(raw: String?): List<StickerDecoration> {
+        if (raw.isNullOrBlank()) return emptyList()
+        return try {
+            Json.decodeFromString<List<StickerDecoration>>(raw)
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
 }

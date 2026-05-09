@@ -2,6 +2,7 @@ package di
 
 import android.content.Context
 import androidx.room.Room
+import data.local.database.DatabaseMigrations
 import data.local.database.StickerDatabase
 import data.storage.StickerFileStorage
 import data.util.EmojiPreferences
@@ -17,7 +18,10 @@ actual fun platformModule(): Module = module {
             context = androidContext(),
             klass = StickerDatabase::class.java,
             name = StickerDatabase.DATABASE_NAME
-        ).build()
+        )
+            .addMigrations(DatabaseMigrations.MIGRATION_1_2)
+            .addMigrations(DatabaseMigrations.MIGRATION_2_3)
+            .build()
     }
 
     single { get<StickerDatabase>().stickerPackDao() }

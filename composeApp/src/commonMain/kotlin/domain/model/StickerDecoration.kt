@@ -1,5 +1,9 @@
 package domain.model
 
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
 enum class DecorationFont {
     Sans,
     Serif,
@@ -10,6 +14,7 @@ enum class DecorationFont {
     Condensed
 }
 
+@Serializable
 enum class DecorationFontWeight {
     Light,
     Regular,
@@ -18,6 +23,7 @@ enum class DecorationFontWeight {
     Bold
 }
 
+@Serializable
 sealed interface StickerDecoration {
     val id: String
     val centerX: Float
@@ -25,6 +31,8 @@ sealed interface StickerDecoration {
     val scale: Float
 }
 
+@Serializable
+@SerialName("text")
 data class TextDecoration(
     override val id: String,
     val text: String,
@@ -36,6 +44,8 @@ data class TextDecoration(
     override val scale: Float = 1f
 ) : StickerDecoration
 
+@Serializable
+@SerialName("emoji")
 data class EmojiDecoration(
     override val id: String,
     val emoji: String,
@@ -44,6 +54,8 @@ data class EmojiDecoration(
     override val scale: Float = 1f
 ) : StickerDecoration
 
+@Serializable
+@SerialName("image")
 data class ImageDecoration(
     override val id: String,
     val imagePath: String,

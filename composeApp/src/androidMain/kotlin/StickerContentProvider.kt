@@ -10,9 +10,12 @@ import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.util.Log
 import androidx.room.Room
+import data.local.database.DatabaseMigrations
 import data.local.database.StickerDatabase
 import data.storage.StickerFileStorage
+import domain.model.StickerDecoration
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
 import java.io.File
 
 class StickerContentProvider : ContentProvider() {
@@ -60,7 +63,10 @@ class StickerContentProvider : ContentProvider() {
                 context,
                 StickerDatabase::class.java,
                 StickerDatabase.DATABASE_NAME
-            ).build()
+            )
+                .addMigrations(DatabaseMigrations.MIGRATION_1_2)
+                .addMigrations(DatabaseMigrations.MIGRATION_2_3)
+                .build()
         }
         return database!!
     }
@@ -268,9 +274,36 @@ class StickerContentProvider : ContentProvider() {
     private suspend fun getStickerFile(fileName: String, identifier: String): ParcelFileDescriptor? {
         return try {
             Log.d(TAG, "Getting sticker file: $fileName")
+            cleanupOldExportFiles()
+            val stickerEntity = getDatabase()
+                .stickerDao()
+                .getByPackId(identifier)
+                .firstOrNull { File(it.imageFile).name == fileName }
+
             val filePath = getFileStorage().getImagePath(fileName)
-            Log.d(TAG, "Resolved path: $filePath")
-            val file = File(filePath)
+            val exportPath = if (stickerEntity?.sourceImageFile != null) {
+                // New flow stores flattened preview directly in imageFile.
+                filePath
+            } else if (stickerEntity?.decorationsJson.isNullOrBlank()) {
+                filePath
+            } else {
+                val decorations = try {
+                    Json.decodeFromString<List<StickerDecoration>>(stickerEntity.decorationsJson)
+                } catch (_: Exception) {
+                    emptyList()
+                }
+                if (decorations.isEmpty()) {
+                    filePath
+                } else {
+                    getFileStorage().saveStickerImageWithDecorations(
+                        sourcePath = filePath,
+                        fileName = "wa_export_${identifier}_${fileName}",
+                        decorations = decorations
+                    )
+                }
+            }
+            Log.d(TAG, "Resolved export path: $exportPath")
+            val file = File(exportPath)
             if (file.exists()) {
                 Log.d(TAG, "File exists, size: ${file.length()} bytes")
                 ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
@@ -282,5 +315,19 @@ class StickerContentProvider : ContentProvider() {
             Log.e(TAG, "Error opening file: $fileName", e)
             null
         }
+    }
+
+    private fun cleanupOldExportFiles() {
+        val stickersDir = File(context?.filesDir, "stickers")
+        if (!stickersDir.exists()) return
+        val now = System.currentTimeMillis()
+        stickersDir.listFiles()
+            ?.filter { it.name.startsWith("wa_export_") }
+            ?.forEach { file ->
+                val ageMs = now - file.lastModified()
+                if (ageMs > 24 * 60 * 60 * 1000L) {
+                    file.delete()
+                }
+            }
     }
 }
