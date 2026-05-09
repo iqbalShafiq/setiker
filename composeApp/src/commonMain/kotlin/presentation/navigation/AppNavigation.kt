@@ -9,19 +9,35 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import presentation.createpack.CreatePackScreenRoot
+import presentation.crop.CropScreenRoot
+import presentation.editor.EditorScreenRoot
 import presentation.home.HomeScreenRoot
 import presentation.packdetail.PackDetailScreenRoot
-import presentation.createpack.CreatePackScreenRoot
-import presentation.editor.EditorScreenRoot
-import presentation.crop.CropScreenRoot
+
+private object CropRecipient {
+    const val Editor = "editor"
+    const val CreatePackSticker = "create_pack_sticker"
+    const val CreatePackTray = "create_pack_tray"
+    const val PackDetailImport = "pack_detail_import"
+}
 
 @Composable
 fun AppNavigation(
     navController: NavHostController = rememberNavController(),
     onAddToWhatsApp: ((String, String) -> Unit)? = null
 ) {
-    // Shared state for crop result (editor reads this when returning from crop)
-    val cropResult = remember { mutableStateOf<String?>(null) }
+    val editorCropResult = remember { mutableStateOf<String?>(null) }
+    val createPackStickerCrop = remember { mutableStateOf<String?>(null) }
+    val createPackTrayCrop = remember { mutableStateOf<String?>(null) }
+    val packDetailImportCrop = remember { mutableStateOf<String?>(null) }
+
+    // Hoist reads: when state is written only inside inactive composables, Compose may skip
+    // invalidating the hierarchy; reading here keeps AppNavigation subscribed while Crop shows.
+    val editorCropDeliveredPath = editorCropResult.value
+    val createStickerCropDeliveredPath = createPackStickerCrop.value
+    val createTrayCropDeliveredPath = createPackTrayCrop.value
+    val packDetailImportDeliveredPath = packDetailImportCrop.value
 
     NavHost(
         navController = navController,
@@ -37,7 +53,7 @@ fun AppNavigation(
                 }
             )
         }
-        
+
         composable(
             route = "packDetail/{packId}",
             arguments = listOf(navArgument("packId") { type = NavType.StringType })
@@ -48,13 +64,21 @@ fun AppNavigation(
                 onBackClick = { navController.popBackStack() },
                 onEditPack = { navController.navigate("createPack?packId=$it") },
                 onAddSticker = { navController.navigate("editor?packId=$it") },
-                onEditSticker = { index, packId ->
-                    navController.navigate("editor?packId=$packId&stickerIndex=$index")
+                onEditSticker = { index, pId ->
+                    navController.navigate("editor?packId=$pId&stickerIndex=$index")
                 },
-                onAddToWhatsApp = onAddToWhatsApp
+                onAddToWhatsApp = onAddToWhatsApp,
+                croppedStickerImportPath = packDetailImportDeliveredPath,
+                onStickerImportCropConsumed = { packDetailImportCrop.value = null },
+                onNavigateToCropForStickerImport = { path ->
+                    packDetailImportCrop.value = null
+                    navController.navigate(
+                        "crop/${PathEncoder.encode(path)}/${CropRecipient.PackDetailImport}"
+                    )
+                }
             )
         }
-        
+
         composable(
             route = "createPack?packId={packId}",
             arguments = listOf(
@@ -73,10 +97,26 @@ fun AppNavigation(
                     navController.navigate("packDetail/$savedPackId") {
                         popUpTo("home") { inclusive = false }
                     }
+                },
+                croppedStickerGalleryPath = createStickerCropDeliveredPath,
+                croppedTrayGalleryPath = createTrayCropDeliveredPath,
+                onStickerGalleryCropConsumed = { createPackStickerCrop.value = null },
+                onTrayGalleryCropConsumed = { createPackTrayCrop.value = null },
+                onNavigateToCropSticker = { path ->
+                    createPackStickerCrop.value = null
+                    navController.navigate(
+                        "crop/${PathEncoder.encode(path)}/${CropRecipient.CreatePackSticker}"
+                    )
+                },
+                onNavigateToCropTray = { path ->
+                    createPackTrayCrop.value = null
+                    navController.navigate(
+                        "crop/${PathEncoder.encode(path)}/${CropRecipient.CreatePackTray}"
+                    )
                 }
             )
         }
-        
+
         composable(
             route = "editor?packId={packId}&stickerIndex={stickerIndex}",
             arguments = listOf(
@@ -89,36 +129,49 @@ fun AppNavigation(
         ) { backStackEntry ->
             val packId = backStackEntry.arguments?.getString("packId") ?: return@composable
             val stickerIndex = backStackEntry.arguments?.getInt("stickerIndex")?.takeIf { it >= 0 }
-            
-            val croppedImagePath = cropResult.value
+
+            val croppedImagePath = editorCropDeliveredPath
 
             EditorScreenRoot(
                 stickerIndex = stickerIndex,
                 packId = packId,
                 croppedImagePath = croppedImagePath,
                 onResultProcessed = {
-                    cropResult.value = null
+                    editorCropResult.value = null
                 },
                 onBackClick = { navController.popBackStack() },
                 onNavigateToCrop = { imagePath ->
-                    cropResult.value = null
-                    navController.navigate("crop/${PathEncoder.encode(imagePath)}")
+                    editorCropResult.value = null
+                    navController.navigate(
+                        "crop/${PathEncoder.encode(imagePath)}/${CropRecipient.Editor}"
+                    )
                 },
                 onStickerSaved = { navController.popBackStack() }
             )
         }
-        
+
         composable(
-            route = "crop/{imagePath}",
-            arguments = listOf(navArgument("imagePath") { type = NavType.StringType })
+            route = "crop/{imagePath}/{recipient}",
+            arguments = listOf(
+                navArgument("imagePath") { type = NavType.StringType },
+                navArgument("recipient") { type = NavType.StringType }
+            )
         ) { backStackEntry ->
             val encodedPath = backStackEntry.arguments?.getString("imagePath") ?: return@composable
+            val recipient = backStackEntry.arguments?.getString("recipient")
+                ?: CropRecipient.Editor
             val imagePath = PathEncoder.decode(encodedPath)
             CropScreenRoot(
                 imagePath = imagePath,
                 onBackClick = { navController.popBackStack() },
                 onImageCropped = { croppedPath ->
-                    cropResult.value = croppedPath
+                    when (recipient) {
+                        CropRecipient.Editor -> editorCropResult.value = croppedPath
+                        CropRecipient.CreatePackSticker -> createPackStickerCrop.value = croppedPath
+                        CropRecipient.CreatePackTray -> createPackTrayCrop.value = croppedPath
+                        CropRecipient.PackDetailImport -> packDetailImportCrop.value = croppedPath
+                        else -> Unit
+                    }
                     navController.popBackStack()
                 }
             )

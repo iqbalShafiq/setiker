@@ -25,4 +25,8 @@ sealed interface CreatePackIntent {
     data object CloseGridSheet : CreatePackIntent
     data object SavePack : CreatePackIntent
     data class LoadPack(val packId: String) : CreatePackIntent
+    data class StageStickerGalleryPick(val path: String) : CreatePackIntent
+    data object DismissStickerGalleryCropPrompt : CreatePackIntent
+    data class StageTrayGalleryPick(val path: String) : CreatePackIntent
+    data object DismissTrayGalleryCropPrompt : CreatePackIntent
 }

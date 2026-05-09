@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -24,10 +26,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -81,6 +85,11 @@ import setiker.composeapp.generated.resources.stickers_title
 import setiker.composeapp.generated.resources.stickers_with_count
 import setiker.composeapp.generated.resources.back
 import setiker.composeapp.generated.resources.add_sticker
+import setiker.composeapp.generated.resources.cancel
+import setiker.composeapp.generated.resources.import_crop_sheet_message_detail
+import setiker.composeapp.generated.resources.import_crop_sheet_primary
+import setiker.composeapp.generated.resources.import_crop_sheet_title
+import setiker.composeapp.generated.resources.sticker_preview_content_description
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,6 +100,7 @@ fun PackDetailScreen(
     onEditPack: () -> Unit,
     onAddSticker: () -> Unit,
     onEditSticker: (Int) -> Unit,
+    onNavigateToCropStickerImport: (String) -> Unit,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     modifier: Modifier = Modifier
 ) {
@@ -99,7 +109,70 @@ fun PackDetailScreen(
 
     val multipleImagePicker = rememberMultipleImagePicker { imagePaths ->
         if (imagePaths.isNotEmpty()) {
-            onIntent(PackDetailIntent.AddMultipleStickers(imagePaths))
+            onIntent(PackDetailIntent.StageStickerImports(imagePaths))
+        }
+    }
+
+    val stickerImportSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    if (state.stickerImportQueue.isNotEmpty()) {
+        val importPath = state.stickerImportQueue.first()
+        val queueSize = state.stickerImportQueue.size
+        ModalBottomSheet(
+            onDismissRequest = { onIntent(PackDetailIntent.DismissStickerImportSheet) },
+            sheetState = stickerImportSheetState,
+            containerColor = NeubrutalBg,
+            scrimColor = NeubrutalBlack.copy(alpha = 0.35f)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 8.dp)
+                    .padding(bottom = 24.dp)
+            ) {
+                Text(
+                    text = stringResource(Res.string.import_crop_sheet_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = NeubrutalBlack
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = stringResource(
+                        Res.string.import_crop_sheet_message_detail,
+                        1,
+                        queueSize
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = NeubrutalBlack.copy(alpha = 0.75f)
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(NeubrutalWhite)
+                        .border(2.dp, NeubrutalBlack, RoundedCornerShape(16.dp))
+                        .padding(4.dp)
+                ) {
+                    AsyncImage(
+                        model = importPath,
+                        contentDescription = stringResource(Res.string.sticker_preview_content_description),
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                AppPrimaryButton(
+                    text = stringResource(Res.string.import_crop_sheet_primary),
+                    onClick = { onNavigateToCropStickerImport(importPath) }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                AppSecondaryButton(
+                    text = stringResource(Res.string.cancel),
+                    onClick = { onIntent(PackDetailIntent.DismissStickerImportSheet) }
+                )
+            }
         }
     }
 
@@ -361,7 +434,8 @@ private fun PackDetailScreenLoadingPreview() {
             onBackClick = {},
             onEditPack = {},
             onAddSticker = {},
-            onEditSticker = {}
+            onEditSticker = {},
+            onNavigateToCropStickerImport = {}
         )
     }
 }
@@ -376,7 +450,8 @@ private fun PackDetailScreenPreview() {
             onBackClick = {},
             onEditPack = {},
             onAddSticker = {},
-            onEditSticker = {}
+            onEditSticker = {},
+            onNavigateToCropStickerImport = {}
         )
     }
 }

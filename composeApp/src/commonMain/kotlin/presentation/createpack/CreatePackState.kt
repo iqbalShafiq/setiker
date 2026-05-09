@@ -26,5 +26,8 @@ data class CreatePackState(
     val gridSplitSheetPhase: GridSplitSheetPhase = GridSplitSheetPhase.Hidden,
     val isEditing: Boolean = false,
     val packId: String = "",
-    val error: String? = null
+    val error: String? = null,
+    /** Raw gallery path; user must confirm crop before AddSticker / tray update. */
+    val pendingStickerGalleryPath: String? = null,
+    val pendingTrayGalleryPath: String? = null
 )

@@ -89,6 +89,10 @@ import setiker.composeapp.generated.resources.grid_off
 import setiker.composeapp.generated.resources.grid_on
 import setiker.composeapp.generated.resources.grid_source_content_description
 import setiker.composeapp.generated.resources.grid_split
+import setiker.composeapp.generated.resources.import_crop_sheet_message_sticker
+import setiker.composeapp.generated.resources.import_crop_sheet_message_tray
+import setiker.composeapp.generated.resources.import_crop_sheet_primary
+import setiker.composeapp.generated.resources.import_crop_sheet_title
 import setiker.composeapp.generated.resources.normalize_off
 import setiker.composeapp.generated.resources.normalize_on
 import setiker.composeapp.generated.resources.pack_name_label
@@ -117,15 +121,17 @@ fun CreatePackScreen(
     state: CreatePackState,
     onIntent: (CreatePackIntent) -> Unit,
     onBackClick: () -> Unit,
+    onNavigateToCropSticker: (String) -> Unit,
+    onNavigateToCropTray: (String) -> Unit,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     modifier: Modifier = Modifier
 ) {
     val trayIconPicker = rememberImagePicker { path ->
-        path?.let { onIntent(CreatePackIntent.UpdateTrayImage(it)) }
+        path?.let { onIntent(CreatePackIntent.StageTrayGalleryPick(it)) }
     }
 
     val stickerPicker = rememberImagePicker { path ->
-        path?.let { onIntent(CreatePackIntent.AddSticker(it)) }
+        path?.let { onIntent(CreatePackIntent.StageStickerGalleryPick(it)) }
     }
 
     val gridSourcePicker = rememberImagePicker { path ->
@@ -138,6 +144,8 @@ fun CreatePackScreen(
     val aiSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val generatedSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val gridSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val stickerImportSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val trayImportSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     if (state.aiGenerateSheetOpen) {
         ModalBottomSheet(
@@ -403,6 +411,124 @@ fun CreatePackScreen(
                     }
 
                 }
+            }
+        }
+    }
+
+    state.pendingStickerGalleryPath?.let { galleryPath ->
+        ModalBottomSheet(
+            onDismissRequest = { onIntent(CreatePackIntent.DismissStickerGalleryCropPrompt) },
+            sheetState = stickerImportSheetState,
+            containerColor = NeubrutalBg,
+            scrimColor = NeubrutalBlack.copy(alpha = 0.35f)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 8.dp)
+                    .padding(bottom = 24.dp)
+            ) {
+                Text(
+                    text = stringResource(Res.string.import_crop_sheet_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = NeubrutalBlack
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = stringResource(Res.string.import_crop_sheet_message_sticker),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = NeubrutalBlack.copy(alpha = 0.75f)
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(NeubrutalWhite)
+                        .border(2.dp, NeubrutalBlack, RoundedCornerShape(16.dp))
+                        .padding(4.dp)
+                ) {
+                    AsyncImage(
+                        model = galleryPath,
+                        contentDescription = stringResource(Res.string.sticker_preview_content_description),
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                AppPrimaryButton(
+                    text = stringResource(Res.string.import_crop_sheet_primary),
+                    onClick = {
+                        onNavigateToCropSticker(galleryPath)
+                        onIntent(CreatePackIntent.DismissStickerGalleryCropPrompt)
+                    }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                AppSecondaryButton(
+                    text = stringResource(Res.string.cancel),
+                    onClick = { onIntent(CreatePackIntent.DismissStickerGalleryCropPrompt) }
+                )
+            }
+        }
+    }
+
+    state.pendingTrayGalleryPath?.let { galleryPath ->
+        ModalBottomSheet(
+            onDismissRequest = { onIntent(CreatePackIntent.DismissTrayGalleryCropPrompt) },
+            sheetState = trayImportSheetState,
+            containerColor = NeubrutalBg,
+            scrimColor = NeubrutalBlack.copy(alpha = 0.35f)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 8.dp)
+                    .padding(bottom = 24.dp)
+            ) {
+                Text(
+                    text = stringResource(Res.string.import_crop_sheet_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = NeubrutalBlack
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = stringResource(Res.string.import_crop_sheet_message_tray),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = NeubrutalBlack.copy(alpha = 0.75f)
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(NeubrutalWhite)
+                        .border(2.dp, NeubrutalBlack, RoundedCornerShape(16.dp))
+                        .padding(4.dp)
+                ) {
+                    AsyncImage(
+                        model = galleryPath,
+                        contentDescription = stringResource(Res.string.tray_icon_content_description),
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                AppPrimaryButton(
+                    text = stringResource(Res.string.import_crop_sheet_primary),
+                    onClick = {
+                        onNavigateToCropTray(galleryPath)
+                        onIntent(CreatePackIntent.DismissTrayGalleryCropPrompt)
+                    }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                AppSecondaryButton(
+                    text = stringResource(Res.string.cancel),
+                    onClick = { onIntent(CreatePackIntent.DismissTrayGalleryCropPrompt) }
+                )
             }
         }
     }
@@ -696,7 +822,9 @@ private fun CreatePackScreenPreview() {
                 isEditing = false
             ),
             onIntent = {},
-            onBackClick = {}
+            onBackClick = {},
+            onNavigateToCropSticker = {},
+            onNavigateToCropTray = {}
         )
     }
 }
@@ -714,7 +842,9 @@ private fun CreatePackScreenEditingPreview() {
                 isEditing = true
             ),
             onIntent = {},
-            onBackClick = {}
+            onBackClick = {},
+            onNavigateToCropSticker = {},
+            onNavigateToCropTray = {}
         )
     }
 }
@@ -726,7 +856,9 @@ private fun CreatePackScreenLoadingPreview() {
         CreatePackScreen(
             state = CreatePackState(isLoading = true),
             onIntent = {},
-            onBackClick = {}
+            onBackClick = {},
+            onNavigateToCropSticker = {},
+            onNavigateToCropTray = {}
         )
     }
 }

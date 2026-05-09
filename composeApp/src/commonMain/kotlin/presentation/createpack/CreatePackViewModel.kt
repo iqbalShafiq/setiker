@@ -139,6 +139,18 @@ class CreatePackViewModel(
             }
             is CreatePackIntent.SavePack -> savePack()
             is CreatePackIntent.LoadPack -> loadPack(intent.packId)
+            is CreatePackIntent.StageStickerGalleryPick -> {
+                _state.update { it.copy(pendingStickerGalleryPath = intent.path) }
+            }
+            is CreatePackIntent.DismissStickerGalleryCropPrompt -> {
+                _state.update { it.copy(pendingStickerGalleryPath = null) }
+            }
+            is CreatePackIntent.StageTrayGalleryPick -> {
+                _state.update { it.copy(pendingTrayGalleryPath = intent.path) }
+            }
+            is CreatePackIntent.DismissTrayGalleryCropPrompt -> {
+                _state.update { it.copy(pendingTrayGalleryPath = null) }
+            }
         }
     }
 
@@ -147,15 +159,25 @@ class CreatePackViewModel(
             _state.update { it.copy(isLoading = true) }
             try {
                 val pack = repository.getPack(packId)
+                val fromServer = pack.stickers.map { sticker -> sticker.imageFile }
+                val previousSession = _state.value.stickers.filter { it.isNotBlank() }
+                val mergedStickers = buildList {
+                    addAll(fromServer)
+                    for (local in previousSession) {
+                        if (local !in fromServer && local !in this) add(local)
+                    }
+                }
                 _state.update {
                     it.copy(
                         isLoading = false,
                         name = pack.name,
                         publisher = pack.publisher,
                         trayImagePath = pack.trayImageFile,
-                        stickers = pack.stickers.map { sticker -> sticker.imageFile },
+                        stickers = mergedStickers,
                         isEditing = true,
-                        packId = pack.identifier
+                        packId = pack.identifier,
+                        pendingStickerGalleryPath = null,
+                        pendingTrayGalleryPath = null
                     )
                 }
             } catch (e: Exception) {

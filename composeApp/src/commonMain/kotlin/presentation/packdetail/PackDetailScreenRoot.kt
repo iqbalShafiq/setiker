@@ -6,7 +6,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
 
 @Composable
@@ -17,13 +17,23 @@ fun PackDetailScreenRoot(
     onAddSticker: (String) -> Unit,
     onEditSticker: (Int, String) -> Unit,
     onAddToWhatsApp: ((String, String) -> Unit)? = null,
-    viewModel: PackDetailViewModel = koinInject()
+    croppedStickerImportPath: String? = null,
+    onStickerImportCropConsumed: () -> Unit = {},
+    onNavigateToCropForStickerImport: (String) -> Unit = {},
+    viewModel: PackDetailViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
         viewModel.onIntent(PackDetailIntent.LoadPack(packId))
+    }
+
+    LaunchedEffect(croppedStickerImportPath) {
+        if (!croppedStickerImportPath.isNullOrBlank()) {
+            viewModel.onIntent(PackDetailIntent.ApplyCroppedStickerImport(croppedStickerImportPath))
+            onStickerImportCropConsumed()
+        }
     }
 
     LaunchedEffect(viewModel.effect) {
@@ -53,6 +63,7 @@ fun PackDetailScreenRoot(
         onEditPack = { onEditPack(packId) },
         onAddSticker = { onAddSticker(packId) },
         onEditSticker = { index -> onEditSticker(index, packId) },
+        onNavigateToCropStickerImport = onNavigateToCropForStickerImport,
         snackbarHostState = snackbarHostState
     )
 }

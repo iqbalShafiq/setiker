@@ -7,6 +7,7 @@ import domain.repository.StickerRepository
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
+import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.bind
 import org.koin.dsl.module
 import presentation.home.HomeViewModel
@@ -25,29 +26,10 @@ val appModule = module {
     single { SetikerApiService() }
     single { StickerApiRepository(api = get(), fileStorage = get()) }
 
-    // ViewModels
-    factoryOf(::HomeViewModel)
-    factory {
-        PackDetailViewModel(
-            repository = get(),
-            packActions = get(),
-            fileStorage = get()
-        )
-    }
-    factory { params ->
-        CreatePackViewModel(
-            repository = get(),
-            fileStorage = get(),
-            apiRepository = get()
-        )
-    }
-    factory { params ->
-        EditorViewModel(
-            repository = get(),
-            emojiPreferences = get(),
-            fileStorage = get(),
-            apiRepository = get()
-        )
-    }
-    factoryOf(::CropViewModel)
+    // ViewModels (viewModelOf = scoped to NavBackStackEntry / LocalViewModelStoreOwner)
+    viewModelOf(::HomeViewModel)
+    viewModelOf(::PackDetailViewModel)
+    viewModelOf(::CreatePackViewModel)
+    viewModelOf(::EditorViewModel)
+    viewModelOf(::CropViewModel)
 }

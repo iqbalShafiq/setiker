@@ -6,7 +6,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
 
 @Composable
@@ -18,7 +18,7 @@ fun EditorScreenRoot(
     onBackClick: () -> Unit,
     onNavigateToCrop: (String) -> Unit,
     onStickerSaved: () -> Unit,
-    viewModel: EditorViewModel = koinInject()
+    viewModel: EditorViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }

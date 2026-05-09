@@ -55,7 +55,9 @@ class PackDetailViewModel(
                     _effect.send(PackDetailEffect.NavigateToAddSticker)
                 }
             }
-            is PackDetailIntent.AddMultipleStickers -> addMultipleStickers(intent.imagePaths)
+            is PackDetailIntent.StageStickerImports -> stageStickerImports(intent.imagePaths)
+            is PackDetailIntent.DismissStickerImportSheet -> dismissStickerImport()
+            is PackDetailIntent.ApplyCroppedStickerImport -> applyCroppedStickerImport(intent.croppedPath)
             is PackDetailIntent.EditSticker -> {
                 viewModelScope.launch {
                     _effect.send(PackDetailEffect.NavigateToEditSticker(intent.index))
@@ -161,39 +163,53 @@ class PackDetailViewModel(
         }
     }
 
-    private fun addMultipleStickers(imagePaths: List<String>) {
+    private fun stageStickerImports(imagePaths: List<String>) {
+        val filtered = imagePaths.filter { it.isNotBlank() }
+        if (filtered.isEmpty()) return
+        _state.update {
+            it.copy(
+                stickerImportQueue = filtered,
+                stickerImportBatchTotal = filtered.size
+            )
+        }
+    }
+
+    private fun dismissStickerImport() {
+        _state.update {
+            it.copy(
+                stickerImportQueue = emptyList(),
+                stickerImportBatchTotal = 0
+            )
+        }
+    }
+
+    private fun applyCroppedStickerImport(croppedPath: String) {
         viewModelScope.launch {
+            val pack = _state.value.pack ?: return@launch
+            val queue = _state.value.stickerImportQueue
+            if (queue.isEmpty()) return@launch
             try {
-                val pack = _state.value.pack ?: return@launch
-                
-                var successCount = 0
-                imagePaths.forEach { imagePath ->
-                    try {
-                        val fileName = "sticker_${pack.identifier}_${System.currentTimeMillis()}_${successCount}.webp"
-                        val savedPath = fileStorage.saveStickerImage(imagePath, fileName)
-                        
-                        val sticker = Sticker(
-                            imageFile = savedPath,
-                            emojis = listOf("\u2b50"),
-                            accessibilityText = null
-                        )
-                        
-                        repository.addStickerToPack(pack.identifier, sticker)
-                        successCount++
-                    } catch (e: Exception) {
-                        android.util.Log.e("PackDetailViewModel", "Failed to add sticker: ${e.message}")
-                    }
-                }
-                
-                if (successCount > 0) {
-                    loadPack(pack.identifier)
+                val fileName = "sticker_${pack.identifier}_${System.currentTimeMillis()}.webp"
+                val savedPath = fileStorage.saveStickerImage(croppedPath, fileName)
+
+                val sticker = Sticker(
+                    imageFile = savedPath,
+                    emojis = listOf("\u2b50"),
+                    accessibilityText = null
+                )
+
+                repository.addStickerToPack(pack.identifier, sticker)
+                val remaining = queue.drop(1)
+                val batchTotal = _state.value.stickerImportBatchTotal
+                _state.update { it.copy(stickerImportQueue = remaining) }
+                loadPack(pack.identifier)
+                if (remaining.isEmpty()) {
+                    _state.update { it.copy(stickerImportBatchTotal = 0) }
                     _effect.send(
                         PackDetailEffect.ShowSuccess(
-                            UiText.StringRes(Res.string.success_stickers_added, listOf(successCount))
+                            UiText.StringRes(Res.string.success_stickers_added, listOf(batchTotal))
                         )
                     )
-                } else {
-                    _effect.send(PackDetailEffect.ShowError(UiText.StringRes(Res.string.error_failed_add_stickers)))
                 }
             } catch (e: Exception) {
                 _effect.send(

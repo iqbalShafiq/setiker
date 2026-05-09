@@ -104,6 +104,11 @@
     <string name="sticker_fallback">Sticker</string>
     <string name="settings">Settings</string>
 
+    <string name="import_crop_sheet_title">Crop before adding</string>
+    <string name="import_crop_sheet_message_sticker">Crop this photo to a square so it is not stretched when saved as a sticker.</string>
+    <string name="import_crop_sheet_message_tray">Crop your tray icon to a square. It will be resized for WhatsApp.</string>
+    <string name="import_crop_sheet_message_detail">Crop this photo (%1$d of %2$d) to a square before it is added to the pack.</string>
+    <string name="import_crop_sheet_primary">Crop &amp; continue</string>
     <string name="crop_image_title">Crop Image</string>
     <string name="zoom">Zoom</string>
     <string name="rotate_left">Rotate L</string>

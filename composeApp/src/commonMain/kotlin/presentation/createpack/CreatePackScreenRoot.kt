@@ -6,7 +6,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
 
 @Composable
@@ -14,13 +14,33 @@ fun CreatePackScreenRoot(
     packId: String?,
     onBackClick: () -> Unit,
     onPackSaved: (String) -> Unit,
-    viewModel: CreatePackViewModel = koinInject()
+    croppedStickerGalleryPath: String? = null,
+    croppedTrayGalleryPath: String? = null,
+    onStickerGalleryCropConsumed: () -> Unit = {},
+    onTrayGalleryCropConsumed: () -> Unit = {},
+    onNavigateToCropSticker: (String) -> Unit = {},
+    onNavigateToCropTray: (String) -> Unit = {},
+    viewModel: CreatePackViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(packId) {
         packId?.let { viewModel.onIntent(CreatePackIntent.LoadPack(it)) }
+    }
+
+    LaunchedEffect(croppedStickerGalleryPath) {
+        if (!croppedStickerGalleryPath.isNullOrBlank()) {
+            viewModel.onIntent(CreatePackIntent.AddSticker(croppedStickerGalleryPath))
+            onStickerGalleryCropConsumed()
+        }
+    }
+
+    LaunchedEffect(croppedTrayGalleryPath) {
+        if (!croppedTrayGalleryPath.isNullOrBlank()) {
+            viewModel.onIntent(CreatePackIntent.UpdateTrayImage(croppedTrayGalleryPath))
+            onTrayGalleryCropConsumed()
+        }
     }
 
     LaunchedEffect(viewModel.effect) {
@@ -39,6 +59,8 @@ fun CreatePackScreenRoot(
         state = state,
         onIntent = viewModel::onIntent,
         onBackClick = onBackClick,
+        onNavigateToCropSticker = onNavigateToCropSticker,
+        onNavigateToCropTray = onNavigateToCropTray,
         snackbarHostState = snackbarHostState
     )
 }

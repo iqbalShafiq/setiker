@@ -6,14 +6,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
 
 @Composable
 fun HomeScreenRoot(
     onPackClick: (String) -> Unit,
     onCreatePackClick: () -> Unit,
-    viewModel: HomeViewModel = koinInject()
+    viewModel: HomeViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
