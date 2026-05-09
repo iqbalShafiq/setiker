@@ -114,12 +114,6 @@ fun AppNavigation(
                     bgResult.value = null
                     navController.navigate("crop/${PathEncoder.encode(imagePath)}")
                 },
-                onNavigateToBackgroundRemover = { imagePath ->
-                    // Clear any previous results before navigating
-                    cropResult.value = null
-                    bgResult.value = null
-                    navController.navigate("bgRemover/${PathEncoder.encode(imagePath)}")
-                },
                 onStickerSaved = { navController.popBackStack() }
             )
         }

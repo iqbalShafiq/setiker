@@ -18,7 +18,6 @@ fun EditorScreenRoot(
     onResultProcessed: () -> Unit = {},
     onBackClick: () -> Unit,
     onNavigateToCrop: (String) -> Unit,
-    onNavigateToBackgroundRemover: (String) -> Unit,
     onStickerSaved: () -> Unit,
     viewModel: EditorViewModel = koinInject()
 ) {
@@ -68,7 +67,6 @@ fun EditorScreenRoot(
                 is EditorEffect.StickerSaved -> onStickerSaved()
                 is EditorEffect.NavigateBack -> onBackClick()
                 is EditorEffect.NavigateToCrop -> onNavigateToCrop(effect.imagePath)
-                is EditorEffect.NavigateToBackgroundRemover -> onNavigateToBackgroundRemover(effect.imagePath)
                 is EditorEffect.ShowError -> {
                     snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
                 }

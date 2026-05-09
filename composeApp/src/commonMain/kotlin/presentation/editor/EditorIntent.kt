@@ -7,7 +7,9 @@ sealed interface EditorIntent {
     data class UpdateAccessibilityText(val text: String) : EditorIntent
     data object SaveSticker : EditorIntent
     data object NavigateToCrop : EditorIntent
-    data object NavigateToBackgroundRemover : EditorIntent
+    data object RemoveBackground : EditorIntent
+    data object DismissBackgroundRemoverSheet : EditorIntent
+    data object ConfirmBackgroundRemoval : EditorIntent
     data class SetPackId(val packId: String, val stickerIndex: Int? = null) : EditorIntent
     data class LoadSticker(val stickerIndex: Int, val packId: String) : EditorIntent
     data object ShowEmojiPicker : EditorIntent

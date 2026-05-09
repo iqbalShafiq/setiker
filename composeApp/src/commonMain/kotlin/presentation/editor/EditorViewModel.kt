@@ -2,10 +2,14 @@ package presentation.editor
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import data.remote.StickerApiRepository
 import data.storage.StickerFileStorage
 import data.util.EmojiPreferences
 import domain.model.Sticker
 import domain.repository.StickerRepository
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,6 +20,7 @@ import kotlinx.coroutines.launch
 import presentation.common.UiText
 import presentation.common.toUiText
 import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.error_failed_apply_removal
 import setiker.composeapp.generated.resources.error_failed_save_sticker
 import setiker.composeapp.generated.resources.error_pack_id_missing
 import setiker.composeapp.generated.resources.error_select_image
@@ -23,7 +28,8 @@ import setiker.composeapp.generated.resources.error_select_image
 class EditorViewModel(
     private val repository: StickerRepository,
     private val emojiPreferences: EmojiPreferences,
-    private val fileStorage: StickerFileStorage
+    private val fileStorage: StickerFileStorage,
+    private val apiRepository: StickerApiRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(EditorState())
@@ -36,6 +42,7 @@ class EditorViewModel(
     private var stickerIndex: Int? = null
     private var loadedPackId: String? = null
     private var loadedStickerIndex: Int? = null
+    private var backgroundRemovalJob: Job? = null
 
     fun onIntent(intent: EditorIntent) {
         when (intent) {
@@ -62,11 +69,9 @@ class EditorViewModel(
                     _effect.send(EditorEffect.NavigateToCrop(_state.value.imagePath))
                 }
             }
-            is EditorIntent.NavigateToBackgroundRemover -> {
-                viewModelScope.launch {
-                    _effect.send(EditorEffect.NavigateToBackgroundRemover(_state.value.imagePath))
-                }
-            }
+            is EditorIntent.RemoveBackground -> removeBackground()
+            is EditorIntent.DismissBackgroundRemoverSheet -> dismissBackgroundRemoverSheet()
+            is EditorIntent.ConfirmBackgroundRemoval -> confirmBackgroundRemoval()
             is EditorIntent.SetPackId -> {
                 this.packId = intent.packId
                 intent.stickerIndex?.let { this.stickerIndex = it }
@@ -86,6 +91,80 @@ class EditorViewModel(
             is EditorIntent.LoadRecentEmojis -> {
                 _state.update { it.copy(recentEmojis = intent.emojis) }
             }
+        }
+    }
+
+    private fun removeBackground() {
+        val path = _state.value.imagePath
+        if (path.isBlank()) {
+            viewModelScope.launch {
+                _effect.send(EditorEffect.ShowError(UiText.StringRes(Res.string.error_select_image)))
+            }
+            return
+        }
+
+        backgroundRemovalJob?.cancel()
+        backgroundRemovalJob = viewModelScope.launch {
+            _state.update {
+                it.copy(
+                    isBackgroundRemoverSheetOpen = true,
+                    isBackgroundRemoving = true,
+                    backgroundRemoverPreviewPath = null
+                )
+            }
+
+            try {
+                val resultPath = apiRepository.removeBackground(path)
+                if (!isActive) return@launch
+                _state.update {
+                    it.copy(
+                        isBackgroundRemoving = false,
+                        backgroundRemoverPreviewPath = resultPath
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (!isActive) return@launch
+                _state.update {
+                    it.copy(
+                        isBackgroundRemoverSheetOpen = false,
+                        isBackgroundRemoving = false,
+                        backgroundRemoverPreviewPath = null
+                    )
+                }
+                _effect.send(
+                    EditorEffect.ShowError(
+                        e.toUiText(Res.string.error_failed_apply_removal)
+                    )
+                )
+            } finally {
+                backgroundRemovalJob = null
+            }
+        }
+    }
+
+    private fun dismissBackgroundRemoverSheet() {
+        backgroundRemovalJob?.cancel()
+        backgroundRemovalJob = null
+        _state.update {
+            it.copy(
+                isBackgroundRemoverSheetOpen = false,
+                isBackgroundRemoving = false,
+                backgroundRemoverPreviewPath = null
+            )
+        }
+    }
+
+    private fun confirmBackgroundRemoval() {
+        val preview = _state.value.backgroundRemoverPreviewPath ?: return
+        _state.update {
+            it.copy(
+                imagePath = preview,
+                isBackgroundRemoverSheetOpen = false,
+                isBackgroundRemoving = false,
+                backgroundRemoverPreviewPath = null
+            )
         }
     }
 

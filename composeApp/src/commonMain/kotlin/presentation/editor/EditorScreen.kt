@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -28,20 +29,19 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
 import org.jetbrains.compose.resources.stringResource
 import domain.model.Sticker
+import presentation.components.CheckerboardBackground
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
 import presentation.components.AppTextField
@@ -71,11 +72,17 @@ import setiker.composeapp.generated.resources.cancel
 import setiker.composeapp.generated.resources.crop
 import setiker.composeapp.generated.resources.edit_sticker_title
 import setiker.composeapp.generated.resources.editor_action_hint
+import setiker.composeapp.generated.resources.editor_remove_bg_progress_hint
+import setiker.composeapp.generated.resources.remove_background_title
 import setiker.composeapp.generated.resources.remove_bg
+import setiker.composeapp.generated.resources.remove_bg_preview_content_description
+import setiker.composeapp.generated.resources.remove_bg_result_hint
 import setiker.composeapp.generated.resources.remove_emoji
+import setiker.composeapp.generated.resources.result_confirmation_title
 import setiker.composeapp.generated.resources.save_sticker
 import setiker.composeapp.generated.resources.select_image
 import setiker.composeapp.generated.resources.sticker_preview
+import setiker.composeapp.generated.resources.use_result
 import setiker.composeapp.generated.resources.tags_with_count
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -168,7 +175,8 @@ fun EditorScreen(
                     NeubrutalCircleActionButton(
                         icon = Icons.Default.Delete,
                         label = stringResource(Res.string.remove_bg),
-                        onClick = { onIntent(EditorIntent.NavigateToBackgroundRemover) }
+                        onClick = { onIntent(EditorIntent.RemoveBackground) },
+                        enabled = state.imagePath.isNotBlank() && !state.isBackgroundRemoving
                     )
                 }
 
@@ -256,6 +264,95 @@ fun EditorScreen(
             onDismiss = { onIntent(EditorIntent.HideEmojiPicker) }
         )
     }
+
+    if (state.isBackgroundRemoverSheetOpen) {
+        val bgRemovalSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ModalBottomSheet(
+            onDismissRequest = { onIntent(EditorIntent.DismissBackgroundRemoverSheet) },
+            sheetState = bgRemovalSheetState,
+            containerColor = NeubrutalBg,
+            scrimColor = NeubrutalBlack.copy(alpha = 0.35f)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 8.dp)
+                    .padding(bottom = 24.dp)
+            ) {
+                if (state.isBackgroundRemoving) {
+                    Text(
+                        text = stringResource(Res.string.remove_background_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = NeubrutalBlack
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = stringResource(Res.string.editor_remove_bg_progress_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = NeubrutalBlack.copy(alpha = 0.75f)
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1f)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(NeubrutalWhite)
+                            .border(2.dp, NeubrutalBlack, RoundedCornerShape(16.dp))
+                            .padding(4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        LoadingIndicator()
+                    }
+                } else {
+                    val previewPath = state.backgroundRemoverPreviewPath
+                    if (!previewPath.isNullOrBlank()) {
+                        Text(
+                            text = stringResource(Res.string.result_confirmation_title),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = NeubrutalBlack
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = stringResource(Res.string.remove_bg_result_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = NeubrutalBlack.copy(alpha = 0.75f)
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(1f)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(NeubrutalWhite)
+                                .border(2.dp, NeubrutalBlack, RoundedCornerShape(16.dp))
+                                .padding(4.dp)
+                        ) {
+                            CheckerboardBackground(modifier = Modifier.fillMaxSize())
+                            Image(
+                                painter = rememberAsyncImagePainter(previewPath),
+                                contentDescription = stringResource(Res.string.remove_bg_preview_content_description),
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        AppPrimaryButton(
+                            text = stringResource(Res.string.use_result),
+                            onClick = { onIntent(EditorIntent.ConfirmBackgroundRemoval) }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        AppSecondaryButton(
+                            text = stringResource(Res.string.cancel),
+                            onClick = { onIntent(EditorIntent.DismissBackgroundRemoverSheet) }
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -263,10 +360,11 @@ private fun NeubrutalCircleActionButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     Column(
-        modifier = modifier,
+        modifier = modifier.alpha(if (enabled) 1f else 0.45f),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(
@@ -285,7 +383,7 @@ private fun NeubrutalCircleActionButton(
                     color = NeubrutalBlack,
                     shape = CircleShape
                 )
-                .clickable(onClick = onClick),
+                .clickable(enabled = enabled, onClick = onClick),
             contentAlignment = Alignment.Center
         ) {
             Icon(

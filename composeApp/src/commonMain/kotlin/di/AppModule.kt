@@ -46,7 +46,8 @@ val appModule = module {
         EditorViewModel(
             repository = get(),
             emojiPreferences = get(),
-            fileStorage = get()
+            fileStorage = get(),
+            apiRepository = get()
         )
     }
     factoryOf(::CropViewModel)
