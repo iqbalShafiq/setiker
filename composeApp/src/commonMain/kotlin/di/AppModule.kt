@@ -14,7 +14,6 @@ import presentation.packdetail.PackDetailViewModel
 import presentation.createpack.CreatePackViewModel
 import presentation.editor.EditorViewModel
 import presentation.crop.CropViewModel
-import presentation.backgroundremover.BackgroundRemoverViewModel
 
 expect fun platformModule(): Module
 
@@ -51,9 +50,4 @@ val appModule = module {
         )
     }
     factoryOf(::CropViewModel)
-    factory {
-        BackgroundRemoverViewModel(
-            apiRepository = get()
-        )
-    }
 }

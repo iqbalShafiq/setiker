@@ -4,7 +4,6 @@ import androidx.compose.ui.unit.IntSize
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import presentation.backgroundremover.DrawPath
 import platform.CoreGraphics.CGContextAddLineToPoint
 import platform.CoreGraphics.CGContextMoveToPoint
 import platform.CoreGraphics.CGContextSetLineCap

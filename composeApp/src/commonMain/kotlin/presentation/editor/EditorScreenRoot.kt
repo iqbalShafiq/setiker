@@ -14,7 +14,6 @@ fun EditorScreenRoot(
     stickerIndex: Int?,
     packId: String,
     croppedImagePath: String? = null,
-    removedBgImagePath: String? = null,
     onResultProcessed: () -> Unit = {},
     onBackClick: () -> Unit,
     onNavigateToCrop: (String) -> Unit,
@@ -25,38 +24,25 @@ fun EditorScreenRoot(
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Always set packId and stickerIndex when entering the screen or recomposing.
-    // This ensures both are set even when returning from crop/bg screens
+    // This ensures both are set even when returning from crop
     // where the ViewModel may have been recreated.
     LaunchedEffect(packId, stickerIndex) {
         viewModel.onIntent(EditorIntent.SetPackId(packId, stickerIndex))
     }
 
     LaunchedEffect(stickerIndex, packId) {
-        // Only load sticker data if we're not processing a crop/bg result.
+        // Only load sticker data if we're not processing a crop result.
         // This prevents the original sticker from overwriting the edited image path
-        // when EditorScreenRoot re-enters composition after returning from crop/bg screens.
-        if (croppedImagePath == null && removedBgImagePath == null) {
+        // when EditorScreenRoot re-enters composition after returning from crop.
+        if (croppedImagePath == null) {
             stickerIndex?.let { viewModel.onIntent(EditorIntent.LoadSticker(it, packId)) }
         }
     }
 
-    // Handle results from crop or background remover
-    LaunchedEffect(croppedImagePath, removedBgImagePath) {
-        var processed = false
-
+    LaunchedEffect(croppedImagePath) {
         croppedImagePath?.let { path ->
             android.util.Log.d("EditorScreenRoot", "Processing crop result: $path")
             viewModel.onIntent(EditorIntent.UpdateImagePath(path))
-            processed = true
-        }
-
-        removedBgImagePath?.let { path ->
-            android.util.Log.d("EditorScreenRoot", "Processing BG remove result: $path")
-            viewModel.onIntent(EditorIntent.UpdateImagePath(path))
-            processed = true
-        }
-
-        if (processed) {
             onResultProcessed()
         }
     }

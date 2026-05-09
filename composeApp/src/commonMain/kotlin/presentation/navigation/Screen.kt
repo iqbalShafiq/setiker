@@ -17,7 +17,4 @@ sealed class Screen {
     
     @Serializable
     data class Crop(val imagePath: String) : Screen()
-    
-    @Serializable
-    data class BackgroundRemover(val imagePath: String) : Screen()
 }

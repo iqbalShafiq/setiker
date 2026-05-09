@@ -22,9 +22,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Crop
+import androidx.compose.material.icons.filled.LayersClear
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,7 +43,6 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -56,6 +57,9 @@ import presentation.components.AppTextField
 import presentation.components.AppTopBar
 import presentation.components.EmojiPickerBottomSheet
 import presentation.components.LoadingIndicator
+import presentation.components.PackBottomBar
+import presentation.components.PackBottomBarFab
+import presentation.components.PackBottomBarIconButton
 import presentation.theme.AccentCoral
 import presentation.theme.AccentCoralLight
 import presentation.theme.NeubrutalBg
@@ -68,6 +72,7 @@ import setiker.composeapp.generated.resources.accessibility_text
 import setiker.composeapp.generated.resources.accessibility_text_example
 import setiker.composeapp.generated.resources.accessibility_text_placeholder
 import setiker.composeapp.generated.resources.add
+import setiker.composeapp.generated.resources.back
 import setiker.composeapp.generated.resources.cancel
 import setiker.composeapp.generated.resources.crop
 import setiker.composeapp.generated.resources.edit_sticker_title
@@ -98,8 +103,41 @@ fun EditorScreen(
         topBar = {
             AppTopBar(
                 title = stringResource(Res.string.edit_sticker_title),
-                onBackClick = onBackClick
+                onBackClick = null
             )
+        },
+        bottomBar = {
+            if (!state.isLoading) {
+                PackBottomBar(
+                    actions = {
+                        PackBottomBarIconButton(
+                            icon = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(Res.string.back),
+                            onClick = onBackClick
+                        )
+                        PackBottomBarIconButton(
+                            icon = Icons.Filled.Crop,
+                            contentDescription = stringResource(Res.string.crop),
+                            onClick = { onIntent(EditorIntent.NavigateToCrop) },
+                            enabled = state.imagePath.isNotBlank()
+                        )
+                        PackBottomBarIconButton(
+                            icon = Icons.Filled.LayersClear,
+                            contentDescription = stringResource(Res.string.remove_bg),
+                            onClick = { onIntent(EditorIntent.RemoveBackground) },
+                            enabled = state.imagePath.isNotBlank() && !state.isBackgroundRemoving
+                        )
+                    },
+                    floatingActionButton = {
+                        PackBottomBarFab(
+                            icon = Icons.Filled.Check,
+                            contentDescription = stringResource(Res.string.save_sticker),
+                            onClick = { onIntent(EditorIntent.SaveSticker) },
+                            enabled = !state.isLoading
+                        )
+                    }
+                )
+            }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = NeubrutalBg
@@ -162,25 +200,6 @@ fun EditorScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Image Actions (Neubrutal Circles)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    NeubrutalCircleActionButton(
-                        icon = Icons.Default.Edit,
-                        label = stringResource(Res.string.crop),
-                        onClick = { onIntent(EditorIntent.NavigateToCrop) }
-                    )
-                    NeubrutalCircleActionButton(
-                        icon = Icons.Default.Delete,
-                        label = stringResource(Res.string.remove_bg),
-                        onClick = { onIntent(EditorIntent.RemoveBackground) },
-                        enabled = state.imagePath.isNotBlank() && !state.isBackgroundRemoving
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(28.dp))
                 Text(
                     text = stringResource(Res.string.editor_action_hint),
                     style = MaterialTheme.typography.bodySmall,
@@ -236,20 +255,7 @@ fun EditorScreen(
                     color = NeubrutalGray
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // Save Button
-                AppPrimaryButton(
-                    text = stringResource(Res.string.save_sticker),
-                    onClick = { onIntent(EditorIntent.SaveSticker) }
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                AppSecondaryButton(
-                    text = stringResource(Res.string.cancel),
-                    onClick = onBackClick
-                )
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
@@ -352,55 +358,6 @@ fun EditorScreen(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun NeubrutalCircleActionButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true
-) {
-    Column(
-        modifier = modifier.alpha(if (enabled) 1f else 0.45f),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(
-            modifier = Modifier
-                .size(56.dp)
-                .neubrutalShadow(
-                    offsetX = 2.dp,
-                    offsetY = 2.dp,
-                    cornerRadius = 28.dp,
-                    color = NeubrutalBlack
-                )
-                .clip(CircleShape)
-                .background(AccentCoralLight)
-                .border(
-                    width = 2.dp,
-                    color = NeubrutalBlack,
-                    shape = CircleShape
-                )
-                .clickable(enabled = enabled, onClick = onClick),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                modifier = Modifier.size(24.dp),
-                tint = AccentCoral
-            )
-        }
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = NeubrutalGray
-        )
     }
 }
 

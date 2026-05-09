@@ -14,17 +14,14 @@ import presentation.packdetail.PackDetailScreenRoot
 import presentation.createpack.CreatePackScreenRoot
 import presentation.editor.EditorScreenRoot
 import presentation.crop.CropScreenRoot
-import presentation.backgroundremover.BackgroundRemoverScreenRoot
 
 @Composable
 fun AppNavigation(
     navController: NavHostController = rememberNavController(),
     onAddToWhatsApp: ((String, String) -> Unit)? = null
 ) {
-    // Shared state for crop/background remover results
-    // This ensures the editor recomposes when results are available
+    // Shared state for crop result (editor reads this when returning from crop)
     val cropResult = remember { mutableStateOf<String?>(null) }
-    val bgResult = remember { mutableStateOf<String?>(null) }
 
     NavHost(
         navController = navController,
@@ -93,25 +90,18 @@ fun AppNavigation(
             val packId = backStackEntry.arguments?.getString("packId") ?: return@composable
             val stickerIndex = backStackEntry.arguments?.getInt("stickerIndex")?.takeIf { it >= 0 }
             
-            // Read shared results from crop or bg remover
             val croppedImagePath = cropResult.value
-            val removedBgImagePath = bgResult.value
-            
+
             EditorScreenRoot(
                 stickerIndex = stickerIndex,
                 packId = packId,
                 croppedImagePath = croppedImagePath,
-                removedBgImagePath = removedBgImagePath,
                 onResultProcessed = {
-                    // Clear results after processing to prevent re-processing
                     cropResult.value = null
-                    bgResult.value = null
                 },
                 onBackClick = { navController.popBackStack() },
                 onNavigateToCrop = { imagePath ->
-                    // Clear any previous results before navigating
                     cropResult.value = null
-                    bgResult.value = null
                     navController.navigate("crop/${PathEncoder.encode(imagePath)}")
                 },
                 onStickerSaved = { navController.popBackStack() }
@@ -129,22 +119,6 @@ fun AppNavigation(
                 onBackClick = { navController.popBackStack() },
                 onImageCropped = { croppedPath ->
                     cropResult.value = croppedPath
-                    navController.popBackStack()
-                }
-            )
-        }
-        
-        composable(
-            route = "bgRemover/{imagePath}",
-            arguments = listOf(navArgument("imagePath") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val encodedPath = backStackEntry.arguments?.getString("imagePath") ?: return@composable
-            val imagePath = PathEncoder.decode(encodedPath)
-            BackgroundRemoverScreenRoot(
-                imagePath = imagePath,
-                onBackClick = { navController.popBackStack() },
-                onBackgroundRemoved = { resultPath ->
-                    bgResult.value = resultPath
                     navController.popBackStack()
                 }
             )
