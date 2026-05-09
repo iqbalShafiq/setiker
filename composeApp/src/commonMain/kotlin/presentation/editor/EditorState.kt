@@ -1,5 +1,7 @@
 package presentation.editor
 
+import domain.model.StickerDecoration
+
 data class EditorState(
     val imagePath: String = "",
     val emojis: List<String> = emptyList(),
@@ -12,5 +14,10 @@ data class EditorState(
     val stickerIndex: Int? = null,
     val isBackgroundRemoverSheetOpen: Boolean = false,
     val isBackgroundRemoving: Boolean = false,
-    val backgroundRemoverPreviewPath: String? = null
+    val backgroundRemoverPreviewPath: String? = null,
+    val decorations: List<StickerDecoration> = emptyList(),
+    val selectedDecorationId: String? = null,
+    val showDecorationEmojiPicker: Boolean = false,
+    val decorationEmojiPickerTargetId: String? = null,
+    val isTextDecorationSheetOpen: Boolean = false
 )

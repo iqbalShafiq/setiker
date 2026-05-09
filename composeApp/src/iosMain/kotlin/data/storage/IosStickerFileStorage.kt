@@ -1,5 +1,6 @@
 package data.storage
 
+import domain.model.StickerDecoration
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
 import kotlinx.coroutines.Dispatchers
@@ -89,6 +90,15 @@ actual class StickerFileStorage {
             // iOS: For now, just copy the file
             saveImage(sourcePath, fileName)
         }
+
+    actual suspend fun saveStickerImageWithDecorations(
+        sourcePath: String,
+        fileName: String,
+        decorations: List<StickerDecoration>
+    ): String = withContext(Dispatchers.IO) {
+        // iOS fallback keeps current behavior until native compositing is added.
+        saveStickerImage(sourcePath, fileName)
+    }
 }
 
 @kotlinx.cinterop.ExperimentalForeignApi

@@ -1,5 +1,7 @@
 package data.storage
 
+import domain.model.StickerDecoration
+
 expect class StickerFileStorage {
     suspend fun saveImage(sourcePath: String, fileName: String): String
     suspend fun saveBytes(bytes: ByteArray, fileName: String): String
@@ -10,4 +12,9 @@ expect class StickerFileStorage {
     suspend fun convertToWebP(sourcePath: String, outputFileName: String): String
     suspend fun saveTrayImage(sourcePath: String, fileName: String): String
     suspend fun saveStickerImage(sourcePath: String, fileName: String): String
+    suspend fun saveStickerImageWithDecorations(
+        sourcePath: String,
+        fileName: String,
+        decorations: List<StickerDecoration>
+    ): String
 }

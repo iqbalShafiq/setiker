@@ -1,5 +1,8 @@
 package presentation.editor
 
+import domain.model.DecorationFont
+import domain.model.DecorationFontWeight
+
 sealed interface EditorIntent {
     data class UpdateImagePath(val path: String) : EditorIntent
     data class AddEmoji(val emoji: String) : EditorIntent
@@ -15,4 +18,25 @@ sealed interface EditorIntent {
     data object ShowEmojiPicker : EditorIntent
     data object HideEmojiPicker : EditorIntent
     data class LoadRecentEmojis(val emojis: List<String>) : EditorIntent
+    data class AddImageDecorationFromGallery(val path: String) : EditorIntent
+    data class AddTextDecoration(val text: String, val font: DecorationFont) : EditorIntent
+    data class AddEmojiDecoration(val emoji: String) : EditorIntent
+    data class UpdateDecorationTransform(
+        val id: String,
+        val centerX: Float,
+        val centerY: Float,
+        val scale: Float
+    ) : EditorIntent
+    data class SelectDecoration(val id: String?) : EditorIntent
+    data class RemoveDecoration(val id: String) : EditorIntent
+    data class ShowDecorationEmojiPicker(val targetDecorationId: String? = null) : EditorIntent
+    data object HideDecorationEmojiPicker : EditorIntent
+    data object ShowTextDecorationSheet : EditorIntent
+    data object HideTextDecorationSheet : EditorIntent
+    data class UpdateTextDecorationText(val id: String, val text: String) : EditorIntent
+    data class UpdateTextDecorationFont(val id: String, val font: DecorationFont) : EditorIntent
+    data class UpdateTextDecorationFontWeight(val id: String, val fontWeight: DecorationFontWeight) : EditorIntent
+    data class UpdateTextDecorationColor(val id: String, val colorArgb: Long) : EditorIntent
+    data class UpdateEmojiDecorationValue(val id: String, val emoji: String) : EditorIntent
+    data class UpdateImageDecorationPath(val id: String, val imagePath: String) : EditorIntent
 }

@@ -5,7 +5,13 @@ import androidx.lifecycle.viewModelScope
 import data.remote.StickerApiRepository
 import data.storage.StickerFileStorage
 import data.util.EmojiPreferences
+import domain.model.DecorationFont
+import domain.model.DecorationFontWeight
+import domain.model.EmojiDecoration
+import domain.model.ImageDecoration
 import domain.model.Sticker
+import domain.model.StickerDecoration
+import domain.model.TextDecoration
 import domain.repository.StickerRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -17,6 +23,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 import presentation.common.UiText
 import presentation.common.toUiText
 import setiker.composeapp.generated.resources.Res
@@ -48,7 +55,13 @@ class EditorViewModel(
         when (intent) {
             is EditorIntent.UpdateImagePath -> {
                 android.util.Log.d("EditorViewModel", "UpdateImagePath: ${intent.path}")
-                _state.update { it.copy(imagePath = intent.path) }
+                _state.update {
+                    it.copy(
+                        imagePath = intent.path,
+                        decorations = emptyList(),
+                        selectedDecorationId = null
+                    )
+                }
             }
             is EditorIntent.AddEmoji -> {
                 if (_state.value.emojis.size < Sticker.MAX_EMOJIS) {
@@ -91,6 +104,218 @@ class EditorViewModel(
             is EditorIntent.LoadRecentEmojis -> {
                 _state.update { it.copy(recentEmojis = intent.emojis) }
             }
+            is EditorIntent.AddImageDecorationFromGallery -> addImageDecoration(intent.path)
+            is EditorIntent.AddTextDecoration -> addTextDecoration(intent.text, intent.font)
+            is EditorIntent.AddEmojiDecoration -> addEmojiDecoration(intent.emoji)
+            is EditorIntent.UpdateDecorationTransform -> updateDecorationTransform(
+                id = intent.id,
+                centerX = intent.centerX,
+                centerY = intent.centerY,
+                scale = intent.scale
+            )
+            is EditorIntent.SelectDecoration -> {
+                _state.update { it.copy(selectedDecorationId = intent.id) }
+            }
+            is EditorIntent.RemoveDecoration -> {
+                _state.update {
+                    it.copy(
+                        decorations = it.decorations.filterNot { decoration -> decoration.id == intent.id },
+                        selectedDecorationId = if (it.selectedDecorationId == intent.id) null else it.selectedDecorationId
+                    )
+                }
+            }
+            is EditorIntent.ShowDecorationEmojiPicker -> {
+                viewModelScope.launch {
+                    val recent = emojiPreferences.getRecentEmojis()
+                    _state.update {
+                        it.copy(
+                            showDecorationEmojiPicker = true,
+                            decorationEmojiPickerTargetId = intent.targetDecorationId,
+                            recentEmojis = recent
+                        )
+                    }
+                }
+            }
+            is EditorIntent.HideDecorationEmojiPicker -> {
+                _state.update {
+                    it.copy(
+                        showDecorationEmojiPicker = false,
+                        decorationEmojiPickerTargetId = null
+                    )
+                }
+            }
+            is EditorIntent.ShowTextDecorationSheet -> {
+                _state.update { it.copy(isTextDecorationSheetOpen = true) }
+            }
+            is EditorIntent.HideTextDecorationSheet -> {
+                _state.update { it.copy(isTextDecorationSheetOpen = false) }
+            }
+            is EditorIntent.UpdateTextDecorationText -> updateTextDecorationText(intent.id, intent.text)
+            is EditorIntent.UpdateTextDecorationFont -> updateTextDecorationFont(intent.id, intent.font)
+            is EditorIntent.UpdateTextDecorationFontWeight -> updateTextDecorationFontWeight(intent.id, intent.fontWeight)
+            is EditorIntent.UpdateTextDecorationColor -> updateTextDecorationColor(intent.id, intent.colorArgb)
+            is EditorIntent.UpdateEmojiDecorationValue -> updateEmojiDecorationValue(intent.id, intent.emoji)
+            is EditorIntent.UpdateImageDecorationPath -> updateImageDecorationPath(intent.id, intent.imagePath)
+        }
+    }
+
+    fun addImageDecoration(path: String) {
+        if (path.isBlank()) return
+        _state.update {
+            val decoration = ImageDecoration(
+                id = nextDecorationId(),
+                imagePath = path,
+                centerX = 0.5f + (Random.nextFloat() - 0.5f) * 0.2f,
+                centerY = 0.5f + (Random.nextFloat() - 0.5f) * 0.2f
+            )
+            it.copy(
+                decorations = it.decorations + decoration,
+                selectedDecorationId = decoration.id
+            )
+        }
+    }
+
+    private fun addTextDecoration(text: String, font: DecorationFont) {
+        if (text.isBlank()) return
+        _state.update {
+            val decoration = TextDecoration(
+                id = nextDecorationId(),
+                text = text.trim(),
+                font = font,
+                fontWeight = DecorationFontWeight.Regular,
+                textColorArgb = 0xFFFFFFFFL,
+                centerX = 0.5f,
+                centerY = 0.5f
+            )
+            it.copy(
+                decorations = it.decorations + decoration,
+                selectedDecorationId = decoration.id,
+                isTextDecorationSheetOpen = false
+            )
+        }
+    }
+
+    private fun addEmojiDecoration(emoji: String) {
+        if (emoji.isBlank()) return
+        _state.update {
+            val decoration = EmojiDecoration(
+                id = nextDecorationId(),
+                emoji = emoji,
+                centerX = 0.5f,
+                centerY = 0.5f
+            )
+            it.copy(
+                decorations = it.decorations + decoration,
+                selectedDecorationId = decoration.id,
+                showDecorationEmojiPicker = false
+            )
+        }
+    }
+
+    private fun updateTextDecorationText(id: String, text: String) {
+        if (text.isBlank()) return
+        _state.update { current ->
+            current.copy(
+                decorations = current.decorations.map { decoration ->
+                    if (decoration is TextDecoration && decoration.id == id) {
+                        decoration.copy(text = text.trim())
+                    } else {
+                        decoration
+                    }
+                }
+            )
+        }
+    }
+
+    private fun updateTextDecorationFont(id: String, font: DecorationFont) {
+        _state.update { current ->
+            current.copy(
+                decorations = current.decorations.map { decoration ->
+                    if (decoration is TextDecoration && decoration.id == id) {
+                        decoration.copy(font = font)
+                    } else {
+                        decoration
+                    }
+                }
+            )
+        }
+    }
+
+    private fun updateTextDecorationColor(id: String, colorArgb: Long) {
+        _state.update { current ->
+            current.copy(
+                decorations = current.decorations.map { decoration ->
+                    if (decoration is TextDecoration && decoration.id == id) {
+                        decoration.copy(textColorArgb = colorArgb)
+                    } else {
+                        decoration
+                    }
+                }
+            )
+        }
+    }
+
+    private fun updateTextDecorationFontWeight(id: String, fontWeight: DecorationFontWeight) {
+        _state.update { current ->
+            current.copy(
+                decorations = current.decorations.map { decoration ->
+                    if (decoration is TextDecoration && decoration.id == id) {
+                        decoration.copy(fontWeight = fontWeight)
+                    } else {
+                        decoration
+                    }
+                }
+            )
+        }
+    }
+
+    private fun updateEmojiDecorationValue(id: String, emoji: String) {
+        if (emoji.isBlank()) return
+        _state.update { current ->
+            current.copy(
+                decorations = current.decorations.map { decoration ->
+                    if (decoration is EmojiDecoration && decoration.id == id) {
+                        decoration.copy(emoji = emoji)
+                    } else {
+                        decoration
+                    }
+                }
+            )
+        }
+    }
+
+    private fun updateImageDecorationPath(id: String, imagePath: String) {
+        if (imagePath.isBlank()) return
+        _state.update { current ->
+            current.copy(
+                decorations = current.decorations.map { decoration ->
+                    if (decoration is ImageDecoration && decoration.id == id) {
+                        decoration.copy(imagePath = imagePath)
+                    } else {
+                        decoration
+                    }
+                }
+            )
+        }
+    }
+
+    private fun updateDecorationTransform(
+        id: String,
+        centerX: Float,
+        centerY: Float,
+        scale: Float
+    ) {
+        _state.update { current ->
+            current.copy(
+                decorations = current.decorations.map { decoration ->
+                    if (decoration.id != id) return@map decoration
+                    decoration.withTransform(
+                        centerX = centerX.coerceIn(0f, 1f),
+                        centerY = centerY.coerceIn(0f, 1f),
+                        scale = scale.coerceIn(0.3f, 4f)
+                    )
+                }
+            )
         }
     }
 
@@ -232,7 +457,11 @@ class EditorViewModel(
                 
                 // Save image to stickers directory (512x512, WebP, <100KB)
                 val fileName = "sticker_${effectivePackId}_${System.currentTimeMillis()}.webp"
-                val savedPath = fileStorage.saveStickerImage(currentState.imagePath, fileName)
+                val savedPath = fileStorage.saveStickerImageWithDecorations(
+                    sourcePath = currentState.imagePath,
+                    fileName = fileName,
+                    decorations = currentState.decorations
+                )
                 
                 val sticker = Sticker(
                     imageFile = savedPath,
@@ -266,4 +495,16 @@ class EditorViewModel(
             }
         }
     }
+
+    private fun StickerDecoration.withTransform(
+        centerX: Float,
+        centerY: Float,
+        scale: Float
+    ): StickerDecoration = when (this) {
+        is TextDecoration -> copy(centerX = centerX, centerY = centerY, scale = scale)
+        is EmojiDecoration -> copy(centerX = centerX, centerY = centerY, scale = scale)
+        is ImageDecoration -> copy(centerX = centerX, centerY = centerY, scale = scale)
+    }
+
+    private fun nextDecorationId(): String = "dec_${System.currentTimeMillis()}_${Random.nextInt(1000, 9999)}"
 }

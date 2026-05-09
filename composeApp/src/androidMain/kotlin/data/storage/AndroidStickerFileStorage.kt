@@ -3,7 +3,18 @@ package data.storage
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.RectF
+import android.graphics.Typeface
 import android.os.Build
+import domain.model.DecorationFont
+import domain.model.DecorationFontWeight
+import domain.model.DecorationRenderSpec
+import domain.model.EmojiDecoration
+import domain.model.ImageDecoration
+import domain.model.StickerDecoration
+import domain.model.TextDecoration
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
@@ -181,4 +192,137 @@ actual class StickerFileStorage(private val context: Context) {
                 throw e
             }
         }
+
+    actual suspend fun saveStickerImageWithDecorations(
+        sourcePath: String,
+        fileName: String,
+        decorations: List<StickerDecoration>
+    ): String = withContext(Dispatchers.IO) {
+        if (decorations.isEmpty()) {
+            return@withContext saveStickerImage(sourcePath, fileName)
+        }
+
+        val sourceBitmap = BitmapFactory.decodeFile(sourcePath)
+            ?: throw IllegalArgumentException("Cannot decode image: $sourcePath")
+
+        try {
+            val composedBitmap = sourceBitmap.copy(Bitmap.Config.ARGB_8888, true)
+            val canvas = Canvas(composedBitmap)
+            val minDim = minOf(composedBitmap.width, composedBitmap.height).toFloat()
+
+            decorations.forEach { decoration ->
+                val centerX = decoration.centerX.coerceIn(0f, 1f) * composedBitmap.width
+                val centerY = decoration.centerY.coerceIn(0f, 1f) * composedBitmap.height
+                val scale = decoration.scale.coerceIn(
+                    DecorationRenderSpec.MIN_SCALE,
+                    DecorationRenderSpec.MAX_SCALE
+                )
+                when (decoration) {
+                    is TextDecoration -> {
+                        drawTextDecoration(
+                            canvas = canvas,
+                            text = decoration.text,
+                            centerX = centerX,
+                            centerY = centerY,
+                            textSize = minDim * DecorationRenderSpec.TEXT_SIZE_RATIO * scale,
+                            typeface = mapTypeface(decoration.font, decoration.fontWeight),
+                            textColor = decoration.textColorArgb.toInt()
+                        )
+                    }
+
+                    is EmojiDecoration -> {
+                        drawTextDecoration(
+                            canvas = canvas,
+                            text = decoration.emoji,
+                            centerX = centerX,
+                            centerY = centerY,
+                            textSize = minDim * DecorationRenderSpec.EMOJI_SIZE_RATIO * scale,
+                            typeface = Typeface.DEFAULT,
+                            textColor = android.graphics.Color.WHITE
+                        )
+                    }
+
+                    is ImageDecoration -> {
+                        val stickerBitmap = BitmapFactory.decodeFile(decoration.imagePath) ?: return@forEach
+                        val baseSize = minDim * DecorationRenderSpec.IMAGE_BASE_RATIO * scale
+                        val aspectRatio = stickerBitmap.width.toFloat() / stickerBitmap.height.toFloat()
+                        val drawWidth: Float
+                        val drawHeight: Float
+                        if (aspectRatio >= 1f) {
+                            drawWidth = baseSize
+                            drawHeight = baseSize / aspectRatio
+                        } else {
+                            drawHeight = baseSize
+                            drawWidth = baseSize * aspectRatio
+                        }
+                        val targetRect = RectF(
+                            centerX - drawWidth / 2f,
+                            centerY - drawHeight / 2f,
+                            centerX + drawWidth / 2f,
+                            centerY + drawHeight / 2f
+                        )
+                        canvas.drawBitmap(stickerBitmap, null, targetRect, null)
+                        stickerBitmap.recycle()
+                    }
+                }
+            }
+
+            val tempComposedFile = File(context.cacheDir, "composed_${System.currentTimeMillis()}.png")
+            FileOutputStream(tempComposedFile).use { output ->
+                composedBitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
+            }
+            composedBitmap.recycle()
+            saveStickerImage(tempComposedFile.absolutePath, fileName).also {
+                tempComposedFile.delete()
+            }
+        } finally {
+            sourceBitmap.recycle()
+        }
+    }
+
+    private fun drawTextDecoration(
+        canvas: Canvas,
+        text: String,
+        centerX: Float,
+        centerY: Float,
+        textSize: Float,
+        typeface: Typeface,
+        textColor: Int
+    ) {
+        val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = textColor
+            this.textSize = textSize
+            this.typeface = typeface
+            textAlign = Paint.Align.CENTER
+            style = Paint.Style.FILL
+        }
+        val strokePaint = Paint(fillPaint).apply {
+            color = android.graphics.Color.BLACK
+            style = Paint.Style.STROKE
+            strokeWidth = (textSize * 0.08f).coerceAtLeast(2f)
+        }
+        val baselineY = centerY - (fillPaint.descent() + fillPaint.ascent()) / 2f
+        canvas.drawText(text, centerX, baselineY, strokePaint)
+        canvas.drawText(text, centerX, baselineY, fillPaint)
+    }
+
+    private fun mapTypeface(font: DecorationFont, fontWeight: DecorationFontWeight): Typeface {
+        val base = when (font) {
+            DecorationFont.Sans -> Typeface.SANS_SERIF
+            DecorationFont.Serif -> Typeface.SERIF
+            DecorationFont.Mono -> Typeface.MONOSPACE
+            DecorationFont.Cursive -> Typeface.create("cursive", Typeface.NORMAL)
+            DecorationFont.Display -> Typeface.create("serif", Typeface.NORMAL)
+            DecorationFont.Rounded -> Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            DecorationFont.Condensed -> Typeface.create("sans-serif-condensed", Typeface.NORMAL)
+        }
+        val style = when (fontWeight) {
+            DecorationFontWeight.Light -> Typeface.NORMAL
+            DecorationFontWeight.Regular -> Typeface.NORMAL
+            DecorationFontWeight.Medium -> Typeface.NORMAL
+            DecorationFontWeight.SemiBold -> Typeface.BOLD
+            DecorationFontWeight.Bold -> Typeface.BOLD
+        }
+        return Typeface.create(base, style)
+    }
 }
