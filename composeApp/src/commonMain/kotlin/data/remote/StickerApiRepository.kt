@@ -1,6 +1,8 @@
 package data.remote
 
+import data.remote.mapper.toOverlayTextDecoration
 import data.remote.model.ApiImage
+import data.remote.model.GridSplitStickerFile
 import data.storage.StickerFileStorage
 import domain.error.AppErrorCode
 import kotlin.random.Random
@@ -29,11 +31,11 @@ class StickerApiRepository(
         return downloadAndPersistAll(images, operationTag = "generate")
     }
 
-    suspend fun splitGrid(imagePath: String): List<String> {
+    suspend fun splitGrid(imagePath: String): List<GridSplitStickerFile> {
         val images = api.splitGrid(
             imagePath = imagePath
         )
-        return downloadAndPersistAll(images, operationTag = "grid-split")
+        return downloadGridSplitFiles(images, operationTag = "grid-split")
     }
 
     private suspend fun downloadAndPersist(image: ApiImage): String {
@@ -61,6 +63,30 @@ class StickerApiRepository(
         }
         if (results.isEmpty() && images.isNotEmpty()) {
             // If every download failed, surface a controlled error to UI.
+            throw ApiException(code = AppErrorCode.ImageDownloadFailed)
+        }
+        return results
+    }
+
+    private suspend fun downloadGridSplitFiles(
+        images: List<ApiImage>,
+        operationTag: String
+    ): List<GridSplitStickerFile> {
+        val results = mutableListOf<GridSplitStickerFile>()
+        images.forEach { image ->
+            runCatching { downloadAndPersist(image) }
+                .onSuccess { path ->
+                    val decoration = image.textOutsideForeground.toOverlayTextDecoration()
+                    val decorations = listOfNotNull(decoration)
+                    results += GridSplitStickerFile(localPath = path, decorations = decorations)
+                }
+                .onFailure {
+                    println(
+                        "StickerApiRepository[$operationTag]: failed image id=${image.id}, url=${image.url}, reason=${it.message}"
+                    )
+                }
+        }
+        if (results.isEmpty() && images.isNotEmpty()) {
             throw ApiException(code = AppErrorCode.ImageDownloadFailed)
         }
         return results

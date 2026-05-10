@@ -31,9 +31,23 @@ data class ApiMeta(
 )
 
 @Serializable
+data class ApiTextOutsideForegroundStyle(
+    val fontFamily: String? = null,
+    val color: String? = null,
+    val weight: String? = null
+)
+
+@Serializable
+data class ApiTextOutsideForeground(
+    val text: String? = null,
+    val style: ApiTextOutsideForegroundStyle? = null
+)
+
+@Serializable
 data class ApiImage(
     val id: String,
     val url: String,
     val width: Int? = null,
-    val height: Int? = null
+    val height: Int? = null,
+    val textOutsideForeground: ApiTextOutsideForeground? = null
 )

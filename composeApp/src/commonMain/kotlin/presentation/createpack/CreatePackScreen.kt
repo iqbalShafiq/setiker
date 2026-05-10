@@ -58,6 +58,7 @@ import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
 import presentation.components.SelectableStickerGrid
+import presentation.components.ReadOnlyDecorationOverlay
 import presentation.components.rememberImagePicker
 import presentation.theme.AccentCoral
 import presentation.theme.AccentCoralLight
@@ -283,7 +284,7 @@ fun CreatePackScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 SelectableStickerGrid(
-                    stickers = state.generatedPreview,
+                    stickers = state.generatedPreview.map { DraftSticker(it) },
                     selectedIndices = state.selectedGeneratedPreview,
                     onToggle = { onIntent(CreatePackIntent.ToggleGeneratedSelection(it)) }
                 )
@@ -663,10 +664,10 @@ fun CreatePackScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            rowItems.forEachIndexed { itemIndex, stickerPath ->
+                            rowItems.forEachIndexed { itemIndex, stickerDraft ->
                                 val stickerIndex = (rowIndex * 4) + itemIndex
                                 StickerPreviewItem(
-                                    imagePath = stickerPath,
+                                    sticker = stickerDraft,
                                     onRemove = { onIntent(CreatePackIntent.RemoveSticker(stickerIndex)) },
                                     modifier = Modifier
                                         .weight(1f)
@@ -755,16 +756,14 @@ private fun TrayIconSelector(
 
 @Composable
 private fun StickerPreviewItem(
-    imagePath: String,
+    sticker: DraftSticker,
     onRemove: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
     ) {
-        AsyncImage(
-            model = imagePath,
-            contentDescription = stringResource(Res.string.sticker_preview_content_description),
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .neubrutalShadow(
@@ -780,9 +779,19 @@ private fun StickerPreviewItem(
                     color = NeubrutalBlack,
                     shape = RoundedCornerShape(12.dp)
                 )
-                .padding(2.dp),
-            contentScale = ContentScale.Crop
-        )
+                .padding(2.dp)
+        ) {
+            AsyncImage(
+                model = sticker.imagePath,
+                contentDescription = stringResource(Res.string.sticker_preview_content_description),
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+            ReadOnlyDecorationOverlay(
+                decorations = sticker.decorations,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
 
         Box(
             modifier = Modifier
@@ -818,7 +827,7 @@ private fun CreatePackScreenPreview() {
                 name = "My Awesome Pack",
                 publisher = "StickerFan",
                 trayImagePath = "",
-                stickers = listOf("", "", ""),
+                stickers = listOf(DraftSticker(""), DraftSticker(""), DraftSticker("")),
                 isEditing = false
             ),
             onIntent = {},
@@ -838,7 +847,7 @@ private fun CreatePackScreenEditingPreview() {
                 name = "Funny Cats",
                 publisher = "CatLover",
                 trayImagePath = "",
-                stickers = listOf("", ""),
+                stickers = listOf(DraftSticker(""), DraftSticker("")),
                 isEditing = true
             ),
             onIntent = {},

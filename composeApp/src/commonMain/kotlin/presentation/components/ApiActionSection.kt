@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -25,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import org.jetbrains.compose.resources.stringResource
+import presentation.createpack.DraftSticker
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalBlack
 import presentation.theme.NeubrutalWhite
@@ -60,7 +62,7 @@ fun ApiActionSection(
 
 @Composable
 fun SelectableStickerGrid(
-    stickers: List<String>,
+    stickers: List<DraftSticker>,
     selectedIndices: Set<Int>,
     onToggle: (Int) -> Unit,
     modifier: Modifier = Modifier
@@ -74,7 +76,7 @@ fun SelectableStickerGrid(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                rowItems.forEachIndexed { itemIndex, path ->
+                rowItems.forEachIndexed { itemIndex, draft ->
                     val index = (rowIndex * 4) + itemIndex
                     Box(
                         modifier = Modifier
@@ -93,10 +95,14 @@ fun SelectableStickerGrid(
                         contentAlignment = Alignment.TopEnd
                     ) {
                         AsyncImage(
-                            model = path,
+                            model = draft.imagePath,
                             contentDescription = stringResource(Res.string.split_sticker_index, index),
-                            modifier = Modifier.matchParentSize(),
+                            modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
+                        )
+                        ReadOnlyDecorationOverlay(
+                            decorations = draft.decorations,
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
                 }

@@ -55,7 +55,7 @@ class CreatePackViewModel(
                 _state.update { it.copy(trayImagePath = intent.imagePath) }
             }
             is CreatePackIntent.AddSticker -> {
-                _state.update { it.copy(stickers = it.stickers + intent.imagePath) }
+                _state.update { it.copy(stickers = it.stickers + DraftSticker(intent.imagePath)) }
             }
             is CreatePackIntent.RemoveSticker -> {
                 _state.update {
@@ -159,12 +159,20 @@ class CreatePackViewModel(
             _state.update { it.copy(isLoading = true) }
             try {
                 val pack = repository.getPack(packId)
-                val fromServer = pack.stickers.map { sticker -> sticker.imageFile }
-                val previousSession = _state.value.stickers.filter { it.isNotBlank() }
+                val fromServer = pack.stickers.map { sticker ->
+                    DraftSticker(
+                        imagePath = sticker.imageFile,
+                        decorations = sticker.decorations
+                    )
+                }
+                val serverPaths = fromServer.map { it.imagePath }.toSet()
+                val previousSession = _state.value.stickers.filter { it.imagePath.isNotBlank() }
                 val mergedStickers = buildList {
                     addAll(fromServer)
                     for (local in previousSession) {
-                        if (local !in fromServer && local !in this) add(local)
+                        if (local.imagePath !in serverPaths && none { it.imagePath == local.imagePath }) {
+                            add(local)
+                        }
                     }
                 }
                 _state.update {
@@ -226,12 +234,21 @@ class CreatePackViewModel(
                 val trayPath = fileStorage.saveTrayImage(currentState.trayImagePath, trayFileName)
                 
                 // Save stickers to stickers directory (512x512, WebP, <100KB)
-                val stickers = currentState.stickers.mapIndexed { index, imagePath ->
+                val stickers = currentState.stickers.mapIndexed { index, draft ->
                     val stickerFileName = "sticker_${identifier}_${index}.webp"
-                    val stickerPath = fileStorage.saveStickerImage(imagePath, stickerFileName)
+                    val stickerPath = if (draft.decorations.isNotEmpty()) {
+                        fileStorage.saveStickerImageWithDecorations(
+                            sourcePath = draft.imagePath,
+                            fileName = stickerFileName,
+                            decorations = draft.decorations
+                        )
+                    } else {
+                        fileStorage.saveStickerImage(draft.imagePath, stickerFileName)
+                    }
                     Sticker(
                         imageFile = stickerPath,
-                        emojis = listOf("⭐") // WhatsApp requires at least 1 emoji per sticker
+                        emojis = listOf("⭐"), // WhatsApp requires at least 1 emoji per sticker
+                        decorations = emptyList()
                     )
                 }
                 
@@ -307,12 +324,15 @@ class CreatePackViewModel(
                 val splitImages = apiRepository.splitGrid(
                     imagePath = currentState.gridSplitSourcePath
                 )
+                val splitDrafts = splitImages.map { file ->
+                    DraftSticker(imagePath = file.localPath, decorations = file.decorations)
+                }
                 _state.update {
                     it.copy(
                         isApiLoading = false,
                         gridSplitSheetPhase = GridSplitSheetPhase.Results,
-                        splitPreview = splitImages,
-                        selectedSplitPreview = splitImages.indices.toSet()
+                        splitPreview = splitDrafts,
+                        selectedSplitPreview = splitDrafts.indices.toSet()
                     )
                 }
             } catch (e: Exception) {
@@ -373,7 +393,7 @@ class CreatePackViewModel(
 
         val selected = current.generatedPreview.filterIndexed { index, _ ->
             current.selectedGeneratedPreview.contains(index)
-        }
+        }.map { DraftSticker(it) }
         _state.update {
             it.copy(
                 stickers = (it.stickers + selected).take(StickerPack.MAX_STICKERS),
