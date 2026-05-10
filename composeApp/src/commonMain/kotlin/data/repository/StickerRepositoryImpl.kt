@@ -48,11 +48,11 @@ class StickerRepositoryImpl(
             name = pack.name,
             publisher = pack.publisher,
             trayImageFile = pack.trayImageFile,
+            isAnimated = pack.isAnimated,
             updatedAt = System.currentTimeMillis()
         )
         packDao.insert(entity)
 
-        // Save stickers
         pack.stickers.forEachIndexed { index, sticker ->
             val stickerEntity = StickerEntity(
                 id = Uuid.random().toString(),
@@ -62,6 +62,9 @@ class StickerRepositoryImpl(
                 emojis = Json.encodeToString(sticker.emojis),
                 accessibilityText = sticker.accessibilityText,
                 decorationsJson = Json.encodeToString(sticker.decorations),
+                isAnimated = sticker.isAnimated,
+                sourceVideoFile = sticker.sourceVideoFile,
+                frameDecorationsJson = encodeFrameDecorations(sticker.frameDecorations),
                 sortOrder = index
             )
             stickerDao.insert(stickerEntity)
@@ -71,7 +74,6 @@ class StickerRepositoryImpl(
     override suspend fun deletePack(identifier: String) = withContext(Dispatchers.IO) {
         val pack = packDao.getById(identifier) ?: return@withContext
 
-        // Delete associated sticker files
         val stickers = stickerDao.getByPackId(identifier)
         stickers.forEach { sticker ->
             listOfNotNull(sticker.imageFile, sticker.sourceImageFile).distinct().forEach {
@@ -80,7 +82,6 @@ class StickerRepositoryImpl(
         }
         fileStorage.deleteImage(pack.trayImageFile)
 
-        // Delete from database
         stickerDao.deleteByPackId(identifier)
         packDao.delete(pack)
     }
@@ -97,11 +98,13 @@ class StickerRepositoryImpl(
                 emojis = Json.encodeToString(sticker.emojis),
                 accessibilityText = sticker.accessibilityText,
                 decorationsJson = Json.encodeToString(sticker.decorations),
+                isAnimated = sticker.isAnimated,
+                sourceVideoFile = sticker.sourceVideoFile,
+                frameDecorationsJson = encodeFrameDecorations(sticker.frameDecorations),
                 sortOrder = count
             )
             stickerDao.insert(entity)
 
-            // Update pack timestamp
             packDao.getById(packId)?.let { pack ->
                 packDao.update(pack.copy(updatedAt = System.currentTimeMillis()))
             }
@@ -119,11 +122,13 @@ class StickerRepositoryImpl(
                 sourceImageFile = sticker.sourceImageFile,
                 emojis = Json.encodeToString(sticker.emojis),
                 accessibilityText = sticker.accessibilityText,
-                decorationsJson = Json.encodeToString(sticker.decorations)
+                decorationsJson = Json.encodeToString(sticker.decorations),
+                isAnimated = sticker.isAnimated,
+                sourceVideoFile = sticker.sourceVideoFile,
+                frameDecorationsJson = encodeFrameDecorations(sticker.frameDecorations)
             )
             stickerDao.insert(updatedEntity)
 
-            // Update pack timestamp
             packDao.getById(packId)?.let { pack ->
                 packDao.update(pack.copy(updatedAt = System.currentTimeMillis()))
             }
@@ -145,7 +150,8 @@ class StickerRepositoryImpl(
         name = name,
         publisher = publisher,
         trayImageFile = trayImageFile,
-        stickers = stickers
+        stickers = stickers,
+        isAnimated = isAnimated
     )
 
     private fun StickerEntity.toDomainModel() = Sticker(
@@ -153,7 +159,10 @@ class StickerRepositoryImpl(
         sourceImageFile = sourceImageFile,
         emojis = Json.decodeFromString(emojis),
         accessibilityText = accessibilityText,
-        decorations = parseDecorations(decorationsJson)
+        decorations = parseDecorations(decorationsJson),
+        isAnimated = isAnimated,
+        sourceVideoFile = sourceVideoFile,
+        frameDecorations = parseFrameDecorations(frameDecorationsJson)
     )
 
     private fun parseDecorations(raw: String?): List<StickerDecoration> {
@@ -162,6 +171,22 @@ class StickerRepositoryImpl(
             Json.decodeFromString<List<StickerDecoration>>(raw)
         } catch (_: Exception) {
             emptyList()
+        }
+    }
+
+    private fun encodeFrameDecorations(map: Map<Int, List<StickerDecoration>>): String? {
+        if (map.isEmpty()) return null
+        val stringKeyed: Map<String, List<StickerDecoration>> = map.mapKeys { it.key.toString() }
+        return Json.encodeToString(stringKeyed)
+    }
+
+    private fun parseFrameDecorations(raw: String?): Map<Int, List<StickerDecoration>> {
+        if (raw.isNullOrBlank()) return emptyMap()
+        return try {
+            val stringKeyed: Map<String, List<StickerDecoration>> = Json.decodeFromString(raw)
+            stringKeyed.mapNotNull { (k, v) -> k.toIntOrNull()?.let { it to v } }.toMap()
+        } catch (_: Exception) {
+            emptyMap()
         }
     }
 }

@@ -1,27 +1,45 @@
+@file:OptIn(androidx.media3.common.util.UnstableApi::class)
+
 package data.storage
 
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
+import android.graphics.Matrix
+import android.graphics.Movie
 import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Typeface
+import android.net.Uri
 import android.os.Build
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
+import androidx.concurrent.futures.await
+import androidx.media3.common.MediaItem
+import androidx.media3.transformer.ExperimentalFrameExtractor
+import com.aureusapps.android.webpandroid.encoder.WebPAnimEncoder
+import com.aureusapps.android.webpandroid.encoder.WebPAnimEncoderOptions
+import com.aureusapps.android.webpandroid.encoder.WebPConfig
+import com.aureusapps.android.webpandroid.encoder.WebPMuxAnimParams
+import com.aureusapps.android.webpandroid.encoder.WebPPreset
+import domain.model.AnimatedStickerSpec
+import domain.model.CropTransform
+import domain.model.DecodedFrame
 import domain.model.DecorationFont
 import domain.model.DecorationFontWeight
 import domain.model.DecorationRenderSpec
 import domain.model.EmojiDecoration
 import domain.model.ImageDecoration
 import domain.model.StickerDecoration
+import domain.model.StickerPack
 import domain.model.TextDecoration
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 
 actual class StickerFileStorage(private val context: Context) {
@@ -59,7 +77,6 @@ actual class StickerFileStorage(private val context: Context) {
         }
 
     actual suspend fun getImagePath(fileName: String): String {
-        // Always resolve against stickers directory using basename
         val basename = File(fileName).name
         return File(stickersDir, basename).absolutePath
     }
@@ -74,17 +91,14 @@ actual class StickerFileStorage(private val context: Context) {
                 throw IllegalArgumentException("Source file does not exist: $sourcePath")
             }
 
-            // If already WebP, just copy to stickers directory
             if (sourceFile.extension.equals("webp", ignoreCase = true)) {
                 return@withContext saveImage(sourcePath, outputFileName)
             }
 
-            // Convert to WebP 512x512
             val bitmap = BitmapFactory.decodeFile(sourcePath)
                 ?: throw IllegalArgumentException("Cannot decode image: $sourcePath")
 
             try {
-                // Resize to 512x512 while maintaining aspect ratio
                 val scaledBitmap = Bitmap.createScaledBitmap(bitmap, 512, 512, true)
 
                 val destFile = File(stickersDir, outputFileName)
@@ -98,7 +112,6 @@ actual class StickerFileStorage(private val context: Context) {
                     scaledBitmap.compress(format, 90, out)
                 }
 
-                // Cleanup
                 if (scaledBitmap != bitmap) scaledBitmap.recycle()
                 bitmap.recycle()
 
@@ -109,20 +122,14 @@ actual class StickerFileStorage(private val context: Context) {
             }
         }
 
-    /**
-     * Save tray icon for WhatsApp.
-     * Requirements: 96x96px, max 50KB, PNG format
-     */
     actual suspend fun saveTrayImage(sourcePath: String, fileName: String): String =
         withContext(Dispatchers.IO) {
             val bitmap = BitmapFactory.decodeFile(sourcePath)
                 ?: throw IllegalArgumentException("Cannot decode image: $sourcePath")
 
             try {
-                // Resize to 96x96
                 val scaledBitmap = Bitmap.createScaledBitmap(bitmap, 96, 96, true)
 
-                // Compress as PNG, reduce quality if needed to stay under 50KB
                 var quality = 100
                 var bytes: ByteArray
                 do {
@@ -135,10 +142,9 @@ actual class StickerFileStorage(private val context: Context) {
                 val destFile = File(stickersDir, fileName)
                 destFile.writeBytes(bytes)
 
-                android.util.Log.d("StickerFileStorage", 
+                android.util.Log.d("StickerFileStorage",
                     "Tray icon saved: ${destFile.absolutePath}, size: ${bytes.size} bytes (${bytes.size / 1024}KB)")
 
-                // Cleanup
                 if (scaledBitmap != bitmap) scaledBitmap.recycle()
                 bitmap.recycle()
 
@@ -149,20 +155,14 @@ actual class StickerFileStorage(private val context: Context) {
             }
         }
 
-    /**
-     * Save sticker image for WhatsApp.
-     * Requirements: 512x512px, max 100KB, WebP format
-     */
     actual suspend fun saveStickerImage(sourcePath: String, fileName: String): String =
         withContext(Dispatchers.IO) {
             val bitmap = BitmapFactory.decodeFile(sourcePath)
                 ?: throw IllegalArgumentException("Cannot decode image: $sourcePath")
 
             try {
-                // Resize to 512x512
                 val scaledBitmap = Bitmap.createScaledBitmap(bitmap, 512, 512, true)
 
-                // Compress as WebP, reduce quality if needed to stay under 100KB
                 var quality = 90
                 var bytes: ByteArray
                 val format = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -182,10 +182,9 @@ actual class StickerFileStorage(private val context: Context) {
                 val destFile = File(stickersDir, fileName)
                 destFile.writeBytes(bytes)
 
-                android.util.Log.d("StickerFileStorage", 
+                android.util.Log.d("StickerFileStorage",
                     "Sticker saved: ${destFile.absolutePath}, size: ${bytes.size} bytes (${bytes.size / 1024}KB)")
 
-                // Cleanup
                 if (scaledBitmap != bitmap) scaledBitmap.recycle()
                 bitmap.recycle()
 
@@ -210,75 +209,7 @@ actual class StickerFileStorage(private val context: Context) {
 
         try {
             val composedBitmap = sourceBitmap.copy(Bitmap.Config.ARGB_8888, true)
-            val canvas = Canvas(composedBitmap)
-            val minDim = minOf(composedBitmap.width, composedBitmap.height).toFloat()
-
-            decorations.forEach { decoration ->
-                val centerX = decoration.centerX.coerceIn(0f, 1f) * composedBitmap.width
-                val centerY = decoration.centerY.coerceIn(0f, 1f) * composedBitmap.height
-                val scale = decoration.scale.coerceIn(
-                    DecorationRenderSpec.MIN_SCALE,
-                    DecorationRenderSpec.MAX_SCALE
-                )
-                when (decoration) {
-                    is TextDecoration -> {
-                        if (decoration.id.startsWith("api_txt_")) {
-                            drawApiOutsideForegroundCaption(
-                                canvas = canvas,
-                                decoration = decoration,
-                                bitmapWidth = composedBitmap.width,
-                                bitmapHeight = composedBitmap.height,
-                                minDim = minDim
-                            )
-                        } else {
-                            drawTextDecoration(
-                                canvas = canvas,
-                                text = decoration.text,
-                                centerX = centerX,
-                                centerY = centerY,
-                                textSize = minDim * DecorationRenderSpec.TEXT_SIZE_RATIO * scale,
-                                typeface = mapTypeface(decoration.font, decoration.fontWeight),
-                                textColor = decoration.textColorArgb.toInt()
-                            )
-                        }
-                    }
-
-                    is EmojiDecoration -> {
-                        drawTextDecoration(
-                            canvas = canvas,
-                            text = decoration.emoji,
-                            centerX = centerX,
-                            centerY = centerY,
-                            textSize = minDim * DecorationRenderSpec.EMOJI_SIZE_RATIO * scale,
-                            typeface = Typeface.DEFAULT,
-                            textColor = android.graphics.Color.WHITE
-                        )
-                    }
-
-                    is ImageDecoration -> {
-                        val stickerBitmap = BitmapFactory.decodeFile(decoration.imagePath) ?: return@forEach
-                        val baseSize = minDim * DecorationRenderSpec.IMAGE_BASE_RATIO * scale
-                        val aspectRatio = stickerBitmap.width.toFloat() / stickerBitmap.height.toFloat()
-                        val drawWidth: Float
-                        val drawHeight: Float
-                        if (aspectRatio >= 1f) {
-                            drawWidth = baseSize
-                            drawHeight = baseSize / aspectRatio
-                        } else {
-                            drawHeight = baseSize
-                            drawWidth = baseSize * aspectRatio
-                        }
-                        val targetRect = RectF(
-                            centerX - drawWidth / 2f,
-                            centerY - drawHeight / 2f,
-                            centerX + drawWidth / 2f,
-                            centerY + drawHeight / 2f
-                        )
-                        canvas.drawBitmap(stickerBitmap, null, targetRect, null)
-                        stickerBitmap.recycle()
-                    }
-                }
-            }
+            composeDecorationsOntoBitmap(composedBitmap, decorations)
 
             val tempComposedFile = File(context.cacheDir, "composed_${System.currentTimeMillis()}.png")
             FileOutputStream(tempComposedFile).use { output ->
@@ -293,9 +224,518 @@ actual class StickerFileStorage(private val context: Context) {
         }
     }
 
+    actual suspend fun extractVideoFrameToFile(
+        videoPath: String,
+        atMs: Long,
+        fileName: String
+    ): String? = withContext(Dispatchers.IO) {
+        val source = File(videoPath)
+        if (!source.exists()) return@withContext null
+        if (source.isGif()) {
+            return@withContext extractGifFrameToFile(source, atMs, fileName)
+        }
+        val retriever = android.media.MediaMetadataRetriever()
+        try {
+            retriever.setDataSource(videoPath)
+            val frame = retriever.getFrameAtTime(
+                atMs.coerceAtLeast(0L) * 1000L,
+                android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC
+            ) ?: return@withContext null
+            val cacheDir = File(context.cacheDir, "video_previews").apply { mkdirs() }
+            val outFile = File(cacheDir, fileName)
+            FileOutputStream(outFile).use { out ->
+                frame.compress(Bitmap.CompressFormat.PNG, 100, out)
+            }
+            frame.recycle()
+            outFile.absolutePath
+        } catch (_: Exception) {
+            null
+        } finally {
+            try {
+                retriever.release()
+            } catch (_: Exception) {
+                // ignore
+            }
+        }
+    }
+
+    actual suspend fun getVideoDurationMs(videoPath: String): Long = withContext(Dispatchers.IO) {
+        val file = File(videoPath)
+        if (!file.exists()) return@withContext -1L
+        if (file.isGif()) {
+            return@withContext getGifDurationMs(file)
+        }
+        val retriever = android.media.MediaMetadataRetriever()
+        try {
+            retriever.setDataSource(videoPath)
+            retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)
+                ?.toLongOrNull() ?: -1L
+        } catch (_: Exception) {
+            -1L
+        } finally {
+            try {
+                retriever.release()
+            } catch (_: Exception) {
+                // ignore
+            }
+        }
+    }
+
+    actual suspend fun decodeVideoFrames(
+        videoPath: String,
+        spec: AnimatedStickerSpec,
+        onProgress: (current: Int, total: Int) -> Unit
+    ): List<DecodedFrame> {
+        val sourceFile = File(videoPath)
+        if (!sourceFile.exists()) {
+            throw IllegalArgumentException("Media file does not exist: $videoPath")
+        }
+        if (sourceFile.isGif()) {
+            return decodeGifFrames(sourceFile, spec, onProgress)
+        }
+        val mediaItem = MediaItem.fromUri(Uri.fromFile(sourceFile))
+        val frameCount = spec.frameCount
+        val frameDurationMs = spec.frameDurationMs
+        val totalSpan = (spec.trimEndMs - spec.trimStartMs).coerceAtLeast(1L)
+
+        onProgress(0, frameCount)
+
+        // ExperimentalFrameExtractor must be created and accessed from a single application
+        // thread. We use Dispatchers.Main.immediate so the underlying ExoPlayer attaches to
+        // the main looper; getFrame() returns a future and decoding happens off-thread.
+        return withContext(Dispatchers.Main.immediate) {
+            val extractor = ExperimentalFrameExtractor(
+                context,
+                ExperimentalFrameExtractor.Configuration.Builder().build()
+            )
+            try {
+                extractor.setMediaItem(mediaItem, /* effects = */ emptyList())
+                val out = ArrayList<DecodedFrame>(frameCount)
+                for (i in 0 until frameCount) {
+                    val positionMs = if (frameCount == 1) {
+                        spec.trimStartMs
+                    } else {
+                        spec.trimStartMs + i.toLong() * totalSpan / (frameCount - 1).coerceAtLeast(1)
+                    }
+                    val frame = extractor.getFrame(positionMs).await()
+                    val cropTransform = spec.cropTransform
+                    val frameBytes = withContext(Dispatchers.IO) {
+                        val processed = if (cropTransform != null) {
+                            applyCropTransformToBitmap(frame.bitmap, cropTransform)
+                        } else {
+                            resizeAndCenterCropTo512(frame.bitmap)
+                        }
+                        val baos = ByteArrayOutputStream()
+                        processed.compress(Bitmap.CompressFormat.PNG, 100, baos)
+                        if (processed != frame.bitmap) processed.recycle()
+                        baos.toByteArray()
+                    }
+                    out.add(DecodedFrame(frameBytes, frameDurationMs))
+                    onProgress(i + 1, frameCount)
+                }
+                out
+            } finally {
+                extractor.release()
+            }
+        }
+    }
+
+    actual suspend fun saveAnimatedStickerImage(
+        frames: List<DecodedFrame>,
+        fileName: String,
+        baseDecorations: List<StickerDecoration>,
+        frameDecorations: Map<Int, List<StickerDecoration>>,
+        onProgress: (current: Int, total: Int) -> Unit
+    ): String = withContext(Dispatchers.IO) {
+        if (frames.isEmpty()) {
+            throw IllegalArgumentException("No frames to encode")
+        }
+
+        // Total work units = (compose every frame) + (encoding pass).
+        // We reserve the final 25% for encoding so the bar reaches 100% only
+        // when the WebP is on disk; before that the user sees the compose phase.
+        val composeUnits = frames.size
+        val totalUnits = composeUnits + ENCODE_UNITS
+
+        onProgress(0, totalUnits)
+
+        val composed = frames.mapIndexed { idx, frame ->
+            val decoded = BitmapFactory.decodeByteArray(frame.bytes, 0, frame.bytes.size)
+                ?: throw IllegalStateException("Cannot decode frame $idx")
+            val mutable = if (decoded.config == Bitmap.Config.ARGB_8888 && decoded.isMutable) {
+                decoded
+            } else {
+                val converted = decoded.copy(Bitmap.Config.ARGB_8888, true)
+                decoded.recycle()
+                converted
+            }
+            val combined = baseDecorations + (frameDecorations[idx] ?: emptyList())
+            if (combined.isNotEmpty()) {
+                composeDecorationsOntoBitmap(mutable, combined)
+            }
+            onProgress(idx + 1, totalUnits)
+            mutable
+        }
+
+        val destFile = File(stickersDir, fileName)
+        val durations = frames.map {
+            it.durationMs.coerceAtLeast(StickerPack.MIN_FRAME_DURATION_MS)
+        }
+        val maxBytes = StickerPack.MAX_ANIMATED_STICKER_FILE_SIZE.toLong()
+
+        try {
+            val attempts = listOf<Pair<List<Bitmap>, List<Long>>>(
+                composed to durations
+            ) + buildHalvedAttempts(composed, durations) + buildTrimmedAttempts(composed, durations)
+
+            // Estimate the worst case so we can advance the encode portion smoothly.
+            val totalEncodeAttempts = (attempts.size * QUALITY_STOPS.size).coerceAtLeast(1)
+            var attemptIdx = 0
+            for (attempt in attempts) {
+                for (quality in QUALITY_STOPS) {
+                    attemptIdx++
+                    val encodeFraction = attemptIdx.toFloat() / totalEncodeAttempts
+                    val encodedSoFar = (encodeFraction * ENCODE_UNITS).toInt().coerceAtMost(ENCODE_UNITS - 1)
+                    onProgress(composeUnits + encodedSoFar, totalUnits)
+
+                    encodeAnimatedWebp(
+                        bitmaps = attempt.first,
+                        durations = attempt.second,
+                        destFile = destFile,
+                        quality = quality
+                    )
+                    val size = destFile.length()
+                    android.util.Log.d(
+                        "StickerFileStorage",
+                        "Animated encode attempt: frames=${attempt.first.size}, q=$quality, size=${size / 1024}KB"
+                    )
+                    if (size in 1..maxBytes) {
+                        onProgress(totalUnits, totalUnits)
+                        return@withContext destFile.absolutePath
+                    }
+                }
+            }
+            throw IllegalStateException(
+                "Cannot fit animated sticker under ${maxBytes / 1024}KB. Try a shorter trim or lower fps."
+            )
+        } finally {
+            composed.forEach { if (!it.isRecycled) it.recycle() }
+        }
+    }
+
+    actual suspend fun encodeSingleFrameAnimatedWebP(
+        sourcePath: String,
+        fileName: String,
+        decorations: List<StickerDecoration>
+    ): String = withContext(Dispatchers.IO) {
+        val source = BitmapFactory.decodeFile(sourcePath)
+            ?: throw IllegalArgumentException("Cannot decode image: $sourcePath")
+        val target = StickerPack.STICKER_SIZE
+        try {
+            val scaled = if (source.width == target && source.height == target) {
+                source.copy(Bitmap.Config.ARGB_8888, true)
+            } else {
+                Bitmap.createScaledBitmap(source, target, target, true)
+                    .copy(Bitmap.Config.ARGB_8888, true)
+            }
+            if (decorations.isNotEmpty()) {
+                composeDecorationsOntoBitmap(scaled, decorations)
+            }
+            val baos = ByteArrayOutputStream()
+            scaled.compress(Bitmap.CompressFormat.PNG, 100, baos)
+            val payload = baos.toByteArray()
+            scaled.recycle()
+            // WhatsApp validates animated packs by checking each WebP for the ANIM
+            // chunk. libwebp's anim encoder may collapse a true single-frame input
+            // into a static WebP (no ANIM chunk) which then makes the pack fail
+            // validation. Encoding two identical frames forces an animated WebP.
+            val frames = listOf(
+                DecodedFrame(payload, SINGLE_FRAME_ANIMATED_DURATION_MS),
+                DecodedFrame(payload, SINGLE_FRAME_ANIMATED_DURATION_MS)
+            )
+            saveAnimatedStickerImage(
+                frames = frames,
+                fileName = fileName,
+                baseDecorations = emptyList(),
+                frameDecorations = emptyMap()
+            )
+        } finally {
+            if (!source.isRecycled) source.recycle()
+        }
+    }
+
+    private fun buildHalvedAttempts(
+        bitmaps: List<Bitmap>,
+        durations: List<Long>
+    ): List<Pair<List<Bitmap>, List<Long>>> {
+        if (bitmaps.size < 6) return emptyList()
+        val halved = bitmaps.filterIndexed { i, _ -> i % 2 == 0 }
+        val halvedDur = durations
+            .filterIndexed { i, _ -> i % 2 == 0 }
+            .map { it * 2 }
+        return listOf(halved to halvedDur)
+    }
+
+    private fun buildTrimmedAttempts(
+        bitmaps: List<Bitmap>,
+        durations: List<Long>
+    ): List<Pair<List<Bitmap>, List<Long>>> {
+        if (bitmaps.size < 4) return emptyList()
+        val keep = (bitmaps.size * 2) / 3
+        return listOf(
+            bitmaps.take(keep) to durations.take(keep)
+        )
+    }
+
+    private fun encodeAnimatedWebp(
+        bitmaps: List<Bitmap>,
+        durations: List<Long>,
+        destFile: File,
+        quality: Float
+    ) {
+        if (destFile.exists()) destFile.delete()
+        val encoder = WebPAnimEncoder(
+            context = context,
+            width = StickerPack.STICKER_SIZE,
+            height = StickerPack.STICKER_SIZE,
+            options = WebPAnimEncoderOptions(
+                minimizeSize = true,
+                animParams = WebPMuxAnimParams(
+                    backgroundColor = 0,
+                    loopCount = 0
+                )
+            )
+        )
+        try {
+            encoder.configure(
+                config = WebPConfig(
+                    lossless = WebPConfig.COMPRESSION_LOSSY,
+                    quality = quality
+                ),
+                preset = WebPPreset.WEBP_PRESET_PICTURE
+            )
+            var timestamp = 0L
+            bitmaps.forEachIndexed { i, bmp ->
+                encoder.addFrame(timestamp, bmp)
+                timestamp += durations[i]
+            }
+            encoder.assemble(timestamp, Uri.fromFile(destFile))
+        } finally {
+            encoder.release()
+        }
+    }
+
+    private fun File.isGif(): Boolean = extension.equals("gif", ignoreCase = true)
+
     /**
-     * Grid-split API captions: same geometry as Compose preview/editor — bounded width, anchored at [centerX],[centerY].
+     * Decode animated GIF using [Movie] (API 24+). Timeline matches in-app trim/crop/FPS like video.
      */
+    @Suppress("DEPRECATION")
+    private suspend fun decodeGifFrames(
+        file: File,
+        spec: AnimatedStickerSpec,
+        onProgress: (current: Int, total: Int) -> Unit
+    ): List<DecodedFrame> =
+        withContext(Dispatchers.IO) {
+            val movie = FileInputStream(file).use { Movie.decodeStream(it) }
+                ?: throw IllegalArgumentException("Cannot decode GIF: ${file.absolutePath}")
+            val gifDuration = movie.duration().coerceAtLeast(1)
+            val gifDurMs = gifDuration.toLong().coerceAtLeast(1L)
+            val frameCount = spec.frameCount
+            val frameDurationMs = spec.frameDurationMs
+            val trimStart = spec.trimStartMs.coerceIn(0L, gifDurMs - 1)
+            val trimEnd = spec.trimEndMs.coerceIn(trimStart + 1, gifDurMs)
+            val totalSpan = (trimEnd - trimStart).coerceAtLeast(1L)
+            val cropTransform = spec.cropTransform
+            val out = ArrayList<DecodedFrame>(frameCount)
+            onProgress(0, frameCount)
+            for (i in 0 until frameCount) {
+                val positionMsLong = if (frameCount == 1) {
+                    trimStart
+                } else {
+                    trimStart + i.toLong() * totalSpan / (frameCount - 1).coerceAtLeast(1)
+                }
+                val positionMs = positionMsLong.toInt().coerceIn(0, gifDuration - 1)
+                movie.setTime(positionMs)
+                val w = movie.width().coerceAtLeast(1)
+                val h = movie.height().coerceAtLeast(1)
+                val raw = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+                Canvas(raw).also { canvas -> movie.draw(canvas, 0f, 0f) }
+                val processed = if (cropTransform != null) {
+                    applyCropTransformToBitmap(raw, cropTransform)
+                } else {
+                    resizeAndCenterCropTo512(raw)
+                }
+                if (processed != raw) raw.recycle()
+                val baos = ByteArrayOutputStream()
+                processed.compress(Bitmap.CompressFormat.PNG, 100, baos)
+                processed.recycle()
+                out.add(DecodedFrame(baos.toByteArray(), frameDurationMs))
+                onProgress(i + 1, frameCount)
+            }
+            out
+        }
+
+    @Suppress("DEPRECATION")
+    private fun getGifDurationMs(file: File): Long {
+        return try {
+            FileInputStream(file).use { stream ->
+                val movie = Movie.decodeStream(stream)
+                movie?.duration()?.toLong()?.takeIf { it > 0 } ?: -1L
+            }
+        } catch (_: Exception) {
+            -1L
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun extractGifFrameToFile(file: File, atMs: Long, fileName: String): String? {
+        return try {
+            val movie = FileInputStream(file).use { Movie.decodeStream(it) } ?: return null
+            val dur = movie.duration().coerceAtLeast(1)
+            val t = atMs.toInt().coerceIn(0, dur - 1)
+            movie.setTime(t)
+            val w = movie.width().coerceAtLeast(1)
+            val h = movie.height().coerceAtLeast(1)
+            val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            Canvas(bmp).also { movie.draw(it, 0f, 0f) }
+            val cacheDir = File(context.cacheDir, "video_previews").apply { mkdirs() }
+            val outFile = File(cacheDir, fileName)
+            FileOutputStream(outFile).use { out ->
+                bmp.compress(Bitmap.CompressFormat.PNG, 100, out)
+            }
+            bmp.recycle()
+            outFile.absolutePath
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun resizeAndCenterCropTo512(source: Bitmap): Bitmap {
+        val target = StickerPack.STICKER_SIZE
+        if (source.width == target && source.height == target) return source
+
+        val scale = maxOf(
+            target.toFloat() / source.width.toFloat(),
+            target.toFloat() / source.height.toFloat()
+        )
+        val scaledW = (source.width * scale).toInt().coerceAtLeast(target)
+        val scaledH = (source.height * scale).toInt().coerceAtLeast(target)
+        val scaled = Bitmap.createScaledBitmap(source, scaledW, scaledH, true)
+
+        val xOffset = ((scaled.width - target) / 2).coerceAtLeast(0)
+        val yOffset = ((scaled.height - target) / 2).coerceAtLeast(0)
+        val cropped = Bitmap.createBitmap(scaled, xOffset, yOffset, target, target)
+        if (scaled != source && scaled != cropped) scaled.recycle()
+        return cropped
+    }
+
+    /**
+     * Apply [transform] to [source] and produce a 512×512 bitmap. We mirror the math used by
+     * `VideoCropScreen` so the saved frame matches what the user previewed:
+     *  - `scale` multiplies the aspect-fit scale derived from source dimensions (no stretch).
+     *  - `offset*Norm` is normalized to the 512×512 output box.
+     *  - `flipHorizontal/Vertical` and `rotation` are applied around the source center.
+     */
+    private fun applyCropTransformToBitmap(source: Bitmap, transform: CropTransform): Bitmap {
+        val target = StickerPack.STICKER_SIZE
+        val output = Bitmap.createBitmap(target, target, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(output)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+
+        val maxDim = maxOf(source.width, source.height).toFloat().coerceAtLeast(1f)
+        val fitScale = target.toFloat() / maxDim
+        val finalScale = transform.scale.coerceIn(CropTransform.MIN_SCALE, CropTransform.MAX_SCALE) * fitScale
+
+        val matrix = Matrix().apply {
+            postTranslate(-source.width / 2f, -source.height / 2f)
+            postScale(finalScale, finalScale)
+            if (transform.flipHorizontal) postScale(-1f, 1f)
+            if (transform.flipVertical) postScale(1f, -1f)
+            postRotate(transform.rotation)
+            postTranslate(
+                target / 2f + transform.offsetXNorm * target,
+                target / 2f + transform.offsetYNorm * target
+            )
+        }
+        canvas.drawBitmap(source, matrix, paint)
+        return output
+    }
+
+    private fun composeDecorationsOntoBitmap(
+        target: Bitmap,
+        decorations: List<StickerDecoration>
+    ) {
+        val canvas = Canvas(target)
+        val minDim = minOf(target.width, target.height).toFloat()
+        decorations.forEach { decoration ->
+            val centerX = decoration.centerX.coerceIn(0f, 1f) * target.width
+            val centerY = decoration.centerY.coerceIn(0f, 1f) * target.height
+            val scale = decoration.scale.coerceIn(
+                DecorationRenderSpec.MIN_SCALE,
+                DecorationRenderSpec.MAX_SCALE
+            )
+            when (decoration) {
+                is TextDecoration -> {
+                    if (decoration.id.startsWith("api_txt_")) {
+                        drawApiOutsideForegroundCaption(
+                            canvas = canvas,
+                            decoration = decoration,
+                            bitmapWidth = target.width,
+                            bitmapHeight = target.height,
+                            minDim = minDim
+                        )
+                    } else {
+                        drawTextDecoration(
+                            canvas = canvas,
+                            text = decoration.text,
+                            centerX = centerX,
+                            centerY = centerY,
+                            textSize = minDim * DecorationRenderSpec.TEXT_SIZE_RATIO * scale,
+                            typeface = mapTypeface(decoration.font, decoration.fontWeight),
+                            textColor = decoration.textColorArgb.toInt()
+                        )
+                    }
+                }
+
+                is EmojiDecoration -> {
+                    drawTextDecoration(
+                        canvas = canvas,
+                        text = decoration.emoji,
+                        centerX = centerX,
+                        centerY = centerY,
+                        textSize = minDim * DecorationRenderSpec.EMOJI_SIZE_RATIO * scale,
+                        typeface = Typeface.DEFAULT,
+                        textColor = android.graphics.Color.WHITE
+                    )
+                }
+
+                is ImageDecoration -> {
+                    val stickerBitmap = BitmapFactory.decodeFile(decoration.imagePath) ?: return@forEach
+                    val baseSize = minDim * DecorationRenderSpec.IMAGE_BASE_RATIO * scale
+                    val aspectRatio = stickerBitmap.width.toFloat() / stickerBitmap.height.toFloat()
+                    val drawWidth: Float
+                    val drawHeight: Float
+                    if (aspectRatio >= 1f) {
+                        drawWidth = baseSize
+                        drawHeight = baseSize / aspectRatio
+                    } else {
+                        drawHeight = baseSize
+                        drawWidth = baseSize * aspectRatio
+                    }
+                    val targetRect = RectF(
+                        centerX - drawWidth / 2f,
+                        centerY - drawHeight / 2f,
+                        centerX + drawWidth / 2f,
+                        centerY + drawHeight / 2f
+                    )
+                    canvas.drawBitmap(stickerBitmap, null, targetRect, null)
+                    stickerBitmap.recycle()
+                }
+            }
+        }
+    }
+
     private fun drawApiOutsideForegroundCaption(
         canvas: Canvas,
         decoration: TextDecoration,
@@ -390,5 +830,23 @@ actual class StickerFileStorage(private val context: Context) {
             DecorationFontWeight.Bold -> Typeface.BOLD
         }
         return Typeface.create(base, style)
+    }
+
+    companion object {
+        private val QUALITY_STOPS = listOf(80f, 65f, 50f, 35f, 22f)
+
+        /**
+         * Number of progress units the encode phase reserves. Picked so the bar
+         * spends roughly 25-30% of its travel on the encode pass, which matches
+         * how long encoding actually takes vs. compositing decorations.
+         */
+        private const val ENCODE_UNITS = 8
+
+        /**
+         * Per-frame duration used when re-encoding a static sticker as a 2-frame
+         * "animated" WebP for animated packs. We use 1000ms so the animation feels
+         * like a still image to the user and stays well under the 10s total cap.
+         */
+        private const val SINGLE_FRAME_ANIMATED_DURATION_MS = 1000L
     }
 }

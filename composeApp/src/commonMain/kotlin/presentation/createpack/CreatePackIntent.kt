@@ -5,6 +5,7 @@ sealed interface CreatePackIntent {
     data class UpdatePublisher(val publisher: String) : CreatePackIntent
     data class UpdateTrayImage(val imagePath: String) : CreatePackIntent
     data class AddSticker(val imagePath: String) : CreatePackIntent
+    data class AddAnimatedDraft(val draft: DraftSticker) : CreatePackIntent
     data class RemoveSticker(val index: Int) : CreatePackIntent
     data class UpdateGeneratePrompt(val prompt: String) : CreatePackIntent
     data class ToggleGenerateAsGrid(val enabled: Boolean) : CreatePackIntent

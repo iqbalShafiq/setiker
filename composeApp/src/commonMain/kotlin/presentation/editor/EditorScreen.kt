@@ -3,28 +3,24 @@ package presentation.editor
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Crop
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FontDownload
@@ -32,100 +28,99 @@ import androidx.compose.material.icons.filled.FormatBold
 import androidx.compose.material.icons.filled.FormatColorText
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.LayersClear
-import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.TagFaces
+import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
-import org.jetbrains.compose.resources.stringResource
 import domain.model.DecorationFont
 import domain.model.DecorationFontWeight
 import domain.model.EmojiDecoration
 import domain.model.ImageDecoration
 import domain.model.Sticker
 import domain.model.TextDecoration
-import presentation.components.CheckerboardBackground
+import org.jetbrains.compose.resources.stringResource
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
 import presentation.components.AppTextField
 import presentation.components.AppTopBar
-import presentation.components.EmojiPickerBottomSheet
+import presentation.components.CheckerboardBackground
+import presentation.components.DecorationActionChip
 import presentation.components.DecorationPreviewLayer
+import presentation.components.EmojiPickerBottomSheet
 import presentation.components.LoadingIndicator
+import presentation.components.NeubrutalAddTagPill
+import presentation.components.NeubrutalStickerPreviewFrame
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
+import presentation.components.StickerEmojiTagChip
 import presentation.components.rememberImagePicker
-import presentation.theme.AccentCoral
-import presentation.theme.AccentCoralLight
-import presentation.theme.NeubrutalBg
-import presentation.theme.NeubrutalBlack
-import presentation.theme.NeubrutalGray
-import presentation.theme.NeubrutalWhite
-import presentation.theme.neubrutalShadow
+import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalMutedOnSurface
+import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalScreenBackground
+import presentation.theme.neubrutalSubtleOnSurface
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.accessibility_text
 import setiker.composeapp.generated.resources.accessibility_text_example
 import setiker.composeapp.generated.resources.accessibility_text_placeholder
 import setiker.composeapp.generated.resources.add
+import setiker.composeapp.generated.resources.add_decoration
+import setiker.composeapp.generated.resources.add_emoji
+import setiker.composeapp.generated.resources.add_image
+import setiker.composeapp.generated.resources.add_text
 import setiker.composeapp.generated.resources.back
 import setiker.composeapp.generated.resources.cancel
+import setiker.composeapp.generated.resources.change_color
+import setiker.composeapp.generated.resources.change_emoji
+import setiker.composeapp.generated.resources.change_font
+import setiker.composeapp.generated.resources.change_font_weight
+import setiker.composeapp.generated.resources.change_image
 import setiker.composeapp.generated.resources.crop
+import setiker.composeapp.generated.resources.decoration_hint
 import setiker.composeapp.generated.resources.edit_sticker_title
+import setiker.composeapp.generated.resources.edit_text_decoration
 import setiker.composeapp.generated.resources.editor_action_hint
 import setiker.composeapp.generated.resources.editor_remove_bg_progress_hint
 import setiker.composeapp.generated.resources.remove_background_title
 import setiker.composeapp.generated.resources.remove_bg
 import setiker.composeapp.generated.resources.remove_bg_preview_content_description
 import setiker.composeapp.generated.resources.remove_bg_result_hint
-import setiker.composeapp.generated.resources.remove_emoji
 import setiker.composeapp.generated.resources.result_confirmation_title
 import setiker.composeapp.generated.resources.save_sticker
 import setiker.composeapp.generated.resources.select_image
 import setiker.composeapp.generated.resources.sticker_preview
-import setiker.composeapp.generated.resources.use_result
 import setiker.composeapp.generated.resources.tags_with_count
-import setiker.composeapp.generated.resources.add_text
-import setiker.composeapp.generated.resources.add_emoji
-import setiker.composeapp.generated.resources.add_image
-import setiker.composeapp.generated.resources.decoration_hint
 import setiker.composeapp.generated.resources.text_decoration
 import setiker.composeapp.generated.resources.text_decoration_placeholder
-import setiker.composeapp.generated.resources.add_decoration
-import setiker.composeapp.generated.resources.change_font
-import setiker.composeapp.generated.resources.change_font_weight
-import setiker.composeapp.generated.resources.change_color
-import setiker.composeapp.generated.resources.edit_text_decoration
-import setiker.composeapp.generated.resources.change_emoji
-import setiker.composeapp.generated.resources.change_image
-import androidx.compose.ui.graphics.toArgb
+import setiker.composeapp.generated.resources.use_result
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -242,7 +237,7 @@ fun EditorScreen(
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = NeubrutalBg
+        containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         if (state.isLoading) {
             LoadingIndicator(
@@ -258,30 +253,8 @@ fun EditorScreen(
                     .padding(top = innerPadding.calculateTopPadding())
                     .padding(horizontal = 20.dp, vertical = 16.dp)
             ) {
-                // Image Preview (Neubrutal Frame) — kept outside verticalScroll so drag gestures on
-                // decorations are not competed by the parent scroll column.
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f)
-                        .neubrutalShadow(
-                            offsetX = 4.dp,
-                            offsetY = 4.dp,
-                            cornerRadius = 20.dp,
-                            color = NeubrutalBlack
-                        )
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(NeubrutalWhite)
-                        .border(
-                            width = 2.dp,
-                            color = NeubrutalBlack,
-                            shape = RoundedCornerShape(20.dp)
-                        )
-                        .padding(4.dp),
-                    contentAlignment = Alignment.Center
-                ) {
+                NeubrutalStickerPreviewFrame {
                     if (state.imagePath.isNotBlank()) {
-                        android.util.Log.d("EditorScreen", "Loading image: ${state.imagePath}")
                         key(state.imagePath) {
                             Box(modifier = Modifier.fillMaxSize()) {
                                 Image(
@@ -317,7 +290,7 @@ fun EditorScreen(
                         Text(
                             text = stringResource(Res.string.select_image),
                             style = MaterialTheme.typography.bodyLarge,
-                            color = NeubrutalGray
+                            color = neubrutalSubtleOnSurface()
                         )
                     }
                 }
@@ -332,7 +305,7 @@ fun EditorScreen(
                 Text(
                     text = stringResource(Res.string.decoration_hint),
                     style = MaterialTheme.typography.bodySmall,
-                    color = NeubrutalGray
+                    color = neubrutalMutedOnSurface()
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 FlowRow(
@@ -362,7 +335,7 @@ fun EditorScreen(
                 Text(
                     text = stringResource(Res.string.editor_action_hint),
                     style = MaterialTheme.typography.bodySmall,
-                    color = NeubrutalGray
+                    color = neubrutalMutedOnSurface()
                 )
                 Spacer(modifier = Modifier.height(12.dp))
 
@@ -371,7 +344,7 @@ fun EditorScreen(
                     text = stringResource(Res.string.tags_with_count, state.emojis.size, Sticker.MAX_EMOJIS),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = NeubrutalBlack
+                    color = neubrutalOnSurface()
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
@@ -382,16 +355,16 @@ fun EditorScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     state.emojis.forEachIndexed { index, emoji ->
-                        EmojiChip(
+                        StickerEmojiTagChip(
                             emoji = emoji,
                             onRemove = { onIntent(EditorIntent.RemoveEmoji(index)) }
                         )
                     }
 
                     if (state.emojis.size < Sticker.MAX_EMOJIS) {
-                        NeubrutalOutlinedPill(
-                            onClick = { onIntent(EditorIntent.ShowEmojiPicker) },
-                            label = stringResource(Res.string.add)
+                        NeubrutalAddTagPill(
+                            label = stringResource(Res.string.add),
+                            onClick = { onIntent(EditorIntent.ShowEmojiPicker) }
                         )
                     }
                 }
@@ -411,7 +384,7 @@ fun EditorScreen(
                 Text(
                     text = stringResource(Res.string.accessibility_text_example),
                     style = MaterialTheme.typography.bodySmall,
-                    color = NeubrutalGray
+                    color = neubrutalMutedOnSurface()
                 )
 
                 Spacer(modifier = Modifier.height(120.dp))
@@ -499,8 +472,8 @@ fun EditorScreen(
         ModalBottomSheet(
             onDismissRequest = { onIntent(EditorIntent.DismissBackgroundRemoverSheet) },
             sheetState = bgRemovalSheetState,
-            containerColor = NeubrutalBg,
-            scrimColor = NeubrutalBlack.copy(alpha = 0.35f)
+            containerColor = neubrutalScreenBackground(),
+            scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
         ) {
             Column(
                 modifier = Modifier
@@ -513,13 +486,13 @@ fun EditorScreen(
                         text = stringResource(Res.string.remove_background_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = NeubrutalBlack
+                        color = neubrutalOnSurface()
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = stringResource(Res.string.editor_remove_bg_progress_hint),
                         style = MaterialTheme.typography.bodySmall,
-                        color = NeubrutalBlack.copy(alpha = 0.75f)
+                        color = neubrutalMutedOnSurface()
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                     Box(
@@ -527,8 +500,8 @@ fun EditorScreen(
                             .fillMaxWidth()
                             .aspectRatio(1f)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(NeubrutalWhite)
-                            .border(2.dp, NeubrutalBlack, RoundedCornerShape(16.dp))
+                            .background(neubrutalCardSurface())
+                            .border(2.dp, neubrutalBorderColor(), RoundedCornerShape(16.dp))
                             .padding(4.dp),
                         contentAlignment = Alignment.Center
                     ) {
@@ -541,13 +514,13 @@ fun EditorScreen(
                             text = stringResource(Res.string.result_confirmation_title),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = NeubrutalBlack
+                            color = neubrutalOnSurface()
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             text = stringResource(Res.string.remove_bg_result_hint),
                             style = MaterialTheme.typography.bodySmall,
-                            color = NeubrutalBlack.copy(alpha = 0.75f)
+                            color = neubrutalMutedOnSurface()
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         Box(
@@ -555,8 +528,8 @@ fun EditorScreen(
                                 .fillMaxWidth()
                                 .aspectRatio(1f)
                                 .clip(RoundedCornerShape(16.dp))
-                                .background(NeubrutalWhite)
-                                .border(2.dp, NeubrutalBlack, RoundedCornerShape(16.dp))
+                                .background(neubrutalCardSurface())
+                                .border(2.dp, neubrutalBorderColor(), RoundedCornerShape(16.dp))
                                 .padding(4.dp)
                         ) {
                             CheckerboardBackground(modifier = Modifier.fillMaxSize())
@@ -596,8 +569,8 @@ private fun EditTextDecorationBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = NeubrutalBg,
-        scrimColor = NeubrutalBlack.copy(alpha = 0.35f)
+        containerColor = neubrutalScreenBackground(),
+        scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp).padding(bottom = 24.dp)
@@ -629,8 +602,8 @@ private fun FontPickerBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = NeubrutalBg,
-        scrimColor = NeubrutalBlack.copy(alpha = 0.35f)
+        containerColor = neubrutalScreenBackground(),
+        scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
     ) {
         Column(
             modifier = Modifier
@@ -642,7 +615,7 @@ private fun FontPickerBottomSheet(
                 text = "Sample Aa Bb 123",
                 style = MaterialTheme.typography.headlineSmall,
                 fontFamily = mapFontFamily(selectedFont),
-                color = NeubrutalBlack
+                color = neubrutalOnSurface()
             )
             Spacer(modifier = Modifier.height(12.dp))
             FlowRow(
@@ -672,8 +645,8 @@ private fun FontWeightPickerBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = NeubrutalBg,
-        scrimColor = NeubrutalBlack.copy(alpha = 0.35f)
+        containerColor = neubrutalScreenBackground(),
+        scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
     ) {
         Column(
             modifier = Modifier
@@ -685,7 +658,7 @@ private fun FontWeightPickerBottomSheet(
                 text = "Sample Aa Bb 123",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = mapFontWeight(selectedWeight),
-                color = NeubrutalBlack
+                color = neubrutalOnSurface()
             )
             Spacer(modifier = Modifier.height(12.dp))
             FlowRow(
@@ -720,8 +693,8 @@ private fun ColorPickerBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = NeubrutalBg,
-        scrimColor = NeubrutalBlack.copy(alpha = 0.35f)
+        containerColor = neubrutalScreenBackground(),
+        scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
     ) {
         Column(
             modifier = Modifier
@@ -732,7 +705,7 @@ private fun ColorPickerBottomSheet(
             Text(
                 text = "Color preview",
                 style = MaterialTheme.typography.labelLarge,
-                color = NeubrutalBlack
+                color = neubrutalOnSurface()
             )
             Spacer(modifier = Modifier.height(8.dp))
             Box(
@@ -741,7 +714,7 @@ private fun ColorPickerBottomSheet(
                     .height(56.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(selectedColor)
-                    .border(2.dp, NeubrutalBlack, RoundedCornerShape(12.dp))
+                    .border(2.dp, neubrutalBorderColor(), RoundedCornerShape(12.dp))
             )
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -810,7 +783,7 @@ private fun ColorSliderRow(
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
-            color = NeubrutalBlack
+            color = neubrutalOnSurface()
         )
         Box(
             modifier = Modifier
@@ -818,7 +791,7 @@ private fun ColorSliderRow(
                 .height(14.dp)
                 .clip(RoundedCornerShape(999.dp))
                 .background(trackBrush)
-                .border(1.dp, NeubrutalBlack, RoundedCornerShape(999.dp))
+                .border(1.dp, neubrutalBorderColor(), RoundedCornerShape(999.dp))
         )
         Slider(
             value = value,
@@ -861,8 +834,8 @@ private fun TextDecorationBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = NeubrutalBg,
-        scrimColor = NeubrutalBlack.copy(alpha = 0.35f)
+        containerColor = neubrutalScreenBackground(),
+        scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
     ) {
         Column(
             modifier = Modifier
@@ -874,7 +847,7 @@ private fun TextDecorationBottomSheet(
                 text = stringResource(Res.string.text_decoration),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = NeubrutalBlack
+                color = neubrutalOnSurface()
             )
             Spacer(modifier = Modifier.height(12.dp))
             AppTextField(
@@ -932,95 +905,6 @@ private fun mapFontWeight(weight: DecorationFontWeight): FontWeight = when (weig
     DecorationFontWeight.Medium -> FontWeight.Medium
     DecorationFontWeight.SemiBold -> FontWeight.SemiBold
     DecorationFontWeight.Bold -> FontWeight.Bold
-}
-
-@Composable
-private fun DecorationActionChip(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .clip(CircleShape)
-            .background(NeubrutalWhite)
-            .border(2.dp, NeubrutalBlack, CircleShape)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Icon(imageVector = icon, contentDescription = null, tint = AccentCoral)
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = NeubrutalBlack
-        )
-    }
-}
-
-@Composable
-private fun EmojiChip(
-    emoji: String,
-    onRemove: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .clip(CircleShape)
-            .background(AccentCoralLight)
-            .border(
-                width = 2.dp,
-                color = NeubrutalBlack,
-                shape = CircleShape
-            )
-            .padding(horizontal = 14.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = emoji,
-            style = MaterialTheme.typography.bodyLarge
-        )
-        IconButton(
-            onClick = onRemove,
-            modifier = Modifier.size(18.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = stringResource(Res.string.remove_emoji),
-                modifier = Modifier.size(12.dp),
-                tint = NeubrutalGray
-            )
-        }
-    }
-}
-
-@Composable
-private fun NeubrutalOutlinedPill(
-    onClick: () -> Unit,
-    label: String,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .clip(CircleShape)
-            .background(NeubrutalWhite)
-            .border(
-                width = 2.dp,
-                color = NeubrutalBlack,
-                shape = CircleShape
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 6.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = AccentCoral,
-            fontWeight = FontWeight.Medium
-        )
-    }
 }
 
 // MARK: - Previews

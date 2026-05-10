@@ -168,4 +168,36 @@
     <string name="error_image_download_failed">Failed to download generated image.</string>
     <string name="error_pack_not_found">Pack not found.</string>
     <string name="error_sticker_not_found">Sticker not found.</string>
+
+    <string name="trim_video_title">Trim &amp; timing</string>
+    <string name="source_video">Source (video or GIF)</string>
+    <string name="trim">Trim</string>
+    <string name="frames_per_second">Frames per second</string>
+    <string name="speed">Speed</string>
+    <string name="animation_duration_cap">Animations are capped at %1$ds.</string>
+    <string name="continue_action">Continue</string>
+    <string name="extracting_frames">Extracting frames…</string>
+    <string name="video_preview">Video preview</string>
+    <string name="trim_duration_overlay">%1$s / %2$s</string>
+    <string name="edit_animated_sticker_title">Edit animated sticker</string>
+    <string name="frame_index">Frame %1$d / %2$d</string>
+    <string name="loading_frames">Loading frames…</string>
+    <string name="apply_all_frames">Apply to all frames</string>
+    <string name="this_frame_only">This frame only</string>
+    <string name="encoding_webp">Encoding animated WebP…</string>
+    <string name="encoding_progress_title">Working on your sticker</string>
+
+    <string name="previous_frame">Previous frame</string>
+    <string name="next_frame">Next frame</string>
+    <string name="play_preview">Play preview</string>
+    <string name="pause_preview">Pause preview</string>
+    <string name="frame_preview_cd">Frame %1$d</string>
+
+    <string name="video_crop_title">Pick crop area</string>
+    <string name="video_crop_hint">Pinch to zoom, drag to position. The square preview is exactly what you will see in WhatsApp.</string>
+    <string name="apply">Apply</string>
+    <string name="extracting_preview">Loading preview…</string>
+    <string name="error_failed_extract_preview">Could not load video preview.</string>
+    <string name="error_failed_decode_frames">Failed to decode video frames.</string>
+    <string name="cd_add_animated_sticker">Add animated sticker from video or GIF</string>
 </resources>

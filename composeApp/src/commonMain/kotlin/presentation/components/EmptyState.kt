@@ -24,10 +24,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import org.jetbrains.compose.resources.stringResource
-import presentation.theme.NeubrutalBlack
-import presentation.theme.NeubrutalGray
+import presentation.theme.NeubrutalDark
 import presentation.theme.PastelMint
+import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalMutedOnSurface
+import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
+import presentation.theme.neubrutalShadowColor
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.create_pack_title
 import setiker.composeapp.generated.resources.no_stickers_yet_desc
@@ -54,22 +57,23 @@ fun EmptyState(
                     offsetX = 4.dp,
                     offsetY = 4.dp,
                     cornerRadius = 20.dp,
-                    color = NeubrutalBlack
+                    color = neubrutalShadowColor()
                 )
                 .clip(RoundedCornerShape(20.dp))
                 .background(PastelMint)
                 .border(
                     width = 2.dp,
-                    color = NeubrutalBlack,
+                    color = neubrutalBorderColor(),
                     shape = RoundedCornerShape(20.dp)
                 ),
             contentAlignment = Alignment.Center
         ) {
+            // PastelMint stays bright in both themes; keep contrast with NeubrutalDark.
             Icon(
                 imageVector = Icons.Default.Add,
                 contentDescription = null,
                 modifier = Modifier.size(40.dp),
-                tint = NeubrutalBlack
+                tint = NeubrutalDark
             )
         }
 
@@ -78,7 +82,7 @@ fun EmptyState(
         Text(
             text = title,
             style = MaterialTheme.typography.headlineMedium,
-            color = NeubrutalBlack,
+            color = neubrutalOnSurface(),
             textAlign = TextAlign.Center
         )
 
@@ -87,7 +91,7 @@ fun EmptyState(
         Text(
             text = description,
             style = MaterialTheme.typography.bodyLarge,
-            color = NeubrutalGray,
+            color = neubrutalMutedOnSurface(),
             textAlign = TextAlign.Center
         )
 

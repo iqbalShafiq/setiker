@@ -10,6 +10,7 @@ data class StickerPackEntity(
     val name: String,
     val publisher: String,
     val trayImageFile: String,
+    val isAnimated: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 )

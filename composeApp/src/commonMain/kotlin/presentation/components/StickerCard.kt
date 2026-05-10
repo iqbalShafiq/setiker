@@ -24,9 +24,11 @@ import domain.model.Sticker
 import androidx.compose.ui.tooling.preview.Preview
 import org.jetbrains.compose.resources.stringResource
 import presentation.theme.ErrorRed
-import presentation.theme.NeubrutalBlack
 import presentation.theme.NeubrutalWhite
+import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalShadow
+import presentation.theme.neubrutalShadowColor
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.delete_sticker
 import setiker.composeapp.generated.resources.sticker_fallback
@@ -38,6 +40,7 @@ fun StickerCard(
     onDeleteClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val border = neubrutalBorderColor()
     Box(
         modifier = modifier
             .aspectRatio(1f)
@@ -45,13 +48,13 @@ fun StickerCard(
                 offsetX = 3.dp,
                 offsetY = 3.dp,
                 cornerRadius = 12.dp,
-                color = NeubrutalBlack
+                color = neubrutalShadowColor()
             )
             .clip(RoundedCornerShape(12.dp))
-            .background(NeubrutalWhite)
+            .background(neubrutalCardSurface())
             .border(
                 width = 2.dp,
-                color = NeubrutalBlack,
+                color = border,
                 shape = RoundedCornerShape(12.dp)
             )
             .clickable(onClick = onClick)
@@ -76,7 +79,7 @@ fun StickerCard(
                     .background(ErrorRed)
                     .border(
                         width = 1.5.dp,
-                        color = NeubrutalBlack,
+                        color = border,
                         shape = RoundedCornerShape(8.dp)
                     )
                     .clickable(onClick = onDeleteClick),

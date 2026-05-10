@@ -25,5 +25,7 @@ data class StickerPack(
         const val STICKER_SIZE = 512
         const val MAX_STICKER_FILE_SIZE = 100 * 1024
         const val MAX_ANIMATED_STICKER_FILE_SIZE = 500 * 1024
+        const val MAX_ANIMATION_DURATION_MS = 10_000L
+        const val MIN_FRAME_DURATION_MS = 8L
     }
 }

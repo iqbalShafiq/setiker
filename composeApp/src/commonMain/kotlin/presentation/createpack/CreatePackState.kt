@@ -30,4 +30,12 @@ data class CreatePackState(
     /** Raw gallery path; user must confirm crop before AddSticker / tray update. */
     val pendingStickerGalleryPath: String? = null,
     val pendingTrayGalleryPath: String? = null
-)
+) {
+    /**
+     * Pack is treated as animated whenever at least one sticker is animated. This is decided
+     * implicitly — there is no separate Static/Animated pack mode toggle anymore. Static
+     * stickers in such a pack are re-encoded to 1-frame animated WebP at save time so the
+     * WhatsApp `animated_sticker_pack` contract holds.
+     */
+    val containsAnimated: Boolean get() = stickers.any { it.isAnimated }
+}

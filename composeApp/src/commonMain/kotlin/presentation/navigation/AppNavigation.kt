@@ -9,11 +9,17 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import domain.model.AnimatedStickerSpec
+import presentation.animatededitor.AnimatedEditorEffect
+import presentation.animatededitor.AnimatedEditorScreenRoot
 import presentation.createpack.CreatePackScreenRoot
+import presentation.createpack.DraftSticker
 import presentation.crop.CropScreenRoot
 import presentation.editor.EditorScreenRoot
 import presentation.home.HomeScreenRoot
 import presentation.packdetail.PackDetailScreenRoot
+import presentation.videocrop.VideoCropScreenRoot
+import presentation.videotrim.VideoTrimScreenRoot
 
 private object CropRecipient {
     const val Editor = "editor"
@@ -31,6 +37,7 @@ fun AppNavigation(
     val createPackStickerCrop = remember { mutableStateOf<String?>(null) }
     val createPackTrayCrop = remember { mutableStateOf<String?>(null) }
     val packDetailImportCrop = remember { mutableStateOf<String?>(null) }
+    val pendingAnimatedDraft = remember { mutableStateOf<DraftSticker?>(null) }
 
     // Hoist reads: when state is written only inside inactive composables, Compose may skip
     // invalidating the hierarchy; reading here keeps AppNavigation subscribed while Crop shows.
@@ -38,6 +45,7 @@ fun AppNavigation(
     val createStickerCropDeliveredPath = createPackStickerCrop.value
     val createTrayCropDeliveredPath = createPackTrayCrop.value
     val packDetailImportDeliveredPath = packDetailImportCrop.value
+    val pendingAnimatedDraftDelivered = pendingAnimatedDraft.value
 
     NavHost(
         navController = navController,
@@ -100,8 +108,10 @@ fun AppNavigation(
                 },
                 croppedStickerGalleryPath = createStickerCropDeliveredPath,
                 croppedTrayGalleryPath = createTrayCropDeliveredPath,
+                pendingAnimatedDraft = pendingAnimatedDraftDelivered,
                 onStickerGalleryCropConsumed = { createPackStickerCrop.value = null },
                 onTrayGalleryCropConsumed = { createPackTrayCrop.value = null },
+                onAnimatedDraftConsumed = { pendingAnimatedDraft.value = null },
                 onNavigateToCropSticker = { path ->
                     createPackStickerCrop.value = null
                     navController.navigate(
@@ -112,6 +122,13 @@ fun AppNavigation(
                     createPackTrayCrop.value = null
                     navController.navigate(
                         "crop/${PathEncoder.encode(path)}/${CropRecipient.CreatePackTray}"
+                    )
+                },
+                onNavigateToVideoTrim = { videoPath ->
+                    pendingAnimatedDraft.value = null
+                    val effectivePackId = packId.orEmpty()
+                    navController.navigate(
+                        "videoTrim/${PathEncoder.encode(videoPath)}?packId=${PathEncoder.encode(effectivePackId)}"
                     )
                 }
             )
@@ -173,6 +190,111 @@ fun AppNavigation(
                         else -> Unit
                     }
                     navController.popBackStack()
+                }
+            )
+        }
+
+        composable(
+            route = "videoTrim/{videoPath}?packId={packId}",
+            arguments = listOf(
+                navArgument("videoPath") { type = NavType.StringType },
+                navArgument("packId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val encodedPath = backStackEntry.arguments?.getString("videoPath") ?: return@composable
+            val videoPath = PathEncoder.decode(encodedPath)
+            val encodedPackId = backStackEntry.arguments?.getString("packId").orEmpty()
+            val packId = if (encodedPackId.isBlank()) "" else PathEncoder.decode(encodedPackId)
+            VideoTrimScreenRoot(
+                videoPath = videoPath,
+                onBackClick = { navController.popBackStack() },
+                onNavigateToVideoCrop = { vp, spec ->
+                    navController.navigate(
+                        "videoCrop/${PathEncoder.encode(vp)}" +
+                            "?packId=${PathEncoder.encode(packId)}" +
+                            "&trimStart=${spec.trimStartMs}" +
+                            "&trimEnd=${spec.trimEndMs}" +
+                            "&fps=${spec.fps}" +
+                            "&speed=${spec.speed}"
+                    )
+                }
+            )
+        }
+
+        composable(
+            route = "videoCrop/{videoPath}?packId={packId}&trimStart={trimStart}&trimEnd={trimEnd}&fps={fps}&speed={speed}",
+            arguments = listOf(
+                navArgument("videoPath") { type = NavType.StringType },
+                navArgument("packId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+                navArgument("trimStart") { type = NavType.LongType },
+                navArgument("trimEnd") { type = NavType.LongType },
+                navArgument("fps") { type = NavType.IntType },
+                navArgument("speed") { type = NavType.FloatType }
+            )
+        ) { backStackEntry ->
+            val encodedPath = backStackEntry.arguments?.getString("videoPath") ?: return@composable
+            val videoPath = PathEncoder.decode(encodedPath)
+            val encodedPackId = backStackEntry.arguments?.getString("packId").orEmpty()
+            val packIdArg = if (encodedPackId.isBlank()) "" else PathEncoder.decode(encodedPackId)
+            val spec = AnimatedStickerSpec(
+                trimStartMs = backStackEntry.arguments?.getLong("trimStart") ?: 0L,
+                trimEndMs = backStackEntry.arguments?.getLong("trimEnd") ?: 0L,
+                fps = backStackEntry.arguments?.getInt("fps") ?: AnimatedStickerSpec.DEFAULT_FPS,
+                speed = backStackEntry.arguments?.getFloat("speed") ?: 1f
+            )
+            VideoCropScreenRoot(
+                videoPath = videoPath,
+                spec = spec,
+                packId = packIdArg,
+                onBackClick = { navController.popBackStack() },
+                onNavigateToAnimatedEditor = { draftId ->
+                    navController.navigate(
+                        "animatedEditor/$draftId?packId=${PathEncoder.encode(packIdArg)}"
+                    ) {
+                        popUpTo("createPack?packId=${packIdArg.takeIf { it.isNotBlank() } ?: "{packId}"}") {
+                            inclusive = false
+                        }
+                    }
+                }
+            )
+        }
+
+        composable(
+            route = "animatedEditor/{draftId}?packId={packId}",
+            arguments = listOf(
+                navArgument("draftId") { type = NavType.StringType },
+                navArgument("packId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val draftId = backStackEntry.arguments?.getString("draftId") ?: return@composable
+            val encodedPackId = backStackEntry.arguments?.getString("packId").orEmpty()
+            val packId = if (encodedPackId.isBlank()) "" else PathEncoder.decode(encodedPackId)
+            AnimatedEditorScreenRoot(
+                draftId = draftId,
+                packId = packId,
+                onBackClick = { navController.popBackStack() },
+                onAnimatedDraftReady = { ready: AnimatedEditorEffect.AnimatedDraftReady ->
+                    pendingAnimatedDraft.value = DraftSticker(
+                        imagePath = ready.imagePath,
+                        decorations = ready.baseDecorations,
+                        isAnimated = true,
+                        sourceVideoFile = ready.sourceVideoFile,
+                        frameDecorations = ready.frameDecorations
+                    )
+                    val createPackRoute = if (packId.isBlank()) "createPack" else "createPack?packId=$packId"
+                    navController.popBackStack(createPackRoute, inclusive = false)
                 }
             )
         }

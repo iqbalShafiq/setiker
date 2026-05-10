@@ -53,11 +53,15 @@ import presentation.components.AppSecondaryButton
 import presentation.components.AppTopBar
 import presentation.components.LoadingIndicator
 import presentation.theme.AccentCoral
-import presentation.theme.NeubrutalBg
-import presentation.theme.NeubrutalBlack
-import presentation.theme.NeubrutalGray
 import presentation.theme.NeubrutalWhite
+import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalMutedOnSurface
+import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
+import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalSubtleOnSurface
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.apply_crop
 import setiker.composeapp.generated.resources.cancel
@@ -87,7 +91,7 @@ fun CropScreen(
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = NeubrutalBg
+        containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         if (state.isProcessing) {
             LoadingIndicator(
@@ -96,6 +100,7 @@ fun CropScreen(
                     .padding(innerPadding)
             )
         } else {
+            val border = neubrutalBorderColor()
             Column(
                 modifier = modifier
                     .fillMaxSize()
@@ -111,13 +116,13 @@ fun CropScreen(
                             offsetX = 4.dp,
                             offsetY = 4.dp,
                             cornerRadius = 20.dp,
-                            color = NeubrutalBlack
+                            color = neubrutalShadowColor()
                         )
                         .clip(RoundedCornerShape(20.dp))
-                        .background(NeubrutalWhite)
+                        .background(neubrutalCardSurface())
                         .border(
                             width = 2.dp,
-                            color = NeubrutalBlack,
+                            color = border,
                             shape = RoundedCornerShape(20.dp)
                         )
                         .padding(4.dp),
@@ -141,7 +146,7 @@ fun CropScreen(
                         Text(
                             text = stringResource(Res.string.no_image_selected),
                             style = MaterialTheme.typography.bodyLarge,
-                            color = NeubrutalGray
+                            color = neubrutalSubtleOnSurface()
                         )
                     }
                 }
@@ -153,7 +158,7 @@ fun CropScreen(
                     text = stringResource(Res.string.zoom),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Medium,
-                    color = NeubrutalBlack
+                    color = neubrutalOnSurface()
                 )
 
                 Slider(
@@ -223,6 +228,7 @@ private fun NeubrutalToolButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val border = neubrutalBorderColor()
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -234,13 +240,13 @@ private fun NeubrutalToolButton(
                     offsetX = 2.dp,
                     offsetY = 2.dp,
                     cornerRadius = 24.dp,
-                    color = NeubrutalBlack
+                    color = neubrutalShadowColor()
                 )
                 .clip(CircleShape)
-                .background(if (isSelected) AccentCoral else NeubrutalWhite)
+                .background(if (isSelected) AccentCoral else neubrutalCardSurface())
                 .border(
                     width = 2.dp,
-                    color = NeubrutalBlack,
+                    color = border,
                     shape = CircleShape
                 )
                 .clickable(onClick = onClick),
@@ -250,7 +256,7 @@ private fun NeubrutalToolButton(
                 imageVector = icon,
                 contentDescription = label,
                 modifier = Modifier.size(22.dp),
-                tint = if (isSelected) NeubrutalWhite else NeubrutalBlack
+                tint = if (isSelected) NeubrutalWhite else neubrutalOnSurface()
             )
         }
 
@@ -259,7 +265,7 @@ private fun NeubrutalToolButton(
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = NeubrutalGray
+            color = neubrutalMutedOnSurface()
         )
     }
 }

@@ -24,9 +24,10 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import presentation.theme.AccentCoral
-import presentation.theme.NeubrutalBlack
 import presentation.theme.NeubrutalWhite
+import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalShadow
+import presentation.theme.neubrutalShadowColor
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.create_new_pack
 
@@ -46,6 +47,7 @@ fun ClayFab(
         label = "fab_scale"
     )
 
+    val border = neubrutalBorderColor()
     Box(
         modifier = modifier
             .size(64.dp)
@@ -54,13 +56,13 @@ fun ClayFab(
                 offsetX = if (isPressed) 1.dp else 4.dp,
                 offsetY = if (isPressed) 1.dp else 4.dp,
                 cornerRadius = 20.dp,
-                color = NeubrutalBlack
+                color = neubrutalShadowColor()
             )
             .clip(RoundedCornerShape(20.dp))
             .background(AccentCoral)
             .border(
                 width = 2.dp,
-                color = NeubrutalBlack,
+                color = border,
                 shape = RoundedCornerShape(20.dp)
             )
             .clickable(

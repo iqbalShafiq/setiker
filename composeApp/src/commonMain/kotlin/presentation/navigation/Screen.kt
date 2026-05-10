@@ -17,4 +17,20 @@ sealed class Screen {
     
     @Serializable
     data class Crop(val imagePath: String) : Screen()
+
+    @Serializable
+    data class VideoTrim(val videoPath: String) : Screen()
+
+    @Serializable
+    data class VideoCrop(
+        val videoPath: String,
+        val packId: String,
+        val trimStartMs: Long,
+        val trimEndMs: Long,
+        val fps: Int,
+        val speed: Float
+    ) : Screen()
+
+    @Serializable
+    data class AnimatedEditor(val draftId: String, val packId: String) : Screen()
 }

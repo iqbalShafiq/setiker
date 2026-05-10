@@ -60,11 +60,13 @@ import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
 import presentation.components.StickerCard
 import presentation.components.rememberMultipleImagePicker
-import presentation.theme.NeubrutalBg
-import presentation.theme.NeubrutalBlack
-import presentation.theme.NeubrutalGray
-import presentation.theme.NeubrutalWhite
+import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalMutedOnSurface
+import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
+import presentation.theme.neubrutalShadowColor
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.add_to_whatsapp
 import setiker.composeapp.generated.resources.delete
@@ -120,8 +122,8 @@ fun PackDetailScreen(
         ModalBottomSheet(
             onDismissRequest = { onIntent(PackDetailIntent.DismissStickerImportSheet) },
             sheetState = stickerImportSheetState,
-            containerColor = NeubrutalBg,
-            scrimColor = NeubrutalBlack.copy(alpha = 0.35f)
+            containerColor = neubrutalScreenBackground(),
+            scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
         ) {
             Column(
                 modifier = Modifier
@@ -133,7 +135,7 @@ fun PackDetailScreen(
                     text = stringResource(Res.string.import_crop_sheet_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = NeubrutalBlack
+                    color = neubrutalOnSurface()
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
@@ -143,7 +145,7 @@ fun PackDetailScreen(
                         queueSize
                     ),
                     style = MaterialTheme.typography.bodySmall,
-                    color = NeubrutalBlack.copy(alpha = 0.75f)
+                    color = neubrutalMutedOnSurface()
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 Box(
@@ -151,8 +153,8 @@ fun PackDetailScreen(
                         .fillMaxWidth()
                         .aspectRatio(1f)
                         .clip(RoundedCornerShape(16.dp))
-                        .background(NeubrutalWhite)
-                        .border(2.dp, NeubrutalBlack, RoundedCornerShape(16.dp))
+                        .background(neubrutalCardSurface())
+                        .border(2.dp, neubrutalBorderColor(), RoundedCornerShape(16.dp))
                         .padding(4.dp)
                 ) {
                     AsyncImage(
@@ -210,7 +212,7 @@ fun PackDetailScreen(
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = NeubrutalBg
+        containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         when {
             state.isLoading -> {
@@ -284,6 +286,9 @@ private fun PackDetailContent(
             .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
         // Pack Info Card (Neubrutal)
+        val border = neubrutalBorderColor()
+        val shadow = neubrutalShadowColor()
+        val surface = neubrutalCardSurface()
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -291,13 +296,13 @@ private fun PackDetailContent(
                     offsetX = 4.dp,
                     offsetY = 4.dp,
                     cornerRadius = 20.dp,
-                    color = NeubrutalBlack
+                    color = shadow
                 )
                 .clip(RoundedCornerShape(20.dp))
-                .background(NeubrutalWhite)
+                .background(surface)
                 .border(
                     width = 2.dp,
-                    color = NeubrutalBlack,
+                    color = border,
                     shape = RoundedCornerShape(20.dp)
                 )
                 .padding(20.dp),
@@ -312,13 +317,13 @@ private fun PackDetailContent(
                         offsetX = 2.dp,
                         offsetY = 2.dp,
                         cornerRadius = 16.dp,
-                        color = NeubrutalBlack
+                        color = shadow
                     )
                     .clip(RoundedCornerShape(16.dp))
-                    .background(NeubrutalWhite)
+                    .background(surface)
                     .border(
                         width = 2.dp,
-                        color = NeubrutalBlack,
+                        color = border,
                         shape = RoundedCornerShape(16.dp)
                     ),
                 contentScale = ContentScale.Crop
@@ -333,17 +338,17 @@ private fun PackDetailContent(
                     text = pack.name,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = NeubrutalBlack
+                    color = neubrutalOnSurface()
                 )
                 Text(
                     text = pack.publisher,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = NeubrutalGray
+                    color = neubrutalMutedOnSurface()
                 )
                 Text(
                     text = stringResource(Res.string.stickers_with_count, pack.stickers.size),
                     style = MaterialTheme.typography.bodySmall,
-                    color = NeubrutalGray
+                    color = neubrutalMutedOnSurface()
                 )
             }
         }
@@ -370,14 +375,14 @@ private fun PackDetailContent(
             text = stringResource(Res.string.stickers_title),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.SemiBold,
-            color = NeubrutalBlack
+            color = neubrutalOnSurface()
         )
 
         Spacer(modifier = Modifier.height(10.dp))
         Text(
             text = stringResource(Res.string.pack_stickers_hint),
             style = MaterialTheme.typography.bodySmall,
-            color = NeubrutalGray
+            color = neubrutalMutedOnSurface()
         )
         Spacer(modifier = Modifier.height(6.dp))
 

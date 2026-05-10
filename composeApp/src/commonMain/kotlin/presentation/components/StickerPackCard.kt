@@ -22,10 +22,12 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import domain.model.StickerPack
 import androidx.compose.ui.tooling.preview.Preview
-import presentation.theme.NeubrutalBlack
-import presentation.theme.NeubrutalGray
-import presentation.theme.NeubrutalWhite
+import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalMutedOnSurface
+import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
+import presentation.theme.neubrutalShadowColor
 
 @Composable
 fun StickerPackCard(
@@ -33,6 +35,9 @@ fun StickerPackCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val border = neubrutalBorderColor()
+    val surface = neubrutalCardSurface()
+    val shadow = neubrutalShadowColor()
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -40,13 +45,13 @@ fun StickerPackCard(
                 offsetX = 4.dp,
                 offsetY = 4.dp,
                 cornerRadius = 20.dp,
-                color = NeubrutalBlack
+                color = shadow
             )
             .clip(RoundedCornerShape(20.dp))
-            .background(NeubrutalWhite)
+            .background(surface)
             .border(
                 width = 2.dp,
-                color = NeubrutalBlack,
+                color = border,
                 shape = RoundedCornerShape(20.dp)
             )
             .clickable(onClick = onClick)
@@ -59,10 +64,10 @@ fun StickerPackCard(
                 .fillMaxWidth()
                 .aspectRatio(1f)
                 .clip(RoundedCornerShape(12.dp))
-                .background(NeubrutalWhite)
+                .background(surface)
                 .border(
                     width = 2.dp,
-                    color = NeubrutalBlack,
+                    color = border,
                     shape = RoundedCornerShape(12.dp)
                 ),
             contentScale = ContentScale.Crop
@@ -74,7 +79,7 @@ fun StickerPackCard(
             text = pack.name,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
-            color = NeubrutalBlack,
+            color = neubrutalOnSurface(),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -82,7 +87,7 @@ fun StickerPackCard(
         Text(
             text = "${pack.stickers.size} stickers",
             style = MaterialTheme.typography.bodyMedium,
-            color = NeubrutalGray
+            color = neubrutalMutedOnSurface()
         )
     }
 }

@@ -22,8 +22,9 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import androidx.compose.ui.tooling.preview.Preview
 import presentation.theme.AccentCoral
-import presentation.theme.NeubrutalBlack
+import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalShadow
+import presentation.theme.neubrutalShadowColor
 import androidx.compose.animation.core.Animatable
 
 @Composable
@@ -49,6 +50,8 @@ fun LoadingIndicator(
 private fun NeubrutalBouncingDot(index: Int) {
     val delayMs = index * 150
     val animatable = remember { Animatable(1f) }
+    val border = neubrutalBorderColor()
+    val shadow = neubrutalShadowColor()
 
     LaunchedEffect(Unit) {
         delay(delayMs.toLong())
@@ -73,14 +76,14 @@ private fun NeubrutalBouncingDot(index: Int) {
             .background(AccentCoral)
             .border(
                 width = 2.dp,
-                color = NeubrutalBlack,
+                color = border,
                 shape = CircleShape
             )
             .neubrutalShadow(
                 offsetX = 2.dp,
                 offsetY = 2.dp,
                 cornerRadius = 7.dp,
-                color = NeubrutalBlack
+                color = shadow
             )
     )
 }

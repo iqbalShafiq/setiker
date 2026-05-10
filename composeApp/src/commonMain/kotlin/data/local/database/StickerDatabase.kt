@@ -7,7 +7,7 @@ import data.local.entity.StickerPackEntity
 
 @Database(
     entities = [StickerPackEntity::class, StickerEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class StickerDatabase : RoomDatabase() {

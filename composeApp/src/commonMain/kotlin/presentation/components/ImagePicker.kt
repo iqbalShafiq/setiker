@@ -18,6 +18,13 @@ interface MultipleImagePickerLauncher {
 }
 
 /**
+ * Platform-agnostic video picker launcher.
+ */
+interface VideoPickerLauncher {
+    fun launch()
+}
+
+/**
  * Remember a platform-specific single image picker.
  *
  * @param onImagePicked Callback dengan path file lokal, atau null jika user cancel/error.
@@ -32,3 +39,11 @@ expect fun rememberImagePicker(onImagePicked: (String?) -> Unit): ImagePickerLau
  */
 @Composable
 expect fun rememberMultipleImagePicker(onImagesPicked: (List<String>) -> Unit): MultipleImagePickerLauncher
+
+/**
+ * Remember a platform-specific video **or animated GIF** picker (same pipeline as video trim).
+ *
+ * @param onVideoPicked Callback dengan path file lokal, atau null jika user cancel/error.
+ */
+@Composable
+expect fun rememberVideoPicker(onVideoPicked: (String?) -> Unit): VideoPickerLauncher

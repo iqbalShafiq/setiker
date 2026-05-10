@@ -21,6 +21,7 @@ actual fun platformModule(): Module = module {
         )
             .addMigrations(DatabaseMigrations.MIGRATION_1_2)
             .addMigrations(DatabaseMigrations.MIGRATION_2_3)
+            .addMigrations(DatabaseMigrations.MIGRATION_3_4)
             .build()
     }
 

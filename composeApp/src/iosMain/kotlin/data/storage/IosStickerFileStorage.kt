@@ -1,5 +1,7 @@
 package data.storage
 
+import domain.model.AnimatedStickerSpec
+import domain.model.DecodedFrame
 import domain.model.StickerDecoration
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
@@ -98,6 +100,43 @@ actual class StickerFileStorage {
     ): String = withContext(Dispatchers.IO) {
         // iOS fallback keeps current behavior until native compositing is added.
         saveStickerImage(sourcePath, fileName)
+    }
+
+    actual suspend fun getVideoDurationMs(videoPath: String): Long = -1L
+
+    actual suspend fun extractVideoFrameToFile(
+        videoPath: String,
+        atMs: Long,
+        fileName: String
+    ): String? = null
+
+    actual suspend fun decodeVideoFrames(
+        videoPath: String,
+        spec: AnimatedStickerSpec,
+        onProgress: (current: Int, total: Int) -> Unit
+    ): List<DecodedFrame> {
+        // iOS animated sticker pipeline (AVFoundation + libwebp) is not implemented yet.
+        throw NotImplementedError("Animated sticker decoding is not implemented on iOS yet.")
+    }
+
+    actual suspend fun saveAnimatedStickerImage(
+        frames: List<DecodedFrame>,
+        fileName: String,
+        baseDecorations: List<StickerDecoration>,
+        frameDecorations: Map<Int, List<StickerDecoration>>,
+        onProgress: (current: Int, total: Int) -> Unit
+    ): String {
+        throw NotImplementedError("Animated sticker encoding is not implemented on iOS yet.")
+    }
+
+    actual suspend fun encodeSingleFrameAnimatedWebP(
+        sourcePath: String,
+        fileName: String,
+        decorations: List<StickerDecoration>
+    ): String {
+        // iOS doesn't have a libwebp animated encoder bundled yet; treat as static save so
+        // builds stay green. WhatsApp pack validation only happens on Android right now.
+        return saveStickerImage(sourcePath, fileName)
     }
 }
 

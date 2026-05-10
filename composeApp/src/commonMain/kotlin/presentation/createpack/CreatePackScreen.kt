@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -59,20 +60,25 @@ import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
 import presentation.components.SelectableStickerGrid
 import presentation.components.ReadOnlyDecorationOverlay
+import presentation.components.ScreenSectionTitle
 import presentation.components.rememberImagePicker
 import presentation.theme.AccentCoral
 import presentation.theme.AccentCoralLight
 import presentation.theme.ErrorRed
-import presentation.theme.NeubrutalBg
-import presentation.theme.NeubrutalBlack
-import presentation.theme.NeubrutalWhite
+import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalMutedOnSurface
+import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
+import presentation.theme.neubrutalShadowColor
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.add_sticker
 import setiker.composeapp.generated.resources.add_to_pack
 import setiker.composeapp.generated.resources.back
 import setiker.composeapp.generated.resources.cancel
 import setiker.composeapp.generated.resources.close
+import setiker.composeapp.generated.resources.cd_add_animated_sticker
 import setiker.composeapp.generated.resources.create_pack_title
 import setiker.composeapp.generated.resources.edit_pack_title
 import setiker.composeapp.generated.resources.generate
@@ -124,6 +130,7 @@ fun CreatePackScreen(
     onBackClick: () -> Unit,
     onNavigateToCropSticker: (String) -> Unit,
     onNavigateToCropTray: (String) -> Unit,
+    onNavigateToVideoTrim: (String) -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     modifier: Modifier = Modifier
 ) {
@@ -133,6 +140,10 @@ fun CreatePackScreen(
 
     val stickerPicker = rememberImagePicker { path ->
         path?.let { onIntent(CreatePackIntent.StageStickerGalleryPick(it)) }
+    }
+
+    val videoPicker = presentation.components.rememberVideoPicker { path ->
+        path?.let { onNavigateToVideoTrim(it) }
     }
 
     val gridSourcePicker = rememberImagePicker { path ->
@@ -152,8 +163,8 @@ fun CreatePackScreen(
         ModalBottomSheet(
             onDismissRequest = { onIntent(CreatePackIntent.CloseAiGenerateSheet) },
             sheetState = aiSheetState,
-            containerColor = NeubrutalBg,
-            scrimColor = NeubrutalBlack.copy(alpha = 0.35f)
+            containerColor = neubrutalScreenBackground(),
+            scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
         ) {
             Column(
                 modifier = Modifier
@@ -166,7 +177,7 @@ fun CreatePackScreen(
                     text = stringResource(Res.string.generate_ai_sheet_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = NeubrutalBlack
+                    color = neubrutalOnSurface()
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 AppTextField(
@@ -179,7 +190,7 @@ fun CreatePackScreen(
                 Text(
                     text = stringResource(Res.string.generate_tip),
                     style = MaterialTheme.typography.bodySmall,
-                    color = NeubrutalBlack.copy(alpha = 0.7f)
+                    color = neubrutalMutedOnSurface()
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -221,14 +232,14 @@ fun CreatePackScreen(
                     Text(
                         text = stringResource(Res.string.generate_grid_hint),
                         style = MaterialTheme.typography.bodySmall,
-                        color = NeubrutalBlack.copy(alpha = 0.7f)
+                        color = neubrutalMutedOnSurface()
                     )
                 } else {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = stringResource(Res.string.generate_single_hint),
                         style = MaterialTheme.typography.bodySmall,
-                        color = NeubrutalBlack.copy(alpha = 0.7f)
+                        color = neubrutalMutedOnSurface()
                     )
                 }
                 Spacer(modifier = Modifier.height(20.dp))
@@ -250,8 +261,8 @@ fun CreatePackScreen(
         ModalBottomSheet(
             onDismissRequest = { onIntent(CreatePackIntent.CloseGeneratedSheet) },
             sheetState = generatedSheetState,
-            containerColor = NeubrutalBg,
-            scrimColor = NeubrutalBlack.copy(alpha = 0.35f)
+            containerColor = neubrutalScreenBackground(),
+            scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
         ) {
             Column(
                 modifier = Modifier
@@ -264,13 +275,13 @@ fun CreatePackScreen(
                     text = stringResource(Res.string.generate_confirm_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = NeubrutalBlack
+                    color = neubrutalOnSurface()
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = stringResource(Res.string.generate_confirm_subtitle),
                     style = MaterialTheme.typography.bodySmall,
-                    color = NeubrutalBlack.copy(alpha = 0.75f)
+                    color = neubrutalMutedOnSurface()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -280,7 +291,7 @@ fun CreatePackScreen(
                         state.generatedPreview.size
                     ),
                     style = MaterialTheme.typography.labelMedium,
-                    color = NeubrutalBlack.copy(alpha = 0.75f)
+                    color = neubrutalMutedOnSurface()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 SelectableStickerGrid(
@@ -307,8 +318,8 @@ fun CreatePackScreen(
         ModalBottomSheet(
             onDismissRequest = { onIntent(CreatePackIntent.CloseGridSheet) },
             sheetState = gridSheetState,
-            containerColor = NeubrutalBg,
-            scrimColor = NeubrutalBlack.copy(alpha = 0.35f)
+            containerColor = neubrutalScreenBackground(),
+            scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
         ) {
             Column(
                 modifier = Modifier
@@ -323,7 +334,7 @@ fun CreatePackScreen(
                             text = stringResource(Res.string.grid_confirm_title),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = NeubrutalBlack
+                            color = neubrutalOnSurface()
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         if (state.gridSplitSourcePath.isNotBlank()) {
@@ -332,10 +343,10 @@ fun CreatePackScreen(
                                 contentDescription = stringResource(Res.string.grid_source_content_description),
                                 modifier = Modifier
                                     .size(160.dp)
-                                    .neubrutalShadow(3.dp, 3.dp, 16.dp, NeubrutalBlack)
+                                    .neubrutalShadow(3.dp, 3.dp, 16.dp, neubrutalShadowColor())
                                     .clip(RoundedCornerShape(16.dp))
-                                    .background(NeubrutalWhite)
-                                    .border(2.dp, NeubrutalBlack, RoundedCornerShape(16.dp))
+                                    .background(neubrutalCardSurface())
+                                    .border(2.dp, neubrutalBorderColor(), RoundedCornerShape(16.dp))
                                     .padding(4.dp),
                                 contentScale = ContentScale.Crop
                             )
@@ -344,7 +355,7 @@ fun CreatePackScreen(
                         Text(
                             text = stringResource(Res.string.grid_confirm_hint),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = NeubrutalBlack
+                            color = neubrutalOnSurface()
                         )
                         if (!state.error.isNullOrBlank()) {
                             Spacer(modifier = Modifier.height(8.dp))
@@ -372,7 +383,7 @@ fun CreatePackScreen(
                             text = stringResource(Res.string.split_result_title),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = NeubrutalBlack
+                            color = neubrutalOnSurface()
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
@@ -382,7 +393,7 @@ fun CreatePackScreen(
                                 state.splitPreview.size
                             ),
                             style = MaterialTheme.typography.labelMedium,
-                            color = NeubrutalBlack.copy(alpha = 0.75f)
+                            color = neubrutalMutedOnSurface()
                         )
                         if (!state.error.isNullOrBlank()) {
                             Spacer(modifier = Modifier.height(6.dp))
@@ -420,8 +431,8 @@ fun CreatePackScreen(
         ModalBottomSheet(
             onDismissRequest = { onIntent(CreatePackIntent.DismissStickerGalleryCropPrompt) },
             sheetState = stickerImportSheetState,
-            containerColor = NeubrutalBg,
-            scrimColor = NeubrutalBlack.copy(alpha = 0.35f)
+            containerColor = neubrutalScreenBackground(),
+            scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
         ) {
             Column(
                 modifier = Modifier
@@ -433,13 +444,13 @@ fun CreatePackScreen(
                     text = stringResource(Res.string.import_crop_sheet_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = NeubrutalBlack
+                    color = neubrutalOnSurface()
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = stringResource(Res.string.import_crop_sheet_message_sticker),
                     style = MaterialTheme.typography.bodySmall,
-                    color = NeubrutalBlack.copy(alpha = 0.75f)
+                    color = neubrutalMutedOnSurface()
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 Box(
@@ -447,8 +458,8 @@ fun CreatePackScreen(
                         .fillMaxWidth()
                         .aspectRatio(1f)
                         .clip(RoundedCornerShape(16.dp))
-                        .background(NeubrutalWhite)
-                        .border(2.dp, NeubrutalBlack, RoundedCornerShape(16.dp))
+                        .background(neubrutalCardSurface())
+                        .border(2.dp, neubrutalBorderColor(), RoundedCornerShape(16.dp))
                         .padding(4.dp)
                 ) {
                     AsyncImage(
@@ -479,8 +490,8 @@ fun CreatePackScreen(
         ModalBottomSheet(
             onDismissRequest = { onIntent(CreatePackIntent.DismissTrayGalleryCropPrompt) },
             sheetState = trayImportSheetState,
-            containerColor = NeubrutalBg,
-            scrimColor = NeubrutalBlack.copy(alpha = 0.35f)
+            containerColor = neubrutalScreenBackground(),
+            scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
         ) {
             Column(
                 modifier = Modifier
@@ -492,13 +503,13 @@ fun CreatePackScreen(
                     text = stringResource(Res.string.import_crop_sheet_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = NeubrutalBlack
+                    color = neubrutalOnSurface()
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = stringResource(Res.string.import_crop_sheet_message_tray),
                     style = MaterialTheme.typography.bodySmall,
-                    color = NeubrutalBlack.copy(alpha = 0.75f)
+                    color = neubrutalMutedOnSurface()
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 Box(
@@ -506,8 +517,8 @@ fun CreatePackScreen(
                         .fillMaxWidth()
                         .aspectRatio(1f)
                         .clip(RoundedCornerShape(16.dp))
-                        .background(NeubrutalWhite)
-                        .border(2.dp, NeubrutalBlack, RoundedCornerShape(16.dp))
+                        .background(neubrutalCardSurface())
+                        .border(2.dp, neubrutalBorderColor(), RoundedCornerShape(16.dp))
                         .padding(4.dp)
                 ) {
                     AsyncImage(
@@ -562,6 +573,12 @@ fun CreatePackScreen(
                         onClick = { gridSourcePicker.launch() },
                         enabled = !state.isApiLoading
                     )
+                    PackBottomBarIconButton(
+                        icon = Icons.Filled.Movie,
+                        contentDescription = stringResource(Res.string.cd_add_animated_sticker),
+                        onClick = { videoPicker.launch() },
+                        enabled = !state.isApiLoading
+                    )
                 },
                 floatingActionButton = {
                     PackBottomBarFab(
@@ -576,7 +593,7 @@ fun CreatePackScreen(
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = NeubrutalBg
+        containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         if (state.isLoading) {
             LoadingIndicator(
@@ -614,7 +631,7 @@ fun CreatePackScreen(
                     text = stringResource(Res.string.tray_icon),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = NeubrutalBlack
+                    color = neubrutalOnSurface()
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
@@ -635,7 +652,7 @@ fun CreatePackScreen(
                         text = stringResource(Res.string.stickers_count, state.stickers.size),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = NeubrutalBlack
+                        color = neubrutalOnSurface()
                     )
 
                     IconButton(onClick = { stickerPicker.launch() }) {
@@ -651,7 +668,7 @@ fun CreatePackScreen(
                 Text(
                     text = stringResource(Res.string.sticker_limit_hint),
                     style = MaterialTheme.typography.bodySmall,
-                    color = NeubrutalBlack.copy(alpha = 0.7f)
+                    color = neubrutalMutedOnSurface()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -697,6 +714,8 @@ private fun TrayIconSelector(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val border = neubrutalBorderColor()
+    val shadow = neubrutalShadowColor()
     if (imagePath.isNotBlank()) {
         Box(
             modifier = modifier
@@ -705,13 +724,13 @@ private fun TrayIconSelector(
                     offsetX = 3.dp,
                     offsetY = 3.dp,
                     cornerRadius = 16.dp,
-                    color = NeubrutalBlack
+                    color = shadow
                 )
                 .clip(RoundedCornerShape(16.dp))
-                .background(NeubrutalWhite)
+                .background(neubrutalCardSurface())
                 .border(
                     width = 2.dp,
-                    color = NeubrutalBlack,
+                    color = border,
                     shape = RoundedCornerShape(16.dp)
                 )
                 .clickable(onClick = onClick),
@@ -732,13 +751,13 @@ private fun TrayIconSelector(
                     offsetX = 3.dp,
                     offsetY = 3.dp,
                     cornerRadius = 16.dp,
-                    color = NeubrutalBlack
+                    color = shadow
                 )
                 .clip(RoundedCornerShape(16.dp))
                 .background(AccentCoralLight)
                 .border(
                     width = 2.dp,
-                    color = NeubrutalBlack,
+                    color = border,
                     shape = RoundedCornerShape(16.dp)
                 )
                 .clickable(onClick = onClick),
@@ -748,7 +767,7 @@ private fun TrayIconSelector(
                 imageVector = Icons.Default.Add,
                 contentDescription = stringResource(Res.string.select_tray_icon),
                 modifier = Modifier.size(32.dp),
-                tint = NeubrutalBlack
+                tint = presentation.theme.NeubrutalDark
             )
         }
     }
@@ -760,6 +779,7 @@ private fun StickerPreviewItem(
     onRemove: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val border = neubrutalBorderColor()
     Box(
         modifier = modifier
     ) {
@@ -770,13 +790,13 @@ private fun StickerPreviewItem(
                     offsetX = 2.dp,
                     offsetY = 2.dp,
                     cornerRadius = 12.dp,
-                    color = NeubrutalBlack
+                    color = neubrutalShadowColor()
                 )
                 .clip(RoundedCornerShape(12.dp))
-                .background(NeubrutalWhite)
+                .background(neubrutalCardSurface())
                 .border(
                     width = 2.dp,
-                    color = NeubrutalBlack,
+                    color = border,
                     shape = RoundedCornerShape(12.dp)
                 )
                 .padding(2.dp)
@@ -802,7 +822,7 @@ private fun StickerPreviewItem(
                 .background(ErrorRed)
                 .border(
                     width = 1.5.dp,
-                    color = NeubrutalBlack,
+                    color = border,
                     shape = RoundedCornerShape(6.dp)
                 )
                 .clickable(onClick = onRemove),
@@ -812,7 +832,7 @@ private fun StickerPreviewItem(
                 imageVector = Icons.Default.Close,
                 contentDescription = stringResource(Res.string.remove_sticker),
                 modifier = Modifier.size(14.dp),
-                tint = NeubrutalWhite
+                tint = androidx.compose.ui.graphics.Color.White
             )
         }
     }

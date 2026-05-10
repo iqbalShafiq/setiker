@@ -35,10 +35,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import presentation.theme.AccentCoral
-import presentation.theme.NeubrutalBg
-import presentation.theme.NeubrutalBlack
-import presentation.theme.NeubrutalGray
-import presentation.theme.NeubrutalWhite
+import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalMutedOnSurface
+import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
 
 private val EMOJI_CATEGORIES = listOf(
@@ -70,13 +71,18 @@ fun EmojiPickerBottomSheet(
         )
     }
 
+    val bg = neubrutalScreenBackground()
+    val border = neubrutalBorderColor()
+    val surface = neubrutalCardSurface()
+    val onSurface = neubrutalOnSurface()
+    val muted = neubrutalMutedOnSurface()
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         modifier = modifier,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        containerColor = NeubrutalBg,
-        scrimColor = NeubrutalBlack.copy(alpha = 0.3f)
+        containerColor = bg,
+        scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f)
     ) {
         Column(
             modifier = Modifier
@@ -88,14 +94,14 @@ fun EmojiPickerBottomSheet(
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                 ),
-                color = NeubrutalBlack,
+                color = onSurface,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
             )
 
             SecondaryTabRow(
                 selectedTabIndex = selectedTab,
                 modifier = Modifier.fillMaxWidth(),
-                containerColor = NeubrutalBg,
+                containerColor = bg,
                 contentColor = AccentCoral
             ) {
                 categories.forEachIndexed { index, (title, _) ->
@@ -107,7 +113,7 @@ fun EmojiPickerBottomSheet(
                                 title,
                                 maxLines = 1,
                                 style = MaterialTheme.typography.labelLarge,
-                                color = if (selectedTab == index) AccentCoral else NeubrutalGray
+                                color = if (selectedTab == index) AccentCoral else muted
                             )
                         }
                     )
@@ -120,7 +126,7 @@ fun EmojiPickerBottomSheet(
                 Text(
                     text = "No recent emojis",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = NeubrutalGray,
+                    color = muted,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(32.dp),
@@ -139,10 +145,10 @@ fun EmojiPickerBottomSheet(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(NeubrutalWhite)
+                                .background(surface)
                                 .border(
                                     width = 2.dp,
-                                    color = NeubrutalBlack,
+                                    color = border,
                                     shape = RoundedCornerShape(10.dp)
                                 )
                                 .clickable { onEmojiSelected(emoji) }

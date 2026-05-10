@@ -16,10 +16,13 @@ fun CreatePackScreenRoot(
     onPackSaved: (String) -> Unit,
     croppedStickerGalleryPath: String? = null,
     croppedTrayGalleryPath: String? = null,
+    pendingAnimatedDraft: DraftSticker? = null,
     onStickerGalleryCropConsumed: () -> Unit = {},
     onTrayGalleryCropConsumed: () -> Unit = {},
+    onAnimatedDraftConsumed: () -> Unit = {},
     onNavigateToCropSticker: (String) -> Unit = {},
     onNavigateToCropTray: (String) -> Unit = {},
+    onNavigateToVideoTrim: (String) -> Unit = {},
     viewModel: CreatePackViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -43,6 +46,13 @@ fun CreatePackScreenRoot(
         }
     }
 
+    LaunchedEffect(pendingAnimatedDraft) {
+        pendingAnimatedDraft?.let { draft ->
+            viewModel.onIntent(CreatePackIntent.AddAnimatedDraft(draft))
+            onAnimatedDraftConsumed()
+        }
+    }
+
     LaunchedEffect(viewModel.effect) {
         viewModel.effect.collect { effect ->
             when (effect) {
@@ -61,6 +71,7 @@ fun CreatePackScreenRoot(
         onBackClick = onBackClick,
         onNavigateToCropSticker = onNavigateToCropSticker,
         onNavigateToCropTray = onNavigateToCropTray,
+        onNavigateToVideoTrim = onNavigateToVideoTrim,
         snackbarHostState = snackbarHostState
     )
 }

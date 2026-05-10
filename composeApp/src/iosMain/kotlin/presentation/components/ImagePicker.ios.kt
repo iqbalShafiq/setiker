@@ -165,3 +165,15 @@ private fun getTopViewController(): UIViewController? {
     }
     return topController
 }
+
+@Composable
+actual fun rememberVideoPicker(onVideoPicked: (String?) -> Unit): VideoPickerLauncher {
+    // iOS animated sticker pipeline (AVFoundation + libwebp) is not implemented yet.
+    return remember {
+        object : VideoPickerLauncher {
+            override fun launch() {
+                onVideoPicked(null)
+            }
+        }
+    }
+}

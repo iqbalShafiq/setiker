@@ -28,8 +28,8 @@ import presentation.components.ClayFab
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
 import presentation.components.StickerPackCard
-import presentation.theme.NeubrutalBlack
-import presentation.theme.NeubrutalBg
+import presentation.theme.neubrutalMutedOnSurface
+import presentation.theme.neubrutalScreenBackground
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.home_hint
 import setiker.composeapp.generated.resources.my_stickers_title
@@ -60,7 +60,7 @@ fun HomeScreen(
             ClayFab(onClick = { onIntent(HomeIntent.CreateNewPack) })
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = NeubrutalBg
+        containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         when {
             state.isLoading -> {
@@ -88,7 +88,7 @@ fun HomeScreen(
                     Text(
                         text = stringResource(Res.string.home_hint),
                         style = MaterialTheme.typography.bodySmall,
-                        color = NeubrutalBlack.copy(alpha = 0.72f),
+                        color = neubrutalMutedOnSurface(),
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
                     )

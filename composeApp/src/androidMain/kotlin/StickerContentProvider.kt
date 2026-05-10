@@ -66,6 +66,7 @@ class StickerContentProvider : ContentProvider() {
             )
                 .addMigrations(DatabaseMigrations.MIGRATION_1_2)
                 .addMigrations(DatabaseMigrations.MIGRATION_2_3)
+                .addMigrations(DatabaseMigrations.MIGRATION_3_4)
                 .build()
         }
         return database!!
@@ -205,7 +206,7 @@ class StickerContentProvider : ContentProvider() {
                     null, // license_agreement_website
                     "1",  // image_data_version
                     0,    // avoid_cache
-                    0     // animated_sticker_pack
+                    if (entity.isAnimated) 1 else 0
                 ))
             }
         } catch (e: Exception) {
@@ -235,7 +236,7 @@ class StickerContentProvider : ContentProvider() {
                     entity.publisher,
                     trayFileName,
                     null, null, null, null, null, null,
-                    "1", 0, 0
+                    "1", 0, if (entity.isAnimated) 1 else 0
                 ))
             } else {
                 Log.w(TAG, "Pack not found: $identifier")
@@ -281,7 +282,11 @@ class StickerContentProvider : ContentProvider() {
                 .firstOrNull { File(it.imageFile).name == fileName }
 
             val filePath = getFileStorage().getImagePath(fileName)
-            val exportPath = if (stickerEntity?.sourceImageFile != null) {
+            val exportPath = if (stickerEntity?.isAnimated == true) {
+                // Animated WebP is already fully baked at save-time (decorations + frames).
+                // Re-running the static decoration compositor would destroy the animation.
+                filePath
+            } else if (stickerEntity?.sourceImageFile != null) {
                 // New flow stores flattened preview directly in imageFile.
                 filePath
             } else if (stickerEntity?.decorationsJson.isNullOrBlank()) {

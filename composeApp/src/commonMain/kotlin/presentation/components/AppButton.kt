@@ -28,9 +28,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import presentation.theme.AccentCoral
-import presentation.theme.NeubrutalBlack
 import presentation.theme.NeubrutalWhite
+import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
+import presentation.theme.neubrutalShadowColor
 
 @Composable
 fun AppPrimaryButton(
@@ -50,6 +53,9 @@ fun AppPrimaryButton(
         label = "primary_button_scale"
     )
 
+    val border = neubrutalBorderColor()
+    val shadow = neubrutalShadowColor()
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -58,7 +64,7 @@ fun AppPrimaryButton(
                 offsetX = if (isPressed && enabled) 1.dp else 4.dp,
                 offsetY = if (isPressed && enabled) 1.dp else 4.dp,
                 cornerRadius = 16.dp,
-                color = NeubrutalBlack
+                color = shadow
             )
             .clip(RoundedCornerShape(16.dp))
             .background(
@@ -66,7 +72,7 @@ fun AppPrimaryButton(
             )
             .border(
                 width = 2.dp,
-                color = NeubrutalBlack,
+                color = border,
                 shape = RoundedCornerShape(16.dp)
             )
             .clickable(
@@ -105,6 +111,11 @@ fun AppSecondaryButton(
         label = "secondary_button_scale"
     )
 
+    val border = neubrutalBorderColor()
+    val shadow = neubrutalShadowColor()
+    val surface = neubrutalCardSurface()
+    val onSurface = neubrutalOnSurface()
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -113,15 +124,15 @@ fun AppSecondaryButton(
                 offsetX = if (isPressed && enabled) 1.dp else 4.dp,
                 offsetY = if (isPressed && enabled) 1.dp else 4.dp,
                 cornerRadius = 16.dp,
-                color = NeubrutalBlack
+                color = shadow
             )
             .clip(RoundedCornerShape(16.dp))
             .background(
-                color = if (enabled) NeubrutalWhite else NeubrutalWhite.copy(alpha = 0.5f),
+                color = if (enabled) surface else surface.copy(alpha = 0.5f),
             )
             .border(
                 width = 2.dp,
-                color = NeubrutalBlack,
+                color = border,
                 shape = RoundedCornerShape(16.dp)
             )
             .clickable(
@@ -137,7 +148,7 @@ fun AppSecondaryButton(
             text = text,
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
-            color = if (enabled) NeubrutalBlack else NeubrutalBlack.copy(alpha = 0.4f)
+            color = if (enabled) onSurface else onSurface.copy(alpha = 0.4f)
         )
     }
 }

@@ -22,9 +22,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import org.jetbrains.compose.resources.stringResource
-import presentation.theme.NeubrutalBlack
-import presentation.theme.NeubrutalGray
-import presentation.theme.NeubrutalWhite
+import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalSubtleOnSurface
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.pack_name_label
 import setiker.composeapp.generated.resources.pack_name_placeholder
@@ -43,12 +44,15 @@ fun AppTextField(
     isError: Boolean = false,
     supportingText: @Composable (() -> Unit)? = null
 ) {
+    val border = neubrutalBorderColor()
+    val surface = neubrutalCardSurface()
+    val onSurface = neubrutalOnSurface()
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = label,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Medium,
-            color = NeubrutalBlack,
+            color = onSurface,
             modifier = Modifier.padding(bottom = 6.dp)
         )
 
@@ -58,20 +62,21 @@ fun AppTextField(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
-                .background(NeubrutalWhite)
+                .background(surface)
                 .border(
                     width = 2.dp,
-                    color = if (isError) presentation.theme.ErrorRed else NeubrutalBlack,
+                    color = if (isError) presentation.theme.ErrorRed else border,
                     shape = RoundedCornerShape(12.dp)
                 )
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             singleLine = singleLine,
             maxLines = maxLines,
             textStyle = TextStyle(
-                color = NeubrutalBlack,
+                color = onSurface,
                 fontSize = MaterialTheme.typography.bodyLarge.fontSize,
                 fontWeight = FontWeight.Normal
             ),
+            cursorBrush = androidx.compose.ui.graphics.SolidColor(onSurface),
             keyboardOptions = KeyboardOptions(
                 imeAction = ImeAction.Done,
                 keyboardType = KeyboardType.Text
@@ -81,7 +86,7 @@ fun AppTextField(
                     Text(
                         text = placeholder,
                         style = MaterialTheme.typography.bodyLarge,
-                        color = NeubrutalGray.copy(alpha = 0.6f)
+                        color = neubrutalSubtleOnSurface()
                     )
                 }
                 innerTextField()

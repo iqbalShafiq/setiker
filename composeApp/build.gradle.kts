@@ -66,6 +66,13 @@ kotlin {
             implementation(libs.ui.tooling)
             implementation(libs.ui.tooling.preview)
             implementation(libs.ktor.client.okhttp)
+            implementation(libs.androidx.media3.transformer)
+            implementation(libs.androidx.media3.exoplayer)
+            implementation(libs.androidx.media3.common)
+            implementation(libs.androidx.media3.effect)
+            implementation(libs.androidx.concurrent.futures.ktx)
+            implementation(libs.webp.android)
+            implementation(libs.coil.gif)
         }
 
         iosMain.dependencies {
@@ -121,5 +128,9 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
+    }
+
+    lint {
+        disable += "UnsafeOptInUsageError"
     }
 }

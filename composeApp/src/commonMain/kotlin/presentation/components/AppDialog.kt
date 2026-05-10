@@ -19,10 +19,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.tooling.preview.Preview
 import org.jetbrains.compose.resources.stringResource
-import presentation.theme.NeubrutalBlack
-import presentation.theme.NeubrutalGray
-import presentation.theme.NeubrutalWhite
+import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalMutedOnSurface
+import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
+import presentation.theme.neubrutalShadowColor
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.cancel
 import setiker.composeapp.generated.resources.delete
@@ -41,6 +43,8 @@ fun AppDialog(
     isDanger: Boolean = true
 ) {
     val resolvedDismissText = dismissText ?: stringResource(Res.string.cancel)
+    val border = neubrutalBorderColor()
+    val shadow = neubrutalShadowColor()
     Dialog(onDismissRequest = onDismiss) {
         Column(
             modifier = modifier
@@ -49,13 +53,13 @@ fun AppDialog(
                     offsetX = 6.dp,
                     offsetY = 6.dp,
                     cornerRadius = 24.dp,
-                    color = NeubrutalBlack
+                    color = shadow
                 )
                 .clip(RoundedCornerShape(24.dp))
-                .background(NeubrutalWhite)
+                .background(neubrutalCardSurface())
                 .border(
                     width = 2.dp,
-                    color = NeubrutalBlack,
+                    color = border,
                     shape = RoundedCornerShape(24.dp)
                 )
                 .padding(28.dp)
@@ -64,7 +68,7 @@ fun AppDialog(
                 text = title,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                color = NeubrutalBlack
+                color = neubrutalOnSurface()
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -72,7 +76,7 @@ fun AppDialog(
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
-                color = NeubrutalGray,
+                color = neubrutalMutedOnSurface(),
                 textAlign = TextAlign.Start
             )
 

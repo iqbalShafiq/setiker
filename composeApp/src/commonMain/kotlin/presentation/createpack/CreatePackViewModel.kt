@@ -55,7 +55,16 @@ class CreatePackViewModel(
                 _state.update { it.copy(trayImagePath = intent.imagePath) }
             }
             is CreatePackIntent.AddSticker -> {
-                _state.update { it.copy(stickers = it.stickers + DraftSticker(intent.imagePath)) }
+                _state.update { current ->
+                    if (current.stickers.size >= StickerPack.MAX_STICKERS) current
+                    else current.copy(stickers = current.stickers + DraftSticker(intent.imagePath))
+                }
+            }
+            is CreatePackIntent.AddAnimatedDraft -> {
+                _state.update { current ->
+                    if (current.stickers.size >= StickerPack.MAX_STICKERS) current
+                    else current.copy(stickers = current.stickers + intent.draft)
+                }
             }
             is CreatePackIntent.RemoveSticker -> {
                 _state.update {
@@ -161,8 +170,11 @@ class CreatePackViewModel(
                 val pack = repository.getPack(packId)
                 val fromServer = pack.stickers.map { sticker ->
                     DraftSticker(
-                        imagePath = sticker.sourceImageFile ?: sticker.imageFile,
-                        decorations = sticker.decorations
+                        imagePath = if (sticker.isAnimated) sticker.imageFile else (sticker.sourceImageFile ?: sticker.imageFile),
+                        decorations = sticker.decorations,
+                        isAnimated = sticker.isAnimated,
+                        sourceVideoFile = sticker.sourceVideoFile,
+                        frameDecorations = sticker.frameDecorations
                     )
                 }
                 val serverPaths = pack.stickers
@@ -235,36 +247,69 @@ class CreatePackViewModel(
                 val trayFileName = "tray_${identifier}.png"
                 val trayPath = fileStorage.saveTrayImage(currentState.trayImagePath, trayFileName)
                 
-                // Same dual-file flow as EditorViewModel.saveSticker: editable base + flattened preview.
+                // Pack is animated whenever it contains at least one animated sticker. WhatsApp
+                // packs cannot mix static + animated WebP files, so when the pack ends up animated
+                // we re-encode any static drafts as 1-frame animated WebP.
+                val packIsAnimated = currentState.containsAnimated
+
                 val stickers = currentState.stickers.mapIndexed { index, draft ->
-                    val baseFileName = "sticker_${identifier}_${index}_base.webp"
-                    val basePath = fileStorage.saveStickerImage(
-                        sourcePath = draft.imagePath,
-                        fileName = baseFileName
-                    )
-                    val previewPath = if (draft.decorations.isEmpty()) {
-                        basePath
-                    } else {
-                        fileStorage.saveStickerImageWithDecorations(
-                            sourcePath = basePath,
-                            fileName = "sticker_${identifier}_${index}_preview.webp",
-                            decorations = draft.decorations
+                    when {
+                        draft.isAnimated -> Sticker(
+                            imageFile = draft.imagePath,
+                            sourceImageFile = null,
+                            emojis = listOf("⭐"),
+                            decorations = draft.decorations,
+                            isAnimated = true,
+                            sourceVideoFile = draft.sourceVideoFile,
+                            frameDecorations = draft.frameDecorations
                         )
+                        packIsAnimated -> {
+                            val animatedFileName = "sticker_${identifier}_${index}_anim.webp"
+                            val animatedPath = fileStorage.encodeSingleFrameAnimatedWebP(
+                                sourcePath = draft.imagePath,
+                                fileName = animatedFileName,
+                                decorations = draft.decorations
+                            )
+                            Sticker(
+                                imageFile = animatedPath,
+                                sourceImageFile = null,
+                                emojis = listOf("⭐"),
+                                decorations = draft.decorations,
+                                isAnimated = true
+                            )
+                        }
+                        else -> {
+                            val baseFileName = "sticker_${identifier}_${index}_base.webp"
+                            val basePath = fileStorage.saveStickerImage(
+                                sourcePath = draft.imagePath,
+                                fileName = baseFileName
+                            )
+                            val previewPath = if (draft.decorations.isEmpty()) {
+                                basePath
+                            } else {
+                                fileStorage.saveStickerImageWithDecorations(
+                                    sourcePath = basePath,
+                                    fileName = "sticker_${identifier}_${index}_preview.webp",
+                                    decorations = draft.decorations
+                                )
+                            }
+                            Sticker(
+                                imageFile = previewPath,
+                                sourceImageFile = basePath,
+                                emojis = listOf("⭐"),
+                                decorations = draft.decorations
+                            )
+                        }
                     }
-                    Sticker(
-                        imageFile = previewPath,
-                        sourceImageFile = basePath,
-                        emojis = listOf("⭐"), // WhatsApp requires at least 1 emoji per sticker
-                        decorations = draft.decorations
-                    )
                 }
-                
+
                 val pack = StickerPack(
                     identifier = identifier,
                     name = currentState.name,
                     publisher = currentState.publisher,
                     trayImageFile = trayPath,
-                    stickers = stickers
+                    stickers = stickers,
+                    isAnimated = packIsAnimated
                 )
                 
                 repository.savePack(pack)

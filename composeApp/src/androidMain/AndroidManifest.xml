@@ -12,6 +12,7 @@
     
     <!-- Storage permission for Android 13+ (API 33+) -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     
     <!-- Permission to query if WhatsApp is installed -->
     <queries>

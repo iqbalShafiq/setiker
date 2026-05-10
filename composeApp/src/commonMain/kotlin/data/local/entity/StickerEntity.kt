@@ -26,5 +26,8 @@ data class StickerEntity(
     val emojis: String,
     val accessibilityText: String?,
     val decorationsJson: String? = null,
+    val isAnimated: Boolean = false,
+    val sourceVideoFile: String? = null,
+    val frameDecorationsJson: String? = null,
     val sortOrder: Int
 )

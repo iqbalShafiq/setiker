@@ -14,8 +14,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import presentation.theme.AccentCoral
-import presentation.theme.NeubrutalBlack
 import presentation.theme.NeubrutalWhite
+import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalOnSurface
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,8 +28,8 @@ fun PackBottomBar(
 ) {
     BottomAppBar(
         modifier = modifier,
-        containerColor = NeubrutalWhite,
-        contentColor = NeubrutalBlack,
+        containerColor = neubrutalCardSurface(),
+        contentColor = neubrutalOnSurface(),
         tonalElevation = 0.dp,
         actions = actions,
         floatingActionButton = floatingActionButton
@@ -41,13 +43,15 @@ fun PackBottomBarIconButton(
     onClick: () -> Unit,
     enabled: Boolean = true
 ) {
+    val tint = neubrutalOnSurface()
     IconButton(
         onClick = onClick,
         enabled = enabled
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = contentDescription
+            contentDescription = contentDescription,
+            tint = if (enabled) tint else tint.copy(alpha = 0.4f)
         )
     }
 }
@@ -61,9 +65,10 @@ fun PackBottomBarFab(
     enabled: Boolean = true
 ) {
     val shape = RoundedCornerShape(16.dp)
+    val border = neubrutalBorderColor()
     FloatingActionButton(
         onClick = { if (enabled) onClick() },
-        modifier = modifier.border(2.dp, NeubrutalBlack, shape),
+        modifier = modifier.border(2.dp, border, shape),
         containerColor = AccentCoral,
         contentColor = NeubrutalWhite,
         shape = shape,

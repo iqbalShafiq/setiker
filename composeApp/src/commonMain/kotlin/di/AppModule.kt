@@ -3,6 +3,7 @@ package di
 import data.repository.StickerRepositoryImpl
 import data.remote.SetikerApiService
 import data.remote.StickerApiRepository
+import data.storage.AnimatedStickerDraftStore
 import domain.repository.StickerRepository
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.factoryOf
@@ -15,6 +16,9 @@ import presentation.packdetail.PackDetailViewModel
 import presentation.createpack.CreatePackViewModel
 import presentation.editor.EditorViewModel
 import presentation.crop.CropViewModel
+import presentation.videocrop.VideoCropViewModel
+import presentation.videotrim.VideoTrimViewModel
+import presentation.animatededitor.AnimatedEditorViewModel
 
 expect fun platformModule(): Module
 
@@ -25,6 +29,7 @@ val appModule = module {
     singleOf(::StickerRepositoryImpl) bind StickerRepository::class
     single { SetikerApiService() }
     single { StickerApiRepository(api = get(), fileStorage = get()) }
+    single { AnimatedStickerDraftStore() }
 
     // ViewModels (viewModelOf = scoped to NavBackStackEntry / LocalViewModelStoreOwner)
     viewModelOf(::HomeViewModel)
@@ -32,4 +37,7 @@ val appModule = module {
     viewModelOf(::CreatePackViewModel)
     viewModelOf(::EditorViewModel)
     viewModelOf(::CropViewModel)
+    viewModelOf(::VideoTrimViewModel)
+    viewModelOf(::VideoCropViewModel)
+    viewModelOf(::AnimatedEditorViewModel)
 }

@@ -28,9 +28,11 @@ import coil3.compose.AsyncImage
 import org.jetbrains.compose.resources.stringResource
 import presentation.createpack.DraftSticker
 import presentation.theme.AccentCoral
-import presentation.theme.NeubrutalBlack
-import presentation.theme.NeubrutalWhite
+import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
+import presentation.theme.neubrutalShadowColor
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.split_sticker_index
 
@@ -40,20 +42,21 @@ fun ApiActionSection(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
+    val border = neubrutalBorderColor()
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .neubrutalShadow(4.dp, 4.dp, 16.dp, NeubrutalBlack)
+            .neubrutalShadow(4.dp, 4.dp, 16.dp, neubrutalShadowColor())
             .clip(RoundedCornerShape(16.dp))
-            .background(NeubrutalWhite)
-            .border(2.dp, NeubrutalBlack, RoundedCornerShape(16.dp))
+            .background(neubrutalCardSurface())
+            .border(2.dp, border, RoundedCornerShape(16.dp))
             .padding(14.dp)
     ) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
-            color = NeubrutalBlack
+            color = neubrutalOnSurface()
         )
         Spacer(modifier = Modifier.height(10.dp))
         content()
@@ -76,18 +79,21 @@ fun SelectableStickerGrid(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                val border = neubrutalBorderColor()
+                val shadow = neubrutalShadowColor()
+                val surface = neubrutalCardSurface()
                 rowItems.forEachIndexed { itemIndex, draft ->
                     val index = (rowIndex * 4) + itemIndex
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .aspectRatio(1f)
-                            .neubrutalShadow(2.dp, 2.dp, 12.dp, NeubrutalBlack)
+                            .neubrutalShadow(2.dp, 2.dp, 12.dp, shadow)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(NeubrutalWhite)
+                            .background(surface)
                             .border(
                                 width = if (selectedIndices.contains(index)) 3.dp else 2.dp,
-                                color = if (selectedIndices.contains(index)) AccentCoral else NeubrutalBlack,
+                                color = if (selectedIndices.contains(index)) AccentCoral else border,
                                 shape = RoundedCornerShape(12.dp)
                             )
                             .clickable { onToggle(index) }
