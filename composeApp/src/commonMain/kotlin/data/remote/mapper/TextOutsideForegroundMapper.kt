@@ -7,7 +7,7 @@ import domain.model.TextDecoration
 import kotlin.random.Random
 
 private const val DEFAULT_BOTTOM_CENTER_Y = 0.88f
-private const val DEFAULT_OVERLAY_SCALE = 0.42f
+private const val DEFAULT_OVERLAY_SCALE = 0.58f
 
 /**
  * Maps grid-split API caption metadata to a single bottom-centered text decoration.

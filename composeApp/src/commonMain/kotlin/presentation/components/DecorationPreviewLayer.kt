@@ -78,10 +78,23 @@ fun DecorationPreviewLayer(
             }
 
             val itemWidth = when (decoration) {
-                is TextDecoration -> itemSizePx
+                is TextDecoration ->
+                    if (decoration.id.startsWith("api_txt_")) {
+                        widthPx * (1f - 2f * DecorationRenderSpec.API_CAPTION_HORIZONTAL_INSET_RATIO)
+                    } else {
+                        itemSizePx
+                    }
                 else -> itemSizePx
             }
-            val itemHeight = itemSizePx
+            val itemHeight = when (decoration) {
+                is TextDecoration ->
+                    if (decoration.id.startsWith("api_txt_")) {
+                        minDim * 0.46f * scale
+                    } else {
+                        itemSizePx
+                    }
+                else -> itemSizePx
+            }
             val centerX = decoration.centerX.coerceIn(0f, 1f) * widthPx
             val centerY = decoration.centerY.coerceIn(0f, 1f) * heightPx
             val topLeft = Offset(
@@ -140,6 +153,11 @@ fun DecorationPreviewLayer(
             ) {
                 when (decoration) {
                     is TextDecoration -> {
+                        val textRatio = if (decoration.id.startsWith("api_txt_")) {
+                            DecorationRenderSpec.API_CAPTION_TEXT_SIZE_RATIO
+                        } else {
+                            DecorationRenderSpec.TEXT_SIZE_RATIO
+                        }
                         Text(
                             text = decoration.text,
                             style = TextStyle(
@@ -147,14 +165,14 @@ fun DecorationPreviewLayer(
                                 fontFamily = mapFontFamily(decoration.font),
                                 fontWeight = mapFontWeight(decoration.fontWeight),
                                 fontSize = with(density) {
-                                    (minDim * DecorationRenderSpec.TEXT_SIZE_RATIO * scale).toSp()
+                                    (minDim * textRatio * scale).toSp()
                                 },
                                 textAlign = TextAlign.Center
                             ),
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(Color.Transparent),
-                            maxLines = 3
+                            maxLines = if (decoration.id.startsWith("api_txt_")) 6 else 3
                         )
                     }
 

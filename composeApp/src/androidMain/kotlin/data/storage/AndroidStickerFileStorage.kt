@@ -8,6 +8,9 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.os.Build
+import android.text.Layout
+import android.text.StaticLayout
+import android.text.TextPaint
 import domain.model.DecorationFont
 import domain.model.DecorationFontWeight
 import domain.model.DecorationRenderSpec
@@ -219,15 +222,25 @@ actual class StickerFileStorage(private val context: Context) {
                 )
                 when (decoration) {
                     is TextDecoration -> {
-                        drawTextDecoration(
-                            canvas = canvas,
-                            text = decoration.text,
-                            centerX = centerX,
-                            centerY = centerY,
-                            textSize = minDim * DecorationRenderSpec.TEXT_SIZE_RATIO * scale,
-                            typeface = mapTypeface(decoration.font, decoration.fontWeight),
-                            textColor = decoration.textColorArgb.toInt()
-                        )
+                        if (decoration.id.startsWith("api_txt_")) {
+                            drawApiOutsideForegroundCaption(
+                                canvas = canvas,
+                                decoration = decoration,
+                                bitmapWidth = composedBitmap.width,
+                                bitmapHeight = composedBitmap.height,
+                                minDim = minDim
+                            )
+                        } else {
+                            drawTextDecoration(
+                                canvas = canvas,
+                                text = decoration.text,
+                                centerX = centerX,
+                                centerY = centerY,
+                                textSize = minDim * DecorationRenderSpec.TEXT_SIZE_RATIO * scale,
+                                typeface = mapTypeface(decoration.font, decoration.fontWeight),
+                                textColor = decoration.textColorArgb.toInt()
+                            )
+                        }
                     }
 
                     is EmojiDecoration -> {
@@ -278,6 +291,53 @@ actual class StickerFileStorage(private val context: Context) {
         } finally {
             sourceBitmap.recycle()
         }
+    }
+
+    /**
+     * Grid-split API captions: width follows text up to full sticker width (minus insets), larger default size.
+     */
+    private fun drawApiOutsideForegroundCaption(
+        canvas: Canvas,
+        decoration: TextDecoration,
+        bitmapWidth: Int,
+        bitmapHeight: Int,
+        minDim: Float
+    ) {
+        val scale = decoration.scale.coerceIn(
+            DecorationRenderSpec.MIN_SCALE,
+            DecorationRenderSpec.MAX_SCALE
+        )
+        val textSizePx = minDim * DecorationRenderSpec.API_CAPTION_TEXT_SIZE_RATIO * scale
+        val horizontalInset = bitmapWidth * DecorationRenderSpec.API_CAPTION_HORIZONTAL_INSET_RATIO
+        val bottomInset = bitmapHeight * DecorationRenderSpec.API_CAPTION_BOTTOM_INSET_RATIO
+        val maxWidth = (bitmapWidth - 2f * horizontalInset).toInt().coerceAtLeast(1)
+
+        val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = decoration.textColorArgb.toInt()
+            this.textSize = textSizePx
+            typeface = mapTypeface(decoration.font, decoration.fontWeight)
+            isAntiAlias = true
+            setShadowLayer(textSizePx * 0.14f, 0f, 1f, android.graphics.Color.BLACK)
+        }
+
+        val staticLayout = StaticLayout.Builder.obtain(
+            decoration.text,
+            0,
+            decoration.text.length,
+            textPaint,
+            maxWidth
+        ).setAlignment(Layout.Alignment.ALIGN_CENTER)
+            .setIncludePad(false)
+            .setLineSpacing(0f, 1f)
+            .build()
+
+        val x = horizontalInset
+        val y = bitmapHeight - bottomInset - staticLayout.height
+
+        canvas.save()
+        canvas.translate(x, y.toFloat())
+        staticLayout.draw(canvas)
+        canvas.restore()
     }
 
     private fun drawTextDecoration(
