@@ -20,7 +20,4 @@ object DecorationRenderSpec {
 
     /** Horizontal inset from sticker edge as a fraction of canvas width (caption max width uses the inset twice). */
     const val API_CAPTION_HORIZONTAL_INSET_RATIO = 0.032f
-
-    /** Bottom inset as a fraction of canvas height. */
-    const val API_CAPTION_BOTTOM_INSET_RATIO = 0.026f
 }

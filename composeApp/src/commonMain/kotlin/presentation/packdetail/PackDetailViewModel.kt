@@ -41,7 +41,7 @@ class PackDetailViewModel(
 
     fun onIntent(intent: PackDetailIntent) {
         when (intent) {
-            is PackDetailIntent.LoadPack -> loadPack(intent.packId)
+            is PackDetailIntent.LoadPack -> loadPack(intent.packId, intent.silentRefresh)
             is PackDetailIntent.AddToWhatsApp -> addToWhatsApp(intent.packId)
             is PackDetailIntent.DeletePack -> deletePack(intent.packId)
             is PackDetailIntent.EditPack -> {
@@ -67,9 +67,16 @@ class PackDetailViewModel(
         }
     }
 
-    private fun loadPack(packId: String) {
+    private fun loadPack(packId: String, silentRefresh: Boolean = false) {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            val canSkipBlockingLoader = silentRefresh && _state.value.pack?.identifier == packId
+            _state.update { current ->
+                if (canSkipBlockingLoader) {
+                    current.copy(error = null)
+                } else {
+                    current.copy(isLoading = true, error = null)
+                }
+            }
             try {
                 val pack = repository.getPack(packId)
                 _state.update { it.copy(isLoading = false, pack = pack) }

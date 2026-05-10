@@ -251,14 +251,15 @@ fun EditorScreen(
                     .padding(innerPadding)
             )
         } else {
+            val editorScrollState = rememberScrollState()
             Column(
                 modifier = modifier
                     .fillMaxSize()
                     .padding(top = innerPadding.calculateTopPadding())
                     .padding(horizontal = 20.dp, vertical = 16.dp)
-                    .verticalScroll(rememberScrollState())
             ) {
-                // Image Preview (Neubrutal Frame)
+                // Image Preview (Neubrutal Frame) — kept outside verticalScroll so drag gestures on
+                // decorations are not competed by the parent scroll column.
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -321,6 +322,12 @@ fun EditorScreen(
                     }
                 }
 
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .verticalScroll(editorScrollState)
+                ) {
                 Spacer(modifier = Modifier.height(20.dp))
                 Text(
                     text = stringResource(Res.string.decoration_hint),
@@ -408,6 +415,7 @@ fun EditorScreen(
                 )
 
                 Spacer(modifier = Modifier.height(120.dp))
+                }
             }
         }
     }

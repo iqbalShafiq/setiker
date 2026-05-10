@@ -294,7 +294,7 @@ actual class StickerFileStorage(private val context: Context) {
     }
 
     /**
-     * Grid-split API captions: width follows text up to full sticker width (minus insets), larger default size.
+     * Grid-split API captions: same geometry as Compose preview/editor — bounded width, anchored at [centerX],[centerY].
      */
     private fun drawApiOutsideForegroundCaption(
         canvas: Canvas,
@@ -308,9 +308,12 @@ actual class StickerFileStorage(private val context: Context) {
             DecorationRenderSpec.MAX_SCALE
         )
         val textSizePx = minDim * DecorationRenderSpec.API_CAPTION_TEXT_SIZE_RATIO * scale
-        val horizontalInset = bitmapWidth * DecorationRenderSpec.API_CAPTION_HORIZONTAL_INSET_RATIO
-        val bottomInset = bitmapHeight * DecorationRenderSpec.API_CAPTION_BOTTOM_INSET_RATIO
-        val maxWidth = (bitmapWidth - 2f * horizontalInset).toInt().coerceAtLeast(1)
+        val boxWidthPx =
+            bitmapWidth * (1f - 2f * DecorationRenderSpec.API_CAPTION_HORIZONTAL_INSET_RATIO)
+        val maxWidth = boxWidthPx.toInt().coerceAtLeast(1)
+
+        val centerXPx = decoration.centerX.coerceIn(0f, 1f) * bitmapWidth
+        val centerYPx = decoration.centerY.coerceIn(0f, 1f) * bitmapHeight
 
         val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color = decoration.textColorArgb.toInt()
@@ -331,11 +334,14 @@ actual class StickerFileStorage(private val context: Context) {
             .setLineSpacing(0f, 1f)
             .build()
 
-        val x = horizontalInset
-        val y = bitmapHeight - bottomInset - staticLayout.height
+        val layoutHeight = staticLayout.height.toFloat()
+        var left = centerXPx - boxWidthPx / 2f
+        var top = centerYPx - layoutHeight / 2f
+        left = left.coerceIn(0f, (bitmapWidth - boxWidthPx).coerceAtLeast(0f))
+        top = top.coerceIn(0f, (bitmapHeight - layoutHeight).coerceAtLeast(0f))
 
         canvas.save()
-        canvas.translate(x, y.toFloat())
+        canvas.translate(left, top)
         staticLayout.draw(canvas)
         canvas.restore()
     }

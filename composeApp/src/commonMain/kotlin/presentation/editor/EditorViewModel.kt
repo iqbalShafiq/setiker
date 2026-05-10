@@ -47,8 +47,6 @@ class EditorViewModel(
 
     private var packId: String = ""
     private var stickerIndex: Int? = null
-    private var loadedPackId: String? = null
-    private var loadedStickerIndex: Int? = null
     private var backgroundRemovalJob: Job? = null
 
     fun onIntent(intent: EditorIntent) {
@@ -394,16 +392,8 @@ class EditorViewModel(
     }
 
     private fun loadSticker(index: Int, packId: String) {
-        // Prevent reloading the same sticker to avoid overwriting edited image paths
-        if (loadedPackId == packId && loadedStickerIndex == index) {
-            android.util.Log.d("EditorViewModel", "Sticker already loaded: index=$index, packId=$packId")
-            return
-        }
-
         this.packId = packId
         this.stickerIndex = index
-        this.loadedPackId = packId
-        this.loadedStickerIndex = index
 
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, stickerIndex = index) }

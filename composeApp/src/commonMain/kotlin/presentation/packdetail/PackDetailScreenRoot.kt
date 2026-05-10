@@ -4,6 +4,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
 import org.koin.compose.viewmodel.koinViewModel
@@ -25,8 +26,10 @@ fun PackDetailScreenRoot(
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(Unit) {
-        viewModel.onIntent(PackDetailIntent.LoadPack(packId))
+    // Reload when this screen resumes; silent when we already show this pack — avoids full-screen loading flicker.
+    LifecycleResumeEffect(packId) {
+        viewModel.onIntent(PackDetailIntent.LoadPack(packId, silentRefresh = true))
+        onPauseOrDispose { }
     }
 
     LaunchedEffect(croppedStickerImportPath) {

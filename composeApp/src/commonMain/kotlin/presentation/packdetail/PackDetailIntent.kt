@@ -1,7 +1,11 @@
 package presentation.packdetail
 
 sealed interface PackDetailIntent {
-    data class LoadPack(val packId: String) : PackDetailIntent
+    /**
+     * @param silentRefresh When true and this pack is already in state, skips the full-screen blocking loader
+     * (smooth return e.g. from sticker editor).
+     */
+    data class LoadPack(val packId: String, val silentRefresh: Boolean = false) : PackDetailIntent
     data class AddToWhatsApp(val packId: String) : PackDetailIntent
     data class DeletePack(val packId: String) : PackDetailIntent
     data object EditPack : PackDetailIntent

@@ -20,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,6 +68,7 @@ fun DecorationPreviewLayer(
         val density = LocalDensity.current
 
         decorations.forEach { decoration ->
+            key(decoration.id) {
             val latestCenterX by rememberUpdatedState(decoration.centerX)
             val latestCenterY by rememberUpdatedState(decoration.centerY)
             val latestScale by rememberUpdatedState(decoration.scale)
@@ -262,6 +264,7 @@ fun DecorationPreviewLayer(
                         )
                     }
                 }
+            }
             }
         }
     }
