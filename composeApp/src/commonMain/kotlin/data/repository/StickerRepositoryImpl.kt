@@ -74,7 +74,9 @@ class StickerRepositoryImpl(
         // Delete associated sticker files
         val stickers = stickerDao.getByPackId(identifier)
         stickers.forEach { sticker ->
-            fileStorage.deleteImage(sticker.imageFile)
+            listOfNotNull(sticker.imageFile, sticker.sourceImageFile).distinct().forEach {
+                fileStorage.deleteImage(it)
+            }
         }
         fileStorage.deleteImage(pack.trayImageFile)
 
@@ -132,7 +134,9 @@ class StickerRepositoryImpl(
         val stickers = stickerDao.getByPackId(packId)
         val stickerToDelete = stickers.getOrNull(index) ?: return@withContext
 
-        fileStorage.deleteImage(stickerToDelete.imageFile)
+        listOfNotNull(stickerToDelete.imageFile, stickerToDelete.sourceImageFile).distinct().forEach {
+            fileStorage.deleteImage(it)
+        }
         stickerDao.deleteByPackAndIndex(packId, index)
     }
 

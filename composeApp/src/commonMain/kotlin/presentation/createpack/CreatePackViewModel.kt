@@ -161,11 +161,13 @@ class CreatePackViewModel(
                 val pack = repository.getPack(packId)
                 val fromServer = pack.stickers.map { sticker ->
                     DraftSticker(
-                        imagePath = sticker.imageFile,
+                        imagePath = sticker.sourceImageFile ?: sticker.imageFile,
                         decorations = sticker.decorations
                     )
                 }
-                val serverPaths = fromServer.map { it.imagePath }.toSet()
+                val serverPaths = pack.stickers
+                    .flatMap { listOfNotNull(it.sourceImageFile, it.imageFile) }
+                    .toSet()
                 val previousSession = _state.value.stickers.filter { it.imagePath.isNotBlank() }
                 val mergedStickers = buildList {
                     addAll(fromServer)
@@ -233,22 +235,27 @@ class CreatePackViewModel(
                 val trayFileName = "tray_${identifier}.png"
                 val trayPath = fileStorage.saveTrayImage(currentState.trayImagePath, trayFileName)
                 
-                // Save stickers to stickers directory (512x512, WebP, <100KB)
+                // Same dual-file flow as EditorViewModel.saveSticker: editable base + flattened preview.
                 val stickers = currentState.stickers.mapIndexed { index, draft ->
-                    val stickerFileName = "sticker_${identifier}_${index}.webp"
-                    val stickerPath = if (draft.decorations.isNotEmpty()) {
+                    val baseFileName = "sticker_${identifier}_${index}_base.webp"
+                    val basePath = fileStorage.saveStickerImage(
+                        sourcePath = draft.imagePath,
+                        fileName = baseFileName
+                    )
+                    val previewPath = if (draft.decorations.isEmpty()) {
+                        basePath
+                    } else {
                         fileStorage.saveStickerImageWithDecorations(
-                            sourcePath = draft.imagePath,
-                            fileName = stickerFileName,
+                            sourcePath = basePath,
+                            fileName = "sticker_${identifier}_${index}_preview.webp",
                             decorations = draft.decorations
                         )
-                    } else {
-                        fileStorage.saveStickerImage(draft.imagePath, stickerFileName)
                     }
                     Sticker(
-                        imageFile = stickerPath,
+                        imageFile = previewPath,
+                        sourceImageFile = basePath,
                         emojis = listOf("⭐"), // WhatsApp requires at least 1 emoji per sticker
-                        decorations = emptyList()
+                        decorations = draft.decorations
                     )
                 }
                 
