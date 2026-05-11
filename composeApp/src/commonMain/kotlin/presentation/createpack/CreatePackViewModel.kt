@@ -240,7 +240,7 @@ class CreatePackViewModel(
                 val identifier = if (currentState.isEditing && currentState.packId.isNotBlank()) {
                     currentState.packId
                 } else {
-                    "${currentState.name.lowercase().replace(" ", "_")}_${Random.nextInt(1000, 9999)}"
+                    sanitizePackIdentifier(currentState.name, Random.nextInt(1000, 9999))
                 }
                 
                 // Save tray image to stickers directory (96x96, PNG, <50KB)
@@ -431,6 +431,24 @@ class CreatePackViewModel(
                 _effect.send(CreatePackEffect.ShowError(UiText.StringRes(Res.string.error_partial_split_not_added)))
             }
         }
+    }
+
+    /**
+     * Produce a pack identifier that satisfies WhatsApp's `StickerPackValidator.checkStringValidity`:
+     * only `[a-zA-Z0-9_\-.,'\s]` is allowed, and the identifier must not contain `..`. Any other
+     * character (emoji, accented letter, slash, …) is replaced with `_` so users can name packs
+     * freely without breaking the export. We also collapse the result so it stays under the
+     * 128-char `CHAR_COUNT_MAX` limit even after appending the random suffix.
+     */
+    private fun sanitizePackIdentifier(rawName: String, suffix: Int): String {
+        val allowed = Regex("[^A-Za-z0-9_\\-.,' ]")
+        val cleaned = rawName.lowercase()
+            .replace(allowed, "_")
+            .replace("..", "_")
+            .replace(Regex("_+"), "_")
+            .trim('_', ' ')
+        val base = cleaned.ifBlank { "pack" }.take(110)
+        return "${base}_$suffix"
     }
 
     private fun addSelectedGeneratedToPack() {

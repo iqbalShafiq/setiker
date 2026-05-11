@@ -160,7 +160,14 @@ class StickerContentProvider : ContentProvider() {
             METADATA_CODE -> "vnd.android.cursor.dir/vnd.${context?.packageName}.stickercontentprovider.$METADATA"
             METADATA_CODE_FOR_SINGLE_PACK -> "vnd.android.cursor.item/vnd.${context?.packageName}.stickercontentprovider.$METADATA"
             STICKERS_CODE -> "vnd.android.cursor.dir/vnd.${context?.packageName}.stickercontentprovider.$STICKERS"
-            STICKERS_ASSET_CODE -> "image/webp"
+            STICKERS_ASSET_CODE -> {
+                // Tray icons share the same URI shape (stickers_asset/<id>/<file>) as sticker
+                // files, so we differentiate by extension. Tray icons are PNGs (.png), sticker
+                // files are WebPs (.webp). Returning the correct MIME type matters because
+                // WhatsApp probes it when caching / decoding the asset.
+                val fileName = uri.lastPathSegment.orEmpty()
+                if (fileName.endsWith(".png", ignoreCase = true)) "image/png" else "image/webp"
+            }
             STICKER_PACK_TRAY_ICON_CODE -> "image/png"
             else -> throw IllegalArgumentException("Unknown URI: $uri")
         }
@@ -260,8 +267,8 @@ class StickerContentProvider : ContentProvider() {
                 Log.d(TAG, "Sticker: $fileName (original: ${sticker.imageFile})")
                 cursor.addRow(arrayOf(
                     fileName,
-                    sticker.emojis,
-                    sticker.accessibilityText ?: ""
+                    decodeEmojisAsCsv(sticker.emojis),
+                    sticker.accessibilityText
                 ))
             }
         } catch (e: Exception) {
@@ -270,6 +277,23 @@ class StickerContentProvider : ContentProvider() {
 
         cursor.setNotificationUri(context?.contentResolver, uri)
         return cursor
+    }
+
+    /**
+     * We persist `StickerEntity.emojis` as a JSON-encoded array (e.g. `["⭐","🎉"]`) so the
+     * domain model stays a `List<String>`. WhatsApp's loader however parses the emoji column
+     * with `emojisConcatenated.split(",")` (see `StickerPackLoader.fetchFromContentProviderForStickers`),
+     * so handing it raw JSON corrupts emojis on the WhatsApp side and — when count crosses
+     * `EMOJI_MAX_LIMIT = 3` — also fails the `StickerPackValidator` and silently rejects the pack.
+     * Re-serialize as comma-separated values that match the official contract.
+     */
+    private fun decodeEmojisAsCsv(raw: String?): String {
+        if (raw.isNullOrBlank()) return ""
+        return try {
+            Json.decodeFromString<List<String>>(raw).joinToString(",")
+        } catch (_: Exception) {
+            raw
+        }
     }
 
     private suspend fun getStickerFile(fileName: String, identifier: String): ParcelFileDescriptor? {

@@ -402,13 +402,18 @@ actual class StickerFileStorage(private val context: Context) {
                         bitmaps = attempt.first,
                         durations = attempt.second,
                         destFile = destFile,
-                        quality = quality
+                        quality = quality,
+                        minimizeSize = true
                     )
                     val size = destFile.length()
                     android.util.Log.d(
                         "StickerFileStorage",
                         "Animated encode attempt: frames=${attempt.first.size}, q=$quality, size=${size / 1024}KB"
                     )
+                    // Confirm libwebp didn't silently collapse our frames. If it did, the
+                    // resulting WebP would fail WhatsApp's `frameCount > 1` check and the
+                    // user would only learn at "Add to WhatsApp" time.
+                    verifyAnimatedWebP(destFile)
                     if (size in 1..maxBytes) {
                         onProgress(totalUnits, totalUnits)
                         return@withContext destFile.absolutePath
@@ -441,27 +446,118 @@ actual class StickerFileStorage(private val context: Context) {
             if (decorations.isNotEmpty()) {
                 composeDecorationsOntoBitmap(scaled, decorations)
             }
-            val baos = ByteArrayOutputStream()
-            scaled.compress(Bitmap.CompressFormat.PNG, 100, baos)
-            val payload = baos.toByteArray()
-            scaled.recycle()
-            // WhatsApp validates animated packs by checking each WebP for the ANIM
-            // chunk. libwebp's anim encoder may collapse a true single-frame input
-            // into a static WebP (no ANIM chunk) which then makes the pack fail
-            // validation. Encoding two identical frames forces an animated WebP.
-            val frames = listOf(
-                DecodedFrame(payload, SINGLE_FRAME_ANIMATED_DURATION_MS),
-                DecodedFrame(payload, SINGLE_FRAME_ANIMATED_DURATION_MS)
-            )
-            saveAnimatedStickerImage(
-                frames = frames,
-                fileName = fileName,
-                baseDecorations = emptyList(),
-                frameDecorations = emptyMap()
-            )
+            // We encode two frames so the output WebP has the ANIM chunk and
+            // `webPImage.getFrameCount() > 1`, which WhatsApp's StickerPackValidator
+            // requires for every sticker inside an animated pack.
+            //
+            // The second frame is *almost* identical to the first but with a single
+            // pixel's alpha nudged by one unit. Without this nudge libwebp's
+            // anim_encode skips the frame entirely (see `IsEmptyRect` /
+            // `PixelsAreSimilar` in `mux/anim_encode.c` — alpha must match exactly
+            // for two pixels to be considered "similar"), leaving us with a 1-frame
+            // WebP that fails validation. `minimizeSize = false` alone is NOT
+            // sufficient because that flag does not gate the empty-rect skip.
+            val twin = makeAlphaNudgedTwin(scaled)
+            val destFile = File(stickersDir, fileName)
+            val maxBytes = StickerPack.MAX_ANIMATED_STICKER_FILE_SIZE.toLong()
+            val durations = listOf(SINGLE_FRAME_ANIMATED_DURATION_MS, SINGLE_FRAME_ANIMATED_DURATION_MS)
+            val bitmaps = listOf(scaled, twin)
+
+            try {
+                for (quality in QUALITY_STOPS) {
+                    encodeAnimatedWebp(
+                        bitmaps = bitmaps,
+                        durations = durations,
+                        destFile = destFile,
+                        quality = quality,
+                        minimizeSize = false
+                    )
+                    verifyAnimatedWebP(destFile)
+                    if (destFile.length() in 1..maxBytes) {
+                        return@withContext destFile.absolutePath
+                    }
+                }
+                throw IllegalStateException(
+                    "Cannot fit re-encoded static sticker under ${maxBytes / 1024}KB"
+                )
+            } finally {
+                if (!twin.isRecycled) twin.recycle()
+                if (!scaled.isRecycled) scaled.recycle()
+            }
         } finally {
             if (!source.isRecycled) source.recycle()
         }
+    }
+
+    /**
+     * Produce a copy of [source] with the alpha of pixel `(0, 0)` shifted by one. The
+     * pixel is in the top-left corner — typically transparent for a sticker — and a
+     * 1/255 alpha delta is below the perceptual threshold, so the output is visually
+     * identical to the input.
+     *
+     * This is what stops libwebp from skipping our second frame: its
+     * `MinimizeChangeRectangle` shrinks the per-frame change rectangle to zero when
+     * every pixel matches "closely enough", but `PixelsAreSimilar` requires the alpha
+     * channel to match exactly. A 1-unit alpha tweak therefore guarantees the change
+     * rectangle has a non-zero area, which forces the encoder to actually emit the
+     * second ANMF chunk.
+     */
+    private fun makeAlphaNudgedTwin(source: Bitmap): Bitmap {
+        val copy = source.copy(Bitmap.Config.ARGB_8888, true)
+        val pixel = copy.getPixel(0, 0)
+        val alpha = (pixel ushr 24) and 0xFF
+        val nudged = if (alpha == 0) 1 else alpha - 1
+        copy.setPixel(0, 0, (nudged shl 24) or (pixel and 0x00FFFFFF))
+        return copy
+    }
+
+    /**
+     * Walk the RIFF chunk structure of [file] and assert it is an animated WebP with
+     * at least two ANMF (frame) chunks. We intentionally do this inline instead of
+     * decoding the file through `BitmapFactory`, because we want to catch the silent
+     * "encoder dropped a frame" regression before the file leaves the encoder loop.
+     *
+     * If verification fails we delete the offending file so the outer retry loop can
+     * try a different quality without seeing a stale on-disk artefact.
+     */
+    private fun verifyAnimatedWebP(file: File) {
+        val bytes = file.readBytes()
+        val frames = countAnmfChunks(bytes)
+        if (frames < MIN_ANIMATED_FRAMES) {
+            file.delete()
+            throw IllegalStateException(
+                "Encoded WebP only has $frames frame(s); WhatsApp requires animated stickers " +
+                    "with at least $MIN_ANIMATED_FRAMES frames. This usually means libwebp " +
+                    "deduplicated near-identical frames."
+            )
+        }
+    }
+
+    private fun countAnmfChunks(bytes: ByteArray): Int {
+        if (bytes.size < HEADER_PREFIX_LEN) return 0
+        // RIFF header: "RIFF" <size:4> "WEBP" then chunks.
+        if (bytes[0] != 'R'.code.toByte() || bytes[1] != 'I'.code.toByte() ||
+            bytes[2] != 'F'.code.toByte() || bytes[3] != 'F'.code.toByte() ||
+            bytes[8] != 'W'.code.toByte() || bytes[9] != 'E'.code.toByte() ||
+            bytes[10] != 'B'.code.toByte() || bytes[11] != 'P'.code.toByte()
+        ) {
+            return 0
+        }
+        var offset = HEADER_PREFIX_LEN
+        var count = 0
+        while (offset + CHUNK_HEADER_LEN <= bytes.size) {
+            val fourcc = String(bytes, offset, 4, Charsets.US_ASCII)
+            // Chunk size is an unsigned 32-bit LE int but we never expect > 500KB.
+            val size = (bytes[offset + 4].toInt() and 0xFF) or
+                ((bytes[offset + 5].toInt() and 0xFF) shl 8) or
+                ((bytes[offset + 6].toInt() and 0xFF) shl 16) or
+                ((bytes[offset + 7].toInt() and 0xFF) shl 24)
+            if (fourcc == "ANMF") count++
+            // RIFF chunks are padded to even byte boundaries.
+            val padded = size + (size and 1)
+            offset += CHUNK_HEADER_LEN + padded
+        }
+        return count
     }
 
     private fun buildHalvedAttempts(
@@ -487,19 +583,51 @@ actual class StickerFileStorage(private val context: Context) {
         )
     }
 
+    /**
+     * Encode [bitmaps] as an animated WebP that always satisfies WhatsApp's
+     * `webPImage.getFrameCount() > 1` rule (see WhatsApp/stickers `StickerPackValidator`).
+     *
+     * Two failure modes we defend against here:
+     *  - Source has < 2 frames (e.g. a 50ms GIF or a static-as-animated re-encode): we
+     *    duplicate the last frame so the encoder always sees ≥ 2 frames.
+     *  - libwebp with `minimize_size = 1` may collapse runs of identical consecutive frames
+     *    into a single frame. When the caller is producing intentionally identical frames
+     *    (static sticker → 2-frame anim path), it must pass `minimizeSize = false` so the
+     *    second frame survives.
+     */
     private fun encodeAnimatedWebp(
         bitmaps: List<Bitmap>,
         durations: List<Long>,
         destFile: File,
-        quality: Float
+        quality: Float,
+        minimizeSize: Boolean
     ) {
+        require(bitmaps.isNotEmpty()) { "Cannot encode animated WebP with zero frames" }
         if (destFile.exists()) destFile.delete()
+
+        // Pad to at least 2 frames. WhatsApp rejects animated packs whose stickers report
+        // frameCount <= 1, so a 1-frame source would silently fail at validation time.
+        // The padded frame uses the alpha-nudge trick so libwebp's anim_encode doesn't skip
+        // it back out (see `makeAlphaNudgedTwin` for why a pixel-identical duplicate is
+        // collapsed regardless of the `minimize_size` flag).
+        val padded = bitmaps.size < MIN_ANIMATED_FRAMES
+        val safeBitmaps: List<Bitmap>
+        val safeDurations: List<Long>
+        val paddedTwin: Bitmap? = if (padded) makeAlphaNudgedTwin(bitmaps.last()) else null
+        if (padded && paddedTwin != null) {
+            safeBitmaps = bitmaps + paddedTwin
+            safeDurations = durations + durations.last().coerceAtLeast(StickerPack.MIN_FRAME_DURATION_MS)
+        } else {
+            safeBitmaps = bitmaps
+            safeDurations = durations
+        }
+
         val encoder = WebPAnimEncoder(
             context = context,
             width = StickerPack.STICKER_SIZE,
             height = StickerPack.STICKER_SIZE,
             options = WebPAnimEncoderOptions(
-                minimizeSize = true,
+                minimizeSize = minimizeSize,
                 animParams = WebPMuxAnimParams(
                     backgroundColor = 0,
                     loopCount = 0
@@ -515,13 +643,14 @@ actual class StickerFileStorage(private val context: Context) {
                 preset = WebPPreset.WEBP_PRESET_PICTURE
             )
             var timestamp = 0L
-            bitmaps.forEachIndexed { i, bmp ->
+            safeBitmaps.forEachIndexed { i, bmp ->
                 encoder.addFrame(timestamp, bmp)
-                timestamp += durations[i]
+                timestamp += safeDurations[i]
             }
             encoder.assemble(timestamp, Uri.fromFile(destFile))
         } finally {
             encoder.release()
+            paddedTwin?.takeIf { !it.isRecycled }?.recycle()
         }
     }
 
@@ -848,5 +977,18 @@ actual class StickerFileStorage(private val context: Context) {
          * like a still image to the user and stays well under the 10s total cap.
          */
         private const val SINGLE_FRAME_ANIMATED_DURATION_MS = 1000L
+
+        /**
+         * WhatsApp's `StickerPackValidator` rejects any sticker inside an animated pack
+         * with `webPImage.getFrameCount() <= 1`. We pad single-frame sources up to this
+         * count before handing them to the encoder.
+         */
+        private const val MIN_ANIMATED_FRAMES = 2
+
+        /** Length of the WebP RIFF prefix: `RIFF <size:4> WEBP`. */
+        private const val HEADER_PREFIX_LEN = 12
+
+        /** Length of a single RIFF chunk header: 4-byte FourCC + 4-byte size. */
+        private const val CHUNK_HEADER_LEN = 8
     }
 }
