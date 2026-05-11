@@ -43,16 +43,24 @@ class StickerRepositoryImpl(
 
     @OptIn(ExperimentalUuidApi::class)
     override suspend fun savePack(pack: StickerPack) = withContext(Dispatchers.IO) {
+        val identifier = pack.identifier.takeIf { it.isNotBlank() } ?: Uuid.random().toString()
+        val existing = packDao.getById(identifier)
+        val now = System.currentTimeMillis()
         val entity = StickerPackEntity(
-            identifier = pack.identifier.takeIf { it.isNotBlank() } ?: Uuid.random().toString(),
+            identifier = identifier,
             name = pack.name,
             publisher = pack.publisher,
             trayImageFile = pack.trayImageFile,
             isAnimated = pack.isAnimated,
-            updatedAt = System.currentTimeMillis()
+            createdAt = existing?.createdAt ?: now,
+            updatedAt = now
         )
         packDao.insert(entity)
 
+        // Saving an existing pack is a full replacement of its current sticker
+        // list. Without clearing old rows first, every edit (including only
+        // changing the tray icon) appends duplicate stickers with new UUIDs.
+        stickerDao.deleteByPackId(entity.identifier)
         pack.stickers.forEachIndexed { index, sticker ->
             val stickerEntity = StickerEntity(
                 id = Uuid.random().toString(),

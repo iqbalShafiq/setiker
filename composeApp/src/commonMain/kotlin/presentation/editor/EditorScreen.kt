@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Crop
 import androidx.compose.material.icons.filled.Edit
@@ -65,22 +66,30 @@ import domain.model.ImageDecoration
 import domain.model.Sticker
 import domain.model.TextDecoration
 import org.jetbrains.compose.resources.stringResource
+import presentation.components.AddTextDecorationBottomSheet
+import presentation.components.AiGenerateBottomSheet
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
 import presentation.components.AppTextField
 import presentation.components.AppTopBar
 import presentation.components.CheckerboardBackground
+import presentation.components.ColorPickerBottomSheet
 import presentation.components.DecorationActionChip
 import presentation.components.DecorationPreviewLayer
+import presentation.components.EditTextDecorationBottomSheet
 import presentation.components.EmojiPickerBottomSheet
+import presentation.components.FontPickerBottomSheet
+import presentation.components.FontWeightPickerBottomSheet
 import presentation.components.LoadingIndicator
 import presentation.components.NeubrutalAddTagPill
 import presentation.components.NeubrutalStickerPreviewFrame
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
+import presentation.components.SelectableStickerGrid
 import presentation.components.StickerEmojiTagChip
 import presentation.components.rememberImagePicker
+import presentation.createpack.DraftSticker
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalMutedOnSurface
@@ -109,6 +118,10 @@ import setiker.composeapp.generated.resources.edit_sticker_title
 import setiker.composeapp.generated.resources.edit_text_decoration
 import setiker.composeapp.generated.resources.editor_action_hint
 import setiker.composeapp.generated.resources.editor_remove_bg_progress_hint
+import setiker.composeapp.generated.resources.generate_ai
+import setiker.composeapp.generated.resources.generate_pick_result
+import setiker.composeapp.generated.resources.generate_replace_sticker_subtitle
+import setiker.composeapp.generated.resources.generate_replace_sticker_title
 import setiker.composeapp.generated.resources.remove_background_title
 import setiker.composeapp.generated.resources.remove_bg
 import setiker.composeapp.generated.resources.remove_bg_preview_content_description
@@ -148,6 +161,10 @@ fun EditorScreen(
             onIntent(EditorIntent.UpdateImageDecorationPath(selected.id, path))
         }
     }
+    val generateInputImagePicker = rememberImagePicker { path ->
+        path?.let { onIntent(EditorIntent.UpdateGenerateInputImage(it)) }
+    }
+    var selectedGeneratedIndex by remember(state.generatedPreview) { mutableStateOf<Int?>(null) }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -178,6 +195,12 @@ fun EditorScreen(
                                 contentDescription = stringResource(Res.string.remove_bg),
                                 onClick = { onIntent(EditorIntent.RemoveBackground) },
                                 enabled = state.imagePath.isNotBlank() && !state.isBackgroundRemoving
+                            )
+                            PackBottomBarIconButton(
+                                icon = Icons.Filled.AutoAwesome,
+                                contentDescription = stringResource(Res.string.generate_ai),
+                                onClick = { onIntent(EditorIntent.OpenAiGenerateSheet) },
+                                enabled = !state.isApiLoading && !state.isBackgroundRemoving
                             )
                         }
                         when (selectedDecoration) {
@@ -421,7 +444,7 @@ fun EditorScreen(
     }
 
     if (state.isTextDecorationSheetOpen) {
-        TextDecorationBottomSheet(
+        AddTextDecorationBottomSheet(
             onAdd = { text, font ->
                 onIntent(EditorIntent.AddTextDecoration(text, font))
             },
@@ -465,6 +488,83 @@ fun EditorScreen(
             },
             onDismiss = { isColorSheetOpen = false }
         )
+    }
+
+    if (state.aiGenerateSheetOpen) {
+        AiGenerateBottomSheet(
+            prompt = state.generatePrompt,
+            onPromptChange = { onIntent(EditorIntent.UpdateGeneratePrompt(it)) },
+            generateAsGrid = state.generateAsGrid,
+            onToggleGrid = { onIntent(EditorIntent.ToggleGenerateAsGrid(it)) },
+            gridLayout = state.gridLayout,
+            onGridLayoutChange = { onIntent(EditorIntent.UpdateGridLayout(it)) },
+            normalizeOutput = state.normalizeOutput,
+            onToggleNormalize = { onIntent(EditorIntent.ToggleNormalize(it)) },
+            inputImagePath = state.generateInputImage,
+            onPickInputImage = { generateInputImagePicker.launch() },
+            onClearInputImage = { onIntent(EditorIntent.UpdateGenerateInputImage(null)) },
+            // The reference image defaults to the current sticker; emphasise this in copy.
+            hasContextualDefault = true,
+            isGenerating = state.isApiLoading,
+            onGenerate = { onIntent(EditorIntent.GenerateSticker) },
+            onDismiss = { onIntent(EditorIntent.CloseAiGenerateSheet) }
+        )
+    }
+
+    if (state.generatedPreview.isNotEmpty()) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ModalBottomSheet(
+            onDismissRequest = { onIntent(EditorIntent.CloseGeneratedSheet) },
+            sheetState = sheetState,
+            containerColor = neubrutalScreenBackground(),
+            scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 8.dp)
+                    .padding(bottom = 24.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Text(
+                    text = stringResource(Res.string.generate_replace_sticker_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = neubrutalOnSurface()
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = stringResource(Res.string.generate_replace_sticker_subtitle),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = neubrutalMutedOnSurface()
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                // Reuse the same selectable grid component as pack editor, but only allow a
+                // single selection — replacement is a single-sticker operation.
+                SelectableStickerGrid(
+                    stickers = state.generatedPreview.map { DraftSticker(it) },
+                    selectedIndices = selectedGeneratedIndex?.let { setOf(it) } ?: emptySet(),
+                    onToggle = { index ->
+                        selectedGeneratedIndex = if (selectedGeneratedIndex == index) null else index
+                    }
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                AppPrimaryButton(
+                    text = stringResource(Res.string.generate_pick_result),
+                    enabled = selectedGeneratedIndex != null,
+                    onClick = {
+                        val idx = selectedGeneratedIndex ?: return@AppPrimaryButton
+                        val path = state.generatedPreview.getOrNull(idx) ?: return@AppPrimaryButton
+                        onIntent(EditorIntent.ApplyGeneratedImage(path))
+                    }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                AppSecondaryButton(
+                    text = stringResource(Res.string.cancel),
+                    onClick = { onIntent(EditorIntent.CloseGeneratedSheet) }
+                )
+            }
+        }
     }
 
     if (state.isBackgroundRemoverSheetOpen) {
@@ -555,356 +655,6 @@ fun EditorScreen(
             }
         }
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun EditTextDecorationBottomSheet(
-    initialText: String,
-    onConfirm: (String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    var text by remember(initialText) { mutableStateOf(initialText) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = neubrutalScreenBackground(),
-        scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp).padding(bottom = 24.dp)
-        ) {
-            AppTextField(
-                value = text,
-                onValueChange = { text = it },
-                label = stringResource(Res.string.edit_text_decoration),
-                placeholder = stringResource(Res.string.text_decoration_placeholder)
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            AppPrimaryButton(
-                text = stringResource(Res.string.add_decoration),
-                enabled = text.isNotBlank(),
-                onClick = { onConfirm(text) }
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun FontPickerBottomSheet(
-    selectedFont: DecorationFont,
-    onSelect: (DecorationFont) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = neubrutalScreenBackground(),
-        scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 8.dp)
-                .padding(bottom = 24.dp)
-        ) {
-            Text(
-                text = "Sample Aa Bb 123",
-                style = MaterialTheme.typography.headlineSmall,
-                fontFamily = mapFontFamily(selectedFont),
-                color = neubrutalOnSurface()
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                DecorationFont.entries.forEach { font ->
-                    FilterChip(
-                        selected = selectedFont == font,
-                        onClick = { onSelect(font) },
-                        label = { Text(font.name, fontFamily = mapFontFamily(font)) }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun FontWeightPickerBottomSheet(
-    selectedWeight: DecorationFontWeight,
-    onSelect: (DecorationFontWeight) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = neubrutalScreenBackground(),
-        scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 8.dp)
-                .padding(bottom = 24.dp)
-        ) {
-            Text(
-                text = "Sample Aa Bb 123",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = mapFontWeight(selectedWeight),
-                color = neubrutalOnSurface()
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                DecorationFontWeight.entries.forEach { weight ->
-                    FilterChip(
-                        selected = selectedWeight == weight,
-                        onClick = { onSelect(weight) },
-                        label = { Text(weight.name, fontWeight = mapFontWeight(weight)) }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ColorPickerBottomSheet(
-    selectedColorArgb: Long,
-    onSelect: (Long) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val initialHsv = remember(selectedColorArgb) { argbToHsv(selectedColorArgb.toInt()) }
-    var hue by remember(selectedColorArgb) { mutableStateOf(initialHsv[0]) }
-    var saturation by remember(selectedColorArgb) { mutableStateOf(initialHsv[1]) }
-    var value by remember(selectedColorArgb) { mutableStateOf(initialHsv[2]) }
-    val selectedColor = Color.hsv(hue = hue, saturation = saturation, value = value)
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = neubrutalScreenBackground(),
-        scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 8.dp)
-                .padding(bottom = 24.dp)
-        ) {
-            Text(
-                text = "Color preview",
-                style = MaterialTheme.typography.labelLarge,
-                color = neubrutalOnSurface()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(selectedColor)
-                    .border(2.dp, neubrutalBorderColor(), RoundedCornerShape(12.dp))
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            ColorSliderRow(
-                label = "Hue",
-                value = hue,
-                valueRange = 0f..360f,
-                trackBrush = Brush.horizontalGradient(
-                    listOf(
-                        Color.Red,
-                        Color.Yellow,
-                        Color.Green,
-                        Color.Cyan,
-                        Color.Blue,
-                        Color.Magenta,
-                        Color.Red
-                    )
-                ),
-                onValueChange = { hue = it }
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            ColorSliderRow(
-                label = "Saturation",
-                value = saturation,
-                valueRange = 0f..1f,
-                trackBrush = Brush.horizontalGradient(
-                    listOf(
-                        Color.hsv(hue, 0f, value),
-                        Color.hsv(hue, 1f, value)
-                    )
-                ),
-                onValueChange = { saturation = it }
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            ColorSliderRow(
-                label = "Brightness",
-                value = value,
-                valueRange = 0f..1f,
-                trackBrush = Brush.horizontalGradient(
-                    listOf(
-                        Color.Black,
-                        Color.hsv(hue, saturation, 1f)
-                    )
-                ),
-                onValueChange = { value = it }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-            AppPrimaryButton(
-                text = stringResource(Res.string.add_decoration),
-                onClick = { onSelect(selectedColor.toArgb().toLong() and 0xFFFFFFFFL) }
-            )
-        }
-    }
-}
-
-@Composable
-private fun ColorSliderRow(
-    label: String,
-    value: Float,
-    valueRange: ClosedFloatingPointRange<Float>,
-    trackBrush: Brush,
-    onValueChange: (Float) -> Unit
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = neubrutalOnSurface()
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(14.dp)
-                .clip(RoundedCornerShape(999.dp))
-                .background(trackBrush)
-                .border(1.dp, neubrutalBorderColor(), RoundedCornerShape(999.dp))
-        )
-        Slider(
-            value = value,
-            onValueChange = onValueChange,
-            valueRange = valueRange
-        )
-    }
-}
-
-private fun argbToHsv(argb: Int): FloatArray {
-    val r = ((argb shr 16) and 0xFF) / 255f
-    val g = ((argb shr 8) and 0xFF) / 255f
-    val b = (argb and 0xFF) / 255f
-
-    val max = maxOf(r, g, b)
-    val min = minOf(r, g, b)
-    val delta = max - min
-
-    val hue = when {
-        delta == 0f -> 0f
-        max == r -> ((g - b) / delta).let { if (it < 0f) it + 6f else it } * 60f
-        max == g -> (((b - r) / delta) + 2f) * 60f
-        else -> (((r - g) / delta) + 4f) * 60f
-    }
-    val saturation = if (max == 0f) 0f else delta / max
-    val value = max
-    return floatArrayOf(hue, saturation, value)
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun TextDecorationBottomSheet(
-    onAdd: (String, DecorationFont) -> Unit,
-    onDismiss: () -> Unit
-) {
-    var text by remember { mutableStateOf("") }
-    var selectedFont by remember { mutableStateOf(DecorationFont.Sans) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = neubrutalScreenBackground(),
-        scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 8.dp)
-                .padding(bottom = 24.dp)
-        ) {
-            Text(
-                text = stringResource(Res.string.text_decoration),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = neubrutalOnSurface()
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            AppTextField(
-                value = text,
-                onValueChange = { text = it },
-                label = stringResource(Res.string.add_text),
-                placeholder = stringResource(Res.string.text_decoration_placeholder)
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                DecorationFont.entries.forEach { font ->
-                    FilterChip(
-                        selected = selectedFont == font,
-                        onClick = { selectedFont = font },
-                        label = {
-                            Text(
-                                text = font.name,
-                                fontFamily = mapFontFamily(font)
-                            )
-                        }
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            AppPrimaryButton(
-                text = stringResource(Res.string.add_decoration),
-                enabled = text.isNotBlank(),
-                onClick = { onAdd(text, selectedFont) }
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            AppSecondaryButton(
-                text = stringResource(Res.string.cancel),
-                onClick = onDismiss
-            )
-        }
-    }
-}
-
-private fun mapFontFamily(font: DecorationFont): FontFamily = when (font) {
-    DecorationFont.Sans -> FontFamily.SansSerif
-    DecorationFont.Serif -> FontFamily.Serif
-    DecorationFont.Mono -> FontFamily.Monospace
-    DecorationFont.Cursive -> FontFamily.Cursive
-    DecorationFont.Display -> FontFamily.Serif
-    DecorationFont.Rounded -> FontFamily.SansSerif
-    DecorationFont.Condensed -> FontFamily.SansSerif
-}
-
-private fun mapFontWeight(weight: DecorationFontWeight): FontWeight = when (weight) {
-    DecorationFontWeight.Light -> FontWeight.Light
-    DecorationFontWeight.Regular -> FontWeight.Normal
-    DecorationFontWeight.Medium -> FontWeight.Medium
-    DecorationFontWeight.SemiBold -> FontWeight.SemiBold
-    DecorationFontWeight.Bold -> FontWeight.Bold
 }
 
 // MARK: - Previews

@@ -16,6 +16,12 @@ data class CreatePackState(
     val generateAsGrid: Boolean = true,
     val gridLayout: String = "4x4",
     val normalizeOutput: Boolean = true,
+    /**
+     * Optional reference image for `/api/v1/generate`. In pack editor we default to null
+     * (text-only generation); user can explicitly add a reference. Sticker editor defaults
+     * to the related sticker's image.
+     */
+    val generateInputImage: String? = null,
     val generatedPreview: List<String> = emptyList(),
     val selectedGeneratedPreview: Set<Int> = emptySet(),
     val gridSplitSourcePath: String = "",

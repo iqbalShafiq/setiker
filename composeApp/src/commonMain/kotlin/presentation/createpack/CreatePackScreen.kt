@@ -61,7 +61,9 @@ import presentation.components.PackBottomBarIconButton
 import presentation.components.SelectableStickerGrid
 import presentation.components.ReadOnlyDecorationOverlay
 import presentation.components.ScreenSectionTitle
+import presentation.components.AiGenerateBottomSheet
 import presentation.components.rememberImagePicker
+import presentation.components.rememberStickerImagePicker
 import presentation.theme.AccentCoral
 import presentation.theme.AccentCoralLight
 import presentation.theme.ErrorRed
@@ -138,8 +140,16 @@ fun CreatePackScreen(
         path?.let { onIntent(CreatePackIntent.StageTrayGalleryPick(it)) }
     }
 
-    val stickerPicker = rememberImagePicker { path ->
-        path?.let { onIntent(CreatePackIntent.StageStickerGalleryPick(it)) }
+    // Tombol "Add": menerima static image dan animated GIF dalam satu picker.
+    // GIF diarahkan ke jalur animated (VideoTrim -> VideoCrop -> AnimatedEditor),
+    // sama persis dengan tombol movie di bottom action bar.
+    val stickerPicker = rememberStickerImagePicker { path, isAnimated ->
+        if (path == null) return@rememberStickerImagePicker
+        if (isAnimated) {
+            onNavigateToVideoTrim(path)
+        } else {
+            onIntent(CreatePackIntent.StageStickerGalleryPick(path))
+        }
     }
 
     val videoPicker = presentation.components.rememberVideoPicker { path ->
@@ -153,108 +163,35 @@ fun CreatePackScreen(
         }
     }
 
-    val aiSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val generateInputImagePicker = rememberImagePicker { path ->
+        path?.let { onIntent(CreatePackIntent.UpdateGenerateInputImage(it)) }
+    }
+
     val generatedSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val gridSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val stickerImportSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val trayImportSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     if (state.aiGenerateSheetOpen) {
-        ModalBottomSheet(
-            onDismissRequest = { onIntent(CreatePackIntent.CloseAiGenerateSheet) },
-            sheetState = aiSheetState,
-            containerColor = neubrutalScreenBackground(),
-            scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 8.dp)
-                    .padding(bottom = 24.dp)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                Text(
-                    text = stringResource(Res.string.generate_ai_sheet_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = neubrutalOnSurface()
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                AppTextField(
-                    value = state.generatePrompt,
-                    onValueChange = { onIntent(CreatePackIntent.UpdateGeneratePrompt(it)) },
-                    label = stringResource(Res.string.prompt_label),
-                    placeholder = stringResource(Res.string.prompt_placeholder)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = stringResource(Res.string.generate_tip),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = neubrutalMutedOnSurface()
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(
-                        selected = state.generateAsGrid,
-                        onClick = { onIntent(CreatePackIntent.ToggleGenerateAsGrid(true)) },
-                        label = { Text(stringResource(Res.string.grid_on)) }
-                    )
-                    FilterChip(
-                        selected = !state.generateAsGrid,
-                        onClick = { onIntent(CreatePackIntent.ToggleGenerateAsGrid(false)) },
-                        label = { Text(stringResource(Res.string.grid_off)) }
-                    )
-                }
-                if (state.generateAsGrid) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("2x2", "3x3", "4x4").forEach { layout ->
-                            FilterChip(
-                                selected = state.gridLayout == layout,
-                                onClick = { onIntent(CreatePackIntent.UpdateGridLayout(layout)) },
-                                label = { Text(layout) }
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    FilterChip(
-                        selected = state.normalizeOutput,
-                        onClick = { onIntent(CreatePackIntent.ToggleNormalize(!state.normalizeOutput)) },
-                        label = {
-                            Text(
-                                stringResource(
-                                    if (state.normalizeOutput) Res.string.normalize_on else Res.string.normalize_off
-                                )
-                            )
-                        }
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = stringResource(Res.string.generate_grid_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = neubrutalMutedOnSurface()
-                    )
-                } else {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = stringResource(Res.string.generate_single_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = neubrutalMutedOnSurface()
-                    )
-                }
-                Spacer(modifier = Modifier.height(20.dp))
-                AppPrimaryButton(
-                    text = stringResource(if (state.isApiLoading) Res.string.generating else Res.string.generate),
-                    enabled = !state.isApiLoading,
-                    onClick = { onIntent(CreatePackIntent.GenerateStickers) }
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                AppSecondaryButton(
-                    text = stringResource(Res.string.close),
-                    onClick = { onIntent(CreatePackIntent.CloseAiGenerateSheet) }
-                )
-            }
-        }
+        AiGenerateBottomSheet(
+            prompt = state.generatePrompt,
+            onPromptChange = { onIntent(CreatePackIntent.UpdateGeneratePrompt(it)) },
+            generateAsGrid = state.generateAsGrid,
+            onToggleGrid = { onIntent(CreatePackIntent.ToggleGenerateAsGrid(it)) },
+            gridLayout = state.gridLayout,
+            onGridLayoutChange = { onIntent(CreatePackIntent.UpdateGridLayout(it)) },
+            normalizeOutput = state.normalizeOutput,
+            onToggleNormalize = { onIntent(CreatePackIntent.ToggleNormalize(it)) },
+            inputImagePath = state.generateInputImage,
+            onPickInputImage = { generateInputImagePicker.launch() },
+            onClearInputImage = { onIntent(CreatePackIntent.UpdateGenerateInputImage(null)) },
+            // Pack editor has no inherent "current image" context — the reference image is purely
+            // optional. We pass `false` so the sheet copy reads as a generic uploader.
+            hasContextualDefault = false,
+            isGenerating = state.isApiLoading,
+            onGenerate = { onIntent(CreatePackIntent.GenerateStickers) },
+            onDismiss = { onIntent(CreatePackIntent.CloseAiGenerateSheet) }
+        )
     }
 
     if (state.generatedPreview.isNotEmpty()) {

@@ -17,7 +17,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FontDownload
+import androidx.compose.material.icons.filled.FormatBold
+import androidx.compose.material.icons.filled.FormatColorText
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
@@ -26,7 +31,6 @@ import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
@@ -45,25 +49,31 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import domain.model.DecorationFont
+import domain.model.EmojiDecoration
+import domain.model.ImageDecoration
 import domain.model.Sticker
+import domain.model.TextDecoration
 import org.jetbrains.compose.resources.stringResource
-import presentation.components.AppPrimaryButton
-import presentation.components.AppSecondaryButton
+import presentation.components.AddTextDecorationBottomSheet
 import presentation.components.AppTextField
 import presentation.components.AppTopBar
+import presentation.components.ColorPickerBottomSheet
 import presentation.components.DecorationActionChip
 import presentation.components.DecorationPreviewLayer
+import presentation.components.EditTextDecorationBottomSheet
 import presentation.components.EmojiPickerBottomSheet
+import presentation.components.FontPickerBottomSheet
+import presentation.components.FontWeightPickerBottomSheet
 import presentation.components.LoadingIndicator
 import presentation.components.MediaPreviewBottomBar
 import presentation.components.NeubrutalAddTagPill
 import presentation.components.NeubrutalStickerPreviewFrame
+import presentation.components.PackBottomBar
+import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
 import presentation.components.ProgressDialog
 import presentation.components.ScreenSectionTitle
 import presentation.components.StickerEmojiTagChip
-import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
@@ -78,8 +88,15 @@ import setiker.composeapp.generated.resources.add_emoji
 import setiker.composeapp.generated.resources.add_image
 import setiker.composeapp.generated.resources.add_text
 import setiker.composeapp.generated.resources.apply_all_frames
+import setiker.composeapp.generated.resources.back
 import setiker.composeapp.generated.resources.cancel
+import setiker.composeapp.generated.resources.change_color
+import setiker.composeapp.generated.resources.change_emoji
+import setiker.composeapp.generated.resources.change_font
+import setiker.composeapp.generated.resources.change_font_weight
+import setiker.composeapp.generated.resources.change_image
 import setiker.composeapp.generated.resources.edit_animated_sticker_title
+import setiker.composeapp.generated.resources.edit_text_decoration
 import setiker.composeapp.generated.resources.encoding_progress_title
 import setiker.composeapp.generated.resources.encoding_webp
 import setiker.composeapp.generated.resources.frame_index
@@ -89,7 +106,6 @@ import setiker.composeapp.generated.resources.next_frame
 import setiker.composeapp.generated.resources.previous_frame
 import setiker.composeapp.generated.resources.save_sticker
 import setiker.composeapp.generated.resources.tags_with_count
-import setiker.composeapp.generated.resources.text_decoration_placeholder
 import setiker.composeapp.generated.resources.this_frame_only
 import util.decodeImageBitmap
 
@@ -108,8 +124,23 @@ fun AnimatedEditorScreen(
         }
     }
 
+    // Mirror EditorScreen: the bottom bar swaps between playback (media) controls and
+    // decoration-specific controls based on the currently selected decoration. Selection is
+    // looked up against the visible decorations so per-frame and shared decorations work.
+    val selectedDecoration = state.visibleDecorations.firstOrNull { it.id == state.selectedDecorationId }
+    var isEditTextSheetOpen by remember { mutableStateOf(false) }
+    var isFontSheetOpen by remember { mutableStateOf(false) }
+    var isFontWeightSheetOpen by remember { mutableStateOf(false) }
+    var isColorSheetOpen by remember { mutableStateOf(false) }
+
     val decorationImagePicker = rememberImagePicker { path ->
         path?.let { onIntent(AnimatedEditorIntent.AddImageDecoration(it)) }
+    }
+    val replaceDecorationImagePicker = rememberImagePicker { path ->
+        val selected = selectedDecoration
+        if (path != null && selected is ImageDecoration) {
+            onIntent(AnimatedEditorIntent.UpdateImageDecorationPath(selected.id, path))
+        }
     }
 
     val isReadyToSave = state.frames.isNotEmpty() && !state.isSaving
@@ -125,34 +156,102 @@ fun AnimatedEditorScreen(
         },
         bottomBar = {
             if (!state.isLoading) {
-                MediaPreviewBottomBar(
-                    primaryIcon = Icons.Filled.Check,
-                    primaryDescription = stringResource(Res.string.save_sticker),
-                    onPrimary = { onIntent(AnimatedEditorIntent.Save) },
-                    primaryEnabled = isReadyToSave,
-                    onCancel = onBackClick,
-                    cancelEnabled = !state.isSaving,
-                    isPlaying = state.isPlaying,
-                    playEnabled = state.frames.size > 1 && !state.isSaving,
-                    onTogglePlay = {
-                        if (state.isPlaying) onIntent(AnimatedEditorIntent.PausePreview)
-                        else onIntent(AnimatedEditorIntent.PlayPreview)
-                    },
-                    extraActions = {
-                        PackBottomBarIconButton(
-                            icon = Icons.Filled.SkipPrevious,
-                            contentDescription = stringResource(Res.string.previous_frame),
-                            onClick = { onIntent(AnimatedEditorIntent.ScrubToFrame(state.currentFrameIndex - 1)) },
-                            enabled = state.currentFrameIndex > 0 && !state.isPlaying && !state.isSaving
-                        )
-                        PackBottomBarIconButton(
-                            icon = Icons.Filled.SkipNext,
-                            contentDescription = stringResource(Res.string.next_frame),
-                            onClick = { onIntent(AnimatedEditorIntent.ScrubToFrame(state.currentFrameIndex + 1)) },
-                            enabled = state.currentFrameIndex < state.frames.size - 1 && !state.isPlaying && !state.isSaving
-                        )
-                    }
-                )
+                if (selectedDecoration == null) {
+                    // Default mode: playback controls + frame scrubber + Save.
+                    MediaPreviewBottomBar(
+                        primaryIcon = Icons.Filled.Check,
+                        primaryDescription = stringResource(Res.string.save_sticker),
+                        onPrimary = { onIntent(AnimatedEditorIntent.Save) },
+                        primaryEnabled = isReadyToSave,
+                        onCancel = onBackClick,
+                        cancelEnabled = !state.isSaving,
+                        isPlaying = state.isPlaying,
+                        playEnabled = state.frames.size > 1 && !state.isSaving,
+                        onTogglePlay = {
+                            if (state.isPlaying) onIntent(AnimatedEditorIntent.PausePreview)
+                            else onIntent(AnimatedEditorIntent.PlayPreview)
+                        },
+                        extraActions = {
+                            PackBottomBarIconButton(
+                                icon = Icons.Filled.SkipPrevious,
+                                contentDescription = stringResource(Res.string.previous_frame),
+                                onClick = { onIntent(AnimatedEditorIntent.ScrubToFrame(state.currentFrameIndex - 1)) },
+                                enabled = state.currentFrameIndex > 0 && !state.isPlaying && !state.isSaving
+                            )
+                            PackBottomBarIconButton(
+                                icon = Icons.Filled.SkipNext,
+                                contentDescription = stringResource(Res.string.next_frame),
+                                onClick = { onIntent(AnimatedEditorIntent.ScrubToFrame(state.currentFrameIndex + 1)) },
+                                enabled = state.currentFrameIndex < state.frames.size - 1 && !state.isPlaying && !state.isSaving
+                            )
+                        }
+                    )
+                } else {
+                    // Decoration-focused mode: hide playback controls and surface the same
+                    // decoration-specific buttons used by the static editor for parity.
+                    // "Back" deselects the decoration so the user can return to the playback bar.
+                    PackBottomBar(
+                        actions = {
+                            PackBottomBarIconButton(
+                                icon = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(Res.string.back),
+                                onClick = { onIntent(AnimatedEditorIntent.SelectDecoration(null)) }
+                            )
+                            when (selectedDecoration) {
+                                is TextDecoration -> {
+                                    PackBottomBarIconButton(
+                                        icon = Icons.Filled.Edit,
+                                        contentDescription = stringResource(Res.string.edit_text_decoration),
+                                        onClick = { isEditTextSheetOpen = true }
+                                    )
+                                    PackBottomBarIconButton(
+                                        icon = Icons.Filled.FontDownload,
+                                        contentDescription = stringResource(Res.string.change_font),
+                                        onClick = { isFontSheetOpen = true }
+                                    )
+                                    PackBottomBarIconButton(
+                                        icon = Icons.Filled.FormatBold,
+                                        contentDescription = stringResource(Res.string.change_font_weight),
+                                        onClick = { isFontWeightSheetOpen = true }
+                                    )
+                                    PackBottomBarIconButton(
+                                        icon = Icons.Filled.FormatColorText,
+                                        contentDescription = stringResource(Res.string.change_color),
+                                        onClick = { isColorSheetOpen = true }
+                                    )
+                                }
+                                is EmojiDecoration -> {
+                                    PackBottomBarIconButton(
+                                        icon = Icons.Filled.TagFaces,
+                                        contentDescription = stringResource(Res.string.change_emoji),
+                                        onClick = {
+                                            onIntent(
+                                                AnimatedEditorIntent.ShowDecorationEmojiPicker(
+                                                    selectedDecoration.id
+                                                )
+                                            )
+                                        }
+                                    )
+                                }
+                                is ImageDecoration -> {
+                                    PackBottomBarIconButton(
+                                        icon = Icons.Filled.Image,
+                                        contentDescription = stringResource(Res.string.change_image),
+                                        onClick = { replaceDecorationImagePicker.launch() }
+                                    )
+                                }
+                            }
+                        },
+                        floatingActionButton = {
+                            PackBottomBarFab(
+                                icon = Icons.Filled.Check,
+                                contentDescription = stringResource(Res.string.save_sticker),
+                                onClick = { onIntent(AnimatedEditorIntent.Save) },
+                                enabled = isReadyToSave
+                            )
+                        }
+                    )
+                }
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -359,9 +458,51 @@ fun AnimatedEditorScreen(
         )
     }
     if (state.showTextDecorationSheet) {
-        AnimatedEditorTextSheet(
-            onConfirm = { text -> onIntent(AnimatedEditorIntent.AddTextDecoration(text, DecorationFont.Sans)) },
+        AddTextDecorationBottomSheet(
+            onAdd = { text, font ->
+                onIntent(AnimatedEditorIntent.AddTextDecoration(text, font))
+            },
             onDismiss = { onIntent(AnimatedEditorIntent.HideTextDecorationSheet) }
+        )
+    }
+
+    // Decoration-specific sheets — same set as EditorScreen so behaviour matches the static editor.
+    if (isEditTextSheetOpen && selectedDecoration is TextDecoration) {
+        EditTextDecorationBottomSheet(
+            initialText = selectedDecoration.text,
+            onConfirm = { text ->
+                onIntent(AnimatedEditorIntent.UpdateTextDecorationText(selectedDecoration.id, text))
+                isEditTextSheetOpen = false
+            },
+            onDismiss = { isEditTextSheetOpen = false }
+        )
+    }
+    if (isFontSheetOpen && selectedDecoration is TextDecoration) {
+        FontPickerBottomSheet(
+            selectedFont = selectedDecoration.font,
+            onSelect = { font ->
+                onIntent(AnimatedEditorIntent.UpdateTextDecorationFont(selectedDecoration.id, font))
+            },
+            onDismiss = { isFontSheetOpen = false }
+        )
+    }
+    if (isFontWeightSheetOpen && selectedDecoration is TextDecoration) {
+        FontWeightPickerBottomSheet(
+            selectedWeight = selectedDecoration.fontWeight,
+            onSelect = { weight ->
+                onIntent(AnimatedEditorIntent.UpdateTextDecorationFontWeight(selectedDecoration.id, weight))
+            },
+            onDismiss = { isFontWeightSheetOpen = false }
+        )
+    }
+    if (isColorSheetOpen && selectedDecoration is TextDecoration) {
+        ColorPickerBottomSheet(
+            selectedColorArgb = selectedDecoration.textColorArgb,
+            onSelect = { color ->
+                onIntent(AnimatedEditorIntent.UpdateTextDecorationColor(selectedDecoration.id, color))
+                isColorSheetOpen = false
+            },
+            onDismiss = { isColorSheetOpen = false }
         )
     }
 
@@ -376,48 +517,6 @@ fun AnimatedEditorScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun AnimatedEditorTextSheet(
-    onConfirm: (String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        containerColor = neubrutalCardSurface(),
-        scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f)
-    ) {
-        var input by remember { mutableStateOf("") }
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp)
-        ) {
-            Text(
-                text = stringResource(Res.string.add_text),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = neubrutalOnSurface()
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            AppTextField(
-                value = input,
-                onValueChange = { input = it },
-                label = stringResource(Res.string.add_text),
-                placeholder = stringResource(Res.string.text_decoration_placeholder)
-            )
-            Spacer(modifier = Modifier.height(20.dp))
-            AppPrimaryButton(
-                text = stringResource(Res.string.add_decoration),
-                enabled = input.isNotBlank(),
-                onClick = { onConfirm(input) }
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            AppSecondaryButton(
-                text = stringResource(Res.string.cancel),
-                onClick = onDismiss
-            )
-            Spacer(modifier = Modifier.height(20.dp))
-        }
-    }
-}
+// AnimatedEditorTextSheet has been replaced by the shared `AddTextDecorationBottomSheet`
+// component so both static and animated editors use the same UI (including font picker)
+// when adding a text decoration.

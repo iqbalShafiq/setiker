@@ -37,9 +37,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -133,8 +130,8 @@ fun CropScreen(
                             imagePath = state.imagePath,
                             rotation = state.rotation,
                             scale = state.scale,
-                            offsetX = state.offsetX,
-                            offsetY = state.offsetY,
+                            offsetXNorm = state.offsetX,
+                            offsetYNorm = state.offsetY,
                             isFlippedHorizontal = state.isFlippedHorizontal,
                             isFlippedVertical = state.isFlippedVertical,
                             onTransform = { scale, offsetX, offsetY ->
@@ -164,7 +161,7 @@ fun CropScreen(
                 Slider(
                     value = state.scale,
                     onValueChange = { onIntent(CropIntent.UpdateScale(it)) },
-                    valueRange = 0.5f..3f,
+                    valueRange = 0.5f..4f,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -275,8 +272,8 @@ private fun CropImagePreview(
     imagePath: String,
     rotation: Float,
     scale: Float,
-    offsetX: Float,
-    offsetY: Float,
+    offsetXNorm: Float,
+    offsetYNorm: Float,
     isFlippedHorizontal: Boolean,
     isFlippedVertical: Boolean,
     onTransform: (Float, Float, Float) -> Unit,
@@ -284,19 +281,22 @@ private fun CropImagePreview(
 ) {
     // Use rememberUpdatedState to always have latest values in gesture handler
     val currentScale by rememberUpdatedState(scale)
-    val currentOffsetX by rememberUpdatedState(offsetX)
-    val currentOffsetY by rememberUpdatedState(offsetY)
+    val currentOffsetX by rememberUpdatedState(offsetXNorm)
+    val currentOffsetY by rememberUpdatedState(offsetYNorm)
     val currentOnTransform by rememberUpdatedState(onTransform)
 
     Box(
         modifier = modifier
             .fillMaxSize()
+            .clip(RoundedCornerShape(16.dp))
             .pointerInput(Unit) {
                 detectTransformGestures { _, pan, zoom, _ ->
+                    val boxW = size.width.toFloat().coerceAtLeast(1f)
+                    val boxH = size.height.toFloat().coerceAtLeast(1f)
                     currentOnTransform(
                         currentScale * zoom,
-                        currentOffsetX + pan.x,
-                        currentOffsetY + pan.y
+                        currentOffsetX + pan.x / boxW,
+                        currentOffsetY + pan.y / boxH
                     )
                 }
             }
@@ -310,71 +310,35 @@ private fun CropImagePreview(
                     this.rotationZ = rotation
                     this.scaleX = scale * if (isFlippedHorizontal) -1f else 1f
                     this.scaleY = scale * if (isFlippedVertical) -1f else 1f
-                    this.translationX = offsetX
-                    this.translationY = offsetY
+                    this.translationX = offsetXNorm * size.width
+                    this.translationY = offsetYNorm * size.height
                 },
             contentScale = ContentScale.Fit
         )
 
-        // Crop overlay - using 4 rectangles instead of BlendMode.Clear
+        // Rule-of-thirds grid over the exact square that will be exported.
+        // Earlier this screen drew an 80% inner crop box, but the Android crop
+        // processor exported the full square. That visual-only box made the
+        // preview feel different from the result. Now the visible square frame
+        // itself is the crop area, matching VideoCropScreen.
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .drawWithContent {
-                    val cropSize = size.minDimension * 0.8f
-                    val cropLeft = (size.width - cropSize) / 2
-                    val cropTop = (size.height - cropSize) / 2
-                    val cropRight = cropLeft + cropSize
-                    val cropBottom = cropTop + cropSize
-
-                    // Top overlay
-                    drawRect(
-                        color = Color.Black.copy(alpha = 0.45f),
-                        topLeft = Offset(0f, 0f),
-                        size = Size(size.width, cropTop)
-                    )
-                    // Bottom overlay
-                    drawRect(
-                        color = Color.Black.copy(alpha = 0.45f),
-                        topLeft = Offset(0f, cropBottom),
-                        size = Size(size.width, size.height - cropBottom)
-                    )
-                    // Left overlay
-                    drawRect(
-                        color = Color.Black.copy(alpha = 0.45f),
-                        topLeft = Offset(0f, cropTop),
-                        size = Size(cropLeft, cropSize)
-                    )
-                    // Right overlay
-                    drawRect(
-                        color = Color.Black.copy(alpha = 0.45f),
-                        topLeft = Offset(cropRight, cropTop),
-                        size = Size(size.width - cropRight, cropSize)
-                    )
-
-                    // Draw crop border
-                    drawRect(
-                        color = Color.White,
-                        topLeft = Offset(cropLeft, cropTop),
-                        size = Size(cropSize, cropSize),
-                        style = Stroke(width = 2.dp.toPx())
-                    )
-
-                    // Draw grid lines
-                    val thirdWidth = cropSize / 3
-                    val thirdHeight = cropSize / 3
+                    val thirdWidth = size.width / 3
+                    val thirdHeight = size.height / 3
 
                     repeat(2) { i ->
                         drawLine(
-                            color = Color.White.copy(alpha = 0.5f),
-                            start = Offset(cropLeft + (i + 1) * thirdWidth, cropTop),
-                            end = Offset(cropLeft + (i + 1) * thirdWidth, cropBottom),
+                            color = NeubrutalWhite.copy(alpha = 0.6f),
+                            start = Offset((i + 1) * thirdWidth, 0f),
+                            end = Offset((i + 1) * thirdWidth, size.height),
                             strokeWidth = 1.dp.toPx()
                         )
                         drawLine(
-                            color = Color.White.copy(alpha = 0.5f),
-                            start = Offset(cropLeft, cropTop + (i + 1) * thirdHeight),
-                            end = Offset(cropRight, cropTop + (i + 1) * thirdHeight),
+                            color = NeubrutalWhite.copy(alpha = 0.6f),
+                            start = Offset(0f, (i + 1) * thirdHeight),
+                            end = Offset(size.width, (i + 1) * thirdHeight),
                             strokeWidth = 1.dp.toPx()
                         )
                     }

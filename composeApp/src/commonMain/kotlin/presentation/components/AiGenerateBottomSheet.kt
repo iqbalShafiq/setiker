@@ -1,0 +1,278 @@
+package presentation.components
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
+import org.jetbrains.compose.resources.stringResource
+import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalMutedOnSurface
+import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalScreenBackground
+import presentation.theme.neubrutalSubtleOnSurface
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.cancel
+import setiker.composeapp.generated.resources.close
+import setiker.composeapp.generated.resources.generate
+import setiker.composeapp.generated.resources.generate_ai_sheet_title
+import setiker.composeapp.generated.resources.generate_clear_image
+import setiker.composeapp.generated.resources.generate_grid_hint
+import setiker.composeapp.generated.resources.generate_input_image_content_description
+import setiker.composeapp.generated.resources.generate_input_image_default_hint
+import setiker.composeapp.generated.resources.generate_input_image_hint
+import setiker.composeapp.generated.resources.generate_input_image_label
+import setiker.composeapp.generated.resources.generate_pick_image
+import setiker.composeapp.generated.resources.generate_replace_image
+import setiker.composeapp.generated.resources.generate_single_hint
+import setiker.composeapp.generated.resources.generate_tip
+import setiker.composeapp.generated.resources.generating
+import setiker.composeapp.generated.resources.grid_off
+import setiker.composeapp.generated.resources.grid_on
+import setiker.composeapp.generated.resources.normalize_off
+import setiker.composeapp.generated.resources.normalize_on
+import setiker.composeapp.generated.resources.prompt_label
+import setiker.composeapp.generated.resources.prompt_placeholder
+
+/**
+ * Shared bottom sheet for hitting `/api/v1/generate`. Used by:
+ *   - Pack editor (`CreatePackScreen`): bulk generate stickers, optional reference image.
+ *   - Single sticker editor (`EditorScreen`): generate a replacement for one sticker, default
+ *     reference image is the sticker being edited.
+ *
+ * The same state shape lives in both screens to keep the contract identical:
+ *   - `prompt`, `generateAsGrid`, `gridLayout`, `normalizeOutput` mirror the API multipart fields.
+ *   - `inputImagePath` is the optional `image` multipart field. The callers decide the default.
+ *
+ * @param hasContextualDefault true when the input image already represents something meaningful
+ *   to the user (e.g. the current sticker). When true, the hint text emphasises that the
+ *   default is the related image and a "remove" button is shown; when false, the slot reads as
+ *   a generic optional reference uploader. Pack editor passes `false`, sticker editor passes
+ *   `true`.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AiGenerateBottomSheet(
+    prompt: String,
+    onPromptChange: (String) -> Unit,
+    generateAsGrid: Boolean,
+    onToggleGrid: (Boolean) -> Unit,
+    gridLayout: String,
+    onGridLayoutChange: (String) -> Unit,
+    normalizeOutput: Boolean,
+    onToggleNormalize: (Boolean) -> Unit,
+    inputImagePath: String?,
+    onPickInputImage: () -> Unit,
+    onClearInputImage: () -> Unit,
+    hasContextualDefault: Boolean,
+    isGenerating: Boolean,
+    onGenerate: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = neubrutalScreenBackground(),
+        scrimColor = Color.Black.copy(alpha = 0.45f)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 8.dp)
+                .padding(bottom = 24.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            Text(
+                text = stringResource(Res.string.generate_ai_sheet_title),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = neubrutalOnSurface()
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Optional reference image. Default value (sticker image vs none) is decided by the
+            // caller; this composable just renders whatever is in `inputImagePath`.
+            Text(
+                text = stringResource(Res.string.generate_input_image_label),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = neubrutalOnSurface()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(96.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(neubrutalCardSurface())
+                        .border(2.dp, neubrutalBorderColor(), RoundedCornerShape(16.dp))
+                        .padding(4.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    val path = inputImagePath
+                    if (!path.isNullOrBlank()) {
+                        AsyncImage(
+                            model = path,
+                            contentDescription = stringResource(
+                                Res.string.generate_input_image_content_description
+                            ),
+                            modifier = Modifier.fillMaxWidth().aspectRatio(1f),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        androidx.compose.material3.Icon(
+                            imageVector = Icons.Filled.Image,
+                            contentDescription = null,
+                            tint = neubrutalSubtleOnSurface()
+                        )
+                    }
+                }
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = stringResource(
+                            if (hasContextualDefault) {
+                                Res.string.generate_input_image_hint
+                            } else {
+                                Res.string.generate_input_image_default_hint
+                            }
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = neubrutalMutedOnSurface()
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        AppSecondaryButton(
+                            text = stringResource(
+                                if (!inputImagePath.isNullOrBlank()) {
+                                    Res.string.generate_replace_image
+                                } else {
+                                    Res.string.generate_pick_image
+                                }
+                            ),
+                            onClick = onPickInputImage,
+                            modifier = Modifier
+                        )
+                        if (!inputImagePath.isNullOrBlank()) {
+                            AppSecondaryButton(
+                                text = stringResource(Res.string.generate_clear_image),
+                                onClick = onClearInputImage,
+                                modifier = Modifier
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            AppTextField(
+                value = prompt,
+                onValueChange = onPromptChange,
+                label = stringResource(Res.string.prompt_label),
+                placeholder = stringResource(Res.string.prompt_placeholder)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(Res.string.generate_tip),
+                style = MaterialTheme.typography.bodySmall,
+                color = neubrutalMutedOnSurface()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = generateAsGrid,
+                    onClick = { onToggleGrid(true) },
+                    label = { Text(stringResource(Res.string.grid_on)) }
+                )
+                FilterChip(
+                    selected = !generateAsGrid,
+                    onClick = { onToggleGrid(false) },
+                    label = { Text(stringResource(Res.string.grid_off)) }
+                )
+            }
+            if (generateAsGrid) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("2x2", "3x3", "4x4").forEach { layout ->
+                        FilterChip(
+                            selected = gridLayout == layout,
+                            onClick = { onGridLayoutChange(layout) },
+                            label = { Text(layout) }
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                FilterChip(
+                    selected = normalizeOutput,
+                    onClick = { onToggleNormalize(!normalizeOutput) },
+                    label = {
+                        Text(
+                            stringResource(
+                                if (normalizeOutput) Res.string.normalize_on else Res.string.normalize_off
+                            )
+                        )
+                    }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(Res.string.generate_grid_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = neubrutalMutedOnSurface()
+                )
+            } else {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(Res.string.generate_single_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = neubrutalMutedOnSurface()
+                )
+            }
+            Spacer(modifier = Modifier.height(20.dp))
+            AppPrimaryButton(
+                text = stringResource(if (isGenerating) Res.string.generating else Res.string.generate),
+                enabled = !isGenerating && prompt.isNotBlank(),
+                onClick = onGenerate
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            AppSecondaryButton(
+                text = stringResource(Res.string.close),
+                onClick = onDismiss
+            )
+        }
+    }
+}

@@ -11,6 +11,7 @@ sealed interface CreatePackIntent {
     data class ToggleGenerateAsGrid(val enabled: Boolean) : CreatePackIntent
     data class UpdateGridLayout(val layout: String) : CreatePackIntent
     data class ToggleNormalize(val enabled: Boolean) : CreatePackIntent
+    data class UpdateGenerateInputImage(val path: String?) : CreatePackIntent
     data class UpdateGridSplitSource(val path: String) : CreatePackIntent
     data object GenerateStickers : CreatePackIntent
     data class ToggleGeneratedSelection(val index: Int) : CreatePackIntent

@@ -28,8 +28,10 @@ import presentation.common.UiText
 import presentation.common.toUiText
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_failed_apply_removal
+import setiker.composeapp.generated.resources.error_failed_generate_sticker
 import setiker.composeapp.generated.resources.error_failed_save_sticker
 import setiker.composeapp.generated.resources.error_pack_id_missing
+import setiker.composeapp.generated.resources.error_prompt_required
 import setiker.composeapp.generated.resources.error_select_image
 
 class EditorViewModel(
@@ -154,6 +156,96 @@ class EditorViewModel(
             is EditorIntent.UpdateTextDecorationColor -> updateTextDecorationColor(intent.id, intent.colorArgb)
             is EditorIntent.UpdateEmojiDecorationValue -> updateEmojiDecorationValue(intent.id, intent.emoji)
             is EditorIntent.UpdateImageDecorationPath -> updateImageDecorationPath(intent.id, intent.imagePath)
+            is EditorIntent.OpenAiGenerateSheet -> openAiGenerateSheet()
+            is EditorIntent.CloseAiGenerateSheet -> {
+                _state.update { it.copy(aiGenerateSheetOpen = false) }
+            }
+            is EditorIntent.UpdateGeneratePrompt -> {
+                _state.update { it.copy(generatePrompt = intent.prompt) }
+            }
+            is EditorIntent.ToggleGenerateAsGrid -> {
+                _state.update { it.copy(generateAsGrid = intent.enabled) }
+            }
+            is EditorIntent.UpdateGridLayout -> {
+                _state.update { it.copy(gridLayout = intent.layout) }
+            }
+            is EditorIntent.ToggleNormalize -> {
+                _state.update { it.copy(normalizeOutput = intent.enabled) }
+            }
+            is EditorIntent.UpdateGenerateInputImage -> {
+                _state.update { it.copy(generateInputImage = intent.path) }
+            }
+            is EditorIntent.GenerateSticker -> generateSticker()
+            is EditorIntent.ApplyGeneratedImage -> applyGeneratedImage(intent.path)
+            is EditorIntent.CloseGeneratedSheet -> {
+                _state.update {
+                    it.copy(generatedPreview = emptyList())
+                }
+            }
+        }
+    }
+
+    private fun openAiGenerateSheet() {
+        _state.update {
+            // Default reference image = the sticker we are editing. User can replace from gallery
+            // or clear it directly in the sheet. We re-seed on every open so the UX is
+            // predictable; if the user explicitly cleared it during the same open, they can
+            // clear it again after re-opening — that's an acceptable trade-off for predictability.
+            val defaultReference = it.imagePath.takeIf { path -> path.isNotBlank() }
+            it.copy(
+                aiGenerateSheetOpen = true,
+                generateInputImage = defaultReference
+            )
+        }
+    }
+
+    private fun generateSticker() {
+        viewModelScope.launch {
+            val currentState = _state.value
+            if (currentState.generatePrompt.isBlank()) {
+                _effect.send(EditorEffect.ShowError(UiText.StringRes(Res.string.error_prompt_required)))
+                return@launch
+            }
+
+            _state.update { it.copy(isApiLoading = true) }
+            try {
+                val generated = apiRepository.generate(
+                    prompt = currentState.generatePrompt,
+                    grid = currentState.generateAsGrid,
+                    layout = if (currentState.generateAsGrid) currentState.gridLayout else null,
+                    normalize = if (currentState.generateAsGrid) currentState.normalizeOutput else null,
+                    inputImagePath = currentState.generateInputImage
+                )
+                _state.update {
+                    it.copy(
+                        isApiLoading = false,
+                        aiGenerateSheetOpen = false,
+                        generatedPreview = generated
+                    )
+                }
+            } catch (e: Exception) {
+                _state.update { it.copy(isApiLoading = false) }
+                _effect.send(
+                    EditorEffect.ShowError(
+                        e.toUiText(Res.string.error_failed_generate_sticker)
+                    )
+                )
+            }
+        }
+    }
+
+    private fun applyGeneratedImage(path: String) {
+        if (path.isBlank()) return
+        // Replacing the sticker invalidates the existing decorations because the underlying
+        // image likely has a different composition. Mirror `UpdateImagePath` behaviour to keep
+        // the editor state consistent.
+        _state.update {
+            it.copy(
+                imagePath = path,
+                decorations = emptyList(),
+                selectedDecorationId = null,
+                generatedPreview = emptyList()
+            )
         }
     }
 

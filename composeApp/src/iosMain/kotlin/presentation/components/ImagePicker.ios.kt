@@ -177,3 +177,13 @@ actual fun rememberVideoPicker(onVideoPicked: (String?) -> Unit): VideoPickerLau
         }
     }
 }
+
+@Composable
+actual fun rememberStickerImagePicker(
+    onPicked: (path: String?, isAnimated: Boolean) -> Unit
+): ImagePickerLauncher {
+    // iOS: UIImagePickerController meratakan GIF jadi UIImage single frame, jadi jalur
+    // animated belum tersedia (selaras dengan stub rememberVideoPicker di iOS).
+    // Hasil pick selalu diperlakukan sebagai static image untuk sementara.
+    return rememberImagePicker { path -> onPicked(path, false) }
+}

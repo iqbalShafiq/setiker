@@ -270,20 +270,6 @@ fun DecorationPreviewLayer(
     }
 }
 
-private fun mapFontFamily(font: DecorationFont): FontFamily = when (font) {
-    DecorationFont.Sans -> FontFamily.SansSerif
-    DecorationFont.Serif -> FontFamily.Serif
-    DecorationFont.Mono -> FontFamily.Monospace
-    DecorationFont.Cursive -> FontFamily.Cursive
-    DecorationFont.Display -> FontFamily.Serif
-    DecorationFont.Rounded -> FontFamily.SansSerif
-    DecorationFont.Condensed -> FontFamily.SansSerif
-}
-
-private fun mapFontWeight(weight: DecorationFontWeight): FontWeight = when (weight) {
-    DecorationFontWeight.Light -> FontWeight.Light
-    DecorationFontWeight.Regular -> FontWeight.Normal
-    DecorationFontWeight.Medium -> FontWeight.Medium
-    DecorationFontWeight.SemiBold -> FontWeight.SemiBold
-    DecorationFontWeight.Bold -> FontWeight.Bold
-}
+// `mapFontFamily` and `mapFontWeight` now live in `DecorationBottomSheets.kt` as
+// `internal` helpers so both static and animated editors share identical decoration
+// rendering and picker chips without duplicating the mapping logic.

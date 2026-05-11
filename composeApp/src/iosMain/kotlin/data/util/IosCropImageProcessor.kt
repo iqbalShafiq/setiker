@@ -35,21 +35,26 @@ actual suspend fun applyCropTransformation(
     val context = platform.CoreGraphics.UIGraphicsGetCurrentContext()
         ?: throw IllegalStateException("Cannot get graphics context")
 
-    // Apply transformations
+    val sourceSize = sourceImage.size
+    val maxDim = maxOf(sourceSize.width, sourceSize.height).coerceAtLeast(1.0)
+    val fitScale = outputSize.toDouble() / maxDim
+    val finalScale = scale.coerceIn(0.5f, 4f).toDouble() * fitScale
+
+    // Mirror CropScreen: aspect-fit into the square output, then apply user
+    // transform and normalized offsets.
     val transform = CGAffineTransformMakeTranslation(
-        (outputSize / 2f + offsetX).toDouble(),
-        (outputSize / 2f + offsetY).toDouble()
+        outputSize / 2.0 + offsetX.coerceIn(-1f, 1f).toDouble() * outputSize,
+        outputSize / 2.0 + offsetY.coerceIn(-1f, 1f).toDouble() * outputSize
     )
     context.concatenateWithTransform(transform)
 
     context.rotateByAngle(rotation.toDouble() * kotlin.math.PI / 180.0)
 
-    val scaleX = if (flipHorizontal) -scale.toDouble() else scale.toDouble()
-    val scaleY = if (flipVertical) -scale.toDouble() else scale.toDouble()
+    val scaleX = if (flipHorizontal) -finalScale else finalScale
+    val scaleY = if (flipVertical) -finalScale else finalScale
     context.scaleBy(x = scaleX, y = scaleY)
 
     // Draw centered
-    val sourceSize = sourceImage.size
     sourceImage.drawInRect(
         CGRectMake(
             -sourceSize.width / 2.0,

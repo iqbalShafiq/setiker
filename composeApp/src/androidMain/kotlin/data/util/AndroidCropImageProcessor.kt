@@ -37,20 +37,26 @@ actual suspend fun applyCropTransformation(
     val canvas = Canvas(outputBitmap)
     val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
 
-    // Build transformation matrix
-    val matrix = Matrix()
-
-    // Move to center
-    matrix.postTranslate(-sourceBitmap.width / 2f, -sourceBitmap.height / 2f)
-
-    // Apply transformations
-    matrix.postScale(scale, scale)
-    if (flipHorizontal) matrix.postScale(-1f, 1f)
-    if (flipVertical) matrix.postScale(1f, -1f)
-    matrix.postRotate(rotation)
-
-    // Move to output center + offset
-    matrix.postTranslate(outputSize / 2f + offsetX, outputSize / 2f + offsetY)
+    // Mirror CropScreen:
+    // - Image is drawn with ContentScale.Fit inside a square preview.
+    // - User scale multiplies that aspect-fit scale.
+    // - Offsets are normalized to the square preview/output box.
+    // This keeps "what you see" and the saved 512x512 image aligned across
+    // sticker import, tray icon crop, and editor crop flows.
+    val maxDim = maxOf(sourceBitmap.width, sourceBitmap.height).toFloat().coerceAtLeast(1f)
+    val fitScale = outputSize.toFloat() / maxDim
+    val finalScale = scale.coerceIn(0.5f, 4f) * fitScale
+    val matrix = Matrix().apply {
+        postTranslate(-sourceBitmap.width / 2f, -sourceBitmap.height / 2f)
+        postScale(finalScale, finalScale)
+        if (flipHorizontal) postScale(-1f, 1f)
+        if (flipVertical) postScale(1f, -1f)
+        postRotate(rotation)
+        postTranslate(
+            outputSize / 2f + offsetX.coerceIn(-1f, 1f) * outputSize,
+            outputSize / 2f + offsetY.coerceIn(-1f, 1f) * outputSize
+        )
+    }
 
     // Draw
     canvas.drawBitmap(sourceBitmap, matrix, paint)

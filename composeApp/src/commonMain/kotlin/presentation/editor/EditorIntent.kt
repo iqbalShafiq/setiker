@@ -39,4 +39,15 @@ sealed interface EditorIntent {
     data class UpdateTextDecorationColor(val id: String, val colorArgb: Long) : EditorIntent
     data class UpdateEmojiDecorationValue(val id: String, val emoji: String) : EditorIntent
     data class UpdateImageDecorationPath(val id: String, val imagePath: String) : EditorIntent
+    // AI generate flow — mirrors `CreatePackIntent` for shared bottom sheet wiring.
+    data object OpenAiGenerateSheet : EditorIntent
+    data object CloseAiGenerateSheet : EditorIntent
+    data class UpdateGeneratePrompt(val prompt: String) : EditorIntent
+    data class ToggleGenerateAsGrid(val enabled: Boolean) : EditorIntent
+    data class UpdateGridLayout(val layout: String) : EditorIntent
+    data class ToggleNormalize(val enabled: Boolean) : EditorIntent
+    data class UpdateGenerateInputImage(val path: String?) : EditorIntent
+    data object GenerateSticker : EditorIntent
+    data class ApplyGeneratedImage(val path: String) : EditorIntent
+    data object CloseGeneratedSheet : EditorIntent
 }

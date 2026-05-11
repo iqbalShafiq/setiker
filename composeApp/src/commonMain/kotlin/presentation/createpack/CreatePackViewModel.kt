@@ -83,6 +83,9 @@ class CreatePackViewModel(
             is CreatePackIntent.ToggleNormalize -> {
                 _state.update { it.copy(normalizeOutput = intent.enabled) }
             }
+            is CreatePackIntent.UpdateGenerateInputImage -> {
+                _state.update { it.copy(generateInputImage = intent.path) }
+            }
             is CreatePackIntent.UpdateGridSplitSource -> {
                 _state.update { it.copy(gridSplitSourcePath = intent.path) }
             }
@@ -165,6 +168,10 @@ class CreatePackViewModel(
 
     private fun loadPack(packId: String) {
         viewModelScope.launch {
+            val current = _state.value
+            if (current.isEditing && current.packId == packId) {
+                return@launch
+            }
             _state.update { it.copy(isLoading = true) }
             try {
                 val pack = repository.getPack(packId)
@@ -243,8 +250,12 @@ class CreatePackViewModel(
                     sanitizePackIdentifier(currentState.name, Random.nextInt(1000, 9999))
                 }
                 
-                // Save tray image to stickers directory (96x96, PNG, <50KB)
-                val trayFileName = "tray_${identifier}.png"
+                // Use a unique filename on every save so AsyncImage/Coil and the
+                // WhatsApp content provider see a new URI when the tray icon is
+                // changed. Reusing tray_<identifier>.png overwrote bytes at the
+                // same path, which made the UI look like the update failed due to
+                // image caching.
+                val trayFileName = "tray_${identifier}_${System.currentTimeMillis()}.png"
                 val trayPath = fileStorage.saveTrayImage(currentState.trayImagePath, trayFileName)
                 
                 // Pack is animated whenever it contains at least one animated sticker. WhatsApp
@@ -342,7 +353,8 @@ class CreatePackViewModel(
                     prompt = currentState.generatePrompt,
                     grid = currentState.generateAsGrid,
                     layout = if (currentState.generateAsGrid) currentState.gridLayout else null,
-                    normalize = if (currentState.generateAsGrid) currentState.normalizeOutput else null
+                    normalize = if (currentState.generateAsGrid) currentState.normalizeOutput else null,
+                    inputImagePath = currentState.generateInputImage
                 )
                 _state.update {
                     it.copy(

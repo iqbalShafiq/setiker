@@ -47,3 +47,18 @@ expect fun rememberMultipleImagePicker(onImagesPicked: (List<String>) -> Unit): 
  */
 @Composable
 expect fun rememberVideoPicker(onVideoPicked: (String?) -> Unit): VideoPickerLauncher
+
+/**
+ * Remember a picker untuk tombol "Add" di sticker pack editor. Menerima static image
+ * maupun animated GIF dalam satu picker. Static image diarahkan ke jalur crop biasa,
+ * sementara GIF diarahkan ke jalur animated (VideoTrim -> VideoCrop -> AnimatedEditor),
+ * konsisten dengan tombol movie di bottom action bar.
+ *
+ * @param onPicked Callback dengan path file lokal dan flag `isAnimated`.
+ *                 `isAnimated == true` saat hasil pilihan berupa GIF.
+ *                 `path == null` saat user batal atau gagal copy.
+ */
+@Composable
+expect fun rememberStickerImagePicker(
+    onPicked: (path: String?, isAnimated: Boolean) -> Unit
+): ImagePickerLauncher

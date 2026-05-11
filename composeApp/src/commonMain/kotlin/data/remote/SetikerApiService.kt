@@ -92,7 +92,8 @@ class SetikerApiService(
         prompt: String,
         grid: Boolean = true,
         gridLayout: String? = "4x4",
-        normalize: Boolean? = true
+        normalize: Boolean? = true,
+        inputImagePath: String? = null
     ): List<ApiImage> {
         val response = client.post("/api/v1/generate") {
             setBody(
@@ -103,6 +104,20 @@ class SetikerApiService(
                         if (grid) {
                             gridLayout?.let { append("layout", it) }
                             normalize?.let { append("normalize", it.toString()) }
+                        }
+                        if (!inputImagePath.isNullOrBlank()) {
+                            val bytes = readFileBytes(inputImagePath)
+                            append(
+                                key = "image",
+                                value = bytes,
+                                headers = io.ktor.http.Headers.build {
+                                    append(HttpHeaders.ContentType, ContentType.Image.Any.toString())
+                                    append(
+                                        HttpHeaders.ContentDisposition,
+                                        "filename=\"input.png\""
+                                    )
+                                }
+                            )
                         }
                     }
                 )

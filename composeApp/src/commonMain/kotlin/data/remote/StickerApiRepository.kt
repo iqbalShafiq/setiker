@@ -20,13 +20,15 @@ class StickerApiRepository(
         prompt: String,
         grid: Boolean,
         layout: String?,
-        normalize: Boolean?
+        normalize: Boolean?,
+        inputImagePath: String? = null
     ): List<String> {
         val images = api.generate(
             prompt = prompt,
             grid = grid,
             gridLayout = layout,
-            normalize = normalize
+            normalize = normalize,
+            inputImagePath = inputImagePath
         )
         return downloadAndPersistAll(images, operationTag = "generate")
     }

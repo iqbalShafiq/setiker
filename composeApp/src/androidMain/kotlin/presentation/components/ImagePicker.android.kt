@@ -101,6 +101,54 @@ private class OpenVideoOrGifDocument : ActivityResultContract<Unit, Uri?>() {
 }
 
 @Composable
+actual fun rememberStickerImagePicker(
+    onPicked: (path: String?, isAnimated: Boolean) -> Unit
+): ImagePickerLauncher {
+    val context = LocalContext.current
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri == null) {
+            onPicked(null, false)
+            return@rememberLauncherForActivityResult
+        }
+        val mime = context.contentResolver.getType(uri)
+        val isGif = mime?.equals("image/gif", ignoreCase = true) == true
+        val ext = if (isGif) "gif" else "jpg"
+        val path = copyImageUriToInternalStorageWithExt(context, uri, ext)
+        onPicked(path, isGif && path != null)
+    }
+
+    return remember {
+        object : ImagePickerLauncher {
+            override fun launch() {
+                launcher.launch("image/*")
+            }
+        }
+    }
+}
+
+private fun copyImageUriToInternalStorageWithExt(
+    context: Context,
+    uri: Uri,
+    ext: String
+): String? {
+    return try {
+        val fileName = "picked_${System.currentTimeMillis()}.$ext"
+        val file = File(context.filesDir, fileName)
+        context.contentResolver.openInputStream(uri)?.use { input ->
+            FileOutputStream(file).use { output ->
+                input.copyTo(output)
+            }
+        }
+        file.absolutePath
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
+
+@Composable
 actual fun rememberVideoPicker(onVideoPicked: (String?) -> Unit): VideoPickerLauncher {
     val context = LocalContext.current
     val launcher = rememberLauncherForActivityResult(

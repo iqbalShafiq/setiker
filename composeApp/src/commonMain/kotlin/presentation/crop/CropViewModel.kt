@@ -41,10 +41,15 @@ class CropViewModel : ViewModel() {
                 _state.update { it.copy(isFlippedVertical = !it.isFlippedVertical) }
             }
             is CropIntent.UpdateScale -> {
-                _state.update { it.copy(scale = intent.scale.coerceIn(0.5f, 3f)) }
+                _state.update { it.copy(scale = intent.scale.coerceIn(0.5f, 4f)) }
             }
             is CropIntent.UpdateOffset -> {
-                _state.update { it.copy(offsetX = intent.x, offsetY = intent.y) }
+                _state.update {
+                    it.copy(
+                        offsetX = intent.x.coerceIn(-1f, 1f),
+                        offsetY = intent.y.coerceIn(-1f, 1f)
+                    )
+                }
             }
             is CropIntent.ApplyCrop -> applyCrop()
             is CropIntent.Reset -> {

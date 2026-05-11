@@ -17,6 +17,16 @@
     <string name="normalize_off">Normalize: Off</string>
     <string name="generate_grid_hint">Grid mode is ideal for generating multiple stickers at once.</string>
     <string name="generate_single_hint">Grid Off focuses on one primary composition.</string>
+    <string name="generate_input_image_label">Reference image (optional)</string>
+    <string name="generate_input_image_hint">The AI uses this image as a reference. Default is the current sticker; pick another from your gallery to override.</string>
+    <string name="generate_input_image_default_hint">Add a reference image (optional). The AI will use it together with your prompt.</string>
+    <string name="generate_input_image_content_description">Reference image for generation</string>
+    <string name="generate_pick_image">Pick image</string>
+    <string name="generate_replace_image">Replace image</string>
+    <string name="generate_clear_image">Remove reference</string>
+    <string name="generate_replace_sticker_title">Replace sticker</string>
+    <string name="generate_replace_sticker_subtitle">Tap one of the generated results to replace your sticker image.</string>
+    <string name="generate_pick_result">Use this image</string>
     <string name="generating">Generating...</string>
     <string name="generate">Generate</string>
     <string name="close">Close</string>
