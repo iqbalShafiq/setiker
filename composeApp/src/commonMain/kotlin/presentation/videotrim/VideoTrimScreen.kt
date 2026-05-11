@@ -1,5 +1,6 @@
 package presentation.videotrim
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,13 +24,18 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import data.remote.readFileBytes
 import org.jetbrains.compose.resources.stringResource
 import presentation.components.AppTopBar
 import presentation.components.LoadingIndicator
@@ -49,9 +55,9 @@ import setiker.composeapp.generated.resources.loading_frames
 import setiker.composeapp.generated.resources.source_video
 import setiker.composeapp.generated.resources.speed
 import setiker.composeapp.generated.resources.trim
-import setiker.composeapp.generated.resources.trim_duration_overlay
 import setiker.composeapp.generated.resources.trim_video_title
 import setiker.composeapp.generated.resources.video_preview
+import util.decodeImageBitmap
 
 @Composable
 fun VideoTrimScreen(
@@ -106,23 +112,31 @@ fun VideoTrimScreen(
                 ScreenSectionTitle(text = stringResource(Res.string.source_video))
                 Spacer(modifier = Modifier.height(10.dp))
 
+                // Pre-decode each thumbnail to an in-memory ImageBitmap. This is the
+                // same trick AnimatedEditorScreen uses for its smooth playback — once
+                // a frame is in this map, swapping it during playback is instant and
+                // never reloads from disk, which is what caused the previous flicker.
+                val thumbnailBitmaps = rememberThumbnailBitmaps(state.thumbnails)
+                val previewBitmap = state.currentPreviewPath?.let { thumbnailBitmaps[it] }
+
                 NeubrutalStickerPreviewFrame(
                     cornerRadius = 16.dp,
                     shadowOffsetX = 3.dp,
                     shadowOffsetY = 3.dp
                 ) {
-                    val previewPath = state.currentPreviewPath
                     when {
-                        previewPath != null -> {
-                            AsyncImage(
-                                model = previewPath,
+                        previewBitmap != null -> {
+                            Image(
+                                bitmap = previewBitmap,
                                 contentDescription = stringResource(Res.string.video_preview),
-                                modifier = Modifier.fillMaxSize(),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(RoundedCornerShape(12.dp)),
                                 contentScale = ContentScale.Crop
                             )
                         }
-                        state.thumbnails.isEmpty() -> {
-                            // Thumbnails are still being extracted from the source video.
+                        else -> {
+                            // Thumbnails are still being extracted or decoded.
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 LoadingIndicator(modifier = Modifier.height(48.dp))
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -142,12 +156,12 @@ fun VideoTrimScreen(
                             .background(NeubrutalBlack.copy(alpha = 0.6f))
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
+                        // Just the chosen animation duration — the slider already shows
+                        // the start→end range and the cap line below shows the maximum,
+                        // so a "4.4s / 10.0s" overlay was duplicating info and made the
+                        // numbers feel inconsistent with the slider readout.
                         Text(
-                            text = stringResource(
-                                Res.string.trim_duration_overlay,
-                                formatMs(state.effectiveTrimMs),
-                                formatMs(state.maxAllowedTrimMs)
-                            ),
+                            text = formatMs(state.effectiveTrimMs),
                             color = NeubrutalWhite,
                             style = MaterialTheme.typography.labelSmall
                         )
@@ -233,4 +247,32 @@ private fun formatMs(ms: Long): String {
 
 private fun formatSpeed(speed: Float): String {
     return ((speed * 10).toInt() / 10.0).toString()
+}
+
+/**
+ * Decode every extracted thumbnail to an [ImageBitmap] off the main thread and keep
+ * them in a snapshot-backed map keyed by absolute file path. Re-running the effect
+ * (e.g. when new thumbnails stream in incrementally) skips paths that were already
+ * decoded, so we never repeat work. Cycling through frames during playback then
+ * becomes an O(1) map lookup with zero disk or Coil involvement, eliminating the
+ * "flicker / glitch" the user reported when each frame swap re-triggered a Coil
+ * disk load.
+ */
+@Composable
+private fun rememberThumbnailBitmaps(
+    thumbnails: List<VideoTrimThumbnail>
+): Map<String, ImageBitmap> {
+    val cache = remember { mutableStateMapOf<String, ImageBitmap>() }
+    LaunchedEffect(thumbnails) {
+        for (thumb in thumbnails) {
+            if (cache.containsKey(thumb.filePath)) continue
+            val bitmap = withContext(Dispatchers.Default) {
+                runCatching { readFileBytes(thumb.filePath) }
+                    .getOrNull()
+                    ?.let { decodeImageBitmap(it) }
+            }
+            if (bitmap != null) cache[thumb.filePath] = bitmap
+        }
+    }
+    return cache
 }

@@ -139,14 +139,20 @@ class VideoCropViewModel(
         _state.update { it.copy(isPlaying = true) }
         playJob?.cancel()
         playJob = viewModelScope.launch {
-            // Replay using the user's chosen FPS+speed so the motion they see in the
-            // crop screen matches how the saved sticker will animate.
+            // Mirror the trim screen: a small uniform set of preview frames spans
+            // the trim range, so the natural playback interval is
+            // trimDuration / frameCount / speed. Using 1000/fps here made playback
+            // race through all 8 previews in well under a second regardless of the
+            // real trim length, which felt glitchy and made the speed chips look
+            // like they did nothing.
             val intervalProvider = {
-                val spec = _state.value.spec
-                val fps = (spec?.fps ?: AnimatedStickerSpec.DEFAULT_FPS).coerceAtLeast(1)
+                val state = _state.value
+                val spec = state.spec
+                val frames = state.previewFrames.size.coerceAtLeast(1)
                 val speed = (spec?.speed ?: 1f).coerceAtLeast(0.1f)
-                val baseMs = 1000L / fps
-                (baseMs / speed).toLong().coerceAtLeast(StickerPack.MIN_FRAME_DURATION_MS)
+                val trimMs = ((spec?.trimEndMs ?: 0L) - (spec?.trimStartMs ?: 0L)).coerceAtLeast(1L)
+                val perFrameMs = (trimMs.toDouble() / frames / speed).toLong()
+                perFrameMs.coerceAtLeast(StickerPack.MIN_FRAME_DURATION_MS)
             }
             while (isActive && _state.value.isPlaying) {
                 val pool = _state.value.previewFrames

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.RotateLeft
 import androidx.compose.material.icons.automirrored.filled.RotateRight
@@ -30,7 +31,9 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
@@ -38,15 +41,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import coil3.compose.rememberAsyncImagePainter
+import data.remote.readFileBytes
 import domain.model.CropTransform
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.stringResource
 import presentation.components.AppTopBar
 import presentation.components.LoadingIndicator
@@ -74,6 +78,7 @@ import setiker.composeapp.generated.resources.rotate_right
 import setiker.composeapp.generated.resources.video_crop_hint
 import setiker.composeapp.generated.resources.video_crop_title
 import setiker.composeapp.generated.resources.zoom
+import util.decodeImageBitmap
 
 @Composable
 fun VideoCropScreen(
@@ -115,8 +120,14 @@ fun VideoCropScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
+            // Decode every preview frame to an ImageBitmap and keep them in a
+            // path-keyed map. Same approach the animated editor uses for buttery
+            // smooth playback — once decoded the swap between frames during play
+            // is a constant-time map lookup and never goes through Coil/disk.
+            val previewBitmaps = rememberPreviewFrameBitmaps(state.previewFrames)
+            val currentBitmap = state.currentPreviewPath?.let { previewBitmaps[it] }
+
             NeubrutalStickerPreviewFrame {
-                val previewPath = state.currentPreviewPath
                 when {
                     state.isLoadingPreview && state.previewFrames.isEmpty() -> {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -129,15 +140,28 @@ fun VideoCropScreen(
                             )
                         }
                     }
-                    previewPath != null -> {
+                    currentBitmap != null -> {
                         VideoCropTransformableImage(
-                            imagePath = previewPath,
+                            bitmap = currentBitmap,
                             transform = state.transform,
                             onUpdate = { scale, ox, oy ->
                                 onIntent(VideoCropIntent.UpdateScale(scale))
                                 onIntent(VideoCropIntent.UpdateOffset(ox, oy))
                             }
                         )
+                    }
+                    state.currentPreviewPath != null -> {
+                        // Bitmap not decoded yet — keep the loader visible while
+                        // it streams in instead of flashing the error placeholder.
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            LoadingIndicator(modifier = Modifier.size(36.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = stringResource(Res.string.extracting_preview),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = neubrutalSubtleOnSurface()
+                            )
+                        }
                     }
                     else -> {
                         Text(
@@ -212,7 +236,7 @@ fun VideoCropScreen(
 
 @Composable
 private fun VideoCropTransformableImage(
-    imagePath: String,
+    bitmap: ImageBitmap,
     transform: CropTransform,
     onUpdate: (scale: Float, offsetXNorm: Float, offsetYNorm: Float) -> Unit,
     modifier: Modifier = Modifier
@@ -225,6 +249,12 @@ private fun VideoCropTransformableImage(
     Box(
         modifier = modifier
             .fillMaxSize()
+            // Clip the transformable area to the outer frame's rounded corners so
+            // the dragged/zoomed image never spills past the neubrutal frame edge.
+            // We rely solely on the outer NeubrutalStickerPreviewFrame for the
+            // visible border — drawing a second white rect here was what made the
+            // preview look like it had a double border with weird radii.
+            .clip(RoundedCornerShape(12.dp))
             .pointerInput(Unit) {
                 detectTransformGestures { _, pan, zoom, _ ->
                     val boxW = size.width.toFloat().coerceAtLeast(1f)
@@ -238,7 +268,7 @@ private fun VideoCropTransformableImage(
             }
     ) {
         Image(
-            painter = rememberAsyncImagePainter(imagePath),
+            bitmap = bitmap,
             contentDescription = null,
             modifier = Modifier
                 .fillMaxSize()
@@ -254,19 +284,14 @@ private fun VideoCropTransformableImage(
             contentScale = ContentScale.Fit
         )
 
-        // Square crop overlay (always exactly the visible 1:1 box; what the user sees IS the
-        // saved 512×512 frame, so we just draw a thin border + grid for guidance).
+        // Rule-of-thirds grid only — no rectangle border. The outer
+        // NeubrutalStickerPreviewFrame already provides the visible 1:1 boundary,
+        // and what the user sees IS the saved 512×512 frame.
         val gridLine = NeubrutalWhite.copy(alpha = 0.6f)
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .drawWithContent {
-                    drawRect(
-                        color = NeubrutalWhite,
-                        topLeft = Offset(0f, 0f),
-                        size = Size(size.width, size.height),
-                        style = Stroke(width = 2.dp.toPx())
-                    )
                     val third = size.width / 3f
                     repeat(2) { i ->
                         drawLine(
@@ -285,6 +310,31 @@ private fun VideoCropTransformableImage(
                 }
         )
     }
+}
+
+/**
+ * Decode every preview frame extracted by [VideoCropViewModel] to an in-memory
+ * [ImageBitmap] keyed by file path. Re-runs are idempotent (already-decoded paths
+ * are skipped), so even though [VideoCropViewModel] emits frames incrementally
+ * we only pay decode cost once per frame.
+ */
+@Composable
+private fun rememberPreviewFrameBitmaps(
+    frames: List<VideoCropPreviewFrame>
+): Map<String, ImageBitmap> {
+    val cache = remember { mutableStateMapOf<String, ImageBitmap>() }
+    LaunchedEffect(frames) {
+        for (frame in frames) {
+            if (cache.containsKey(frame.filePath)) continue
+            val bitmap = withContext(Dispatchers.Default) {
+                runCatching { readFileBytes(frame.filePath) }
+                    .getOrNull()
+                    ?.let { decodeImageBitmap(it) }
+            }
+            if (bitmap != null) cache[frame.filePath] = bitmap
+        }
+    }
+    return cache
 }
 
 @Composable

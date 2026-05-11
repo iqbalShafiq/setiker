@@ -36,7 +36,13 @@ data class VideoCropState(
     val canPlay: Boolean get() = previewFrames.size > 1
 
     companion object {
-        /** Number of preview samples we extract for the crop screen playback. */
-        const val PREVIEW_FRAME_COUNT = 8
+        /**
+         * Preview samples extracted inside the trim range. Bumped from 8 to 32
+         * so playback reads as video rather than a slideshow — 8 frames over a
+         * 5 s trim is ~1.6 fps which felt like the speed slider did nothing.
+         * Each frame is downscaled to 384 px by the storage layer so the full
+         * set stays small in RAM (~5 MB).
+         */
+        const val PREVIEW_FRAME_COUNT = 32
     }
 }

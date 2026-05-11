@@ -29,6 +29,16 @@ class VideoTrimViewModel(
 
     private var playJob: Job? = null
 
+    /**
+     * Background thumbnail extraction tied to the latest trim window. Every time
+     * the user nudges the trim slider we cancel this and reschedule, so the
+     * preview frames we cycle during playback always cover exactly the current
+     * trim range. Without that, a small trim of a long source would fall back to
+     * 2-3 in-range frames and the playback would look like a slideshow no matter
+     * what speed was selected.
+     */
+    private var extractJob: Job? = null
+
     fun onIntent(intent: VideoTrimIntent) {
         when (intent) {
             is VideoTrimIntent.LoadVideo -> loadVideo(intent.videoPath)
@@ -55,6 +65,7 @@ class VideoTrimViewModel(
     override fun onCleared() {
         super.onCleared()
         playJob?.cancel()
+        extractJob?.cancel()
     }
 
     private fun loadVideo(videoPath: String) {
@@ -71,30 +82,64 @@ class VideoTrimViewModel(
                     trimEndMs = cappedEnd
                 )
             }
-            // Extract a small thumbnail strip so the preview no longer looks blank
-            // (Coil cannot render videos directly). Cheap; we sample a fixed number
-            // across the full video and reuse them as both static + playback frames.
-            extractThumbnailStrip(videoPath, totalMs)
+            // Run the first extraction immediately (no debounce) so the user
+            // doesn't watch an empty preview for 300 ms after the screen opens.
+            rescheduleThumbnailExtraction(immediate = true)
         }
     }
 
-    private suspend fun extractThumbnailStrip(videoPath: String, totalMs: Long) {
-        val timestamps = buildList {
-            val count = VideoTrimState.PREVIEW_THUMBNAIL_COUNT
-            val span = totalMs.coerceAtLeast(1L)
-            for (i in 0 until count) {
-                val ms = if (count == 1) 0L else (i.toLong() * span / (count - 1))
-                add(ms.coerceIn(0, totalMs - 1))
+    private fun rescheduleThumbnailExtraction(immediate: Boolean = false) {
+        extractJob?.cancel()
+        val snapshot = _state.value
+        if (snapshot.videoPath.isBlank()) return
+        if (snapshot.trimEndMs <= snapshot.trimStartMs) return
+
+        val videoPath = snapshot.videoPath
+
+        extractJob = viewModelScope.launch {
+            // Debounce the slider drag — only blow away the existing thumbnails
+            // (and start re-extracting) when the user has paused for a moment.
+            // While they're actively dragging we keep the previous trim's frames
+            // visible so the preview doesn't flash to a loader on every tick.
+            if (!immediate) delay(TRIM_EXTRACT_DEBOUNCE_MS)
+            val current = _state.value
+            val startMs = current.trimStartMs
+            val endMs = current.trimEndMs
+            if (endMs <= startMs) return@launch
+            _state.update {
+                it.copy(
+                    thumbnails = emptyList(),
+                    currentThumbIndex = 0,
+                    isExtracting = true
+                )
             }
+            extractThumbnailsForRange(videoPath, startMs, endMs)
+        }
+    }
+
+    private suspend fun extractThumbnailsForRange(
+        videoPath: String,
+        startMs: Long,
+        endMs: Long
+    ) {
+        val count = VideoTrimState.PREVIEW_THUMBNAIL_COUNT
+        val span = (endMs - startMs).coerceAtLeast(1L)
+        val timestamps = (0 until count).map { i ->
+            if (count == 1) startMs
+            else startMs + (i.toLong() * span / (count - 1))
         }
         val thumbs = mutableListOf<VideoTrimThumbnail>()
-        timestamps.forEachIndexed { i, ms ->
-            val name = "trim_thumb_${System.currentTimeMillis()}_$i.png"
-            val path = fileStorage.extractVideoFrameToFile(videoPath, ms, name)
-            if (path != null) {
-                thumbs.add(VideoTrimThumbnail(timestampMs = ms, filePath = path))
-                _state.update { it.copy(thumbnails = thumbs.toList()) }
+        try {
+            timestamps.forEachIndexed { i, ms ->
+                val name = "trim_thumb_${System.currentTimeMillis()}_$i.png"
+                val path = fileStorage.extractVideoFrameToFile(videoPath, ms, name)
+                if (path != null) {
+                    thumbs.add(VideoTrimThumbnail(timestampMs = ms, filePath = path))
+                    _state.update { it.copy(thumbnails = thumbs.toList()) }
+                }
             }
+        } finally {
+            _state.update { it.copy(isExtracting = false) }
         }
     }
 
@@ -107,6 +152,10 @@ class VideoTrimViewModel(
             val clampedEnd = if (newEnd - newStart > maxAllowed) newStart + maxAllowed else newEnd
             current.copy(trimStartMs = newStart, trimEndMs = clampedEnd, currentThumbIndex = 0)
         }
+        // Re-extract thumbnails for the new range so playback density stays high.
+        // Debounced inside rescheduleThumbnailExtraction so dragging the slider
+        // doesn't fire off dozens of extract jobs.
+        rescheduleThumbnailExtraction(immediate = false)
     }
 
     private fun startPlayback() {
@@ -115,13 +164,21 @@ class VideoTrimViewModel(
         _state.update { it.copy(isPlaying = true) }
         playJob?.cancel()
         playJob = viewModelScope.launch {
-            // Frame interval driven by user-selected fps + speed so play preview
-            // matches the speed they will see in the final sticker.
+            // Playback interval reflects the REAL trim duration at the chosen
+            // speed. Thumbnails are extracted to span exactly the current trim
+            // window (re-extracted on every trim change), so dividing the trim
+            // span by frame count gives us a loop that runs for trimDuration /
+            // speed seconds — 1x preview matches actual playback length, 2x is
+            // twice as fast. Frame count is high enough (PREVIEW_THUMBNAIL_COUNT)
+            // that the preview reads as video instead of a slideshow.
             val intervalProvider = {
-                val fps = _state.value.fps.coerceAtLeast(1)
-                val speed = _state.value.speed.coerceAtLeast(0.1f)
-                val baseMs = 1000L / fps
-                (baseMs / speed).toLong().coerceAtLeast(StickerPack.MIN_FRAME_DURATION_MS)
+                val state = _state.value
+                val pool = state.thumbnailsInRange
+                val frames = pool.size.coerceAtLeast(1)
+                val speed = state.speed.coerceAtLeast(0.1f)
+                val trimMs = state.effectiveTrimMs.coerceAtLeast(1L)
+                val perFrameMs = (trimMs.toDouble() / frames / speed).toLong()
+                perFrameMs.coerceAtLeast(StickerPack.MIN_FRAME_DURATION_MS)
             }
             while (isActive && _state.value.isPlaying) {
                 val pool = _state.value.thumbnailsInRange
@@ -163,5 +220,15 @@ class VideoTrimViewModel(
         viewModelScope.launch {
             _effect.send(VideoTrimEffect.NavigateToVideoCrop(current.videoPath, spec))
         }
+    }
+
+    private companion object {
+        /**
+         * Wait this long after the last trim slider tick before kicking off a new
+         * extraction. Long enough to swallow a rapid drag (we don't want to spin
+         * up 40 frame extractions per pixel of movement), short enough that the
+         * preview refreshes almost immediately once the user lets go.
+         */
+        private const val TRIM_EXTRACT_DEBOUNCE_MS = 250L
     }
 }

@@ -91,6 +91,7 @@ import setiker.composeapp.generated.resources.cancel
 import setiker.composeapp.generated.resources.import_crop_sheet_message_detail
 import setiker.composeapp.generated.resources.import_crop_sheet_primary
 import setiker.composeapp.generated.resources.import_crop_sheet_title
+import setiker.composeapp.generated.resources.loading_pack
 import setiker.composeapp.generated.resources.sticker_preview_content_description
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -219,7 +220,8 @@ fun PackDetailScreen(
                 LoadingIndicator(
                     modifier = modifier
                         .fillMaxSize()
-                        .padding(innerPadding)
+                        .padding(innerPadding),
+                    label = stringResource(Res.string.loading_pack)
                 )
             }
             state.pack == null -> {

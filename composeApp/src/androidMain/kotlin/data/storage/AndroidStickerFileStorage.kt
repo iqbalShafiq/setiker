@@ -237,16 +237,28 @@ actual class StickerFileStorage(private val context: Context) {
         val retriever = android.media.MediaMetadataRetriever()
         try {
             retriever.setDataSource(videoPath)
-            val frame = retriever.getFrameAtTime(
+            val rawFrame = retriever.getFrameAtTime(
                 atMs.coerceAtLeast(0L) * 1000L,
                 android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC
             ) ?: return@withContext null
+            // Downscale to a preview-friendly size so we can keep dozens of decoded
+            // frames in memory for smooth playback without OOMing on 1080p+ sources.
+            // The output is consumed strictly by the trim/crop preview path; the
+            // final sticker uses the dedicated decodeVideoFrames pipeline.
+            val frame = downscaleForPreview(rawFrame, PREVIEW_FRAME_MAX_DIM)
             val cacheDir = File(context.cacheDir, "video_previews").apply { mkdirs() }
             val outFile = File(cacheDir, fileName)
             FileOutputStream(outFile).use { out ->
                 frame.compress(Bitmap.CompressFormat.PNG, 100, out)
             }
-            frame.recycle()
+            // Avoid double-recycle: when downscaleForPreview is a no-op it returns
+            // the original bitmap, so we only need to free it once.
+            if (frame !== rawFrame) {
+                frame.recycle()
+                rawFrame.recycle()
+            } else {
+                rawFrame.recycle()
+            }
             outFile.absolutePath
         } catch (_: Exception) {
             null
@@ -257,6 +269,22 @@ actual class StickerFileStorage(private val context: Context) {
                 // ignore
             }
         }
+    }
+
+    /**
+     * Scales [source] so the longest edge is at most [maxDim] pixels. Returns the
+     * original bitmap when it already fits (caller is responsible for recycling
+     * intermediates).
+     */
+    private fun downscaleForPreview(source: Bitmap, maxDim: Int): Bitmap {
+        val w = source.width
+        val h = source.height
+        val longest = maxOf(w, h)
+        if (longest <= maxDim) return source
+        val scale = maxDim.toFloat() / longest.toFloat()
+        val targetW = (w * scale).toInt().coerceAtLeast(1)
+        val targetH = (h * scale).toInt().coerceAtLeast(1)
+        return Bitmap.createScaledBitmap(source, targetW, targetH, true)
     }
 
     actual suspend fun getVideoDurationMs(videoPath: String): Long = withContext(Dispatchers.IO) {
@@ -990,5 +1018,14 @@ actual class StickerFileStorage(private val context: Context) {
 
         /** Length of a single RIFF chunk header: 4-byte FourCC + 4-byte size. */
         private const val CHUNK_HEADER_LEN = 8
+
+        /**
+         * Largest edge (px) we keep for video preview frames extracted by
+         * [extractVideoFrameToFile]. Trim/Crop screens can hold up to ~40 of these
+         * decoded in memory at once for smooth playback, so capping the long edge
+         * here lets us store many frames cheaply (~150 KB each) without OOM, while
+         * still looking sharp inside the square preview frame.
+         */
+        private const val PREVIEW_FRAME_MAX_DIM = 384
     }
 }

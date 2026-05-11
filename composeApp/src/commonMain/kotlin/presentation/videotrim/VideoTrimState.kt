@@ -56,7 +56,15 @@ data class VideoTrimState(
         val FPS_OPTIONS = listOf(10, 15, 20, 24)
         val SPEED_OPTIONS = listOf(0.5f, 1f, 1.5f, 2f)
 
-        /** How many thumbnails we extract for the preview strip. Cheap to keep at ~12. */
-        const val PREVIEW_THUMBNAIL_COUNT = 12
+        /**
+         * Frames we extract inside the current trim window for the play preview.
+         * 32 frames over a 4 s trim is ~8 fps preview, which is the lowest count
+         * that visually reads as "video" instead of "slideshow" — the previous 12
+         * across the whole video meant a small trim could end up with 2-3 in-range
+         * frames and felt disconnected from the speed chips. Each frame is
+         * downscaled to 384 px by the storage layer so the full set fits in
+         * memory and extraction stays under ~3 s for typical sticker sources.
+         */
+        const val PREVIEW_THUMBNAIL_COUNT = 32
     }
 }
