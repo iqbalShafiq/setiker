@@ -22,4 +22,17 @@ interface StickerDao {
 
     @Query("SELECT COUNT(*) FROM stickers WHERE packId = :packId")
     suspend fun getCountByPackId(packId: String): Int
+
+    // Sync queries
+    @Query("SELECT * FROM stickers WHERE syncState = :state")
+    suspend fun getBySyncState(state: String): List<StickerEntity>
+
+    @Query("SELECT * FROM stickers WHERE syncState != 'SYNCED'")
+    suspend fun getUnsynced(): List<StickerEntity>
+
+    @Query("UPDATE stickers SET syncState = :syncState, lastSyncAt = :lastSyncAt WHERE id = :id")
+    suspend fun updateSyncStatus(id: String, syncState: String, lastSyncAt: Long?)
+
+    @Query("UPDATE stickers SET cloudId = :cloudId, cloudUrl = :cloudUrl WHERE id = :id")
+    suspend fun updateCloudInfo(id: String, cloudId: String, cloudUrl: String?)
 }

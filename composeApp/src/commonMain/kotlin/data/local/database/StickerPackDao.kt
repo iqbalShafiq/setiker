@@ -22,6 +22,22 @@ interface StickerPackDao {
     @Update
     suspend fun update(pack: StickerPackEntity)
 
-    @Delete
-    suspend fun delete(pack: StickerPackEntity)
-}
+     @Delete
+     suspend fun delete(pack: StickerPackEntity)
+ 
+     // Sync queries
+     @Query("SELECT * FROM sticker_packs WHERE syncState = :state")
+     suspend fun getBySyncState(state: String): List<StickerPackEntity>
+ 
+     @Query("SELECT * FROM sticker_packs WHERE syncState != 'SYNCED'")
+     suspend fun getUnsynced(): List<StickerPackEntity>
+ 
+     @Query("SELECT * FROM sticker_packs WHERE cloudId = :cloudId")
+     suspend fun getByCloudId(cloudId: String): StickerPackEntity?
+ 
+     @Query("UPDATE sticker_packs SET syncState = :syncState, lastSyncAt = :lastSyncAt WHERE identifier = :identifier")
+     suspend fun updateSyncStatus(identifier: String, syncState: String, lastSyncAt: Long?)
+ 
+     @Query("UPDATE sticker_packs SET cloudId = :cloudId WHERE identifier = :identifier")
+     suspend fun updateCloudId(identifier: String, cloudId: String)
+ }

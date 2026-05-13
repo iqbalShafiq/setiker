@@ -4,7 +4,7 @@ import data.auth.AuthManager
 import data.local.database.SyncOperationDao
 import data.local.entity.PendingSyncOperationEntity
 import data.remote.CloudStickerRepository
-import data.remote.CreateStickerPackRequest
+ import data.remote.model.CreateStickerPackRequest
 import domain.model.SyncOperation
 import domain.model.SyncOperationStatus
 import domain.model.SyncOperationType
@@ -25,38 +25,43 @@ class SyncManagerImpl(
     private val cloudRepo: CloudStickerRepository,
     private val authManager: AuthManager,
     private val networkMonitor: NetworkMonitor,
-    private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Default)
-) : SyncManager {
-    
-    private val json = Json { ignoreUnknownKeys = true }
-    
-    override val operationsFlow: Flow<List<SyncOperation>> = 
-        operationDao.observeAll().map { entities -> entities.map { it.toDomainModel() } }
-    
-    private val _activeOperationFlow = MutableStateFlow<SyncOperation?>(null)
-    override val activeOperationFlow: StateFlow<SyncOperation?> = _activeOperationFlow
-    
-    private val _isSyncing = MutableStateFlow(false)
-    override val isSyncing: StateFlow<Boolean> = _isSyncing
-    
-    private val _lastSyncReport = MutableStateFlow<SyncReport?>(null)
-    override val lastSyncReport: StateFlow<SyncReport?> = _lastSyncReport
-    
-    init {
-        startMonitoring()
-    }
-    
-    override fun startMonitoring() {
-        coroutineScope.launch {
-            networkMonitor.isOnline.collect { isOnline ->
-                if (isOnline && authManager.isAuthenticated()) {
-                    processQueue()
-                }
-            }
-        }
-    }
-    
-    override fun stopMonitoring() {}
+     private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Default)
+ ) : SyncManager {
+     
+     private val json = Json { ignoreUnknownKeys = true }
+     private var monitoringJob: kotlinx.coroutines.Job? = null
+     
+     override val operationsFlow: Flow<List<SyncOperation>> = 
+         operationDao.observeAll().map { entities -> entities.map { it.toDomainModel() } }
+     
+     private val _activeOperationFlow = MutableStateFlow<SyncOperation?>(null)
+     override val activeOperationFlow: StateFlow<SyncOperation?> = _activeOperationFlow
+     
+     private val _isSyncing = MutableStateFlow(false)
+     override val isSyncing: StateFlow<Boolean> = _isSyncing
+     
+     private val _lastSyncReport = MutableStateFlow<SyncReport?>(null)
+     override val lastSyncReport: StateFlow<SyncReport?> = _lastSyncReport
+     
+     init {
+         startMonitoring()
+     }
+     
+     override fun startMonitoring() {
+         if (monitoringJob?.isActive == true) return
+         monitoringJob = coroutineScope.launch {
+             networkMonitor.isOnline.collect { isOnline ->
+                 if (isOnline && authManager.isAuthenticated()) {
+                     processQueue()
+                 }
+             }
+         }
+     }
+     
+     override fun stopMonitoring() {
+         monitoringJob?.cancel()
+         monitoringJob = null
+     }
     
     override suspend fun enqueue(operation: SyncOperation) {
         operationDao.insert(operation.toEntity())

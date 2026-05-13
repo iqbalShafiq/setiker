@@ -2,6 +2,10 @@ package data.remote
 
 import data.auth.AuthManager
 import data.remote.model.ApiSuccessEnvelope
+import data.remote.model.CloudStickerPack
+import data.remote.model.CreateStickerPackRequest
+import data.remote.model.SyncData
+import data.remote.model.SyncResponseData
 import domain.error.AppErrorCode
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -18,57 +22,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-
-@Serializable
-data class CreateStickerPackRequest(
-    val name: String,
-    val description: String? = null,
-    val visibility: String = "PRIVATE",
-    val stickers: List<StickerPackStickerInput> = emptyList()
-)
-
-@Serializable
-data class StickerPackStickerInput(
-    val name: String,
-    val filename: String,
-    val url: String,
-    val width: Int? = null,
-    val height: Int? = null,
-    val order: Int = 0
-)
-
-@Serializable
-data class CloudStickerPack(
-    val id: String,
-    val ownerId: String,
-    val name: String,
-    val description: String? = null,
-    val visibility: String,
-    val createdAt: String,
-    val updatedAt: String
-)
-
-@Serializable
-data class SyncData(
-    val stickerPacks: SyncDelta? = null,
-    val stickers: SyncDelta? = null,
-    val syncToken: String? = null
-)
-
-@Serializable
-data class SyncDelta(
-    val created: List<CloudStickerPack> = emptyList(),
-    val updated: List<CloudStickerPack> = emptyList(),
-    val deleted: List<CloudStickerPack> = emptyList()
-)
-
-@Serializable
-data class SyncResponseData(
-    val success: Boolean,
-    val data: SyncData? = null
-)
 
 class CloudStickerRepository(
     private val authManager: AuthManager,

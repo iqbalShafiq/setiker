@@ -16,7 +16,13 @@ data class StickerPack(
     val publisherEmail: String? = null,
     val publisherWebsite: String? = null,
     val privacyPolicyWebsite: String? = null,
-    val licenseAgreementWebsite: String? = null
+    val licenseAgreementWebsite: String? = null,
+    // Sync fields
+    val cloudId: String? = null,
+    val syncState: String = "LOCAL_ONLY",
+    val lastSyncAt: Long? = null,
+    val visibility: String = "PRIVATE",
+    val cloudOwnerId: String? = null
 ) {
     companion object {
         const val MIN_STICKERS = 3

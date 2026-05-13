@@ -51,10 +51,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import org.jetbrains.compose.resources.stringResource
 import presentation.components.AppDialog
 import presentation.components.AppPrimaryButton
-import presentation.components.AppSecondaryButton
 import presentation.components.AppTopBar
 import presentation.components.EmptyState
+import presentation.components.AppSecondaryButton
 import presentation.components.LoadingIndicator
+import presentation.components.SyncStatusIndicator
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
@@ -353,6 +354,10 @@ private fun PackDetailContent(
                     color = neubrutalMutedOnSurface()
                 )
             }
+            SyncStatusIndicator(
+                syncState = pack.syncState,
+                modifier = Modifier.padding(start = 12.dp)
+            )
         }
 
         Spacer(modifier = Modifier.height(20.dp))

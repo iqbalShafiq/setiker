@@ -15,8 +15,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+ import kotlinx.coroutines.runBlocking
+ import kotlinx.serialization.encodeToString
+ import kotlinx.serialization.json.Json
 
 class AuthManagerImpl(
     private val dataStore: DataStore<Preferences>
@@ -97,12 +98,18 @@ class AuthManagerImpl(
         }
     }
     
-    override suspend fun getValidAccessToken(): String? {
-        val token = getAccessToken() ?: return null
-        val expiresAt = dataStore.data.map { it[KEY_TOKEN_EXPIRES_AT] ?: 0L }.first()
-        if (expiresAt <= System.currentTimeMillis() + 300_000) {
-            return null
-        }
-        return token
-    }
-}
+     override fun isTokenExpired(): Boolean {
+         val expiresAt = runBlocking {
+             dataStore.data.map { it[KEY_TOKEN_EXPIRES_AT] ?: 0L }.first()
+         }
+         return expiresAt <= System.currentTimeMillis() + 300_000
+     }
+     
+     override suspend fun getValidAccessToken(): String? {
+         val token = getAccessToken() ?: return null
+         if (isTokenExpired()) {
+             return null
+         }
+         return token
+     }
+ }

@@ -11,8 +11,8 @@ import domain.model.Sticker
 import domain.model.StickerDecoration
 import domain.model.StickerPack
 import data.auth.AuthManager
-import data.remote.CreateStickerPackRequest
-import data.remote.StickerPackStickerInput
+import data.remote.model.CreateStickerPackRequest
+import data.remote.model.StickerPackStickerInput
 import data.sync.SyncManager
 import domain.model.SyncOperation
 import domain.model.SyncOperationStatus
@@ -213,7 +213,12 @@ class StickerRepositoryImpl(
         publisher = publisher,
         trayImageFile = trayImageFile,
         stickers = stickers,
-        isAnimated = isAnimated
+        isAnimated = isAnimated,
+        cloudId = cloudId,
+        syncState = syncState,
+        lastSyncAt = lastSyncAt,
+        visibility = visibility,
+        cloudOwnerId = cloudOwnerId
     )
 
     private fun StickerEntity.toDomainModel() = Sticker(

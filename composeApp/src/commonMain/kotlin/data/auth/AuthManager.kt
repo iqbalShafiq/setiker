@@ -17,5 +17,6 @@ interface AuthManager {
     suspend fun saveUser(user: User)
     suspend fun getUser(): User?
     suspend fun updateAccessToken(newToken: String)
+    fun isTokenExpired(): Boolean
     suspend fun getValidAccessToken(): String?
 }
