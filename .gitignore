@@ -70,3 +70,6 @@ Podfile.lock
 
 # OS files
 *.log
+
+# Git worktrees
+.worktrees/
