@@ -29,5 +29,9 @@ data class StickerEntity(
     val isAnimated: Boolean = false,
     val sourceVideoFile: String? = null,
     val frameDecorationsJson: String? = null,
-    val sortOrder: Int
+    val sortOrder: Int,
+    val cloudId: String? = null,
+    val syncState: String = "LOCAL_ONLY",
+    val lastSyncAt: Long? = null,
+    val cloudUrl: String? = null
 )

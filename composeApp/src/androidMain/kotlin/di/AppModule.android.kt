@@ -1,16 +1,22 @@
 package di
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.room.Room
 import data.local.database.DatabaseMigrations
 import data.local.database.StickerDatabase
 import data.storage.StickerFileStorage
+import data.sync.NetworkMonitor
 import data.util.EmojiPreferences
 import domain.actions.AndroidPackActions
 import domain.actions.PackActions
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.Module
 import org.koin.dsl.module
+
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "setiker_prefs")
 
 actual fun platformModule(): Module = module {
     single<StickerDatabase> {
@@ -22,6 +28,7 @@ actual fun platformModule(): Module = module {
             .addMigrations(DatabaseMigrations.MIGRATION_1_2)
             .addMigrations(DatabaseMigrations.MIGRATION_2_3)
             .addMigrations(DatabaseMigrations.MIGRATION_3_4)
+            .addMigrations(DatabaseMigrations.MIGRATION_4_5)
             .build()
     }
 
@@ -30,4 +37,6 @@ actual fun platformModule(): Module = module {
     single<StickerFileStorage> { StickerFileStorage(androidContext()) }
     single<EmojiPreferences> { EmojiPreferences(androidContext()) }
     single<PackActions> { AndroidPackActions(androidContext(), get(), get()) }
+    single<DataStore<Preferences>> { androidContext().dataStore }
+    single { NetworkMonitor(androidContext()) }
 }

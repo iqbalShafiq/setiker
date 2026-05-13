@@ -12,5 +12,10 @@ data class StickerPackEntity(
     val trayImageFile: String,
     val isAnimated: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),
+    val cloudId: String? = null,
+    val syncState: String = "LOCAL_ONLY",
+    val lastSyncAt: Long? = null,
+    val visibility: String = "PRIVATE",
+    val cloudOwnerId: String? = null
 )

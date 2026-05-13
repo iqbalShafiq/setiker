@@ -29,8 +29,11 @@ import io.ktor.http.isSuccess
 import kotlinx.coroutines.delay
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import data.auth.AuthManager
+import io.ktor.client.request.header
 
 class SetikerApiService(
+    private val authManager: AuthManager? = null,
     private val baseUrl: String = ApiConfig.baseUrl
 ) {
     private val json = Json {
@@ -67,8 +70,19 @@ class SetikerApiService(
         }
     }
 
+    private fun io.ktor.client.request.HttpRequestBuilder.addAuthHeader() {
+        authManager?.let { manager ->
+            kotlinx.coroutines.runBlocking {
+                manager.getAccessToken()?.let { token ->
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                }
+            }
+        }
+    }
+
     suspend fun removeBackground(imagePath: String): ApiImage {
         val response = client.post("/api/v1/background/remove") {
+            addAuthHeader()
             setMultipartBody(
                 imagePath = imagePath
             )
@@ -96,6 +110,7 @@ class SetikerApiService(
         inputImagePath: String? = null
     ): List<ApiImage> {
         val response = client.post("/api/v1/generate") {
+            addAuthHeader()
             setBody(
                 MultiPartFormDataContent(
                     formData {
@@ -140,6 +155,7 @@ class SetikerApiService(
 
     suspend fun splitGrid(imagePath: String): List<ApiImage> {
         val response = client.post("/api/v1/grid/split") {
+            addAuthHeader()
             setMultipartBody(imagePath = imagePath)
         }
         val bodyText = response.bodyAsText()

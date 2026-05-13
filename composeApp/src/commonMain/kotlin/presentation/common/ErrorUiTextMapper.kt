@@ -31,5 +31,17 @@ private fun AppErrorCode.toStringResource(): StringResource {
         AppErrorCode.ImageDownloadFailed -> Res.string.error_image_download_failed
         AppErrorCode.PackNotFound -> Res.string.error_pack_not_found
         AppErrorCode.StickerNotFound -> Res.string.error_sticker_not_found
+        // Auth & Cloud errors - map to generic error for now
+        AppErrorCode.AuthLoginFailed -> Res.string.error_image_download_failed
+        AppErrorCode.AuthRegisterFailed -> Res.string.error_image_download_failed
+        AppErrorCode.AuthRefreshFailed -> Res.string.error_image_download_failed
+        AppErrorCode.AuthProfileFailed -> Res.string.error_image_download_failed
+        AppErrorCode.AuthChangePasswordFailed -> Res.string.error_image_download_failed
+        AppErrorCode.AuthNotAuthenticated -> Res.string.error_image_download_failed
+        AppErrorCode.CloudFetchFailed -> Res.string.error_image_download_failed
+        AppErrorCode.CloudCreateFailed -> Res.string.error_image_download_failed
+        AppErrorCode.CloudUpdateFailed -> Res.string.error_image_download_failed
+        AppErrorCode.CloudDeleteFailed -> Res.string.error_image_download_failed
+        AppErrorCode.CloudSyncFailed -> Res.string.error_image_download_failed
     }
 }

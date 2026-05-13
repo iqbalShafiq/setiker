@@ -1,5 +1,13 @@
 package presentation.navigation
 
+ import androidx.compose.animation.AnimatedContentTransitionScope
+ import androidx.compose.animation.core.tween
+ import androidx.compose.animation.fadeIn
+ import androidx.compose.animation.fadeOut
+ import androidx.compose.animation.slideInHorizontally
+ import androidx.compose.animation.slideInVertically
+ import androidx.compose.animation.slideOutHorizontally
+ import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -12,14 +20,23 @@ import androidx.navigation.navArgument
 import domain.model.AnimatedStickerSpec
 import presentation.animatededitor.AnimatedEditorEffect
 import presentation.animatededitor.AnimatedEditorScreenRoot
+import presentation.auth.LoginScreen
+import presentation.auth.LoginViewModel
+import presentation.auth.ProfileScreen
+import presentation.auth.ProfileViewModel
+import presentation.auth.RegisterScreen
+import presentation.auth.RegisterViewModel
 import presentation.createpack.CreatePackScreenRoot
 import presentation.createpack.DraftSticker
 import presentation.crop.CropScreenRoot
 import presentation.editor.EditorScreenRoot
 import presentation.home.HomeScreenRoot
 import presentation.packdetail.PackDetailScreenRoot
+import presentation.sync.SyncScreen
+import presentation.sync.SyncViewModel
 import presentation.videocrop.VideoCropScreenRoot
 import presentation.videotrim.VideoTrimScreenRoot
+import org.koin.compose.viewmodel.koinViewModel
 
 private object CropRecipient {
     const val Editor = "editor"
@@ -27,6 +44,8 @@ private object CropRecipient {
     const val CreatePackTray = "create_pack_tray"
     const val PackDetailImport = "pack_detail_import"
 }
+
+private const val ANIMATION_DURATION = 300
 
 @Composable
 fun AppNavigation(
@@ -58,7 +77,180 @@ fun AppNavigation(
                 },
                 onCreatePackClick = {
                     navController.navigate("createPack")
+                },
+                onProfileClick = {
+                    navController.navigate("profile")
+                },
+                onSyncClick = {
+                    navController.navigate("sync")
+                },
+                onLoginClick = {
+                    navController.navigate("login")
                 }
+            )
+        }
+
+         composable("login",
+              enterTransition = {
+                  when (initialState.destination.route) {
+                      "home" -> slideInVertically(
+                          initialOffsetY = { it },
+                          animationSpec = tween(ANIMATION_DURATION)
+                      ) + fadeIn(animationSpec = tween(ANIMATION_DURATION))
+                      "register" -> slideInHorizontally(
+                          initialOffsetX = { -it },
+                          animationSpec = tween(ANIMATION_DURATION)
+                      ) + fadeIn(animationSpec = tween(ANIMATION_DURATION))
+                      else -> slideInHorizontally(
+                          initialOffsetX = { it },
+                          animationSpec = tween(ANIMATION_DURATION)
+                      ) + fadeIn(animationSpec = tween(ANIMATION_DURATION))
+                  }
+              },
+             exitTransition = {
+                 when (targetState.destination.route) {
+                     "register" -> slideOutHorizontally(
+                         targetOffsetX = { -it },
+                         animationSpec = tween(ANIMATION_DURATION)
+                     ) + fadeOut(animationSpec = tween(ANIMATION_DURATION))
+                     else -> slideOutVertically(
+                         targetOffsetY = { it },
+                         animationSpec = tween(ANIMATION_DURATION)
+                     ) + fadeOut(animationSpec = tween(ANIMATION_DURATION))
+                 }
+             },
+             popEnterTransition = {
+                 when (initialState.destination.route) {
+                     "register" -> slideInHorizontally(
+                         initialOffsetX = { -it },
+                         animationSpec = tween(ANIMATION_DURATION)
+                     ) + fadeIn(animationSpec = tween(ANIMATION_DURATION))
+                     else -> slideInVertically(
+                         initialOffsetY = { it },
+                         animationSpec = tween(ANIMATION_DURATION)
+                     ) + fadeIn(animationSpec = tween(ANIMATION_DURATION))
+                 }
+             },
+              popExitTransition = {
+                  when (targetState.destination.route) {
+                      "register" -> slideOutHorizontally(
+                          targetOffsetX = { it },
+                          animationSpec = tween(ANIMATION_DURATION)
+                      ) + fadeOut(animationSpec = tween(ANIMATION_DURATION))
+                      else -> slideOutVertically(
+                          targetOffsetY = { it },
+                          animationSpec = tween(ANIMATION_DURATION)
+                      ) + fadeOut(animationSpec = tween(ANIMATION_DURATION))
+                  }
+              }
+          ) {
+             val viewModel: LoginViewModel = koinViewModel()
+             LoginScreen(
+                 viewModel = viewModel,
+                 onNavigateToHome = {
+                     navController.navigate("home") {
+                         popUpTo("home") { inclusive = true }
+                     }
+                 },
+                 onNavigateToRegister = {
+                     navController.navigate("register") {
+                         popUpTo("login") { inclusive = true }
+                     }
+                 }
+             )
+         }
+ 
+          composable("register",
+              enterTransition = {
+                  slideInHorizontally(
+                      initialOffsetX = { it },
+                      animationSpec = tween(ANIMATION_DURATION)
+                  ) + fadeIn(animationSpec = tween(ANIMATION_DURATION))
+              },
+              exitTransition = {
+                  when (targetState.destination.route) {
+                      "login" -> slideOutHorizontally(
+                          targetOffsetX = { it },
+                          animationSpec = tween(ANIMATION_DURATION)
+                      ) + fadeOut(animationSpec = tween(ANIMATION_DURATION))
+                      else -> slideOutHorizontally(
+                          targetOffsetX = { -it },
+                          animationSpec = tween(ANIMATION_DURATION)
+                      ) + fadeOut(animationSpec = tween(ANIMATION_DURATION))
+                  }
+              },
+              popEnterTransition = {
+                  slideInHorizontally(
+                      initialOffsetX = { -it },
+                      animationSpec = tween(ANIMATION_DURATION)
+                  ) + fadeIn(animationSpec = tween(ANIMATION_DURATION))
+              },
+               popExitTransition = {
+                   slideOutHorizontally(
+                       targetOffsetX = { it },
+                       animationSpec = tween(ANIMATION_DURATION)
+                   ) + fadeOut(animationSpec = tween(ANIMATION_DURATION))
+               }
+           ) {
+              val viewModel: RegisterViewModel = koinViewModel()
+              RegisterScreen(
+                  viewModel = viewModel,
+                  onNavigateToHome = {
+                      navController.navigate("home") {
+                          popUpTo("home") { inclusive = true }
+                      }
+                  },
+                  onNavigateToLogin = {
+                      navController.navigate("login") {
+                          popUpTo("register") { inclusive = true }
+                      }
+                  }
+              )
+          }
+  
+          composable("profile",
+            enterTransition = {
+                slideInVertically(
+                    initialOffsetY = { it },
+                    animationSpec = tween(ANIMATION_DURATION)
+                ) + fadeIn(animationSpec = tween(ANIMATION_DURATION))
+            },
+            exitTransition = {
+                slideOutVertically(
+                    targetOffsetY = { it },
+                    animationSpec = tween(ANIMATION_DURATION)
+                ) + fadeOut(animationSpec = tween(ANIMATION_DURATION))
+            }
+        ) {
+            val viewModel: ProfileViewModel = koinViewModel()
+            ProfileScreen(
+                viewModel = viewModel,
+                onLogout = {
+                    navController.navigate("login") {
+                        popUpTo("home") { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable("sync",
+            enterTransition = {
+                slideInVertically(
+                    initialOffsetY = { it },
+                    animationSpec = tween(ANIMATION_DURATION)
+                ) + fadeIn(animationSpec = tween(ANIMATION_DURATION))
+            },
+            exitTransition = {
+                slideOutVertically(
+                    targetOffsetY = { it },
+                    animationSpec = tween(ANIMATION_DURATION)
+                ) + fadeOut(animationSpec = tween(ANIMATION_DURATION))
+            }
+        ) {
+            val viewModel: SyncViewModel = koinViewModel()
+            SyncScreen(
+                viewModel = viewModel,
+                onBackClick = { navController.popBackStack() }
             )
         }
 

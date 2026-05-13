@@ -10,18 +10,35 @@ import domain.error.AppException
 import domain.model.Sticker
 import domain.model.StickerDecoration
 import domain.model.StickerPack
+import data.auth.AuthManager
+import data.remote.CreateStickerPackRequest
+import data.remote.StickerPackStickerInput
+import data.sync.SyncManager
+import domain.model.SyncOperation
+import domain.model.SyncOperationStatus
+import domain.model.SyncOperationType
+import domain.model.SyncReport
+import domain.model.SyncResult
 import domain.repository.StickerRepository
+import domain.repository.SyncStatus
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
+@OptIn(ExperimentalUuidApi::class)
 class StickerRepositoryImpl(
     private val packDao: StickerPackDao,
     private val stickerDao: StickerDao,
-    private val fileStorage: StickerFileStorage
+    private val fileStorage: StickerFileStorage,
+    private val syncManager: SyncManager? = null,
+    private val authManager: AuthManager? = null
 ) : StickerRepository {
 
     override suspend fun getAllPacks(): List<StickerPack> = withContext(Dispatchers.IO) {
@@ -56,6 +73,31 @@ class StickerRepositoryImpl(
             updatedAt = now
         )
         packDao.insert(entity)
+
+        // Enqueue cloud sync if authenticated
+        if (authManager?.isAuthenticated() == true) {
+            val syncOp = SyncOperation(
+                id = kotlin.uuid.Uuid.random().toString(),
+                type = if (existing != null) SyncOperationType.UPDATE_PACK else SyncOperationType.CREATE_PACK,
+                targetId = identifier,
+                payload = Json.encodeToString(CreateStickerPackRequest(
+                    name = pack.name,
+                    description = null,
+                    visibility = "PRIVATE",
+                    stickers = pack.stickers.mapIndexed { index, sticker ->
+                        StickerPackStickerInput(
+                            name = "sticker_$index",
+                            filename = sticker.imageFile.substringAfterLast("/"),
+                            url = sticker.imageFile,
+                            order = index
+                        )
+                    }
+                )),
+                status = SyncOperationStatus.PENDING,
+                createdAt = System.currentTimeMillis()
+            )
+            syncManager?.enqueue(syncOp)
+        }
 
         // Saving an existing pack is a full replacement of its current sticker
         // list. Without clearing old rows first, every edit (including only
@@ -92,6 +134,18 @@ class StickerRepositoryImpl(
 
         stickerDao.deleteByPackId(identifier)
         packDao.delete(pack)
+
+        if (pack.cloudId != null && authManager?.isAuthenticated() == true) {
+            val syncOp = SyncOperation(
+                id = Uuid.random().toString(),
+                type = SyncOperationType.DELETE_PACK,
+                targetId = pack.cloudId,
+                payload = "{}",
+                status = SyncOperationStatus.PENDING,
+                createdAt = System.currentTimeMillis()
+            )
+            syncManager?.enqueue(syncOp)
+        }
     }
 
     @OptIn(ExperimentalUuidApi::class)
@@ -196,5 +250,30 @@ class StickerRepositoryImpl(
         } catch (_: Exception) {
             emptyMap()
         }
+    }
+
+    override suspend fun syncAll(): SyncReport {
+        return syncManager?.sync() ?: SyncReport(result = SyncResult.SkippedNotAuthenticated)
+    }
+
+    override suspend fun syncPack(packId: String): SyncReport {
+        return syncManager?.sync() ?: SyncReport(result = SyncResult.SkippedNotAuthenticated)
+    }
+
+    override fun observeSyncStatus(): Flow<SyncStatus> {
+        return syncManager?.operationsFlow?.map { operations ->
+            when {
+                operations.any { it.status == SyncOperationStatus.IN_PROGRESS } -> SyncStatus.Syncing
+                operations.any { it.status == SyncOperationStatus.FAILED } -> SyncStatus.Failed
+                operations.any { it.status == SyncOperationStatus.PENDING } -> SyncStatus.Pending
+                else -> SyncStatus.Idle
+            }
+        } ?: flowOf(SyncStatus.Idle)
+    }
+
+    override suspend fun getPendingSyncCount(): Int {
+        return syncManager?.operationsFlow?.first()?.count {
+            it.status == SyncOperationStatus.PENDING
+        } ?: 0
     }
 }

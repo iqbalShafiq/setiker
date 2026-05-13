@@ -7,4 +7,7 @@ sealed interface HomeEffect {
     data object NavigateToCreatePack : HomeEffect
     data class ShowError(val message: UiText) : HomeEffect
     data class ShowSuccess(val message: UiText) : HomeEffect
+    data object NavigateToProfile : HomeEffect
+    data object NavigateToSync : HomeEffect
+    data object NavigateToLogin : HomeEffect
 }

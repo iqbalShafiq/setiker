@@ -13,6 +13,9 @@ import presentation.common.resolveOrDefault
 fun HomeScreenRoot(
     onPackClick: (String) -> Unit,
     onCreatePackClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    onSyncClick: () -> Unit,
+    onLoginClick: () -> Unit,
     viewModel: HomeViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -29,6 +32,9 @@ fun HomeScreenRoot(
                 is HomeEffect.ShowSuccess -> {
                     snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
                 }
+                is HomeEffect.NavigateToProfile -> onProfileClick()
+                is HomeEffect.NavigateToSync -> onSyncClick()
+                is HomeEffect.NavigateToLogin -> onLoginClick()
             }
         }
     }

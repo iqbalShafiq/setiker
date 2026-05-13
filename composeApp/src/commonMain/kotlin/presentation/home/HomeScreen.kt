@@ -24,8 +24,8 @@ import domain.model.StickerPack
 import androidx.compose.ui.tooling.preview.Preview
 import org.jetbrains.compose.resources.stringResource
 import presentation.components.AppTopBar
-import presentation.components.ClayFab
 import presentation.components.EmptyState
+import presentation.components.HomeBottomBar
 import presentation.components.LoadingIndicator
 import presentation.components.StickerPackCard
 import presentation.theme.neubrutalMutedOnSurface
@@ -56,8 +56,27 @@ fun HomeScreen(
                 actions = {}
             )
         },
-        floatingActionButton = {
-            ClayFab(onClick = { onIntent(HomeIntent.CreateNewPack) })
+        bottomBar = {
+            HomeBottomBar(
+                currentUser = state.currentUser,
+                pendingSyncCount = state.pendingSyncCount,
+                isSyncing = state.isSyncing,
+                onProfileClick = { 
+                    if (state.currentUser != null) {
+                        onIntent(HomeIntent.NavigateToProfile)
+                    } else {
+                        onIntent(HomeIntent.NavigateToLogin)
+                    }
+                },
+                onSyncClick = { 
+                    if (state.currentUser != null) {
+                        onIntent(HomeIntent.NavigateToSync)
+                    } else {
+                        onIntent(HomeIntent.NavigateToLogin)
+                    }
+                },
+                onAddPackClick = { onIntent(HomeIntent.CreateNewPack) }
+            )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()

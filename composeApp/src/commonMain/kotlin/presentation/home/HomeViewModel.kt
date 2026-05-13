@@ -2,7 +2,10 @@ package presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import data.auth.AuthManager
+import data.sync.SyncManager
 import domain.model.StickerPack
+import domain.model.SyncOperationStatus
 import domain.repository.StickerRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +23,9 @@ import setiker.composeapp.generated.resources.error_pack_min_stickers_whatsapp
 import setiker.composeapp.generated.resources.success_pack_added_whatsapp
 
 class HomeViewModel(
-    private val repository: StickerRepository
+    private val repository: StickerRepository,
+    private val authManager: AuthManager,
+    private val syncManager: SyncManager
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(HomeState())
@@ -28,6 +33,33 @@ class HomeViewModel(
 
     private val _effect = Channel<HomeEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
+
+    init {
+        observeAuthState()
+        observeSyncState()
+    }
+
+    private fun observeAuthState() {
+        viewModelScope.launch {
+            authManager.currentUser.collect { user ->
+                _state.update { it.copy(currentUser = user) }
+            }
+        }
+    }
+
+    private fun observeSyncState() {
+        viewModelScope.launch {
+            syncManager.isSyncing.collect { isSyncing ->
+                _state.update { it.copy(isSyncing = isSyncing) }
+            }
+        }
+        viewModelScope.launch {
+            syncManager.operationsFlow.collect { operations ->
+                val pendingCount = operations.count { it.status == SyncOperationStatus.PENDING }
+                _state.update { it.copy(pendingSyncCount = pendingCount) }
+            }
+        }
+    }
 
     fun onIntent(intent: HomeIntent) {
         when (intent) {
@@ -37,6 +69,26 @@ class HomeViewModel(
             is HomeIntent.CreateNewPack -> {
                 viewModelScope.launch {
                     _effect.send(HomeEffect.NavigateToCreatePack)
+                }
+            }
+            is HomeIntent.NavigateToProfile -> {
+                viewModelScope.launch {
+                    _effect.send(HomeEffect.NavigateToProfile)
+                }
+            }
+            is HomeIntent.NavigateToSync -> {
+                viewModelScope.launch {
+                    _effect.send(HomeEffect.NavigateToSync)
+                }
+            }
+            is HomeIntent.NavigateToLogin -> {
+                viewModelScope.launch {
+                    _effect.send(HomeEffect.NavigateToLogin)
+                }
+            }
+            is HomeIntent.RefreshSync -> {
+                viewModelScope.launch {
+                    syncManager.sync()
                 }
             }
         }

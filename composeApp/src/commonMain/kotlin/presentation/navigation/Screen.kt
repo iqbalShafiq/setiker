@@ -33,4 +33,16 @@ sealed class Screen {
 
     @Serializable
     data class AnimatedEditor(val draftId: String, val packId: String) : Screen()
+
+    @Serializable
+    data object Login : Screen()
+
+    @Serializable
+    data object Register : Screen()
+
+    @Serializable
+    data object Profile : Screen()
+
+    @Serializable
+    data object Sync : Screen()
 }

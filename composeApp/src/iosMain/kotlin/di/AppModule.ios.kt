@@ -1,10 +1,14 @@
 package di
 
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import data.local.database.StickerDatabase
 import data.storage.StickerFileStorage
+import data.sync.NetworkMonitor
 import data.util.EmojiPreferences
+import data.util.createIOSDataStore
 import domain.actions.IosPackActions
 import domain.actions.PackActions
 import kotlinx.coroutines.Dispatchers
@@ -36,4 +40,6 @@ actual fun platformModule(): Module = module {
     single<StickerFileStorage> { StickerFileStorage() }
     single<EmojiPreferences> { EmojiPreferences() }
     single<PackActions> { IosPackActions() }
+    single<DataStore<Preferences>> { createIOSDataStore() }
+    single { NetworkMonitor() }
 }
