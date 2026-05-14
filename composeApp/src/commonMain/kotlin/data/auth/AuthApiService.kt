@@ -7,6 +7,7 @@ import data.auth.model.RegisterRequest
 import data.auth.model.UserProfileResponse
 import data.remote.ApiConfig
 import data.remote.ApiException
+import data.remote.model.ApiErrorEnvelope
 import domain.error.AppErrorCode
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -32,6 +33,14 @@ class AuthApiService(
         install(ContentNegotiation) { json(json) }
     }
 
+    private fun extractErrorMessage(bodyText: String): String {
+        return runCatching { json.decodeFromString<ApiErrorEnvelope>(bodyText) }
+            .getOrNull()
+            ?.error
+            ?.message
+            ?: bodyText
+    }
+
     suspend fun register(request: RegisterRequest): AuthResponse {
         val response = client.post("$baseUrl/api/v1/auth/register") {
             contentType(ContentType.Application.Json)
@@ -41,7 +50,7 @@ class AuthApiService(
         if (!response.status.isSuccess()) {
             throw ApiException(
                 code = AppErrorCode.AuthRegisterFailed,
-                message = bodyText
+                message = extractErrorMessage(bodyText)
             )
         }
         return json.decodeFromString(bodyText)
@@ -56,7 +65,7 @@ class AuthApiService(
         if (!response.status.isSuccess()) {
             throw ApiException(
                 code = AppErrorCode.AuthLoginFailed,
-                message = bodyText
+                message = extractErrorMessage(bodyText)
             )
         }
         return json.decodeFromString(bodyText)

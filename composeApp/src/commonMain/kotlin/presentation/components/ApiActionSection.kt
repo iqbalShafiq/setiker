@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import coil3.compose.AsyncImage
 import org.jetbrains.compose.resources.stringResource
 import presentation.createpack.DraftSticker
@@ -121,5 +122,39 @@ fun SelectableStickerGrid(
                 }
             }
         }
+    }
+}
+
+// MARK: - Previews
+
+@Preview
+@Composable
+private fun ApiActionSectionPreview() {
+    MaterialTheme {
+        ApiActionSection(
+            title = "API Actions",
+            content = {
+                Text(
+                    text = "Sample content",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun SelectableStickerGridPreview() {
+    MaterialTheme {
+        SelectableStickerGrid(
+            stickers = listOf(
+                DraftSticker(imagePath = ""),
+                DraftSticker(imagePath = ""),
+                DraftSticker(imagePath = "")
+            ),
+            selectedIndices = setOf(0),
+            onToggle = {}
+        )
     }
 }

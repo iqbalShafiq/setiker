@@ -23,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -274,5 +275,82 @@ fun AiGenerateBottomSheet(
                 onClick = onDismiss
             )
         }
+    }
+}
+
+// MARK: - Previews
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview
+@Composable
+private fun AiGenerateBottomSheetPreview() {
+    MaterialTheme {
+        AiGenerateBottomSheet(
+            prompt = "A cute cat sticker",
+            onPromptChange = {},
+            generateAsGrid = false,
+            onToggleGrid = {},
+            gridLayout = "2x2",
+            onGridLayoutChange = {},
+            normalizeOutput = true,
+            onToggleNormalize = {},
+            inputImagePath = null,
+            onPickInputImage = {},
+            onClearInputImage = {},
+            hasContextualDefault = false,
+            isGenerating = false,
+            onGenerate = {},
+            onDismiss = {}
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview
+@Composable
+private fun AiGenerateBottomSheetGridPreview() {
+    MaterialTheme {
+        AiGenerateBottomSheet(
+            prompt = "A cute cat sticker",
+            onPromptChange = {},
+            generateAsGrid = true,
+            onToggleGrid = {},
+            gridLayout = "3x3",
+            onGridLayoutChange = {},
+            normalizeOutput = true,
+            onToggleNormalize = {},
+            inputImagePath = null,
+            onPickInputImage = {},
+            onClearInputImage = {},
+            hasContextualDefault = false,
+            isGenerating = false,
+            onGenerate = {},
+            onDismiss = {}
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview
+@Composable
+private fun AiGenerateBottomSheetGeneratingPreview() {
+    MaterialTheme {
+        AiGenerateBottomSheet(
+            prompt = "A cute cat sticker",
+            onPromptChange = {},
+            generateAsGrid = false,
+            onToggleGrid = {},
+            gridLayout = "2x2",
+            onGridLayoutChange = {},
+            normalizeOutput = true,
+            onToggleNormalize = {},
+            inputImagePath = null,
+            onPickInputImage = {},
+            onClearInputImage = {},
+            hasContextualDefault = false,
+            isGenerating = true,
+            onGenerate = {},
+            onDismiss = {}
+        )
     }
 }

@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import domain.model.DecorationFont
 import domain.model.DecorationFontWeight
@@ -396,4 +397,70 @@ internal fun mapFontWeight(weight: DecorationFontWeight): FontWeight = when (wei
     DecorationFontWeight.Medium -> FontWeight.Medium
     DecorationFontWeight.SemiBold -> FontWeight.SemiBold
     DecorationFontWeight.Bold -> FontWeight.Bold
+}
+
+// MARK: - Previews
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview
+@Composable
+private fun AddTextDecorationBottomSheetPreview() {
+    MaterialTheme {
+        AddTextDecorationBottomSheet(
+            onAdd = { _, _ -> },
+            onDismiss = {}
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview
+@Composable
+private fun EditTextDecorationBottomSheetPreview() {
+    MaterialTheme {
+        EditTextDecorationBottomSheet(
+            initialText = "Hello",
+            onConfirm = {},
+            onDismiss = {}
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Preview
+@Composable
+private fun FontPickerBottomSheetPreview() {
+    MaterialTheme {
+        FontPickerBottomSheet(
+            selectedFont = DecorationFont.Sans,
+            onSelect = {},
+            onDismiss = {}
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Preview
+@Composable
+private fun FontWeightPickerBottomSheetPreview() {
+    MaterialTheme {
+        FontWeightPickerBottomSheet(
+            selectedWeight = DecorationFontWeight.Bold,
+            onSelect = {},
+            onDismiss = {}
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview
+@Composable
+private fun ColorPickerBottomSheetPreview() {
+    MaterialTheme {
+        ColorPickerBottomSheet(
+            selectedColorArgb = 0xFFFF0000L,
+            onSelect = {},
+            onDismiss = {}
+        )
+    }
 }

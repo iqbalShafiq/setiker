@@ -20,11 +20,11 @@ import androidx.navigation.navArgument
 import domain.model.AnimatedStickerSpec
 import presentation.animatededitor.AnimatedEditorEffect
 import presentation.animatededitor.AnimatedEditorScreenRoot
-import presentation.auth.LoginScreen
+import presentation.auth.LoginScreenRoot
 import presentation.auth.LoginViewModel
-import presentation.auth.ProfileScreen
+import presentation.auth.ProfileScreenRoot
 import presentation.auth.ProfileViewModel
-import presentation.auth.RegisterScreen
+import presentation.auth.RegisterScreenRoot
 import presentation.auth.RegisterViewModel
 import presentation.createpack.CreatePackScreenRoot
 import presentation.createpack.DraftSticker
@@ -32,7 +32,7 @@ import presentation.crop.CropScreenRoot
 import presentation.editor.EditorScreenRoot
 import presentation.home.HomeScreenRoot
 import presentation.packdetail.PackDetailScreenRoot
-import presentation.sync.SyncScreen
+import presentation.sync.SyncScreenRoot
 import presentation.sync.SyncViewModel
 import presentation.videocrop.VideoCropScreenRoot
 import presentation.videotrim.VideoTrimScreenRoot
@@ -145,7 +145,7 @@ fun AppNavigation(
               }
           ) {
              val viewModel: LoginViewModel = koinViewModel()
-             LoginScreen(
+             LoginScreenRoot(
                  viewModel = viewModel,
                  onNavigateToHome = {
                      navController.navigate("home") {
@@ -192,21 +192,21 @@ fun AppNavigation(
                    ) + fadeOut(animationSpec = tween(ANIMATION_DURATION))
                }
            ) {
-              val viewModel: RegisterViewModel = koinViewModel()
-              RegisterScreen(
-                  viewModel = viewModel,
-                  onNavigateToHome = {
-                      navController.navigate("home") {
-                          popUpTo("home") { inclusive = true }
-                      }
-                  },
-                  onNavigateToLogin = {
-                      navController.navigate("login") {
-                          popUpTo("register") { inclusive = true }
-                      }
-                  }
-              )
-          }
+               val viewModel: RegisterViewModel = koinViewModel()
+               RegisterScreenRoot(
+                   viewModel = viewModel,
+                   onNavigateToHome = {
+                       navController.navigate("home") {
+                           popUpTo("home") { inclusive = true }
+                       }
+                   },
+                   onNavigateToLogin = {
+                       navController.navigate("login") {
+                           popUpTo("register") { inclusive = true }
+                       }
+                   }
+               )
+           }
   
           composable("profile",
             enterTransition = {
@@ -223,7 +223,7 @@ fun AppNavigation(
             }
         ) {
             val viewModel: ProfileViewModel = koinViewModel()
-            ProfileScreen(
+            ProfileScreenRoot(
                 viewModel = viewModel,
                 onLogout = {
                     navController.navigate("login") {
@@ -248,7 +248,7 @@ fun AppNavigation(
             }
         ) {
             val viewModel: SyncViewModel = koinViewModel()
-            SyncScreen(
+            SyncScreenRoot(
                 viewModel = viewModel,
                 onBackClick = { navController.popBackStack() }
             )

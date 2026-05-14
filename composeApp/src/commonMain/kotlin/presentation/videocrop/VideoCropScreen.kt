@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import data.remote.readFileBytes
 import domain.model.CropTransform
@@ -335,6 +336,40 @@ private fun rememberPreviewFrameBitmaps(
         }
     }
     return cache
+}
+
+// MARK: - Previews
+
+@Preview
+@Composable
+private fun VideoCropScreenPreview() {
+    MaterialTheme {
+        VideoCropScreen(
+            state = VideoCropState(
+                videoPath = "",
+                transform = CropTransform(scale = 1.2f)
+            ),
+            onIntent = {},
+            onBackClick = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun VideoCropScreenProcessingPreview() {
+    MaterialTheme {
+        VideoCropScreen(
+            state = VideoCropState(
+                videoPath = "",
+                isApplying = true,
+                applyProgress = 0.5f,
+                applyProgressLabel = "Extracting frames"
+            ),
+            onIntent = {},
+            onBackClick = {}
+        )
+    }
 }
 
 @Composable

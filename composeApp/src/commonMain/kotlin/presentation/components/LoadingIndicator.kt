@@ -24,7 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
-import androidx.compose.ui.tooling.preview.Preview
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import presentation.theme.AccentCoral
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalMutedOnSurface

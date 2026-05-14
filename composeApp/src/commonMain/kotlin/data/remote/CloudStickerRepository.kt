@@ -5,7 +5,6 @@ import data.remote.model.ApiSuccessEnvelope
 import data.remote.model.CloudStickerPack
 import data.remote.model.CreateStickerPackRequest
 import data.remote.model.SyncData
-import data.remote.model.SyncResponseData
 import domain.error.AppErrorCode
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -98,7 +97,7 @@ class CloudStickerRepository(
         if (!response.status.isSuccess()) {
             throw ApiException(code = AppErrorCode.CloudSyncFailed)
         }
-        val envelope = json.decodeFromString<SyncResponseData>(response.bodyAsText())
+        val envelope = json.decodeFromString<ApiSuccessEnvelope<SyncData>>(response.bodyAsText())
         return envelope.data ?: throw ApiException(code = AppErrorCode.CloudSyncFailed)
     }
 }

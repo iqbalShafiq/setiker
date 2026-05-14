@@ -47,12 +47,10 @@ class LoginViewModel(
             _state.update { it.copy(isLoading = true, error = null) }
             try {
                  val response = authApiService.login(LoginRequest(email = currentState.email, password = currentState.password))
-                 val accessToken = response.accessToken
-                 val refreshToken = response.refreshToken
-                 val expiresIn = response.expiresIn
-                 val user = response.data
-                 if (accessToken != null && refreshToken != null && expiresIn != null && user != null) {
-                     authManager.saveTokens(accessToken, refreshToken, expiresIn)
+                 val tokens = response.data?.tokens
+                 val user = response.data?.user
+                 if (tokens != null && user != null) {
+                     authManager.saveTokens(tokens.accessToken, tokens.refreshToken, tokens.expiresIn)
                      authManager.saveUser(user.toDomainModel())
                      _effect.value = LoginEffect.NavigateToHome
                  } else {

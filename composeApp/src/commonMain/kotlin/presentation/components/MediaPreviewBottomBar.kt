@@ -4,10 +4,13 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.graphics.vector.ImageVector
 import org.jetbrains.compose.resources.stringResource
 import setiker.composeapp.generated.resources.Res
@@ -72,4 +75,38 @@ fun MediaPreviewBottomBar(
             )
         }
     )
+}
+
+// MARK: - Previews
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview
+@Composable
+private fun MediaPreviewBottomBarPausedPreview() {
+    MaterialTheme {
+        MediaPreviewBottomBar(
+            primaryIcon = Icons.Filled.Check,
+            primaryDescription = "Apply",
+            onPrimary = {},
+            onCancel = {},
+            isPlaying = false,
+            onTogglePlay = {}
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview
+@Composable
+private fun MediaPreviewBottomBarPlayingPreview() {
+    MaterialTheme {
+        MediaPreviewBottomBar(
+            primaryIcon = Icons.Filled.Check,
+            primaryDescription = "Apply",
+            onPrimary = {},
+            onCancel = {},
+            isPlaying = true,
+            onTogglePlay = {}
+        )
+    }
 }

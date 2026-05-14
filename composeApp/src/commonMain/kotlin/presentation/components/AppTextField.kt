@@ -20,7 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.tooling.preview.Preview
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.jetbrains.compose.resources.stringResource
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
@@ -42,7 +42,9 @@ fun AppTextField(
     leadingIcon: @Composable (() -> Unit)? = null,
     trailingIcon: @Composable (() -> Unit)? = null,
     isError: Boolean = false,
-    supportingText: @Composable (() -> Unit)? = null
+    supportingText: @Composable (() -> Unit)? = null,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    imeAction: ImeAction = ImeAction.Done
 ) {
     val border = neubrutalBorderColor()
     val surface = neubrutalCardSurface()
@@ -78,8 +80,8 @@ fun AppTextField(
             ),
             cursorBrush = androidx.compose.ui.graphics.SolidColor(onSurface),
             keyboardOptions = KeyboardOptions(
-                imeAction = ImeAction.Done,
-                keyboardType = KeyboardType.Text
+                imeAction = imeAction,
+                keyboardType = keyboardType
             ),
             decorationBox = { innerTextField ->
                 if (value.isEmpty() && placeholder.isNotEmpty()) {

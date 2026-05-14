@@ -1,6 +1,6 @@
 package data.remote
 
 actual object ApiConfig {
-    actual val baseUrl: String = "http://192.168.13.146:3123"
+    actual val baseUrl: String = "http://13.251.98.162:8080"
     actual val isDebugLoggingEnabled: Boolean = false
 }

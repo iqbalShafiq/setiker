@@ -24,18 +24,37 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import domain.model.User
+import domain.model.UserRole
 import presentation.components.AppPrimaryButton
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
+import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
-fun ProfileScreen(
+fun ProfileScreenRoot(
     viewModel: ProfileViewModel,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.state.collectAsState()
-    
+
+    ProfileScreen(
+        state = state,
+        onLogout = {
+            viewModel.logout()
+            onLogout()
+        },
+        modifier = modifier
+    )
+}
+
+@Composable
+fun ProfileScreen(
+    state: ProfileState,
+    onLogout: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Scaffold(
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
@@ -61,9 +80,9 @@ fun ProfileScreen(
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             state.user?.let { user ->
                 Text(
                     text = "@${user.username}",
@@ -83,15 +102,12 @@ fun ProfileScreen(
                         color = neubrutalOnSurface()
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.height(24.dp))
-                
+
                 AppPrimaryButton(
                     text = "Logout",
-                    onClick = {
-                        viewModel.logout()
-                        onLogout()
-                    },
+                    onClick = onLogout,
                     modifier = Modifier.fillMaxWidth()
                 )
             } ?: run {
@@ -105,5 +121,51 @@ fun ProfileScreen(
                 }
             }
         }
+    }
+}
+
+// MARK: - Previews
+
+@Preview
+@Composable
+private fun ProfileScreenPreview() {
+    MaterialTheme {
+        ProfileScreen(
+            state = ProfileState(
+                user = User(
+                    id = "1",
+                    username = "johndoe",
+                    email = "john@example.com",
+                    name = "John Doe",
+                    role = UserRole(id = "1", name = "user"),
+                    isActive = true,
+                    createdAt = 0L
+                ),
+                isLoading = false
+            ),
+            onLogout = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun ProfileScreenLoadingPreview() {
+    MaterialTheme {
+        ProfileScreen(
+            state = ProfileState(isLoading = true),
+            onLogout = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun ProfileScreenEmptyPreview() {
+    MaterialTheme {
+        ProfileScreen(
+            state = ProfileState(user = null, isLoading = false),
+            onLogout = {}
+        )
     }
 }

@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
 /**
@@ -42,5 +43,14 @@ fun BlockingLoadingOverlay(
                 style = MaterialTheme.typography.bodyMedium
             )
         }
+    }
+}
+
+// MARK: - Previews
+@Preview
+@Composable
+private fun BlockingLoadingOverlayPreview() {
+    MaterialTheme {
+        BlockingLoadingOverlay(message = "Loading...")
     }
 }

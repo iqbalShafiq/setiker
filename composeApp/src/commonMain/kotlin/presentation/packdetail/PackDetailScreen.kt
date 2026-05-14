@@ -47,7 +47,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import domain.model.Sticker
 import domain.model.StickerPack
-import androidx.compose.ui.tooling.preview.Preview
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.jetbrains.compose.resources.stringResource
 import presentation.components.AppDialog
 import presentation.components.AppPrimaryButton
@@ -457,7 +457,7 @@ private fun PackDetailScreenLoadingPreview() {
 private fun PackDetailScreenPreview() {
     MaterialTheme {
         PackDetailScreen(
-            state = PackDetailState(pack = mockPack),
+            state = PackDetailState(pack = mockPack, isLoading = false),
             onIntent = {},
             onBackClick = {},
             onEditPack = {},

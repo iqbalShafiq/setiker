@@ -10,8 +10,11 @@ import kotlinx.datetime.Instant
          email = email,
          username = username,
          name = name,
-         role = UserRole(id = roleId, name = role ?: "user"),
+         role = UserRole(
+             id = role?.id ?: roleId,
+             name = role?.name ?: "user"
+         ),
          isActive = isActive,
-         createdAt = Instant.parse(createdAt).toEpochMilliseconds()
+         createdAt = runCatching { Instant.parse(createdAt).toEpochMilliseconds() }.getOrDefault(0L)
      )
  }

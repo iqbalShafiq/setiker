@@ -35,6 +35,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -520,3 +521,56 @@ fun AnimatedEditorScreen(
 // AnimatedEditorTextSheet has been replaced by the shared `AddTextDecorationBottomSheet`
 // component so both static and animated editors use the same UI (including font picker)
 // when adding a text decoration.
+
+// MARK: - Previews
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Preview
+@Composable
+private fun AnimatedEditorScreenPreview() {
+    MaterialTheme {
+        AnimatedEditorScreen(
+            state = AnimatedEditorState(
+                draftId = "preview",
+                frames = listOf(),
+                currentFrameIndex = 0,
+                emojis = listOf("😂", "🐱"),
+                accessibilityText = "A funny cat sticker"
+            ),
+            onIntent = {},
+            onBackClick = {}
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Preview
+@Composable
+private fun AnimatedEditorScreenLoadingPreview() {
+    MaterialTheme {
+        AnimatedEditorScreen(
+            state = AnimatedEditorState(isLoading = true),
+            onIntent = {},
+            onBackClick = {}
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Preview
+@Composable
+private fun AnimatedEditorScreenSavingPreview() {
+    MaterialTheme {
+        AnimatedEditorScreen(
+            state = AnimatedEditorState(
+                draftId = "preview",
+                frames = listOf(),
+                isSaving = true,
+                saveProgress = 0.6f,
+                saveProgressLabel = "Encoding frame 12/20"
+            ),
+            onIntent = {},
+            onBackClick = {}
+        )
+    }
+}

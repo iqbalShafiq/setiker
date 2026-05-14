@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -237,6 +238,39 @@ fun VideoTrimScreen(
                 Spacer(modifier = Modifier.height(40.dp))
             }
         }
+    }
+}
+
+// MARK: - Previews
+
+@Preview
+@Composable
+private fun VideoTrimScreenPreview() {
+    MaterialTheme {
+        VideoTrimScreen(
+            state = VideoTrimState(
+                videoPath = "",
+                videoDurationMs = 10000L,
+                trimStartMs = 2000L,
+                trimEndMs = 8000L,
+                fps = 15,
+                speed = 1f
+            ),
+            onIntent = {},
+            onBackClick = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun VideoTrimScreenLoadingPreview() {
+    MaterialTheme {
+        VideoTrimScreen(
+            state = VideoTrimState(isLoading = true),
+            onIntent = {},
+            onBackClick = {}
+        )
     }
 }
 

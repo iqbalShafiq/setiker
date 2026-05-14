@@ -34,6 +34,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
@@ -127,5 +128,19 @@ fun AppPasswordTextField(
             Spacer(modifier = Modifier.height(4.dp))
             supportingText()
         }
+    }
+}
+
+// MARK: - Previews
+@Preview
+@Composable
+private fun AppPasswordTextFieldPreview() {
+    MaterialTheme {
+        AppPasswordTextField(
+            value = "",
+            onValueChange = {},
+            label = "Password",
+            placeholder = "Enter your password"
+        )
     }
 }

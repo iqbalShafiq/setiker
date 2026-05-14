@@ -44,9 +44,3 @@ data class SyncDelta(
     val updated: List<CloudStickerPack> = emptyList(),
     val deleted: List<CloudStickerPack> = emptyList()
 )
-
-@Serializable
-data class SyncResponseData(
-    val success: Boolean,
-    val data: SyncData? = null
-)

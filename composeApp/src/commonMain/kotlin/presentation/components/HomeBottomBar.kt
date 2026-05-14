@@ -15,7 +15,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import domain.model.User
+import domain.model.UserRole
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,4 +49,47 @@ fun HomeBottomBar(
         },
         modifier = modifier
     )
+}
+
+// MARK: - Previews
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview
+@Composable
+private fun HomeBottomBarLoggedInPreview() {
+    val mockUser = User(
+        id = "1",
+        email = "test@example.com",
+        username = "testuser",
+        name = "Test User",
+        role = UserRole(id = "1", name = "user"),
+        isActive = true,
+        createdAt = 0L
+    )
+    MaterialTheme {
+        HomeBottomBar(
+            currentUser = mockUser,
+            pendingSyncCount = 3,
+            isSyncing = false,
+            onProfileClick = {},
+            onSyncClick = {},
+            onAddPackClick = {}
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview
+@Composable
+private fun HomeBottomBarGuestPreview() {
+    MaterialTheme {
+        HomeBottomBar(
+            currentUser = null,
+            pendingSyncCount = 0,
+            isSyncing = false,
+            onProfileClick = {},
+            onSyncClick = {},
+            onAddPackClick = {}
+        )
+    }
 }

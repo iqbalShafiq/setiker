@@ -35,6 +35,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
 import domain.model.DecorationFont
@@ -273,3 +274,38 @@ fun DecorationPreviewLayer(
 // `mapFontFamily` and `mapFontWeight` now live in `DecorationBottomSheets.kt` as
 // `internal` helpers so both static and animated editors share identical decoration
 // rendering and picker chips without duplicating the mapping logic.
+
+// MARK: - Previews
+
+@Preview
+@Composable
+private fun DecorationPreviewLayerPreview() {
+    val mockDecorations = listOf(
+        TextDecoration(
+            id = "txt_1",
+            text = "Hello World",
+            font = DecorationFont.Sans,
+            fontWeight = DecorationFontWeight.Bold,
+            textColorArgb = 0xFF000000L,
+            centerX = 0.5f,
+            centerY = 0.35f,
+            scale = 1f
+        ),
+        EmojiDecoration(
+            id = "emoji_1",
+            emoji = "🔥",
+            centerX = 0.5f,
+            centerY = 0.65f,
+            scale = 1.5f
+        )
+    )
+    MaterialTheme {
+        DecorationPreviewLayer(
+            decorations = mockDecorations,
+            selectedDecorationId = "txt_1",
+            onSelectDecoration = {},
+            onUpdateDecoration = { _, _, _, _ -> },
+            onDeleteDecoration = {}
+        )
+    }
+}

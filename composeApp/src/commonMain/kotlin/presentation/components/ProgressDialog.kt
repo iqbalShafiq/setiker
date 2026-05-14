@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -126,5 +127,18 @@ fun ProgressDialog(
                 )
             }
         }
+    }
+}
+
+// MARK: - Previews
+@Preview
+@Composable
+private fun ProgressDialogPreview() {
+    MaterialTheme {
+        ProgressDialog(
+            title = "Exporting Video...",
+            progress = 0.65f,
+            progressLabel = "Frame 12/24"
+        )
     }
 }

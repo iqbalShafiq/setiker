@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
 /**
@@ -49,5 +50,38 @@ fun SyncStatusIndicator(
             tint = contentColor,
             modifier = Modifier.size(16.dp)
         )
+    }
+}
+
+// MARK: - Previews
+@Preview
+@Composable
+private fun SyncStatusIndicatorSyncedPreview() {
+    MaterialTheme {
+        SyncStatusIndicator(syncState = "SYNCED")
+    }
+}
+
+@Preview
+@Composable
+private fun SyncStatusIndicatorPendingPreview() {
+    MaterialTheme {
+        SyncStatusIndicator(syncState = "PENDING")
+    }
+}
+
+@Preview
+@Composable
+private fun SyncStatusIndicatorFailedPreview() {
+    MaterialTheme {
+        SyncStatusIndicator(syncState = "FAILED")
+    }
+}
+
+@Preview
+@Composable
+private fun SyncStatusIndicatorUnknownPreview() {
+    MaterialTheme {
+        SyncStatusIndicator(syncState = "UNKNOWN")
     }
 }

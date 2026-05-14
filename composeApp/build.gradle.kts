@@ -20,6 +20,12 @@ kotlin {
             freeCompilerArgs.add("-Xexpect-actual-classes")
         }
     }
+
+    compilerOptions {
+        freeCompilerArgs.addAll(
+            "-Xwarning-level=DEPRECATION:disabled",
+        )
+    }
     
     listOf(
         iosX64(),
@@ -40,6 +46,7 @@ kotlin {
             implementation(libs.ui)
             implementation(libs.components.resources)
             implementation(libs.components.ui.tooling.preview)
+            implementation(libs.ui.tooling.preview)
             implementation(libs.material.icons.extended)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.viewmodel.compose)

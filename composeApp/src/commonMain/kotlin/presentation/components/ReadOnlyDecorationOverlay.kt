@@ -21,6 +21,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
@@ -167,4 +168,34 @@ private fun mapDecorationFontWeight(weight: DecorationFontWeight): FontWeight = 
     DecorationFontWeight.Medium -> FontWeight.Medium
     DecorationFontWeight.SemiBold -> FontWeight.SemiBold
     DecorationFontWeight.Bold -> FontWeight.Bold
+}
+
+// MARK: - Previews
+@Preview
+@Composable
+private fun ReadOnlyDecorationOverlayPreview() {
+    MaterialTheme {
+        ReadOnlyDecorationOverlay(
+            decorations = listOf(
+                TextDecoration(
+                    id = "txt_1",
+                    text = "Hello",
+                    font = DecorationFont.Sans,
+                    fontWeight = DecorationFontWeight.SemiBold,
+                    textColorArgb = 0xFF000000L,
+                    centerX = 0.5f,
+                    centerY = 0.3f,
+                    scale = 1f
+                ),
+                EmojiDecoration(
+                    id = "emoji_1",
+                    emoji = "😎",
+                    centerX = 0.7f,
+                    centerY = 0.6f,
+                    scale = 1.2f
+                )
+            ),
+            modifier = Modifier.size(200.dp)
+        )
+    }
 }

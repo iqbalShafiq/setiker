@@ -33,12 +33,14 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import domain.model.SyncOperation
 import domain.model.SyncOperationStatus
+import domain.model.SyncOperationType
 import domain.model.SyncReport
 import domain.model.SyncResult
 import presentation.components.AppPrimaryButton
@@ -50,13 +52,29 @@ import presentation.theme.neubrutalScreenBackground
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SyncScreen(
+fun SyncScreenRoot(
     viewModel: SyncViewModel,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.state.collectAsState()
-    
+
+    SyncScreen(
+        state = state,
+        onIntent = viewModel::onIntent,
+        onBackClick = onBackClick,
+        modifier = modifier
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SyncScreen(
+    state: SyncState,
+    onIntent: (SyncIntent) -> Unit,
+    onBackClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -90,7 +108,7 @@ fun SyncScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            SyncStatusCard(
+                SyncStatusCard(
                 isSyncing = state.isSyncing,
                 lastReport = state.lastReport,
                 pendingCount = state.operations.count { it.status == SyncOperationStatus.PENDING }
@@ -104,14 +122,14 @@ fun SyncScreen(
             ) {
                 AppPrimaryButton(
                     text = "Sync Now",
-                    onClick = { viewModel.onIntent(SyncIntent.SyncNow) },
+                    onClick = { onIntent(SyncIntent.SyncNow) },
                     enabled = !state.isSyncing,
                     modifier = Modifier.weight(1f)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 AppSecondaryButton(
                     text = "Clear Done",
-                    onClick = { viewModel.onIntent(SyncIntent.ClearCompleted) },
+                    onClick = { onIntent(SyncIntent.ClearCompleted) },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -152,8 +170,8 @@ fun SyncScreen(
                     items(state.operations) { operation ->
                         SyncOperationItem(
                             operation = operation,
-                            onRetry = { viewModel.onIntent(SyncIntent.RetryOperation(operation.id)) },
-                            onCancel = { viewModel.onIntent(SyncIntent.CancelOperation(operation.id)) }
+                            onRetry = { onIntent(SyncIntent.RetryOperation(operation.id)) },
+                            onCancel = { onIntent(SyncIntent.CancelOperation(operation.id)) }
                         )
                     }
                 }
@@ -275,6 +293,87 @@ private fun SyncOperationItem(
                 }
             }
         }
+    }
+}
+
+// MARK: - Previews
+
+@Preview
+@Composable
+private fun SyncScreenPreview() {
+    MaterialTheme {
+        SyncScreen(
+            state = SyncState(
+                operations = listOf(
+                    SyncOperation(
+                        id = "1",
+                        type = SyncOperationType.CREATE_PACK,
+                        targetId = "pack_1",
+                        payload = "{}",
+                        status = SyncOperationStatus.SUCCESS,
+                        createdAt = 0L
+                    ),
+                    SyncOperation(
+                        id = "2",
+                        type = SyncOperationType.ADD_STICKER,
+                        targetId = "pack_2",
+                        payload = "{}",
+                        status = SyncOperationStatus.PENDING,
+                        createdAt = 0L
+                    ),
+                    SyncOperation(
+                        id = "3",
+                        type = SyncOperationType.DELETE_PACK,
+                        targetId = "pack_3",
+                        payload = "{}",
+                        status = SyncOperationStatus.FAILED,
+                        errorMessage = "Network error",
+                        createdAt = 0L
+                    )
+                ),
+                isSyncing = false,
+                isLoading = false
+            ),
+            onIntent = {},
+            onBackClick = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun SyncScreenLoadingPreview() {
+    MaterialTheme {
+        SyncScreen(
+            state = SyncState(isLoading = true),
+            onIntent = {},
+            onBackClick = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun SyncScreenSyncingPreview() {
+    MaterialTheme {
+        SyncScreen(
+            state = SyncState(
+                operations = listOf(
+                    SyncOperation(
+                        id = "1",
+                        type = SyncOperationType.UPDATE_PACK,
+                        targetId = "pack_1",
+                        payload = "{}",
+                        status = SyncOperationStatus.IN_PROGRESS,
+                        createdAt = 0L
+                    )
+                ),
+                isSyncing = true,
+                isLoading = false
+            ),
+            onIntent = {},
+            onBackClick = {}
+        )
     }
 }
 
