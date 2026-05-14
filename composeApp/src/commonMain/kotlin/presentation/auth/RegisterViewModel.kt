@@ -74,13 +74,15 @@ class RegisterViewModel(
                          email = s.email,
                          username = s.username,
                          password = s.password,
-                         name = s.name.takeIf { it.isNotBlank() }
+                         displayName = s.name.takeIf { it.isNotBlank() }
                      )
                  )
-                 val tokens = response.data?.tokens
-                 val user = response.data?.user
-                 if (tokens != null && user != null) {
-                     authManager.saveTokens(tokens.accessToken, tokens.refreshToken, tokens.expiresIn)
+                 val data = response.data
+                 val user = data?.user
+                 val accessToken = data?.accessToken
+                 val refreshToken = authApiService.getRefreshToken()
+                 if (accessToken != null && user != null) {
+                     authManager.saveTokens(accessToken, refreshToken ?: "", 3600)
                      authManager.saveUser(user.toDomainModel())
                      _effect.value = RegisterEffect.NavigateToHome
                  } else {

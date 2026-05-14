@@ -11,7 +11,10 @@ import kotlinx.coroutines.launch
 
 data class ProfileState(
     val user: User? = null,
-    val isLoading: Boolean = true
+    val isLoading: Boolean = true,
+    val stickersCount: Int = 0,
+    val packsCount: Int = 0,
+    val downloadsCount: Int = 0
 )
 
 class ProfileViewModel(
@@ -26,7 +29,13 @@ class ProfileViewModel(
     private fun loadUser() {
         viewModelScope.launch {
             val user = authManager.getUser()
-            _state.value = ProfileState(user = user, isLoading = false)
+            _state.value = ProfileState(
+                user = user,
+                isLoading = false,
+                stickersCount = 1248,
+                packsCount = 86,
+                downloadsCount = 3200
+            )
         }
     }
     

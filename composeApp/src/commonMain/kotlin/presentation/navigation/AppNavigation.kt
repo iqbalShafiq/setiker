@@ -229,7 +229,8 @@ fun AppNavigation(
                     navController.navigate("login") {
                         popUpTo("home") { inclusive = true }
                     }
-                }
+                },
+                onSettingsClick = {}
             )
         }
 

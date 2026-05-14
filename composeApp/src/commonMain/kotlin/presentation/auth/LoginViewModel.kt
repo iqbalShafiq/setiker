@@ -47,10 +47,14 @@ class LoginViewModel(
             _state.update { it.copy(isLoading = true, error = null) }
             try {
                  val response = authApiService.login(LoginRequest(email = currentState.email, password = currentState.password))
-                 val tokens = response.data?.tokens
-                 val user = response.data?.user
-                 if (tokens != null && user != null) {
-                     authManager.saveTokens(tokens.accessToken, tokens.refreshToken, tokens.expiresIn)
+                 val data = response.data
+                 val user = data?.user
+                 val accessToken = data?.accessToken
+                 val refreshToken = authApiService.getRefreshToken()
+                 if (accessToken != null && user != null) {
+                     // Server sends refreshToken via HTTP-only cookie.
+                     // We extract it from cookie storage and save it.
+                     authManager.saveTokens(accessToken, refreshToken ?: "", 3600)
                      authManager.saveUser(user.toDomainModel())
                      _effect.value = LoginEffect.NavigateToHome
                  } else {

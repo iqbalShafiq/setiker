@@ -9,12 +9,12 @@ import kotlinx.datetime.Instant
          id = id,
          email = email,
          username = username,
-         name = name,
+         name = displayName,
          role = UserRole(
-             id = role?.id ?: roleId,
-             name = role?.name ?: "user"
+             id = "", // Role ID not provided in auth response
+             name = role ?: "user"
          ),
-         isActive = isActive,
-         createdAt = runCatching { Instant.parse(createdAt).toEpochMilliseconds() }.getOrDefault(0L)
+         isActive = isActive ?: true,
+         createdAt = createdAt?.let { runCatching { Instant.parse(it).toEpochMilliseconds() }.getOrDefault(0L) } ?: 0L
      )
  }

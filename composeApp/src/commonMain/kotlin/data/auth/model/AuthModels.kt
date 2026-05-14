@@ -7,7 +7,7 @@ data class RegisterRequest(
     val email: String,
     val username: String,
     val password: String,
-    val name: String? = null
+    val displayName: String? = null
 )
 
 @Serializable
@@ -23,16 +23,27 @@ data class ChangePasswordRequest(
 )
 
 /**
- * Auth response structure matching OpenAPI spec:
+ * Actual API response structure (from real implementation):
+ * Login/Register:
  * {
  *   "success": true,
  *   "data": {
- *     "user": { ... },
- *     "tokens": {
- *       "accessToken": "...",
- *       "refreshToken": "...",
- *       "expiresIn": 3600
- *     }
+ *     "user": {
+ *       "id": "...",
+ *       "email": "...",
+ *       "username": "...",
+ *       "displayName": null,
+ *       "role": "user"
+ *     },
+ *     "accessToken": "..."
+ *   }
+ * }
+ *
+ * Refresh:
+ * {
+ *   "success": true,
+ *   "data": {
+ *     "accessToken": "..."
  *   }
  * }
  */
@@ -44,15 +55,8 @@ data class AuthResponse(
 
 @Serializable
 data class AuthDataDto(
-    val user: UserDto,
-    val tokens: AuthTokensDto
-)
-
-@Serializable
-data class AuthTokensDto(
-    val accessToken: String,
-    val refreshToken: String,
-    val expiresIn: Long
+    val user: UserDto? = null,
+    val accessToken: String? = null
 )
 
 @Serializable
@@ -60,17 +64,11 @@ data class UserDto(
     val id: String,
     val email: String,
     val username: String,
-    val name: String? = null,
-    val roleId: String,
-    val role: RoleDto? = null,
-    val isActive: Boolean,
-    val createdAt: String
-)
-
-@Serializable
-data class RoleDto(
-    val id: String,
-    val name: String
+    val displayName: String? = null,
+    val role: String? = null,
+    val isActive: Boolean? = null,
+    val emailVerified: Boolean? = null,
+    val createdAt: String? = null
 )
 
 @Serializable
