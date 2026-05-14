@@ -90,6 +90,7 @@ import setiker.composeapp.generated.resources.support_section
 fun ProfileScreenRoot(
     viewModel: ProfileViewModel,
     onLogout: () -> Unit,
+    onBackClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -101,6 +102,7 @@ fun ProfileScreenRoot(
             viewModel.logout()
             onLogout()
         },
+        onBackClick = onBackClick,
         onSettingsClick = onSettingsClick,
         modifier = modifier
     )
@@ -110,6 +112,7 @@ fun ProfileScreenRoot(
 fun ProfileScreen(
     state: ProfileState,
     onLogout: () -> Unit,
+    onBackClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -121,6 +124,7 @@ fun ProfileScreen(
         topBar = {
             AppTopBar(
                 title = stringResource(Res.string.my_profile_title),
+                onBackClick = onBackClick,
                 actions = {
                     IconButton(onClick = onSettingsClick) {
                         Icon(

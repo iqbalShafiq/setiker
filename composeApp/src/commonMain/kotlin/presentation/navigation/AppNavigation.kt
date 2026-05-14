@@ -230,6 +230,7 @@ fun AppNavigation(
                         popUpTo("home") { inclusive = true }
                     }
                 },
+                onBackClick = { navController.navigateUp() },
                 onSettingsClick = {}
             )
         }

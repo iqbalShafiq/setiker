@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import presentation.theme.NeubrutalDark
 import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalMutedOnSurface
@@ -78,7 +79,7 @@ fun ProfileMenuItem(
                     imageVector = icon,
                     contentDescription = null,
                     modifier = Modifier.size(20.dp),
-                    tint = neubrutalOnSurface()
+                    tint = NeubrutalDark
                 )
             }
 
