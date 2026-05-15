@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -150,7 +151,7 @@ fun AiGenerateBottomSheet(
                             contentDescription = stringResource(
                                 Res.string.generate_input_image_content_description
                             ),
-                            modifier = Modifier.fillMaxWidth().aspectRatio(1f),
+                            modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
                     } else {
@@ -162,7 +163,7 @@ fun AiGenerateBottomSheet(
                     }
                 }
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
@@ -186,13 +187,13 @@ fun AiGenerateBottomSheet(
                                 }
                             ),
                             onClick = onPickInputImage,
-                            modifier = Modifier
+                            modifier = Modifier.weight(1f)
                         )
                         if (!inputImagePath.isNullOrBlank()) {
                             AppSecondaryButton(
                                 text = stringResource(Res.string.generate_clear_image),
                                 onClick = onClearInputImage,
-                                modifier = Modifier
+                                modifier = Modifier.weight(1f)
                             )
                         }
                     }
