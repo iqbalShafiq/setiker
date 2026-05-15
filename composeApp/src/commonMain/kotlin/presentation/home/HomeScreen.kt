@@ -124,11 +124,12 @@ fun HomeScreen(
                     modifier = modifier
                         .fillMaxSize()
                         .padding(innerPadding)
+                        .padding(horizontal = 20.dp)
                 ) {
                     NeubrutalSearchBar(
                         query = state.searchQuery,
                         onQueryChange = { onIntent(HomeIntent.SearchQueryChanged(it)) },
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
+                        modifier = Modifier.padding(vertical = 10.dp)
                     )
 
                     Text(
@@ -136,7 +137,7 @@ fun HomeScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = neubrutalMutedOnSurface(),
                         fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                        modifier = Modifier.padding(vertical = 8.dp)
                     )
 
                     val packsToShow = state.filteredPacks
@@ -145,16 +146,12 @@ fun HomeScreen(
                         EmptyState(
                             title = stringResource(Res.string.no_search_results_title),
                             description = stringResource(Res.string.no_search_results_desc),
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 20.dp)
+                            modifier = Modifier.fillMaxSize()
                         )
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(
-                                start = 20.dp,
-                                end = 20.dp,
                                 top = 12.dp,
                                 bottom = 20.dp
                             ),
