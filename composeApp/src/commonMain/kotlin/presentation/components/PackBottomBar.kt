@@ -14,8 +14,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -59,12 +62,6 @@ fun PackBottomBar(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .neubrutalShadow(
-                offsetX = 0.dp,
-                offsetY = NeubrutalShadowOffset,
-                cornerRadius = 0.dp,
-                color = shadow
-            )
     ) {
         // Neubrutal thick top border
         Spacer(
@@ -73,11 +70,13 @@ fun PackBottomBar(
                 .height(NeubrutalBorderWidth)
                 .background(border)
         )
+        val navBarInsets = WindowInsets.navigationBars.asPaddingValues()
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(neubrutalCardSurface())
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .padding(bottom = navBarInsets.calculateBottomPadding()),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
