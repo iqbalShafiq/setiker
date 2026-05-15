@@ -163,7 +163,8 @@ fun HomeScreen(
                             ) { pack ->
                                 StickerPackListCard(
                                     pack = pack,
-                                    onClick = { onPackClick(pack.identifier) }
+                                    onClick = { onPackClick(pack.identifier) },
+                                    modifier = Modifier.animateItem()
                                 )
                             }
                         }

@@ -44,6 +44,8 @@ import presentation.components.MediaPreviewBottomBar
 import presentation.components.NeubrutalStickerPreviewFrame
 import presentation.components.ScreenSectionTitle
 import presentation.theme.NeubrutalBlack
+import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalScreenBackground
@@ -121,9 +123,9 @@ fun VideoTrimScreen(
                 val previewBitmap = state.currentPreviewPath?.let { thumbnailBitmaps[it] }
 
                 NeubrutalStickerPreviewFrame(
-                    cornerRadius = 16.dp,
-                    shadowOffsetX = 3.dp,
-                    shadowOffsetY = 3.dp
+                    cornerRadius = NeubrutalCardRadius,
+                    shadowOffsetX = NeubrutalShadowOffset,
+                    shadowOffsetY = NeubrutalShadowOffset
                 ) {
                     when {
                         previewBitmap != null -> {
@@ -132,7 +134,7 @@ fun VideoTrimScreen(
                                 contentDescription = stringResource(Res.string.video_preview),
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .clip(RoundedCornerShape(12.dp)),
+                                    .clip(RoundedCornerShape(NeubrutalCardRadius)),
                                 contentScale = ContentScale.Crop
                             )
                         }

@@ -2,6 +2,7 @@ package presentation.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,7 +25,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.jetbrains.compose.resources.stringResource
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalDark
+import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.PastelMint
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalMutedOnSurface
@@ -54,17 +58,17 @@ fun EmptyState(
             modifier = Modifier
                 .size(88.dp)
                 .neubrutalShadow(
-                    offsetX = 4.dp,
-                    offsetY = 4.dp,
-                    cornerRadius = 20.dp,
+                    offsetX = NeubrutalShadowOffset,
+                    offsetY = NeubrutalShadowOffset,
+                    cornerRadius = NeubrutalCardRadius,
                     color = neubrutalShadowColor()
                 )
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(NeubrutalCardRadius))
                 .background(PastelMint)
                 .border(
-                    width = 2.dp,
+                    width = NeubrutalBorderWidth,
                     color = neubrutalBorderColor(),
-                    shape = RoundedCornerShape(20.dp)
+                    shape = RoundedCornerShape(NeubrutalCardRadius)
                 ),
             contentAlignment = Alignment.Center
         ) {

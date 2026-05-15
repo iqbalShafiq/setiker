@@ -1,9 +1,13 @@
 package presentation.components
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,15 +26,22 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalButtonRadius
 import presentation.theme.NeubrutalDark
+import presentation.theme.NeubrutalShadowOffset
+import presentation.theme.NeubrutalSmallRadius
+import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalMutedOnSurface
@@ -47,12 +58,23 @@ fun ProfileMenuItem(
     iconBackgroundColor: androidx.compose.ui.graphics.Color = NeubrutalWhite
 ) {
     val borderColor = neubrutalBorderColor()
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.98f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "menu_item_scale"
+    )
 
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .scale(scale)
             .clickable(
-                interactionSource = remember { MutableInteractionSource() },
+                interactionSource = interactionSource,
                 indication = null,
                 onClick = onClick
             )
@@ -66,12 +88,18 @@ fun ProfileMenuItem(
             Box(
                 modifier = Modifier
                     .size(36.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .neubrutalShadow(
+                        offsetX = NeubrutalSmallShadowOffset,
+                        offsetY = NeubrutalSmallShadowOffset,
+                        cornerRadius = NeubrutalSmallRadius,
+                        color = neubrutalShadowColor()
+                    )
+                    .clip(RoundedCornerShape(NeubrutalSmallRadius))
                     .background(iconBackgroundColor)
                     .border(
-                        width = 1.5.dp,
+                        width = NeubrutalBorderWidth,
                         color = borderColor,
-                        shape = RoundedCornerShape(10.dp)
+                        shape = RoundedCornerShape(NeubrutalSmallRadius)
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -112,9 +140,12 @@ private fun ProfileMenuItemPreview() {
             modifier = Modifier
                 .padding(16.dp)
                 .background(NeubrutalWhite)
-                .border(2.dp, neubrutalBorderColor(), RoundedCornerShape(16.dp))
-                .neubrutalShadow(cornerRadius = 16.dp, color = neubrutalShadowColor())
-                .clip(RoundedCornerShape(16.dp))
+                .border(NeubrutalBorderWidth, neubrutalBorderColor(), RoundedCornerShape(NeubrutalButtonRadius))
+                .neubrutalShadow(
+                    cornerRadius = NeubrutalButtonRadius,
+                    color = neubrutalShadowColor()
+                )
+                .clip(RoundedCornerShape(NeubrutalButtonRadius))
         ) {
             ProfileMenuItem(
                 icon = Icons.Filled.Image,

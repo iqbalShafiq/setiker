@@ -50,6 +50,11 @@ import presentation.components.AppSecondaryButton
 import presentation.components.AppTopBar
 import presentation.components.LoadingIndicator
 import presentation.theme.AccentCoral
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalDialogRadius
+import presentation.theme.NeubrutalShadowOffset
+import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
@@ -110,17 +115,17 @@ fun CropScreen(
                         .fillMaxWidth()
                         .aspectRatio(1f)
                         .neubrutalShadow(
-                            offsetX = 4.dp,
-                            offsetY = 4.dp,
-                            cornerRadius = 20.dp,
+                            offsetX = NeubrutalShadowOffset,
+                            offsetY = NeubrutalShadowOffset,
+                            cornerRadius = NeubrutalDialogRadius,
                             color = neubrutalShadowColor()
                         )
-                        .clip(RoundedCornerShape(20.dp))
+                        .clip(RoundedCornerShape(NeubrutalDialogRadius))
                         .background(neubrutalCardSurface())
                         .border(
-                            width = 2.dp,
+                            width = NeubrutalBorderWidth,
                             color = border,
-                            shape = RoundedCornerShape(20.dp)
+                            shape = RoundedCornerShape(NeubrutalDialogRadius)
                         )
                         .padding(4.dp),
                     contentAlignment = Alignment.Center
@@ -234,15 +239,15 @@ private fun NeubrutalToolButton(
             modifier = Modifier
                 .size(48.dp)
                 .neubrutalShadow(
-                    offsetX = 2.dp,
-                    offsetY = 2.dp,
+                    offsetX = NeubrutalSmallShadowOffset,
+                    offsetY = NeubrutalSmallShadowOffset,
                     cornerRadius = 24.dp,
                     color = neubrutalShadowColor()
                 )
                 .clip(CircleShape)
                 .background(if (isSelected) AccentCoral else neubrutalCardSurface())
                 .border(
-                    width = 2.dp,
+                    width = NeubrutalBorderWidth,
                     color = border,
                     shape = CircleShape
                 )
@@ -288,7 +293,7 @@ private fun CropImagePreview(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(NeubrutalCardRadius))
             .pointerInput(Unit) {
                 detectTransformGestures { _, pan, zoom, _ ->
                     val boxW = size.width.toFloat().coerceAtLeast(1f)

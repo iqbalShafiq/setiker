@@ -28,6 +28,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import presentation.theme.AccentCoral
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalButtonRadius
+import presentation.theme.NeubrutalShadowOffset
+import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
@@ -55,25 +59,28 @@ fun AppPrimaryButton(
 
     val border = neubrutalBorderColor()
     val shadow = neubrutalShadowColor()
+    val shadowX = if (isPressed && enabled) NeubrutalSmallShadowOffset else NeubrutalShadowOffset
+    val shadowY = if (isPressed && enabled) NeubrutalSmallShadowOffset else NeubrutalShadowOffset
+    val shape = RoundedCornerShape(NeubrutalButtonRadius)
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .scale(scale)
             .neubrutalShadow(
-                offsetX = if (isPressed && enabled) 1.dp else 4.dp,
-                offsetY = if (isPressed && enabled) 1.dp else 4.dp,
-                cornerRadius = 16.dp,
+                offsetX = shadowX,
+                offsetY = shadowY,
+                cornerRadius = NeubrutalButtonRadius,
                 color = shadow
             )
-            .clip(RoundedCornerShape(16.dp))
+            .clip(shape)
             .background(
                 color = if (enabled) AccentCoral else AccentCoral.copy(alpha = 0.4f),
             )
             .border(
-                width = 2.dp,
+                width = NeubrutalBorderWidth,
                 color = border,
-                shape = RoundedCornerShape(16.dp)
+                shape = shape
             )
             .clickable(
                 interactionSource = interactionSource,
@@ -115,25 +122,28 @@ fun AppSecondaryButton(
     val shadow = neubrutalShadowColor()
     val surface = neubrutalCardSurface()
     val onSurface = neubrutalOnSurface()
+    val shadowX = if (isPressed && enabled) NeubrutalSmallShadowOffset else NeubrutalShadowOffset
+    val shadowY = if (isPressed && enabled) NeubrutalSmallShadowOffset else NeubrutalShadowOffset
+    val shape = RoundedCornerShape(NeubrutalButtonRadius)
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .scale(scale)
             .neubrutalShadow(
-                offsetX = if (isPressed && enabled) 1.dp else 4.dp,
-                offsetY = if (isPressed && enabled) 1.dp else 4.dp,
-                cornerRadius = 16.dp,
+                offsetX = shadowX,
+                offsetY = shadowY,
+                cornerRadius = NeubrutalButtonRadius,
                 color = shadow
             )
-            .clip(RoundedCornerShape(16.dp))
+            .clip(shape)
             .background(
                 color = if (enabled) surface else surface.copy(alpha = 0.5f),
             )
             .border(
-                width = 2.dp,
+                width = NeubrutalBorderWidth,
                 color = border,
-                shape = RoundedCornerShape(16.dp)
+                shape = shape
             )
             .clickable(
                 interactionSource = interactionSource,

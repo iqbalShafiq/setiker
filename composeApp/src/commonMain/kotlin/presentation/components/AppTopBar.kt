@@ -1,6 +1,7 @@
 package presentation.components
 
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
@@ -22,6 +23,7 @@ import setiker.composeapp.generated.resources.back_content_description
 import setiker.composeapp.generated.resources.my_stickers_title
 import setiker.composeapp.generated.resources.pack_details_title
 import setiker.composeapp.generated.resources.settings
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppTopBar(

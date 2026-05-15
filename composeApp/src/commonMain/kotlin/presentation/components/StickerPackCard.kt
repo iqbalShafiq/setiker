@@ -22,6 +22,10 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import domain.model.StickerPack
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalShadowOffset
+import presentation.theme.NeubrutalSmallRadius
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalMutedOnSurface
@@ -38,21 +42,24 @@ fun StickerPackCard(
     val border = neubrutalBorderColor()
     val surface = neubrutalCardSurface()
     val shadow = neubrutalShadowColor()
+    val shape = RoundedCornerShape(NeubrutalCardRadius)
+    val innerShape = RoundedCornerShape(NeubrutalSmallRadius)
+
     Column(
         modifier = modifier
             .fillMaxWidth()
             .neubrutalShadow(
-                offsetX = 4.dp,
-                offsetY = 4.dp,
-                cornerRadius = 20.dp,
+                offsetX = NeubrutalShadowOffset,
+                offsetY = NeubrutalShadowOffset,
+                cornerRadius = NeubrutalCardRadius,
                 color = shadow
             )
-            .clip(RoundedCornerShape(20.dp))
+            .clip(shape)
             .background(surface)
             .border(
-                width = 2.dp,
+                width = NeubrutalBorderWidth,
                 color = border,
-                shape = RoundedCornerShape(20.dp)
+                shape = shape
             )
             .clickable(onClick = onClick)
             .padding(16.dp)
@@ -63,12 +70,12 @@ fun StickerPackCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(innerShape)
                 .background(surface)
                 .border(
-                    width = 2.dp,
+                    width = NeubrutalBorderWidth,
                     color = border,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = innerShape
                 ),
             contentScale = ContentScale.Crop
         )

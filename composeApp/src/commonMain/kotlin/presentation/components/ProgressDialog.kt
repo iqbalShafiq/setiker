@@ -27,6 +27,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import presentation.theme.AccentCoral
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalDialogRadius
+import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalMutedOnSurface
@@ -65,18 +68,21 @@ fun ProgressDialog(
         )
         val border = neubrutalBorderColor()
         val shadow = neubrutalShadowColor()
+        val shape = RoundedCornerShape(NeubrutalDialogRadius)
+        val barShape = RoundedCornerShape(NeubrutalShadowOffset)
+
         Column(
             modifier = modifier
                 .fillMaxWidth()
                 .neubrutalShadow(
-                    offsetX = 4.dp,
-                    offsetY = 4.dp,
-                    cornerRadius = 20.dp,
+                    offsetX = NeubrutalShadowOffset,
+                    offsetY = NeubrutalShadowOffset,
+                    cornerRadius = NeubrutalDialogRadius,
                     color = shadow
                 )
-                .clip(RoundedCornerShape(20.dp))
+                .clip(shape)
                 .background(neubrutalCardSurface())
-                .border(2.dp, border, RoundedCornerShape(20.dp))
+                .border(NeubrutalBorderWidth, border, shape)
                 .padding(horizontal = 20.dp, vertical = 18.dp)
         ) {
             Text(
@@ -92,9 +98,15 @@ fun ProgressDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(18.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .neubrutalShadow(
+                        offsetX = NeubrutalShadowOffset,
+                        offsetY = NeubrutalShadowOffset,
+                        cornerRadius = NeubrutalShadowOffset,
+                        color = shadow
+                    )
+                    .clip(barShape)
                     .background(neubrutalCardSurface())
-                    .border(2.dp, border, RoundedCornerShape(10.dp))
+                    .border(NeubrutalBorderWidth, border, barShape)
                     .padding(2.dp)
             ) {
                 LinearProgressIndicator(
@@ -102,7 +114,7 @@ fun ProgressDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(14.dp)
-                        .clip(RoundedCornerShape(8.dp)),
+                        .clip(barShape),
                     color = AccentCoral,
                     trackColor = neubrutalCardSurface()
                 )

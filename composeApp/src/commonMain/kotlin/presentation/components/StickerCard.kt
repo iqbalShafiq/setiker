@@ -24,6 +24,11 @@ import domain.model.Sticker
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.jetbrains.compose.resources.stringResource
 import presentation.theme.ErrorRed
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalShadowOffset
+import presentation.theme.NeubrutalSmallRadius
+import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
@@ -41,21 +46,24 @@ fun StickerCard(
     modifier: Modifier = Modifier
 ) {
     val border = neubrutalBorderColor()
+    val cardShape = RoundedCornerShape(NeubrutalCardRadius)
+    val innerShape = RoundedCornerShape(NeubrutalSmallRadius)
+
     Box(
         modifier = modifier
             .aspectRatio(1f)
             .neubrutalShadow(
-                offsetX = 3.dp,
-                offsetY = 3.dp,
-                cornerRadius = 12.dp,
+                offsetX = NeubrutalShadowOffset,
+                offsetY = NeubrutalShadowOffset,
+                cornerRadius = NeubrutalCardRadius,
                 color = neubrutalShadowColor()
             )
-            .clip(RoundedCornerShape(12.dp))
+            .clip(cardShape)
             .background(neubrutalCardSurface())
             .border(
-                width = 2.dp,
+                width = NeubrutalBorderWidth,
                 color = border,
-                shape = RoundedCornerShape(12.dp)
+                shape = cardShape
             )
             .clickable(onClick = onClick)
             .padding(4.dp)
@@ -65,22 +73,29 @@ fun StickerCard(
             contentDescription = sticker.accessibilityText ?: stringResource(Res.string.sticker_fallback),
             modifier = Modifier
                 .fillMaxSize()
-                .clip(RoundedCornerShape(8.dp)),
+                .clip(innerShape),
             contentScale = ContentScale.Crop
         )
 
         if (onDeleteClick != null) {
+            val deleteShape = RoundedCornerShape(6.dp)
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(2.dp)
                     .size(28.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .neubrutalShadow(
+                        offsetX = NeubrutalSmallShadowOffset,
+                        offsetY = NeubrutalSmallShadowOffset,
+                        cornerRadius = 6.dp,
+                        color = neubrutalShadowColor()
+                    )
+                    .clip(deleteShape)
                     .background(ErrorRed)
                     .border(
-                        width = 1.5.dp,
+                        width = NeubrutalSmallShadowOffset,
                         color = border,
-                        shape = RoundedCornerShape(8.dp)
+                        shape = deleteShape
                     )
                     .clickable(onClick = onDeleteClick),
                 contentAlignment = Alignment.Center

@@ -59,6 +59,8 @@ import presentation.components.MediaPreviewBottomBar
 import presentation.components.NeubrutalStickerPreviewFrame
 import presentation.components.ProgressDialog
 import presentation.theme.AccentCoral
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalSmallRadius
 import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
@@ -255,7 +257,7 @@ private fun VideoCropTransformableImage(
             // We rely solely on the outer NeubrutalStickerPreviewFrame for the
             // visible border — drawing a second white rect here was what made the
             // preview look like it had a double border with weird radii.
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(NeubrutalSmallRadius))
             .pointerInput(Unit) {
                 detectTransformGestures { _, pan, zoom, _ ->
                     val boxW = size.width.toFloat().coerceAtLeast(1f)
@@ -392,7 +394,7 @@ private fun CropToolButton(
                 .neubrutalShadow(2.dp, 2.dp, 24.dp, shadow)
                 .clip(CircleShape)
                 .background(surface)
-                .border(2.dp, border, CircleShape)
+                .border(NeubrutalBorderWidth, border, CircleShape)
                 .clickable(onClick = onClick),
             contentAlignment = Alignment.Center
         ) {

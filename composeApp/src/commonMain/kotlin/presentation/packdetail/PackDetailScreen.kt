@@ -61,6 +61,10 @@ import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
 import presentation.components.StickerCard
 import presentation.components.rememberMultipleImagePicker
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalShadowOffset
+import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalMutedOnSurface
@@ -154,9 +158,9 @@ fun PackDetailScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(1f)
-                        .clip(RoundedCornerShape(16.dp))
+                        .clip(RoundedCornerShape(NeubrutalCardRadius))
                         .background(neubrutalCardSurface())
-                        .border(2.dp, neubrutalBorderColor(), RoundedCornerShape(16.dp))
+                        .border(NeubrutalBorderWidth, neubrutalBorderColor(), RoundedCornerShape(NeubrutalCardRadius))
                         .padding(4.dp)
                 ) {
                     AsyncImage(
@@ -296,17 +300,17 @@ private fun PackDetailContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .neubrutalShadow(
-                    offsetX = 4.dp,
-                    offsetY = 4.dp,
-                    cornerRadius = 20.dp,
+                    offsetX = NeubrutalShadowOffset,
+                    offsetY = NeubrutalShadowOffset,
+                    cornerRadius = NeubrutalCardRadius,
                     color = shadow
                 )
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(NeubrutalCardRadius))
                 .background(surface)
                 .border(
-                    width = 2.dp,
+                    width = NeubrutalBorderWidth,
                     color = border,
-                    shape = RoundedCornerShape(20.dp)
+                    shape = RoundedCornerShape(NeubrutalCardRadius)
                 )
                 .padding(20.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -317,17 +321,17 @@ private fun PackDetailContent(
                 modifier = Modifier
                     .size(96.dp)
                     .neubrutalShadow(
-                        offsetX = 2.dp,
-                        offsetY = 2.dp,
-                        cornerRadius = 16.dp,
+                        offsetX = NeubrutalSmallShadowOffset,
+                        offsetY = NeubrutalSmallShadowOffset,
+                        cornerRadius = NeubrutalCardRadius,
                         color = shadow
                     )
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(NeubrutalCardRadius))
                     .background(surface)
                     .border(
-                        width = 2.dp,
+                        width = NeubrutalBorderWidth,
                         color = border,
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(NeubrutalCardRadius)
                     ),
                 contentScale = ContentScale.Crop
             )
@@ -413,7 +417,8 @@ private fun PackDetailContent(
                     StickerCard(
                         sticker = sticker,
                         onClick = { onEditSticker(index) },
-                        onDeleteClick = { onIntent(PackDetailIntent.DeleteSticker(index)) }
+                        onDeleteClick = { onIntent(PackDetailIntent.DeleteSticker(index)) },
+                        modifier = Modifier.animateItem()
                     )
                 }
             }

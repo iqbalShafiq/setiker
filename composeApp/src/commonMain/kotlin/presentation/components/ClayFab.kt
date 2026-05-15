@@ -30,6 +30,8 @@ import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalDialogRadius
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.create_new_pack
 
@@ -57,15 +59,15 @@ fun ClayFab(
             .neubrutalShadow(
                 offsetX = if (isPressed) 1.dp else 4.dp,
                 offsetY = if (isPressed) 1.dp else 4.dp,
-                cornerRadius = 20.dp,
+                cornerRadius = NeubrutalDialogRadius,
                 color = neubrutalShadowColor()
             )
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(NeubrutalDialogRadius))
             .background(AccentCoral)
             .border(
-                width = 2.dp,
+                width = NeubrutalBorderWidth,
                 color = border,
-                shape = RoundedCornerShape(20.dp)
+                shape = RoundedCornerShape(NeubrutalDialogRadius)
             )
             .clickable(
                 interactionSource = interactionSource,

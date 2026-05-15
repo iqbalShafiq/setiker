@@ -75,6 +75,7 @@ import presentation.components.PackBottomBarIconButton
 import presentation.components.ProgressDialog
 import presentation.components.ScreenSectionTitle
 import presentation.components.StickerEmojiTagChip
+import presentation.theme.NeubrutalCardRadius
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
@@ -278,7 +279,7 @@ fun AnimatedEditorScreen(
                                 ),
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .clip(RoundedCornerShape(16.dp)),
+                                    .clip(RoundedCornerShape(NeubrutalCardRadius)),
                                 contentScale = ContentScale.Fit
                             )
                         } ?: Text(

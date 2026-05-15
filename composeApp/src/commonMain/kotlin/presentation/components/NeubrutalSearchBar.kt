@@ -24,6 +24,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalOnSurface
@@ -44,22 +47,23 @@ fun NeubrutalSearchBar(
     val surface = neubrutalCardSurface()
     val shadow = neubrutalShadowColor()
     val onSurface = neubrutalOnSurface()
+    val shape = RoundedCornerShape(NeubrutalCardRadius)
 
     Row(
         modifier = modifier
             .fillMaxWidth()
             .neubrutalShadow(
-                offsetX = 2.dp,
-                offsetY = 2.dp,
-                cornerRadius = 12.dp,
+                offsetX = NeubrutalShadowOffset,
+                offsetY = NeubrutalShadowOffset,
+                cornerRadius = NeubrutalCardRadius,
                 color = shadow
             )
-            .clip(RoundedCornerShape(12.dp))
+            .clip(shape)
             .background(surface)
             .border(
-                width = 2.dp,
+                width = NeubrutalBorderWidth,
                 color = border,
-                shape = RoundedCornerShape(12.dp)
+                shape = shape
             )
             .padding(horizontal = 12.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically

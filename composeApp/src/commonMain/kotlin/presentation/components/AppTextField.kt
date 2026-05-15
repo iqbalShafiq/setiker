@@ -22,10 +22,15 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.jetbrains.compose.resources.stringResource
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalSubtleOnSurface
+import presentation.theme.neubrutalShadow
+import presentation.theme.neubrutalShadowColor
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.pack_name_label
 import setiker.composeapp.generated.resources.pack_name_placeholder
@@ -49,6 +54,8 @@ fun AppTextField(
     val border = neubrutalBorderColor()
     val surface = neubrutalCardSurface()
     val onSurface = neubrutalOnSurface()
+    val shape = RoundedCornerShape(NeubrutalCardRadius)
+
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = label,
@@ -63,12 +70,18 @@ fun AppTextField(
             onValueChange = onValueChange,
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
+                .neubrutalShadow(
+                    offsetX = NeubrutalShadowOffset,
+                    offsetY = NeubrutalShadowOffset,
+                    cornerRadius = NeubrutalCardRadius,
+                    color = neubrutalShadowColor()
+                )
+                .clip(shape)
                 .background(surface)
                 .border(
-                    width = 2.dp,
+                    width = NeubrutalBorderWidth,
                     color = if (isError) presentation.theme.ErrorRed else border,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = shape
                 )
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             singleLine = singleLine,

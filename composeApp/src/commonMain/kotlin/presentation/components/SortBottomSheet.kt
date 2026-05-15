@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import domain.model.SortOrder
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import presentation.theme.NeubrutalSmallRadius
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalOnSurface
 import setiker.composeapp.generated.resources.Res
@@ -96,7 +97,7 @@ private fun SortOptionItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(NeubrutalSmallRadius))
             .background(backgroundColor)
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 14.dp),

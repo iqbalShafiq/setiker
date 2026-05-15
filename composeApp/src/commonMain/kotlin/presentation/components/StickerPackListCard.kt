@@ -28,6 +28,11 @@ import coil3.compose.AsyncImage
 import domain.model.StickerPack
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalShadowOffset
+import presentation.theme.NeubrutalSmallRadius
+import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalMutedOnSurface
@@ -46,22 +51,24 @@ fun StickerPackListCard(
     val border = neubrutalBorderColor()
     val surface = neubrutalCardSurface()
     val shadow = neubrutalShadowColor()
+    val shape = RoundedCornerShape(NeubrutalCardRadius)
+    val thumbShape = RoundedCornerShape(NeubrutalSmallRadius)
 
     Row(
         modifier = modifier
             .fillMaxWidth()
             .neubrutalShadow(
-                offsetX = 4.dp,
-                offsetY = 4.dp,
-                cornerRadius = 16.dp,
+                offsetX = NeubrutalShadowOffset,
+                offsetY = NeubrutalShadowOffset,
+                cornerRadius = NeubrutalCardRadius,
                 color = shadow
             )
-            .clip(RoundedCornerShape(16.dp))
+            .clip(shape)
             .background(surface)
             .border(
-                width = 2.dp,
+                width = NeubrutalBorderWidth,
                 color = border,
-                shape = RoundedCornerShape(16.dp)
+                shape = shape
             )
             .clickable(onClick = onClick)
             .padding(16.dp),
@@ -73,18 +80,18 @@ fun StickerPackListCard(
             contentDescription = pack.name,
             modifier = Modifier
                 .size(64.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .neubrutalShadow(
+                    offsetX = NeubrutalSmallShadowOffset,
+                    offsetY = NeubrutalSmallShadowOffset,
+                    cornerRadius = NeubrutalSmallRadius,
+                    color = shadow
+                )
+                .clip(thumbShape)
                 .background(surface)
                 .border(
-                    width = 2.dp,
+                    width = NeubrutalBorderWidth,
                     color = border,
-                    shape = RoundedCornerShape(12.dp)
-                )
-                .neubrutalShadow(
-                    offsetX = 2.dp,
-                    offsetY = 2.dp,
-                    cornerRadius = 12.dp,
-                    color = shadow
+                    shape = thumbShape
                 ),
             contentScale = ContentScale.Crop
         )

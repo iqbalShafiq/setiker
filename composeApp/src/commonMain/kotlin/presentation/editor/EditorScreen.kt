@@ -90,6 +90,8 @@ import presentation.components.SelectableStickerGrid
 import presentation.components.StickerEmojiTagChip
 import presentation.components.rememberImagePicker
 import presentation.createpack.DraftSticker
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalCardRadius
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalMutedOnSurface
@@ -285,7 +287,7 @@ fun EditorScreen(
                                     contentDescription = stringResource(Res.string.sticker_preview),
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .clip(RoundedCornerShape(16.dp)),
+                                        .clip(RoundedCornerShape(NeubrutalCardRadius)),
                                     contentScale = ContentScale.Fit
                                 )
                                 DecorationPreviewLayer(
@@ -599,9 +601,9 @@ fun EditorScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .aspectRatio(1f)
-                            .clip(RoundedCornerShape(16.dp))
+                            .clip(RoundedCornerShape(NeubrutalCardRadius))
                             .background(neubrutalCardSurface())
-                            .border(2.dp, neubrutalBorderColor(), RoundedCornerShape(16.dp))
+                            .border(NeubrutalBorderWidth, neubrutalBorderColor(), RoundedCornerShape(NeubrutalCardRadius))
                             .padding(4.dp),
                         contentAlignment = Alignment.Center
                     ) {
@@ -627,9 +629,9 @@ fun EditorScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .aspectRatio(1f)
-                                .clip(RoundedCornerShape(16.dp))
+                                .clip(RoundedCornerShape(NeubrutalCardRadius))
                                 .background(neubrutalCardSurface())
-                                .border(2.dp, neubrutalBorderColor(), RoundedCornerShape(16.dp))
+                                .border(NeubrutalBorderWidth, neubrutalBorderColor(), RoundedCornerShape(NeubrutalCardRadius))
                                 .padding(4.dp)
                         ) {
                             CheckerboardBackground(modifier = Modifier.fillMaxSize())

@@ -6,9 +6,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,6 +29,11 @@ import coil3.compose.AsyncImage
 import org.jetbrains.compose.resources.stringResource
 import presentation.createpack.DraftSticker
 import presentation.theme.AccentCoral
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalShadowOffset
+import presentation.theme.NeubrutalSmallRadius
+import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalOnSurface
@@ -44,13 +49,19 @@ fun ApiActionSection(
     content: @Composable () -> Unit
 ) {
     val border = neubrutalBorderColor()
+    val shape = RoundedCornerShape(NeubrutalCardRadius)
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .neubrutalShadow(4.dp, 4.dp, 16.dp, neubrutalShadowColor())
-            .clip(RoundedCornerShape(16.dp))
+            .neubrutalShadow(
+                offsetX = NeubrutalShadowOffset,
+                offsetY = NeubrutalShadowOffset,
+                cornerRadius = NeubrutalCardRadius,
+                color = neubrutalShadowColor()
+            )
+            .clip(shape)
             .background(neubrutalCardSurface())
-            .border(2.dp, border, RoundedCornerShape(16.dp))
+            .border(NeubrutalBorderWidth, border, shape)
             .padding(14.dp)
     ) {
         Text(
@@ -83,19 +94,25 @@ fun SelectableStickerGrid(
                 val border = neubrutalBorderColor()
                 val shadow = neubrutalShadowColor()
                 val surface = neubrutalCardSurface()
+                val innerShape = RoundedCornerShape(NeubrutalSmallRadius)
                 rowItems.forEachIndexed { itemIndex, draft ->
                     val index = (rowIndex * 4) + itemIndex
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .aspectRatio(1f)
-                            .neubrutalShadow(2.dp, 2.dp, 12.dp, shadow)
-                            .clip(RoundedCornerShape(12.dp))
+                            .neubrutalShadow(
+                                offsetX = NeubrutalSmallShadowOffset,
+                                offsetY = NeubrutalSmallShadowOffset,
+                                cornerRadius = NeubrutalSmallRadius,
+                                color = shadow
+                            )
+                            .clip(innerShape)
                             .background(surface)
                             .border(
-                                width = if (selectedIndices.contains(index)) 3.dp else 2.dp,
+                                width = if (selectedIndices.contains(index)) 3.dp else NeubrutalBorderWidth,
                                 color = if (selectedIndices.contains(index)) AccentCoral else border,
-                                shape = RoundedCornerShape(12.dp)
+                                shape = innerShape
                             )
                             .clickable { onToggle(index) }
                             .padding(2.dp),

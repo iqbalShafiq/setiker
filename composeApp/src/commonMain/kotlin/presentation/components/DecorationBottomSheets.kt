@@ -39,6 +39,8 @@ import org.jetbrains.compose.resources.stringResource
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalSmallRadius
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.add_decoration
 import setiker.composeapp.generated.resources.add_text
@@ -252,9 +254,9 @@ fun ColorPickerBottomSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(NeubrutalSmallRadius))
                     .background(selectedColor)
-                    .border(2.dp, neubrutalBorderColor(), RoundedCornerShape(12.dp))
+                    .border(NeubrutalBorderWidth, neubrutalBorderColor(), RoundedCornerShape(NeubrutalSmallRadius))
             )
             Spacer(modifier = Modifier.height(16.dp))
 

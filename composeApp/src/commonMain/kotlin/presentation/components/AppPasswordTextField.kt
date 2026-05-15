@@ -36,9 +36,14 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalShadow
+import presentation.theme.neubrutalShadowColor
 import presentation.theme.neubrutalSubtleOnSurface
 
 @Composable
@@ -53,11 +58,12 @@ fun AppPasswordTextField(
     imeAction: ImeAction = ImeAction.Done
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
-    
+
     val border = neubrutalBorderColor()
     val surface = neubrutalCardSurface()
     val onSurface = neubrutalOnSurface()
-    
+    val shape = RoundedCornerShape(NeubrutalCardRadius)
+
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = label,
@@ -70,12 +76,18 @@ fun AppPasswordTextField(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
+                .neubrutalShadow(
+                    offsetX = NeubrutalShadowOffset,
+                    offsetY = NeubrutalShadowOffset,
+                    cornerRadius = NeubrutalCardRadius,
+                    color = neubrutalShadowColor()
+                )
+                .clip(shape)
                 .background(surface)
                 .border(
-                    width = 2.dp,
+                    width = NeubrutalBorderWidth,
                     color = if (isError) presentation.theme.ErrorRed else border,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = shape
                 )
                 .padding(horizontal = 16.dp, vertical = 14.dp)
         ) {
@@ -109,7 +121,7 @@ fun AppPasswordTextField(
                     innerTextField()
                 }
             )
-            
+
             Icon(
                 imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                 contentDescription = if (passwordVisible) "Hide password" else "Show password",

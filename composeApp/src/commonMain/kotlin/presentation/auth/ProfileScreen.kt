@@ -68,6 +68,9 @@ import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import presentation.theme.neubrutalSubtleOnSurface
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalShadowOffset
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.about_app
 import setiker.composeapp.generated.resources.account_section
@@ -286,10 +289,10 @@ private fun ProfileCard(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .neubrutalShadow(offsetX = 4.dp, offsetY = 4.dp, cornerRadius = 16.dp, color = shadowColor)
-            .clip(RoundedCornerShape(16.dp))
+            .neubrutalShadow(offsetX = NeubrutalShadowOffset, offsetY = NeubrutalShadowOffset, cornerRadius = NeubrutalCardRadius, color = shadowColor)
+            .clip(RoundedCornerShape(NeubrutalCardRadius))
             .background(cardSurface)
-            .border(width = 2.dp, color = borderColor, shape = RoundedCornerShape(16.dp))
+            .border(width = NeubrutalBorderWidth, color = borderColor, shape = RoundedCornerShape(NeubrutalCardRadius))
             .clickable(onClick = onClick)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -300,7 +303,7 @@ private fun ProfileCard(
                 .size(64.dp)
                 .clip(CircleShape)
                 .background(AccentCoralLight)
-                .border(width = 2.dp, color = borderColor, shape = CircleShape),
+                .border(width = NeubrutalBorderWidth, color = borderColor, shape = CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -373,10 +376,10 @@ private fun StatsCard(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .neubrutalShadow(offsetX = 4.dp, offsetY = 4.dp, cornerRadius = 16.dp, color = shadowColor)
-            .clip(RoundedCornerShape(16.dp))
+            .neubrutalShadow(offsetX = NeubrutalShadowOffset, offsetY = NeubrutalShadowOffset, cornerRadius = NeubrutalCardRadius, color = shadowColor)
+            .clip(RoundedCornerShape(NeubrutalCardRadius))
             .background(cardSurface)
-            .border(width = 2.dp, color = borderColor, shape = RoundedCornerShape(16.dp))
+            .border(width = NeubrutalBorderWidth, color = borderColor, shape = RoundedCornerShape(NeubrutalCardRadius))
             .padding(vertical = 18.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
@@ -463,10 +466,10 @@ private fun MenuCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .neubrutalShadow(offsetX = 4.dp, offsetY = 4.dp, cornerRadius = 16.dp, color = shadowColor)
-            .clip(RoundedCornerShape(16.dp))
+            .neubrutalShadow(offsetX = NeubrutalShadowOffset, offsetY = NeubrutalShadowOffset, cornerRadius = NeubrutalCardRadius, color = shadowColor)
+            .clip(RoundedCornerShape(NeubrutalCardRadius))
             .background(cardSurface)
-            .border(width = 2.dp, color = borderColor, shape = RoundedCornerShape(16.dp))
+            .border(width = NeubrutalBorderWidth, color = borderColor, shape = RoundedCornerShape(NeubrutalCardRadius))
     ) {
         content()
     }

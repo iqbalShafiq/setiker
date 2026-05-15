@@ -19,6 +19,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.jetbrains.compose.resources.stringResource
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalDialogRadius
+import presentation.theme.NeubrutalLargeShadowOffset
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalMutedOnSurface
@@ -45,22 +48,24 @@ fun AppDialog(
     val resolvedDismissText = dismissText ?: stringResource(Res.string.cancel)
     val border = neubrutalBorderColor()
     val shadow = neubrutalShadowColor()
+    val shape = RoundedCornerShape(NeubrutalDialogRadius)
+
     Dialog(onDismissRequest = onDismiss) {
         Column(
             modifier = modifier
                 .fillMaxWidth()
                 .neubrutalShadow(
-                    offsetX = 6.dp,
-                    offsetY = 6.dp,
-                    cornerRadius = 24.dp,
+                    offsetX = NeubrutalLargeShadowOffset,
+                    offsetY = NeubrutalLargeShadowOffset,
+                    cornerRadius = NeubrutalDialogRadius,
                     color = shadow
                 )
-                .clip(RoundedCornerShape(24.dp))
+                .clip(shape)
                 .background(neubrutalCardSurface())
                 .border(
-                    width = 2.dp,
+                    width = NeubrutalBorderWidth,
                     color = border,
-                    shape = RoundedCornerShape(24.dp)
+                    shape = shape
                 )
                 .padding(28.dp)
         ) {

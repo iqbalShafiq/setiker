@@ -17,6 +17,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalShadow
@@ -30,14 +33,16 @@ import presentation.theme.neubrutalShadowColor
 @Composable
 fun NeubrutalStickerPreviewFrame(
     modifier: Modifier = Modifier,
-    cornerRadius: Dp = 20.dp,
-    shadowOffsetX: Dp = 4.dp,
-    shadowOffsetY: Dp = 4.dp,
+    cornerRadius: Dp = NeubrutalCardRadius,
+    shadowOffsetX: Dp = NeubrutalShadowOffset,
+    shadowOffsetY: Dp = NeubrutalShadowOffset,
     content: @Composable BoxScope.() -> Unit
 ) {
     val border = neubrutalBorderColor()
     val surface = neubrutalCardSurface()
     val shadow = neubrutalShadowColor()
+    val shape = RoundedCornerShape(cornerRadius)
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -48,12 +53,12 @@ fun NeubrutalStickerPreviewFrame(
                 cornerRadius = cornerRadius,
                 color = shadow
             )
-            .clip(RoundedCornerShape(cornerRadius))
+            .clip(shape)
             .background(surface)
             .border(
-                width = 2.dp,
+                width = NeubrutalBorderWidth,
                 color = border,
-                shape = RoundedCornerShape(cornerRadius)
+                shape = shape
             )
             .padding(4.dp),
         contentAlignment = Alignment.Center,

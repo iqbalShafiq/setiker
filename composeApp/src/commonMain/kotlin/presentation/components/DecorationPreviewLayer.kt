@@ -46,6 +46,7 @@ import domain.model.StickerDecoration
 import domain.model.TextDecoration
 import domain.model.DecorationFontWeight
 import kotlin.math.roundToInt
+import presentation.theme.NeubrutalBorderWidth
 
 @Composable
 fun DecorationPreviewLayer(
@@ -148,7 +149,7 @@ fun DecorationPreviewLayer(
                     }
                     .then(
                         Modifier.border(
-                            width = 2.dp,
+                            width = NeubrutalBorderWidth,
                             color = if (selectedDecorationId == decoration.id) Color.Black else Color.Transparent,
                             shape = RoundedCornerShape(8.dp)
                         )
@@ -210,7 +211,7 @@ fun DecorationPreviewLayer(
                             .size(18.dp)
                             .clip(CircleShape)
                             .background(Color(0xFFE53935))
-                            .border(2.dp, Color.Black, CircleShape)
+                            .border(NeubrutalBorderWidth, Color.Black, CircleShape)
                             .pointerInput(decoration.id) {
                                 detectTapGestures(onTap = { onDeleteDecoration(decoration.id) })
                             }
@@ -229,7 +230,7 @@ fun DecorationPreviewLayer(
                             .size(handleSize)
                             .clip(CircleShape)
                             .background(Color.White)
-                            .border(2.dp, Color.Black, CircleShape)
+                            .border(NeubrutalBorderWidth, Color.Black, CircleShape)
                             .pointerInput(decoration.id) {
                                 var startScale = decoration.scale
                                 var fixedCenterX = decoration.centerX

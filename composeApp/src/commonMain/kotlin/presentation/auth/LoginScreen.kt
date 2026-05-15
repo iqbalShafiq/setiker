@@ -43,10 +43,15 @@ import presentation.components.AppPasswordTextField
 import presentation.components.AppPrimaryButton
 import presentation.components.AppTextField
 import presentation.theme.ErrorRed
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
+import presentation.theme.neubrutalShadow
+import presentation.theme.neubrutalShadowColor
 import presentation.theme.neubrutalSubtleOnSurface
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
@@ -257,12 +262,18 @@ private fun ErrorMessageBox(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .neubrutalShadow(
+                offsetX = NeubrutalShadowOffset,
+                offsetY = NeubrutalShadowOffset,
+                cornerRadius = NeubrutalCardRadius,
+                color = neubrutalShadowColor()
+            )
+            .clip(RoundedCornerShape(NeubrutalCardRadius))
             .background(surfaceColor)
             .border(
-                width = 2.dp,
+                width = NeubrutalBorderWidth,
                 color = ErrorRed.copy(alpha = 0.5f),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(NeubrutalCardRadius)
             )
             .padding(16.dp)
     ) {

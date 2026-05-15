@@ -26,6 +26,9 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import presentation.theme.AccentCoral
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalSmallRadius
+import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalShadow
@@ -88,18 +91,18 @@ private fun NeubrutalBouncingDot(index: Int) {
         modifier = Modifier
             .size(14.dp)
             .scale(animatable.value)
+            .neubrutalShadow(
+                offsetX = NeubrutalSmallShadowOffset,
+                offsetY = NeubrutalSmallShadowOffset,
+                cornerRadius = NeubrutalSmallRadius,
+                color = shadow
+            )
             .clip(CircleShape)
             .background(AccentCoral)
             .border(
-                width = 2.dp,
+                width = NeubrutalBorderWidth,
                 color = border,
                 shape = CircleShape
-            )
-            .neubrutalShadow(
-                offsetX = 2.dp,
-                offsetY = 2.dp,
-                cornerRadius = 7.dp,
-                color = shadow
             )
     )
 }

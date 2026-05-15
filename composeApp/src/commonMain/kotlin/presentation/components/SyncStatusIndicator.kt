@@ -15,14 +15,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalSmallShadowOffset
+import presentation.theme.neubrutalShadow
+import presentation.theme.neubrutalShadowColor
 
 /**
  * Sync status indicator badge that shows the current sync state of an item.
- * Uses Neubrutal design with bold borders and solid colors.
+ * Uses Neubrutal design with bold borders, hard shadow and solid colors.
  */
 @Composable
 fun SyncStatusIndicator(
@@ -39,9 +42,14 @@ fun SyncStatusIndicator(
     Box(
         modifier = modifier
             .size(28.dp)
-            .shadow(4.dp, CircleShape)
+            .neubrutalShadow(
+                offsetX = NeubrutalSmallShadowOffset,
+                offsetY = NeubrutalSmallShadowOffset,
+                cornerRadius = 14.dp,
+                color = neubrutalShadowColor()
+            )
             .background(color, CircleShape)
-            .border(2.dp, Color.Black, CircleShape),
+            .border(NeubrutalBorderWidth, Color.Black, CircleShape),
         contentAlignment = Alignment.Center
     ) {
         Icon(

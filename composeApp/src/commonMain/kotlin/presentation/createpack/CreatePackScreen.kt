@@ -67,6 +67,11 @@ import presentation.components.rememberStickerImagePicker
 import presentation.theme.AccentCoral
 import presentation.theme.AccentCoralLight
 import presentation.theme.ErrorRed
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalShadowOffset
+import presentation.theme.NeubrutalSmallRadius
+import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalMutedOnSurface
@@ -281,9 +286,9 @@ fun CreatePackScreen(
                                 modifier = Modifier
                                     .size(160.dp)
                                     .neubrutalShadow(3.dp, 3.dp, 16.dp, neubrutalShadowColor())
-                                    .clip(RoundedCornerShape(16.dp))
+                                    .clip(RoundedCornerShape(NeubrutalCardRadius))
                                     .background(neubrutalCardSurface())
-                                    .border(2.dp, neubrutalBorderColor(), RoundedCornerShape(16.dp))
+                                    .border(NeubrutalBorderWidth, neubrutalBorderColor(), RoundedCornerShape(NeubrutalCardRadius))
                                     .padding(4.dp),
                                 contentScale = ContentScale.Crop
                             )
@@ -394,9 +399,9 @@ fun CreatePackScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(1f)
-                        .clip(RoundedCornerShape(16.dp))
+                        .clip(RoundedCornerShape(NeubrutalCardRadius))
                         .background(neubrutalCardSurface())
-                        .border(2.dp, neubrutalBorderColor(), RoundedCornerShape(16.dp))
+                        .border(NeubrutalBorderWidth, neubrutalBorderColor(), RoundedCornerShape(NeubrutalCardRadius))
                         .padding(4.dp)
                 ) {
                     AsyncImage(
@@ -453,9 +458,9 @@ fun CreatePackScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(1f)
-                        .clip(RoundedCornerShape(16.dp))
+                        .clip(RoundedCornerShape(NeubrutalCardRadius))
                         .background(neubrutalCardSurface())
-                        .border(2.dp, neubrutalBorderColor(), RoundedCornerShape(16.dp))
+                        .border(NeubrutalBorderWidth, neubrutalBorderColor(), RoundedCornerShape(NeubrutalCardRadius))
                         .padding(4.dp)
                 ) {
                     AsyncImage(
@@ -658,17 +663,17 @@ private fun TrayIconSelector(
             modifier = modifier
                 .size(96.dp)
                 .neubrutalShadow(
-                    offsetX = 3.dp,
-                    offsetY = 3.dp,
-                    cornerRadius = 16.dp,
+                    offsetX = NeubrutalShadowOffset,
+                    offsetY = NeubrutalShadowOffset,
+                    cornerRadius = NeubrutalCardRadius,
                     color = shadow
                 )
-                .clip(RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(NeubrutalCardRadius))
                 .background(neubrutalCardSurface())
                 .border(
-                    width = 2.dp,
+                    width = NeubrutalBorderWidth,
                     color = border,
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(NeubrutalCardRadius)
                 )
                 .clickable(onClick = onClick),
             contentAlignment = Alignment.Center
@@ -685,17 +690,17 @@ private fun TrayIconSelector(
             modifier = modifier
                 .size(96.dp)
                 .neubrutalShadow(
-                    offsetX = 3.dp,
-                    offsetY = 3.dp,
-                    cornerRadius = 16.dp,
+                    offsetX = NeubrutalShadowOffset,
+                    offsetY = NeubrutalShadowOffset,
+                    cornerRadius = NeubrutalCardRadius,
                     color = shadow
                 )
-                .clip(RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(NeubrutalCardRadius))
                 .background(AccentCoralLight)
                 .border(
-                    width = 2.dp,
+                    width = NeubrutalBorderWidth,
                     color = border,
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(NeubrutalCardRadius)
                 )
                 .clickable(onClick = onClick),
             contentAlignment = Alignment.Center
@@ -724,17 +729,17 @@ private fun StickerPreviewItem(
             modifier = Modifier
                 .fillMaxSize()
                 .neubrutalShadow(
-                    offsetX = 2.dp,
-                    offsetY = 2.dp,
-                    cornerRadius = 12.dp,
+                    offsetX = NeubrutalSmallShadowOffset,
+                    offsetY = NeubrutalSmallShadowOffset,
+                    cornerRadius = NeubrutalSmallRadius,
                     color = neubrutalShadowColor()
                 )
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(NeubrutalSmallRadius))
                 .background(neubrutalCardSurface())
                 .border(
-                    width = 2.dp,
+                    width = NeubrutalBorderWidth,
                     color = border,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(NeubrutalSmallRadius)
                 )
                 .padding(2.dp)
         ) {
