@@ -126,7 +126,7 @@ fun HomeScreen(
                     NeubrutalSearchBar(
                         query = state.searchQuery,
                         onQueryChange = { onIntent(HomeIntent.SearchQueryChanged(it)) },
-                        modifier = Modifier.padding(vertical = 10.dp)
+                        modifier = Modifier.padding(top = 10.dp, bottom = 4.dp)
                     )
 
                     Text(
@@ -134,7 +134,7 @@ fun HomeScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = neubrutalMutedOnSurface(),
                         fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(vertical = 8.dp)
+                        modifier = Modifier.padding(vertical = 4.dp)
                     )
 
                     val packsToShow = state.filteredPacks
