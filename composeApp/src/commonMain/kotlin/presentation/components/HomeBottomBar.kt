@@ -7,10 +7,7 @@ import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,20 +29,31 @@ fun HomeBottomBar(
 ) {
     PackBottomBar(
         actions = {
-            IconButton(onClick = onProfileClick) {
-                Icon(
-                    imageVector = if (currentUser != null) Icons.Default.Person else Icons.Outlined.AccountCircle,
-                    contentDescription = if (currentUser != null) "Profile" else "Login"
-                )
-            }
-            BadgedBox(badge = { if (pendingSyncCount > 0 && !isSyncing) { Badge { Text(pendingSyncCount.toString()) } } }) {
-                IconButton(onClick = onSyncClick) {
-                    Icon(imageVector = Icons.Default.Refresh, contentDescription = "Sync")
+            PackBottomBarIconButton(
+                icon = if (currentUser != null) Icons.Default.Person else Icons.Outlined.AccountCircle,
+                contentDescription = if (currentUser != null) "Profile" else "Login",
+                onClick = onProfileClick
+            )
+            BadgedBox(
+                badge = {
+                    if (pendingSyncCount > 0 && !isSyncing) {
+                        Badge { Text(pendingSyncCount.toString()) }
+                    }
                 }
+            ) {
+                PackBottomBarIconButton(
+                    icon = Icons.Default.Refresh,
+                    contentDescription = "Sync",
+                    onClick = onSyncClick
+                )
             }
         },
         floatingActionButton = {
-            PackBottomBarFab(icon = Icons.Default.Add, contentDescription = "Create Pack", onClick = onAddPackClick)
+            PackBottomBarFab(
+                icon = Icons.Default.Add,
+                contentDescription = "Create Pack",
+                onClick = onAddPackClick
+            )
         },
         modifier = modifier
     )

@@ -9,8 +9,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -33,6 +31,7 @@ import presentation.components.AppTopBar
 import presentation.components.EmptyState
 import presentation.components.HomeBottomBar
 import presentation.components.LoadingIndicator
+import presentation.components.NeubrutalIconButton
 import presentation.components.NeubrutalSearchBar
 import presentation.components.SortBottomSheet
 import presentation.components.StickerPackListCard
@@ -67,13 +66,11 @@ fun HomeScreen(
             AppTopBar(
                 title = stringResource(Res.string.my_stickers_title),
                 actions = {
-                    IconButton(onClick = { showSortSheet = true }) {
-                        Icon(
-                            imageVector = Icons.Default.Sort,
-                            contentDescription = stringResource(Res.string.sort_content_description),
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+                    NeubrutalIconButton(
+                        icon = Icons.Default.Sort,
+                        contentDescription = stringResource(Res.string.sort_content_description),
+                        onClick = { showSortSheet = true }
+                    )
                 }
             )
         },

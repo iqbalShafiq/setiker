@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,6 +37,7 @@ import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalButtonRadius
 import presentation.theme.NeubrutalShadowOffset
+import presentation.theme.NeubrutalSmallRadius
 import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalBorderColor
@@ -91,15 +91,53 @@ fun PackBottomBarIconButton(
     onClick: () -> Unit,
     enabled: Boolean = true
 ) {
-    val tint = neubrutalOnSurface()
-    IconButton(
-        onClick = onClick,
-        enabled = enabled
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed && enabled) 0.92f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "bottom_icon_scale"
+    )
+
+    val border = neubrutalBorderColor()
+    val shadow = neubrutalShadowColor()
+    val shape = RoundedCornerShape(NeubrutalSmallRadius)
+    val shadowX = if (isPressed && enabled) 1.dp else NeubrutalSmallShadowOffset
+    val shadowY = if (isPressed && enabled) 1.dp else NeubrutalSmallShadowOffset
+
+    Box(
+        modifier = Modifier
+            .size(44.dp)
+            .scale(scale)
+            .neubrutalShadow(
+                offsetX = shadowX,
+                offsetY = shadowY,
+                cornerRadius = NeubrutalSmallRadius,
+                color = shadow
+            )
+            .clip(shape)
+            .background(neubrutalCardSurface())
+            .border(
+                width = NeubrutalBorderWidth,
+                color = border,
+                shape = shape
+            )
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                enabled = enabled,
+                onClick = onClick
+            ),
+        contentAlignment = Alignment.Center
     ) {
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            tint = if (enabled) tint else tint.copy(alpha = 0.4f)
+            modifier = Modifier.size(22.dp),
+            tint = if (enabled) neubrutalOnSurface() else neubrutalOnSurface().copy(alpha = 0.4f)
         )
     }
 }
