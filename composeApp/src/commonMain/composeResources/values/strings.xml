@@ -72,6 +72,17 @@
 
     <string name="my_stickers_title">My Stickers</string>
     <string name="home_hint">Select a pack to view details or add new stickers.</string>
+    <string name="search_packs_placeholder">Search packs...</string>
+    <string name="sort_by">Sort by</string>
+    <string name="sort_name_asc">Name (A-Z)</string>
+    <string name="sort_name_desc">Name (Z-A)</string>
+    <string name="sort_stickers_asc">Stickers (fewest)</string>
+    <string name="sort_stickers_desc">Stickers (most)</string>
+    <string name="sort_newest">Newest first</string>
+    <string name="sort_oldest">Oldest first</string>
+    <string name="no_search_results_title">No packs found</string>
+    <string name="no_search_results_desc">Try a different search term.</string>
+    <string name="sort_content_description">Sort</string>
     <string name="no_stickers_yet_title">No Stickers Yet</string>
     <string name="no_stickers_yet_desc">Create your first sticker pack to get started.</string>
 
