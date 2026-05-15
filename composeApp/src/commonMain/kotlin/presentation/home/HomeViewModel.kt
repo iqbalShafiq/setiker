@@ -91,6 +91,12 @@ class HomeViewModel(
                     syncManager.sync()
                 }
             }
+            is HomeIntent.SearchQueryChanged -> {
+                _state.update { it.copy(searchQuery = intent.query) }
+            }
+            is HomeIntent.SortOrderChanged -> {
+                _state.update { it.copy(sortOrder = intent.order) }
+            }
         }
     }
 
