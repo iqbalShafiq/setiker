@@ -1,19 +1,19 @@
 package data.repository
 
+import data.auth.AuthManager
 import data.local.database.StickerDao
 import data.local.database.StickerPackDao
 import data.local.entity.StickerEntity
 import data.local.entity.StickerPackEntity
+import data.remote.model.CreateStickerPackRequest
+import data.remote.model.StickerPackStickerInput
 import data.storage.StickerFileStorage
+import data.sync.SyncManager
 import domain.error.AppErrorCode
 import domain.error.AppException
 import domain.model.Sticker
 import domain.model.StickerDecoration
 import domain.model.StickerPack
-import data.auth.AuthManager
-import data.remote.model.CreateStickerPackRequest
-import data.remote.model.StickerPackStickerInput
-import data.sync.SyncManager
 import domain.model.SyncOperation
 import domain.model.SyncOperationStatus
 import domain.model.SyncOperationType
@@ -27,8 +27,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlin.time.Clock
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -41,7 +41,7 @@ class StickerRepositoryImpl(
     private val authManager: AuthManager? = null
 ) : StickerRepository {
 
-    override suspend fun getAllPacks(): List<StickerPack> = withContext(Dispatchers.IO) {
+    override suspend fun getAllPacks(): List<StickerPack> = withContext(Dispatchers.Default) {
         packDao.getAll().map { it.toDomainModel(emptyList()) }
             .map { pack ->
                 val stickers = stickerDao.getByPackId(pack.identifier)
@@ -50,7 +50,7 @@ class StickerRepositoryImpl(
             }
     }
 
-    override suspend fun getPack(identifier: String): StickerPack = withContext(Dispatchers.IO) {
+    override suspend fun getPack(identifier: String): StickerPack = withContext(Dispatchers.Default) {
         val entity = packDao.getById(identifier)
             ?: throw AppException(code = AppErrorCode.PackNotFound)
         val stickers = stickerDao.getByPackId(identifier)
@@ -59,10 +59,10 @@ class StickerRepositoryImpl(
     }
 
     @OptIn(ExperimentalUuidApi::class)
-    override suspend fun savePack(pack: StickerPack) = withContext(Dispatchers.IO) {
+    override suspend fun savePack(pack: StickerPack) = withContext(Dispatchers.Default) {
         val identifier = pack.identifier.takeIf { it.isNotBlank() } ?: Uuid.random().toString()
         val existing = packDao.getById(identifier)
-        val now = System.currentTimeMillis()
+        val now = Clock.System.now().toEpochMilliseconds()
         val entity = StickerPackEntity(
             identifier = identifier,
             name = pack.name,
@@ -77,7 +77,7 @@ class StickerRepositoryImpl(
         // Enqueue cloud sync if authenticated
         if (authManager?.isAuthenticated() == true) {
             val syncOp = SyncOperation(
-                id = kotlin.uuid.Uuid.random().toString(),
+                id = Uuid.random().toString(),
                 type = if (existing != null) SyncOperationType.UPDATE_PACK else SyncOperationType.CREATE_PACK,
                 targetId = identifier,
                 payload = Json.encodeToString(CreateStickerPackRequest(
@@ -94,7 +94,7 @@ class StickerRepositoryImpl(
                     }
                 )),
                 status = SyncOperationStatus.PENDING,
-                createdAt = System.currentTimeMillis()
+                createdAt = Clock.System.now().toEpochMilliseconds()
             )
             syncManager?.enqueue(syncOp)
         }
@@ -121,7 +121,7 @@ class StickerRepositoryImpl(
         }
     }
 
-    override suspend fun deletePack(identifier: String) = withContext(Dispatchers.IO) {
+    override suspend fun deletePack(identifier: String) = withContext(Dispatchers.Default) {
         val pack = packDao.getById(identifier) ?: return@withContext
 
         val stickers = stickerDao.getByPackId(identifier)
@@ -142,7 +142,7 @@ class StickerRepositoryImpl(
                 targetId = pack.cloudId,
                 payload = "{}",
                 status = SyncOperationStatus.PENDING,
-                createdAt = System.currentTimeMillis()
+                createdAt = Clock.System.now().toEpochMilliseconds()
             )
             syncManager?.enqueue(syncOp)
         }
@@ -150,7 +150,7 @@ class StickerRepositoryImpl(
 
     @OptIn(ExperimentalUuidApi::class)
     override suspend fun addStickerToPack(packId: String, sticker: Sticker) {
-        withContext(Dispatchers.IO) {
+        withContext(Dispatchers.Default) {
             val count = stickerDao.getCountByPackId(packId)
             val entity = StickerEntity(
                 id = Uuid.random().toString(),
@@ -168,13 +168,13 @@ class StickerRepositoryImpl(
             stickerDao.insert(entity)
 
             packDao.getById(packId)?.let { pack ->
-                packDao.update(pack.copy(updatedAt = System.currentTimeMillis()))
+                packDao.update(pack.copy(updatedAt = Clock.System.now().toEpochMilliseconds()))
             }
         }
     }
 
     override suspend fun updateStickerInPack(packId: String, index: Int, sticker: Sticker) {
-        withContext(Dispatchers.IO) {
+        withContext(Dispatchers.Default) {
             val stickers = stickerDao.getByPackId(packId)
             val existing = stickers.getOrNull(index)
                 ?: throw AppException(code = AppErrorCode.StickerNotFound)
@@ -192,12 +192,12 @@ class StickerRepositoryImpl(
             stickerDao.insert(updatedEntity)
 
             packDao.getById(packId)?.let { pack ->
-                packDao.update(pack.copy(updatedAt = System.currentTimeMillis()))
+                packDao.update(pack.copy(updatedAt = Clock.System.now().toEpochMilliseconds()))
             }
         }
     }
 
-    override suspend fun removeStickerFromPack(packId: String, index: Int) = withContext(Dispatchers.IO) {
+    override suspend fun removeStickerFromPack(packId: String, index: Int) = withContext(Dispatchers.Default) {
         val stickers = stickerDao.getByPackId(packId)
         val stickerToDelete = stickers.getOrNull(index) ?: return@withContext
 

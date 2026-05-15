@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import presentation.common.UiText
 import presentation.common.toUiText
 import kotlin.random.Random
+import kotlin.time.Clock
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_failed_generate_sticker
 import setiker.composeapp.generated.resources.error_failed_save_pack
@@ -255,7 +256,7 @@ class CreatePackViewModel(
                 // changed. Reusing tray_<identifier>.png overwrote bytes at the
                 // same path, which made the UI look like the update failed due to
                 // image caching.
-                val trayFileName = "tray_${identifier}_${System.currentTimeMillis()}.png"
+                val trayFileName = "tray_${identifier}_${Clock.System.now().toEpochMilliseconds()}.png"
                 val trayPath = fileStorage.saveTrayImage(currentState.trayImagePath, trayFileName)
                 
                 // Pack is animated whenever it contains at least one animated sticker. WhatsApp

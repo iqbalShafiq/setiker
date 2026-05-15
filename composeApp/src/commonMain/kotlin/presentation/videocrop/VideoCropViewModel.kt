@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.time.Clock
 import presentation.common.UiText
 import presentation.common.toUiText
 import setiker.composeapp.generated.resources.Res
@@ -105,7 +106,7 @@ class VideoCropViewModel(
             for (i in 0 until count) {
                 val ms = if (count == 1) spec.trimStartMs
                 else spec.trimStartMs + i.toLong() * span / (count - 1)
-                val name = "crop_preview_${System.currentTimeMillis()}_$i.png"
+                val name = "crop_preview_${Clock.System.now().toEpochMilliseconds()}_$i.png"
                 val path = fileStorage.extractVideoFrameToFile(videoPath, ms, name)
                 if (path != null) {
                     frames.add(VideoCropPreviewFrame(timestampMs = ms, filePath = path))

@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.random.Random
+import kotlin.time.Clock
 import presentation.common.UiText
 
 class AnimatedEditorViewModel(
@@ -302,7 +303,7 @@ class AnimatedEditorViewModel(
                 )
             }
             try {
-                val time = System.currentTimeMillis()
+                val time = Clock.System.now().toEpochMilliseconds()
                 val packIdSafe = packId.ifBlank { "draft" }
                 val fileName = "anim_sticker_${packIdSafe}_${time}.webp"
                 val savedPath = fileStorage.saveAnimatedStickerImage(
@@ -361,5 +362,5 @@ class AnimatedEditorViewModel(
     }
 
     private fun nextDecorationId(): String =
-        "anim_dec_${System.currentTimeMillis()}_${Random.nextInt(1000, 9999)}"
+        "anim_dec_${Clock.System.now().toEpochMilliseconds()}_${Random.nextInt(1000, 9999)}"
 }

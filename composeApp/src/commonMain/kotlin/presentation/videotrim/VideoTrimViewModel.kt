@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlin.time.Clock
 import presentation.common.UiText
 
 class VideoTrimViewModel(
@@ -131,7 +132,7 @@ class VideoTrimViewModel(
         val thumbs = mutableListOf<VideoTrimThumbnail>()
         try {
             timestamps.forEachIndexed { i, ms ->
-                val name = "trim_thumb_${System.currentTimeMillis()}_$i.png"
+                val name = "trim_thumb_${Clock.System.now().toEpochMilliseconds()}_$i.png"
                 val path = fileStorage.extractVideoFrameToFile(videoPath, ms, name)
                 if (path != null) {
                     thumbs.add(VideoTrimThumbnail(timestampMs = ms, filePath = path))

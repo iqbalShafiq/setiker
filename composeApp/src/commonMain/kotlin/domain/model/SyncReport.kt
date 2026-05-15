@@ -1,5 +1,7 @@
 package domain.model
 
+import kotlin.time.Clock
+
 sealed class SyncResult {
     data object Success : SyncResult()
     data class Failed(val error: String) : SyncResult()
@@ -14,5 +16,5 @@ data class SyncReport(
     val packsSynced: Int = 0,
     val stickersSynced: Int = 0,
     val result: SyncResult = SyncResult.Success,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = Clock.System.now().toEpochMilliseconds()
 )

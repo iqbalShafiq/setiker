@@ -5,6 +5,7 @@ import domain.model.DecodedFrame
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.random.Random
+import kotlin.time.Clock
 
 /**
  * In-memory transient store for animated sticker drafts. Used to hand off heavy
@@ -23,7 +24,7 @@ class AnimatedStickerDraftStore {
     private val drafts: MutableMap<String, Draft> = mutableMapOf()
 
     suspend fun put(draft: Draft): String = mutex.withLock {
-        val id = "anim_draft_${System.currentTimeMillis()}_${Random.nextInt(100000)}"
+        val id = "anim_draft_${Clock.System.now().toEpochMilliseconds()}_${Random.nextInt(100000)}"
         drafts[id] = draft
         id
     }

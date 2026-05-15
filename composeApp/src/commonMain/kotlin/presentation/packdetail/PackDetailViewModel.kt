@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.time.Clock
 import presentation.common.UiText
 import presentation.common.toUiText
 import setiker.composeapp.generated.resources.Res
@@ -196,7 +197,7 @@ class PackDetailViewModel(
             val queue = _state.value.stickerImportQueue
             if (queue.isEmpty()) return@launch
             try {
-                val fileName = "sticker_${pack.identifier}_${System.currentTimeMillis()}.webp"
+                val fileName = "sticker_${pack.identifier}_${Clock.System.now().toEpochMilliseconds()}.webp"
                 val savedPath = fileStorage.saveStickerImage(croppedPath, fileName)
 
                 val sticker = Sticker(

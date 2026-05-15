@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.random.Random
+import kotlin.time.Clock
 import presentation.common.UiText
 import presentation.common.toUiText
 import setiker.composeapp.generated.resources.Res
@@ -541,7 +542,7 @@ class EditorViewModel(
                 android.util.Log.d("EditorViewModel", "Saving sticker with packId: '$effectivePackId'")
                 
                 // Save editable base image and flattened preview image separately
-                val time = System.currentTimeMillis()
+                val time = Clock.System.now().toEpochMilliseconds()
                 val baseFileName = "sticker_${effectivePackId}_${time}_base.webp"
                 val basePath = fileStorage.saveStickerImage(
                     sourcePath = currentState.imagePath,
@@ -602,5 +603,5 @@ class EditorViewModel(
         is ImageDecoration -> copy(centerX = centerX, centerY = centerY, scale = scale)
     }
 
-    private fun nextDecorationId(): String = "dec_${System.currentTimeMillis()}_${Random.nextInt(1000, 9999)}"
+    private fun nextDecorationId(): String = "dec_${Clock.System.now().toEpochMilliseconds()}_${Random.nextInt(1000, 9999)}"
 }

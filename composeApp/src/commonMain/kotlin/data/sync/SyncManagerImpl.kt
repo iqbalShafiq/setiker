@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlin.time.Clock
 import kotlinx.serialization.json.Json
 
 class SyncManagerImpl(
@@ -93,7 +94,7 @@ class SyncManagerImpl(
                 
                 when (result) {
                     is OperationResult.Success -> {
-                        operationDao.markCompleted(operation.id, SyncOperationStatus.SUCCESS.name, System.currentTimeMillis())
+                        operationDao.markCompleted(operation.id, SyncOperationStatus.SUCCESS.name, Clock.System.now().toEpochMilliseconds())
                         successCount++
                     }
                     is OperationResult.RetryableError -> {
@@ -166,7 +167,7 @@ class SyncManagerImpl(
     }
     
     override suspend fun clearCompleted() {
-        val oneWeekAgo = System.currentTimeMillis() - (7 * 24 * 60 * 60 * 1000)
+        val oneWeekAgo = Clock.System.now().toEpochMilliseconds() - (7 * 24 * 60 * 60 * 1000)
         operationDao.deleteCompletedBefore(oneWeekAgo)
     }
     
