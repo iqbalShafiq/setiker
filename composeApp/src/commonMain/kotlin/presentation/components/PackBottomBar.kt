@@ -8,19 +8,20 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -46,7 +47,6 @@ import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PackBottomBar(
     actions: @Composable RowScope.() -> Unit,
@@ -73,14 +73,24 @@ fun PackBottomBar(
                 .height(NeubrutalBorderWidth)
                 .background(border)
         )
-        BottomAppBar(
-            modifier = Modifier.fillMaxWidth(),
-            containerColor = neubrutalCardSurface(),
-            contentColor = neubrutalOnSurface(),
-            tonalElevation = 0.dp,
-            actions = actions,
-            floatingActionButton = floatingActionButton
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(neubrutalCardSurface())
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                actions()
+            }
+            if (floatingActionButton != null) {
+                floatingActionButton()
+            }
+        }
     }
 }
 
@@ -201,7 +211,6 @@ fun PackBottomBarFab(
 }
 
 // MARK: - Previews
-@OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
 private fun PackBottomBarPreview() {
@@ -211,6 +220,11 @@ private fun PackBottomBarPreview() {
                 PackBottomBarIconButton(
                     icon = Icons.Default.Edit,
                     contentDescription = "Edit",
+                    onClick = {}
+                )
+                PackBottomBarIconButton(
+                    icon = Icons.Default.Edit,
+                    contentDescription = "Edit 2",
                     onClick = {}
                 )
             },
