@@ -125,18 +125,18 @@ fun HomeScreen(
                         .fillMaxSize()
                         .padding(innerPadding)
                 ) {
+                    NeubrutalSearchBar(
+                        query = state.searchQuery,
+                        onQueryChange = { onIntent(HomeIntent.SearchQueryChanged(it)) },
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
+                    )
+
                     Text(
                         text = stringResource(Res.string.home_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = neubrutalMutedOnSurface(),
                         fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
-                    )
-
-                    NeubrutalSearchBar(
-                        query = state.searchQuery,
-                        onQueryChange = { onIntent(HomeIntent.SearchQueryChanged(it)) },
-                        modifier = Modifier.padding(horizontal = 20.dp)
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
                     )
 
                     val packsToShow = state.filteredPacks
