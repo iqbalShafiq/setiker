@@ -9,7 +9,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -49,14 +53,35 @@ fun PackBottomBar(
     floatingActionButton: @Composable (() -> Unit)?,
     modifier: Modifier = Modifier
 ) {
-    BottomAppBar(
-        modifier = modifier,
-        containerColor = neubrutalCardSurface(),
-        contentColor = neubrutalOnSurface(),
-        tonalElevation = 0.dp,
-        actions = actions,
-        floatingActionButton = floatingActionButton
-    )
+    val border = neubrutalBorderColor()
+    val shadow = neubrutalShadowColor()
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .neubrutalShadow(
+                offsetX = 0.dp,
+                offsetY = NeubrutalShadowOffset,
+                cornerRadius = 0.dp,
+                color = shadow
+            )
+    ) {
+        // Neubrutal thick top border
+        Spacer(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(NeubrutalBorderWidth)
+                .background(border)
+        )
+        BottomAppBar(
+            modifier = Modifier.fillMaxWidth(),
+            containerColor = neubrutalCardSurface(),
+            contentColor = neubrutalOnSurface(),
+            tonalElevation = 0.dp,
+            actions = actions,
+            floatingActionButton = floatingActionButton
+        )
+    }
 }
 
 @Composable
