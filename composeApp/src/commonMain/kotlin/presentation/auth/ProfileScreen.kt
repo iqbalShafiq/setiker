@@ -32,7 +32,6 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -50,6 +49,7 @@ import domain.model.UserRole
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import presentation.components.AppDangerButton
+import presentation.components.AppTopBarActionIcon
 import presentation.components.AppTopBar
 import presentation.components.ProfileMenuItem
 import presentation.theme.AccentCoral
@@ -129,13 +129,11 @@ fun ProfileScreen(
                 title = stringResource(Res.string.my_profile_title),
                 onBackClick = onBackClick,
                 actions = {
-                    IconButton(onClick = onSettingsClick) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = stringResource(Res.string.settings),
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+                    AppTopBarActionIcon(
+                        icon = Icons.Default.Settings,
+                        contentDescription = stringResource(Res.string.settings),
+                        onClick = onSettingsClick
+                    )
                 }
             )
         },

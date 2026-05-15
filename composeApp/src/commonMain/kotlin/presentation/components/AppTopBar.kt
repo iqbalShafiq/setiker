@@ -37,6 +37,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -144,12 +145,15 @@ fun AppTopBar(
             title = {
                 Text(
                     text = title,
+                    modifier = Modifier.padding(start = if (onBackClick != null) 12.dp else 0.dp),
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold,
                         fontSize = androidx.compose.ui.unit.TextUnit.Unspecified
                     ),
                     fontSize = 28.sp,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             },
             navigationIcon = {
@@ -186,6 +190,21 @@ fun AppTopBar(
                 .background(border)
         )
     }
+}
+
+@Composable
+fun RowScope.AppTopBarActionIcon(
+    icon: ImageVector,
+    contentDescription: String?,
+    onClick: () -> Unit,
+    enabled: Boolean = true
+) {
+    NeubrutalIconButton(
+        icon = icon,
+        contentDescription = contentDescription,
+        onClick = onClick,
+        enabled = enabled
+    )
 }
 
 // MARK: - Previews
