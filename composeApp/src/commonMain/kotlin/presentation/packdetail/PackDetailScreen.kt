@@ -296,7 +296,7 @@ private fun PackDetailContent(
         val border = neubrutalBorderColor()
         val shadow = neubrutalShadowColor()
         val surface = neubrutalCardSurface()
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .neubrutalShadow(
@@ -312,55 +312,59 @@ private fun PackDetailContent(
                     color = border,
                     shape = RoundedCornerShape(NeubrutalCardRadius)
                 )
-                .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(20.dp)
         ) {
-            AsyncImage(
-                model = pack.trayImageFile,
-                contentDescription = pack.name,
-                modifier = Modifier
-                    .size(96.dp)
-                    .neubrutalShadow(
-                        offsetX = NeubrutalSmallShadowOffset,
-                        offsetY = NeubrutalSmallShadowOffset,
-                        cornerRadius = NeubrutalCardRadius,
-                        color = shadow
-                    )
-                    .clip(RoundedCornerShape(NeubrutalCardRadius))
-                    .background(surface)
-                    .border(
-                        width = NeubrutalBorderWidth,
-                        color = border,
-                        shape = RoundedCornerShape(NeubrutalCardRadius)
-                    ),
-                contentScale = ContentScale.Crop
-            )
-
-            Column(
-                modifier = Modifier
-                    .padding(start = 20.dp)
-                    .weight(1f)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = pack.name,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = neubrutalOnSurface()
+                AsyncImage(
+                    model = pack.trayImageFile,
+                    contentDescription = pack.name,
+                    modifier = Modifier
+                        .size(96.dp)
+                        .neubrutalShadow(
+                            offsetX = NeubrutalSmallShadowOffset,
+                            offsetY = NeubrutalSmallShadowOffset,
+                            cornerRadius = NeubrutalCardRadius,
+                            color = shadow
+                        )
+                        .clip(RoundedCornerShape(NeubrutalCardRadius))
+                        .background(surface)
+                        .border(
+                            width = NeubrutalBorderWidth,
+                            color = border,
+                            shape = RoundedCornerShape(NeubrutalCardRadius)
+                        ),
+                    contentScale = ContentScale.Crop
                 )
-                Text(
-                    text = pack.publisher,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = neubrutalMutedOnSurface()
-                )
-                Text(
-                    text = stringResource(Res.string.stickers_with_count, pack.stickers.size),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = neubrutalMutedOnSurface()
-                )
+
+                Column(
+                    modifier = Modifier
+                        .padding(start = 16.dp)
+                        .weight(1f)
+                ) {
+                    Text(
+                        text = pack.name,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = neubrutalOnSurface()
+                    )
+                    Text(
+                        text = pack.publisher,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = neubrutalMutedOnSurface()
+                    )
+                    Text(
+                        text = stringResource(Res.string.stickers_with_count, pack.stickers.size),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = neubrutalMutedOnSurface()
+                    )
+                }
             }
             SyncStatusIndicator(
                 syncState = pack.syncState,
-                modifier = Modifier.padding(start = 12.dp)
+                modifier = Modifier.align(Alignment.TopEnd)
             )
         }
 
