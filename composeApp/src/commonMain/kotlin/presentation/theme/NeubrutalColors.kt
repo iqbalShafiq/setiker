@@ -37,6 +37,18 @@ fun neubrutalScreenBackground(): Color = MaterialTheme.colorScheme.background
 @ReadOnlyComposable
 fun neubrutalCardSurface(): Color = MaterialTheme.colorScheme.surface
 
+/** App bar panel color. Kept distinct from the screen background for neubrutal layering. */
+@Composable
+@ReadOnlyComposable
+fun neubrutalTopAppBarSurface(): Color =
+    if (isSystemInDarkTheme()) AppBarCoralDark else AccentCoralLight
+
+/** Bottom bar panel color. Matches top app bar for a cohesive neubrutal frame. */
+@Composable
+@ReadOnlyComposable
+fun neubrutalBottomAppBarSurface(): Color =
+    if (isSystemInDarkTheme()) AppBarCoralDark else AccentCoralLight
+
 /** Strong text / icon color, always readable on the matching surface. */
 @Composable
 @ReadOnlyComposable

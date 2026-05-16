@@ -45,6 +45,7 @@ import presentation.theme.NeubrutalSmallRadius
 import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalBottomAppBarSurface
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
@@ -57,7 +58,7 @@ fun PackBottomBar(
     modifier: Modifier = Modifier
 ) {
     val border = neubrutalBorderColor()
-    val shadow = neubrutalShadowColor()
+    val bottomBarSurface = neubrutalBottomAppBarSurface()
 
     Column(
         modifier = modifier
@@ -74,7 +75,7 @@ fun PackBottomBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(neubrutalCardSurface())
+                .background(bottomBarSurface)
                 .padding(horizontal = 16.dp, vertical = 12.dp)
                 .padding(bottom = navBarInsets.calculateBottomPadding()),
             horizontalArrangement = Arrangement.SpaceBetween,

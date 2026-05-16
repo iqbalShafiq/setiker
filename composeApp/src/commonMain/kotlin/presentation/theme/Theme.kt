@@ -64,6 +64,12 @@ fun SetikerTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = appTypography(),
-        content = content
-    )
+    ) {
+        ConfigureSystemBars(
+            statusBarColor = if (darkTheme) AppBarCoralDark else AccentCoralLight,
+            navigationBarColor = if (darkTheme) AppBarCoralDark else AccentCoralLight,
+            darkTheme = darkTheme
+        )
+        content()
+    }
 }

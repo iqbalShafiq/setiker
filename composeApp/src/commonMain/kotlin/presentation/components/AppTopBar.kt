@@ -51,6 +51,7 @@ import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalTopAppBarSurface
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.back_content_description
 import setiker.composeapp.generated.resources.my_stickers_title
@@ -130,6 +131,7 @@ fun AppTopBar(
 ) {
     val border = neubrutalBorderColor()
     val shadow = neubrutalShadowColor()
+    val appBarSurface = neubrutalTopAppBarSurface()
 
     Column(
         modifier = modifier
@@ -176,7 +178,7 @@ fun AppTopBar(
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surface,
+                containerColor = appBarSurface,
                 titleContentColor = MaterialTheme.colorScheme.onSurface,
                 navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
                 actionIconContentColor = MaterialTheme.colorScheme.onSurface
