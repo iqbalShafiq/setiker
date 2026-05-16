@@ -84,7 +84,10 @@ class AuthApiService(
         return json.decodeFromString(bodyText)
     }
 
-    suspend fun refreshToken(): AuthResponse {
+    suspend fun refreshToken(storedRefreshToken: String? = null): AuthResponse {
+        if (cookieStorage.refreshToken.isNullOrBlank() && !storedRefreshToken.isNullOrBlank()) {
+            cookieStorage.setRefreshToken(storedRefreshToken)
+        }
         val response = client.post("$baseUrl/api/v1/auth/refresh")
         val bodyText = response.bodyAsText()
         if (!response.status.isSuccess()) {
@@ -140,5 +143,9 @@ private class RefreshTokenStorage : CookiesStorage {
 
     fun clear() {
         refreshToken = null
+    }
+
+    fun setRefreshToken(token: String) {
+        refreshToken = token
     }
 }

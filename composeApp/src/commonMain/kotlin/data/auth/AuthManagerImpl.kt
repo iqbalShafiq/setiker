@@ -17,8 +17,13 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlin.time.Clock
- import kotlinx.serialization.encodeToString
- import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.long
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 class AuthManagerImpl(
     private val dataStore: DataStore<Preferences>
@@ -94,8 +99,10 @@ class AuthManagerImpl(
     }
     
     override suspend fun updateAccessToken(newToken: String) {
+        val expiresAtFromToken = parseJwtExpiration(newToken)
         dataStore.edit { preferences ->
             preferences[KEY_ACCESS_TOKEN] = newToken
+            expiresAtFromToken?.let { preferences[KEY_TOKEN_EXPIRES_AT] = it }
         }
     }
     
@@ -106,11 +113,26 @@ class AuthManagerImpl(
          return expiresAt <= Clock.System.now().toEpochMilliseconds() + 300_000
      }
      
-     override suspend fun getValidAccessToken(): String? {
-         val token = getAccessToken() ?: return null
-         if (isTokenExpired()) {
-             return null
-         }
-         return token
-     }
- }
+      override suspend fun getValidAccessToken(): String? {
+          val token = getAccessToken() ?: return null
+          if (isTokenExpired()) {
+              return null
+          }
+          return token
+      }
+
+    @OptIn(ExperimentalEncodingApi::class)
+    private fun parseJwtExpiration(token: String): Long? {
+        val payloadPart = token.split('.').getOrNull(1) ?: return null
+        val payloadJson = runCatching {
+            Base64.UrlSafe.decode(payloadPart).decodeToString()
+        }.getOrNull() ?: return null
+        val expSeconds = runCatching {
+            json.parseToJsonElement(payloadJson)
+                .jsonObject["exp"]
+                ?.jsonPrimitive
+                ?.long
+        }.getOrNull() ?: return null
+        return expSeconds * 1000
+    }
+  }

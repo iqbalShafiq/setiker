@@ -14,6 +14,7 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.statement.HttpResponse
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -24,6 +25,7 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
@@ -57,23 +59,46 @@ class CloudStickerRepository(
         }
     }
 
-    private suspend fun getAuthHeader(): String {
-        val token = resolveAccessToken()
-            ?: throw ApiException(code = AppErrorCode.AuthNotAuthenticated)
-        return "Bearer $token"
-    }
-
     private suspend fun resolveAccessToken(): String? {
         authManager.getValidAccessToken()?.let { return it }
         val refreshedToken = runCatching {
-            authApiService?.refreshToken()?.data?.accessToken?.also { authManager.updateAccessToken(it) }
+            val storedRefreshToken = authManager.getRefreshToken()
+            authApiService
+                ?.refreshToken(storedRefreshToken)
+                ?.data
+                ?.accessToken
+                ?.also { authManager.updateAccessToken(it) }
         }.getOrNull()
         return refreshedToken ?: authManager.getAccessToken()
     }
 
+    private suspend fun forceRefreshAccessToken(): String? {
+        val storedRefreshToken = authManager.getRefreshToken()
+        return runCatching {
+            authApiService
+                ?.refreshToken(storedRefreshToken)
+                ?.data
+                ?.accessToken
+                ?.also { authManager.updateAccessToken(it) }
+        }.getOrNull()
+    }
+
+    private suspend fun withAuthRetry(request: suspend (String) -> HttpResponse): HttpResponse {
+        val firstToken = resolveAccessToken() ?: throw ApiException(code = AppErrorCode.AuthNotAuthenticated)
+        val firstResponse = request("Bearer $firstToken")
+        if (firstResponse.status != HttpStatusCode.Unauthorized) {
+            return firstResponse
+        }
+
+        val refreshedToken = forceRefreshAccessToken() ?: return firstResponse
+        return request("Bearer $refreshedToken")
+    }
+
     suspend fun getMyPacks(): List<CloudStickerPack> {
-        val response = client.get("$baseUrl/api/v1/sticker-packs") {
-            header(HttpHeaders.Authorization, getAuthHeader())
+        val response = withAuthRetry { authHeader ->
+            client.get("$baseUrl/api/v1/sticker-packs") {
+                header(HttpHeaders.Authorization, authHeader)
+            }
         }
         if (!response.status.isSuccess()) {
             throw ApiException(code = AppErrorCode.CloudFetchFailed)
@@ -83,10 +108,12 @@ class CloudStickerRepository(
     }
 
     suspend fun createPack(request: CreateStickerPackRequest): CloudStickerPack {
-        val response = client.post("$baseUrl/api/v1/sticker-packs") {
-            contentType(ContentType.Application.Json)
-            header(HttpHeaders.Authorization, getAuthHeader())
-            setBody(request)
+        val response = withAuthRetry { authHeader ->
+            client.post("$baseUrl/api/v1/sticker-packs") {
+                contentType(ContentType.Application.Json)
+                header(HttpHeaders.Authorization, authHeader)
+                setBody(request)
+            }
         }
         if (!response.status.isSuccess()) {
             throw ApiException(code = AppErrorCode.CloudCreateFailed)
@@ -96,10 +123,12 @@ class CloudStickerRepository(
     }
 
     suspend fun updatePack(packId: String, request: CreateStickerPackRequest): CloudStickerPack {
-        val response = client.put("$baseUrl/api/v1/sticker-packs/$packId") {
-            contentType(ContentType.Application.Json)
-            header(HttpHeaders.Authorization, getAuthHeader())
-            setBody(request)
+        val response = withAuthRetry { authHeader ->
+            client.put("$baseUrl/api/v1/sticker-packs/$packId") {
+                contentType(ContentType.Application.Json)
+                header(HttpHeaders.Authorization, authHeader)
+                setBody(request)
+            }
         }
         if (!response.status.isSuccess()) {
             throw ApiException(code = AppErrorCode.CloudUpdateFailed)
@@ -109,8 +138,10 @@ class CloudStickerRepository(
     }
 
     suspend fun deletePack(packId: String) {
-        val response = client.delete("$baseUrl/api/v1/sticker-packs/$packId") {
-            header(HttpHeaders.Authorization, getAuthHeader())
+        val response = withAuthRetry { authHeader ->
+            client.delete("$baseUrl/api/v1/sticker-packs/$packId") {
+                header(HttpHeaders.Authorization, authHeader)
+            }
         }
         if (!response.status.isSuccess()) {
             throw ApiException(code = AppErrorCode.CloudDeleteFailed)
@@ -118,10 +149,12 @@ class CloudStickerRepository(
     }
 
     suspend fun sync(lastSyncAt: Long?): SyncData {
-        val response = client.get("$baseUrl/api/v1/sync") {
-            header(HttpHeaders.Authorization, getAuthHeader())
-            if (lastSyncAt != null) {
-                parameter("lastSyncAt", encodeLastSyncAt(lastSyncAt))
+        val response = withAuthRetry { authHeader ->
+            client.get("$baseUrl/api/v1/sync") {
+                header(HttpHeaders.Authorization, authHeader)
+                if (lastSyncAt != null) {
+                    parameter("lastSyncAt", encodeLastSyncAt(lastSyncAt))
+                }
             }
         }
         if (!response.status.isSuccess()) {
