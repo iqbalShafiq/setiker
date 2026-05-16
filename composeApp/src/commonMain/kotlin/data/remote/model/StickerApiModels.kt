@@ -16,3 +16,14 @@ data class GenerateData(
 data class GridSplitData(
     val images: List<ApiImage>
 )
+
+@Serializable
+data class GridSplitTextAssetsData(
+    val assets: List<ApiTextAsset>
+)
+
+@Serializable
+data class ApiTextAsset(
+    val id: String,
+    val textOutsideForeground: ApiTextOutsideForeground? = null
+)

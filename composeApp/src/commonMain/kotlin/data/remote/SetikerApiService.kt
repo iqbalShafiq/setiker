@@ -6,6 +6,8 @@ import data.remote.model.ApiSuccessEnvelope
 import data.remote.model.BackgroundRemoveData
 import data.remote.model.GenerateData
 import data.remote.model.GridSplitData
+import data.remote.model.GridSplitTextAssetsData
+import data.remote.model.ApiTextAsset
 import domain.error.AppErrorCode
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -125,7 +127,8 @@ class SetikerApiService(
         grid: Boolean = true,
         gridLayout: String? = "4x4",
         normalize: Boolean? = true,
-        inputImagePath: String? = null
+        inputImagePath: String? = null,
+        splitGridOnServer: Boolean = true
     ): List<ApiImage> {
         val response = withAuthRetry { authHeader ->
             client.post("/api/v1/generate") {
@@ -138,6 +141,7 @@ class SetikerApiService(
                             if (grid) {
                                 gridLayout?.let { append("layout", it) }
                                 normalize?.let { append("normalize", it.toString()) }
+                                append("split", splitGridOnServer.toString())
                             }
                             if (!inputImagePath.isNullOrBlank()) {
                                 val bytes = readFileBytes(inputImagePath)
@@ -192,6 +196,50 @@ class SetikerApiService(
         }
         val parsed = json.decodeFromString<ApiSuccessEnvelope<GridSplitData>>(bodyText)
         return parsed.data?.images
+            ?: throw ApiException(code = AppErrorCode.InvalidGridSplitResponse)
+    }
+
+    suspend fun extractGridTextAssets(imagePaths: List<String>): List<ApiTextAsset> {
+        if (imagePaths.isEmpty()) return emptyList()
+
+        val response = withAuthRetry { authHeader ->
+            client.post("/api/v1/grid/split/text-assets") {
+                authHeader?.let { header(HttpHeaders.Authorization, it) }
+                setBody(
+                    MultiPartFormDataContent(
+                        formData {
+                            imagePaths.forEachIndexed { index, path ->
+                                val bytes = readFileBytes(path)
+                                append(
+                                    key = "images",
+                                    value = bytes,
+                                    headers = io.ktor.http.Headers.build {
+                                        append(HttpHeaders.ContentType, ContentType.Image.PNG.toString())
+                                        append(
+                                            HttpHeaders.ContentDisposition,
+                                            "filename=\"cell_${index + 1}.png\""
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                    )
+                )
+                contentType(ContentType.MultiPart.FormData)
+            }
+        }
+        val bodyText = response.bodyAsText()
+        if (!response.status.isSuccess()) {
+            throw ApiException(
+                code = AppErrorCode.GridSplitRequestFailed,
+                message = runCatching { json.decodeFromString<ApiErrorEnvelope>(bodyText) }
+                    .getOrNull()
+                    ?.error
+                    ?.message
+            )
+        }
+        val parsed = json.decodeFromString<ApiSuccessEnvelope<GridSplitTextAssetsData>>(bodyText)
+        return parsed.data?.assets
             ?: throw ApiException(code = AppErrorCode.InvalidGridSplitResponse)
     }
 

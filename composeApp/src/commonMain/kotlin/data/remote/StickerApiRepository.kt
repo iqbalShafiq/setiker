@@ -4,12 +4,15 @@ import data.remote.mapper.toOverlayTextDecoration
 import data.remote.model.ApiImage
 import data.remote.model.GridSplitStickerFile
 import data.storage.StickerFileStorage
+import data.util.OnDeviceImageProcessor
+import data.util.parseGridLayout
 import domain.error.AppErrorCode
 import kotlin.random.Random
 
 class StickerApiRepository(
     private val api: SetikerApiService,
-    private val fileStorage: StickerFileStorage
+    private val fileStorage: StickerFileStorage,
+    private val onDeviceImageProcessor: OnDeviceImageProcessor
 ) {
     suspend fun removeBackground(imagePath: String): String {
         val image = api.removeBackground(imagePath)
@@ -28,9 +31,40 @@ class StickerApiRepository(
             grid = grid,
             gridLayout = layout,
             normalize = normalize,
-            inputImagePath = inputImagePath
+            inputImagePath = inputImagePath,
+            splitGridOnServer = !grid
         )
+        if (grid) {
+            val rawGridPath = images.firstOrNull()?.let { downloadAndPersist(it) }
+                ?: return emptyList()
+            val (rows, cols) = parseGridLayout(layout)
+            return splitGridOnDevice(rawGridPath, "${rows}x${cols}").map { it.localPath }
+        }
         return downloadAndPersistAll(images, operationTag = "generate")
+    }
+
+    suspend fun splitGridOnDevice(
+        imagePath: String,
+        layout: String?
+    ): List<GridSplitStickerFile> {
+        val (rows, cols) = parseGridLayout(layout)
+        val rawCellPaths = onDeviceImageProcessor.splitGridRawCells(
+            imagePath = imagePath,
+            rows = rows,
+            cols = cols
+        )
+        val textAssets = extractTextAssetsOrEmpty(rawCellPaths)
+        return rawCellPaths.mapIndexed { index, rawCellPath ->
+            val processedPath = onDeviceImageProcessor.removeBackground(rawCellPath)
+            val decoration = textAssets.getOrNull(index)
+                ?.textOutsideForeground
+                .toOverlayTextDecoration()
+            GridSplitStickerFile(
+                localPath = processedPath,
+                rawCellPath = rawCellPath,
+                decorations = listOfNotNull(decoration)
+            )
+        }
     }
 
     suspend fun splitGrid(imagePath: String): List<GridSplitStickerFile> {
@@ -93,4 +127,14 @@ class StickerApiRepository(
         }
         return results
     }
+
+    private suspend fun extractTextAssetsOrEmpty(
+        rawCellPaths: List<String>
+    ) = runCatching { api.extractGridTextAssets(rawCellPaths) }
+            .onFailure {
+                println(
+                    "StickerApiRepository[grid-text-assets]: failed to extract text assets reason=${it.message}"
+                )
+            }
+            .getOrElse { emptyList() }
 }

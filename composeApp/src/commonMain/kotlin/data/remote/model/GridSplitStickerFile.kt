@@ -8,5 +8,6 @@ import domain.model.StickerDecoration
  */
 data class GridSplitStickerFile(
     val localPath: String,
+    val rawCellPath: String? = null,
     val decorations: List<StickerDecoration> = emptyList()
 )

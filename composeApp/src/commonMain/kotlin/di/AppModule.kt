@@ -40,7 +40,7 @@ val appModule = module {
     // Repository
     single<StickerRepository> { StickerRepositoryImpl(get(), get(), get(), get(), get()) }
     single { SetikerApiService(authManager = get(), authTokenRefresher = get()) }
-    single { StickerApiRepository(api = get(), fileStorage = get()) }
+    single { StickerApiRepository(api = get(), fileStorage = get(), onDeviceImageProcessor = get()) }
     single { AnimatedStickerDraftStore() }
 
     // Auth

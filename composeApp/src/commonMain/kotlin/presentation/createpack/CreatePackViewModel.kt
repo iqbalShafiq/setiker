@@ -386,8 +386,9 @@ class CreatePackViewModel(
 
             _state.update { it.copy(isApiLoading = true, error = null) }
             try {
-                val splitImages = apiRepository.splitGrid(
-                    imagePath = currentState.gridSplitSourcePath
+                val splitImages = apiRepository.splitGridOnDevice(
+                    imagePath = currentState.gridSplitSourcePath,
+                    layout = currentState.gridLayout
                 )
                 val splitDrafts = splitImages.map { file ->
                     DraftSticker(imagePath = file.localPath, decorations = file.decorations)

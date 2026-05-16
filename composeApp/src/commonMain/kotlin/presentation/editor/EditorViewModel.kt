@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import data.remote.StickerApiRepository
 import data.storage.StickerFileStorage
 import data.util.EmojiPreferences
+import data.util.OnDeviceImageProcessor
 import domain.model.DecorationFont
 import domain.model.DecorationFontWeight
 import domain.model.EmojiDecoration
@@ -39,7 +40,8 @@ class EditorViewModel(
     private val repository: StickerRepository,
     private val emojiPreferences: EmojiPreferences,
     private val fileStorage: StickerFileStorage,
-    private val apiRepository: StickerApiRepository
+    private val apiRepository: StickerApiRepository,
+    private val onDeviceImageProcessor: OnDeviceImageProcessor
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(EditorState())
@@ -430,7 +432,7 @@ class EditorViewModel(
             }
 
             try {
-                val resultPath = apiRepository.removeBackground(path)
+                val resultPath = onDeviceImageProcessor.removeBackground(path)
                 if (!isActive) return@launch
                 _state.update {
                     it.copy(

@@ -10,6 +10,8 @@ import data.local.database.StickerDatabase
 import data.storage.StickerFileStorage
 import data.sync.NetworkMonitor
 import data.util.EmojiPreferences
+import data.util.AndroidOnDeviceImageProcessor
+import data.util.OnDeviceImageProcessor
 import domain.actions.AndroidPackActions
 import domain.actions.PackActions
 import org.koin.android.ext.koin.androidContext
@@ -36,6 +38,7 @@ actual fun platformModule(): Module = module {
     single { get<StickerDatabase>().stickerDao() }
     single<StickerFileStorage> { StickerFileStorage(androidContext()) }
     single<EmojiPreferences> { EmojiPreferences(androidContext()) }
+    single<OnDeviceImageProcessor> { AndroidOnDeviceImageProcessor(androidContext()) }
     single<PackActions> { AndroidPackActions(androidContext(), get(), get()) }
     single<DataStore<Preferences>> { androidContext().dataStore }
     single { NetworkMonitor(androidContext()) }

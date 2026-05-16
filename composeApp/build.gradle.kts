@@ -84,6 +84,7 @@ kotlin {
             implementation(libs.coil.gif)
             implementation(libs.androidx.security.crypto)
             implementation(libs.androidx.work.runtime)
+            implementation(libs.onnxruntime.android)
         }
 
         iosMain.dependencies {
