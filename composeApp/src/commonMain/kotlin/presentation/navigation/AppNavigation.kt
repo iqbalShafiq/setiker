@@ -9,15 +9,21 @@ package presentation.navigation
  import androidx.compose.animation.slideOutHorizontally
  import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import domain.model.AnimatedStickerSpec
+import domain.model.AuthState
+import data.auth.AuthManager
 import presentation.animatededitor.AnimatedEditorEffect
 import presentation.animatededitor.AnimatedEditorScreenRoot
 import presentation.auth.LoginScreenRoot
@@ -36,6 +42,7 @@ import presentation.sync.SyncScreenRoot
 import presentation.sync.SyncViewModel
 import presentation.videocrop.VideoCropScreenRoot
 import presentation.videotrim.VideoTrimScreenRoot
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 private object CropRecipient {
@@ -52,6 +59,22 @@ fun AppNavigation(
     navController: NavHostController = rememberNavController(),
     onAddToWhatsApp: ((String, String) -> Unit)? = null
 ) {
+    val authManager: AuthManager = koinInject()
+    val authState by authManager.authState.collectAsState()
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = currentBackStackEntry?.destination?.route
+    val loginGuardRoutes = setOf("home", "profile", "sync")
+
+    LaunchedEffect(authState, currentRoute) {
+        if (authState == AuthState.UNAUTHENTICATED) {
+            if (currentRoute in loginGuardRoutes) {
+                navController.navigate("login") {
+                    popUpTo("home") { inclusive = true }
+                }
+            }
+        }
+    }
+
     val editorCropResult = remember { mutableStateOf<String?>(null) }
     val createPackStickerCrop = remember { mutableStateOf<String?>(null) }
     val createPackTrayCrop = remember { mutableStateOf<String?>(null) }

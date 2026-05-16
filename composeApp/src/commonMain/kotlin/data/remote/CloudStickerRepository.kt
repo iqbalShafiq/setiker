@@ -6,6 +6,7 @@ import data.remote.model.ApiSuccessEnvelope
 import data.remote.model.CloudStickerPack
 import data.remote.model.CreateStickerPackRequest
 import data.remote.model.SyncData
+import data.remote.model.UploadData
 import domain.error.AppErrorCode
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -14,16 +15,17 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
-import io.ktor.client.statement.HttpResponse
-import io.ktor.client.request.delete
+import io.ktor.client.request.forms.MultiPartFormDataContent
+import io.ktor.client.request.forms.formData
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
-import io.ktor.client.request.put
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
@@ -31,6 +33,7 @@ import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import data.sync.encodeLastSyncAt
+import data.remote.readFileBytes
 
 class CloudStickerRepository(
     private val authManager: AuthManager,
@@ -74,13 +77,18 @@ class CloudStickerRepository(
 
     private suspend fun forceRefreshAccessToken(): String? {
         val storedRefreshToken = authManager.getRefreshToken()
-        return runCatching {
+        val refreshed = runCatching {
             authApiService
                 ?.refreshToken(storedRefreshToken)
                 ?.data
                 ?.accessToken
                 ?.also { authManager.updateAccessToken(it) }
         }.getOrNull()
+        if (refreshed.isNullOrBlank()) {
+            authManager.clearTokens()
+            return null
+        }
+        return refreshed
     }
 
     private suspend fun withAuthRetry(request: suspend (String) -> HttpResponse): HttpResponse {
@@ -107,40 +115,54 @@ class CloudStickerRepository(
         return envelope.data ?: emptyList()
     }
 
-    suspend fun createPack(request: CreateStickerPackRequest): CloudStickerPack {
+    suspend fun uploadPack(request: CreateStickerPackRequest, stickerPackId: String? = null): UploadData {
         val response = withAuthRetry { authHeader ->
-            client.post("$baseUrl/api/v1/sticker-packs") {
-                contentType(ContentType.Application.Json)
+            client.post("$baseUrl/api/v1/upload") {
                 header(HttpHeaders.Authorization, authHeader)
-                setBody(request)
+                setBody(
+                    MultiPartFormDataContent(
+                        formData {
+                            if (stickerPackId.isNullOrBlank()) {
+                                append("stickerPackName", request.name)
+                                request.description?.let { append("stickerPackDescription", it) }
+                            } else {
+                                append("stickerPackId", stickerPackId)
+                            }
+                            append("visibility", request.visibility.lowercase())
+                            request.stickers.sortedBy { it.order }.forEachIndexed { index, sticker ->
+                                append(
+                                    key = "images",
+                                    value = readFileBytes(sticker.url),
+                                    headers = Headers.build {
+                                        append(HttpHeaders.ContentType, ContentType.Image.Any.toString())
+                                        append(HttpHeaders.ContentDisposition, "filename=\"${sticker.filename.ifBlank { "sticker-$index.webp" }}\"")
+                                    },
+                                )
+                            }
+                        }
+                    )
+                )
             }
         }
         if (!response.status.isSuccess()) {
             throw ApiException(code = AppErrorCode.CloudCreateFailed)
         }
-        val envelope = json.decodeFromString<ApiSuccessEnvelope<CloudStickerPack>>(response.bodyAsText())
+        val envelope = json.decodeFromString<ApiSuccessEnvelope<UploadData>>(response.bodyAsText())
         return envelope.data ?: throw ApiException(code = AppErrorCode.CloudCreateFailed)
     }
 
-    suspend fun updatePack(packId: String, request: CreateStickerPackRequest): CloudStickerPack {
+    suspend fun deletePackViaUpload(stickerPackId: String) {
         val response = withAuthRetry { authHeader ->
-            client.put("$baseUrl/api/v1/sticker-packs/$packId") {
-                contentType(ContentType.Application.Json)
+            client.post("$baseUrl/api/v1/upload") {
                 header(HttpHeaders.Authorization, authHeader)
-                setBody(request)
-            }
-        }
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudUpdateFailed)
-        }
-        val envelope = json.decodeFromString<ApiSuccessEnvelope<CloudStickerPack>>(response.bodyAsText())
-        return envelope.data ?: throw ApiException(code = AppErrorCode.CloudUpdateFailed)
-    }
-
-    suspend fun deletePack(packId: String) {
-        val response = withAuthRetry { authHeader ->
-            client.delete("$baseUrl/api/v1/sticker-packs/$packId") {
-                header(HttpHeaders.Authorization, authHeader)
+                setBody(
+                    MultiPartFormDataContent(
+                        formData {
+                            append("action", "delete")
+                            append("stickerPackId", stickerPackId)
+                        }
+                    )
+                )
             }
         }
         if (!response.status.isSuccess()) {

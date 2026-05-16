@@ -93,3 +93,10 @@ data class SyncStickerDelta(
     val updated: List<CloudSticker> = emptyList(),
     val deleted: List<CloudDeletedRef> = emptyList()
 )
+
+@Serializable
+data class UploadData(
+    val stickerPackId: String? = null,
+    val stickers: List<CloudSticker> = emptyList(),
+    val message: String? = null,
+)

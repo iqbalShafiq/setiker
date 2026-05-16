@@ -310,22 +310,26 @@ class SyncManagerImpl(
             ?: remotePack.owner?.username?.takeIf { it.isNotBlank() }
             ?: "Setiker"
 
-        packDao.insert(
-            StickerPackEntity(
-                identifier = localIdentifier,
-                name = remotePack.name,
-                publisher = publisher,
-                trayImageFile = trayImageFile,
-                isAnimated = false,
-                createdAt = existing?.createdAt ?: now,
-                updatedAt = now,
-                cloudId = remotePack.id,
-                syncState = SYNC_STATE_SYNCED,
-                lastSyncAt = now,
-                visibility = remotePack.visibility,
-                cloudOwnerId = remotePack.ownerId,
-            )
+        val mergedPack = StickerPackEntity(
+            identifier = localIdentifier,
+            name = remotePack.name,
+            publisher = publisher,
+            trayImageFile = trayImageFile,
+            isAnimated = existing?.isAnimated ?: false,
+            createdAt = existing?.createdAt ?: now,
+            updatedAt = now,
+            cloudId = remotePack.id,
+            syncState = SYNC_STATE_SYNCED,
+            lastSyncAt = now,
+            visibility = remotePack.visibility,
+            cloudOwnerId = remotePack.ownerId,
         )
+
+        if (existing == null) {
+            packDao.insert(mergedPack)
+        } else {
+            packDao.update(mergedPack)
+        }
 
         if (remotePack.stickers.isEmpty() || importedStickers.isNotEmpty()) {
             stickerDao.deleteByPackId(localIdentifier)
@@ -360,21 +364,25 @@ class SyncManagerImpl(
             when (operation.type) {
                 SyncOperationType.CREATE_PACK -> {
                     val request = json.decodeFromString<CreateStickerPackRequest>(operation.payload)
-                    val cloudPack = cloudRepo.createPack(request)
-                    packDao.updateCloudId(operation.targetId, cloudPack.id)
+                    val upload = cloudRepo.uploadPack(request)
+                    val cloudPackId = upload.stickerPackId
+                        ?: return OperationResult.PermanentError("Upload did not return sticker pack id")
+                    packDao.updateCloudId(operation.targetId, cloudPackId)
                     packDao.updateSyncStatus(operation.targetId, SYNC_STATE_SYNCED, Clock.System.now().toEpochMilliseconds())
+                    updateLocalStickerCloudInfo(operation.targetId, upload.stickers)
                     OperationResult.Success
                 }
                 SyncOperationType.UPDATE_PACK -> {
                     val request = json.decodeFromString<CreateStickerPackRequest>(operation.payload)
-                    cloudRepo.updatePack(operation.targetId, request)
+                    val upload = cloudRepo.uploadPack(request, stickerPackId = operation.targetId)
                     packDao.getByCloudId(operation.targetId)?.let { pack ->
                         packDao.updateSyncStatus(pack.identifier, SYNC_STATE_SYNCED, Clock.System.now().toEpochMilliseconds())
+                        updateLocalStickerCloudInfo(pack.identifier, upload.stickers)
                     }
                     OperationResult.Success
                 }
                 SyncOperationType.DELETE_PACK -> {
-                    cloudRepo.deletePack(operation.targetId)
+                    cloudRepo.deletePackViaUpload(operation.targetId)
                     OperationResult.Success
                 }
                 else -> OperationResult.PermanentError("Operation type ${operation.type} not implemented")
@@ -385,6 +393,15 @@ class SyncManagerImpl(
                 e.message?.contains("5", ignoreCase = true) == true -> OperationResult.RetryableError(e.message ?: "Server error")
                 else -> OperationResult.PermanentError(e.message ?: "Unknown error")
             }
+        }
+    }
+
+    private suspend fun updateLocalStickerCloudInfo(packId: String, cloudStickers: List<data.remote.model.CloudSticker>) {
+        val now = Clock.System.now().toEpochMilliseconds()
+        val localStickers = stickerDao.getByPackId(packId).sortedBy { it.sortOrder }
+        localStickers.zip(cloudStickers).forEach { (localSticker, cloudSticker) ->
+            stickerDao.updateCloudInfo(localSticker.id, cloudSticker.id, cloudSticker.url)
+            stickerDao.updateSyncStatus(localSticker.id, SYNC_STATE_SYNCED, now)
         }
     }
     
