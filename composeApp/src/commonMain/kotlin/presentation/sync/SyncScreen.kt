@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import domain.model.SyncOperation
 import domain.model.SyncOperationStatus
 import domain.model.SyncOperationType
@@ -135,15 +136,12 @@ fun SyncScreen(
                     CircularProgressIndicator()
                 }
             } else if (state.operations.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "No local changes. Cloud sync will run automatically when you are online.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Text(
+                    text = "No local changes. Cloud sync will run automatically when you are online.",
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
