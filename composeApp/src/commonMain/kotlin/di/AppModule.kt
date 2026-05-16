@@ -3,6 +3,7 @@ package di
 import data.auth.AuthApiService
 import data.auth.AuthManager
 import data.auth.AuthManagerImpl
+import data.auth.AuthTokenRefresher
 import data.local.database.StickerDatabase
 import data.local.database.SyncOperationDao
 import data.remote.CloudStickerRepository
@@ -38,14 +39,15 @@ val appModule = module {
 
     // Repository
     single<StickerRepository> { StickerRepositoryImpl(get(), get(), get(), get(), get()) }
-    single { SetikerApiService(authManager = get(), authApiService = get()) }
+    single { SetikerApiService(authManager = get(), authTokenRefresher = get()) }
     single { StickerApiRepository(api = get(), fileStorage = get()) }
     single { AnimatedStickerDraftStore() }
 
     // Auth
     single { AuthApiService() }
     single<AuthManager> { AuthManagerImpl(get()) }
-    single { CloudStickerRepository(authManager = get(), authApiService = get()) }
+    single { AuthTokenRefresher(authManager = get(), authApiService = get()) }
+    single { CloudStickerRepository(authManager = get(), authTokenRefresher = get()) }
     // NetworkMonitor is provided by platform-specific module
     single { get<StickerDatabase>().syncOperationDao() }
     single { SyncCursorStore(get()) }

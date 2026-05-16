@@ -53,7 +53,8 @@ class AuthManagerImpl(
     }
     
     override suspend fun saveTokens(accessToken: String, refreshToken: String, expiresIn: Long) {
-        val expiresAt = Clock.System.now().toEpochMilliseconds() + (expiresIn * 1000)
+        val expiresAt = parseJwtExpiration(accessToken)
+            ?: (Clock.System.now().toEpochMilliseconds() + (expiresIn * 1000))
         dataStore.edit { preferences ->
             preferences[KEY_ACCESS_TOKEN] = accessToken
             preferences[KEY_REFRESH_TOKEN] = refreshToken
@@ -82,8 +83,10 @@ class AuthManagerImpl(
     
     override suspend fun isAuthenticated(): Boolean {
         val token = getAccessToken()
+        val refreshToken = getRefreshToken()
         val expiresAt = dataStore.data.map { it[KEY_TOKEN_EXPIRES_AT] ?: 0L }.first()
-        return !token.isNullOrBlank() && expiresAt > Clock.System.now().toEpochMilliseconds()
+        return !refreshToken.isNullOrBlank() ||
+            (!token.isNullOrBlank() && expiresAt > Clock.System.now().toEpochMilliseconds())
     }
     
     override suspend fun saveUser(user: User) {

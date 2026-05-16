@@ -1,7 +1,7 @@
 package data.remote
 
 import data.auth.AuthManager
-import data.auth.AuthApiService
+import data.auth.AuthTokenRefresher
 import data.remote.model.ApiSuccessEnvelope
 import data.remote.model.CloudStickerPack
 import data.remote.model.CreateStickerPackRequest
@@ -39,7 +39,7 @@ import data.remote.readFileBytes
 
 class CloudStickerRepository(
     private val authManager: AuthManager,
-    private val authApiService: AuthApiService? = null,
+    private val authTokenRefresher: AuthTokenRefresher? = null,
     private val baseUrl: String = ApiConfig.baseUrl
 ) {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
@@ -66,28 +66,13 @@ class CloudStickerRepository(
 
     private suspend fun resolveAccessToken(): String? {
         authManager.getValidAccessToken()?.let { return it }
-        val refreshedToken = runCatching {
-            val storedRefreshToken = authManager.getRefreshToken()
-            authApiService
-                ?.refreshToken(storedRefreshToken)
-                ?.data
-                ?.accessToken
-                ?.also { authManager.updateAccessToken(it) }
-        }.getOrNull()
-        return refreshedToken ?: authManager.getAccessToken()
+        return authTokenRefresher?.refreshAccessToken(clearTokensOnFailure = false)
+            ?: authManager.getAccessToken()
     }
 
     private suspend fun forceRefreshAccessToken(): String? {
-        val storedRefreshToken = authManager.getRefreshToken()
-        val refreshed = runCatching {
-            authApiService
-                ?.refreshToken(storedRefreshToken)
-                ?.data
-                ?.accessToken
-                ?.also { authManager.updateAccessToken(it) }
-        }.getOrNull()
+        val refreshed = authTokenRefresher?.refreshAccessToken(clearTokensOnFailure = true)
         if (refreshed.isNullOrBlank()) {
-            authManager.clearTokens()
             return null
         }
         return refreshed
