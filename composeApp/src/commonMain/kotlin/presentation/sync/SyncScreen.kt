@@ -15,7 +15,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import kotlin.time.Clock
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
@@ -43,8 +45,9 @@ import domain.model.SyncReport
 import domain.model.SyncResult
 import domain.model.SyncStage
 import presentation.components.AppTopBar
-import presentation.components.AppPrimaryButton
-import presentation.components.AppSecondaryButton
+import presentation.components.PackBottomBar
+import presentation.components.PackBottomBarFab
+import presentation.components.PackBottomBarIconButton
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalOnSurface
@@ -78,8 +81,32 @@ fun SyncScreen(
     Scaffold(
         topBar = {
             AppTopBar(
-                title = "Sync Status",
-                onBackClick = onBackClick
+                title = "Sync Status"
+            )
+        },
+        bottomBar = {
+            PackBottomBar(
+                actions = {
+                    PackBottomBarIconButton(
+                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        onClick = onBackClick
+                    )
+                    PackBottomBarIconButton(
+                        icon = Icons.Default.DoneAll,
+                        contentDescription = "Clear done",
+                        onClick = { onIntent(SyncIntent.ClearCompleted) },
+                        enabled = state.operations.any { it.status == SyncOperationStatus.SUCCESS }
+                    )
+                },
+                floatingActionButton = {
+                    PackBottomBarFab(
+                        icon = Icons.Default.Refresh,
+                        contentDescription = "Sync now",
+                        onClick = { onIntent(SyncIntent.SyncNow) },
+                        enabled = !state.isSyncing
+                    )
+                }
             )
         },
         containerColor = neubrutalScreenBackground()
@@ -90,44 +117,24 @@ fun SyncScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-                SyncStatusCard(
+            SyncStatusCard(
                 isSyncing = state.isSyncing,
                 syncStage = state.syncStage,
                 lastReport = state.lastReport,
                 pendingCount = state.operations.count { it.status == SyncOperationStatus.PENDING }
             )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                AppPrimaryButton(
-                    text = "Sync Now",
-                    onClick = { onIntent(SyncIntent.SyncNow) },
-                    enabled = !state.isSyncing,
-                    modifier = Modifier.weight(1f)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                AppSecondaryButton(
-                    text = "Clear Done",
-                    onClick = { onIntent(SyncIntent.ClearCompleted) },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             Text(
                 text = "Operations (${state.operations.size})",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = neubrutalOnSurface()
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             if (state.isLoading) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -312,11 +319,13 @@ private fun SyncOperationItem(
                             }
                         }
                     }
+
                     SyncOperationStatus.PENDING -> {
                         TextButton(onClick = onCancel) {
                             Text("Cancel", color = MaterialTheme.colorScheme.error)
                         }
                     }
+
                     else -> {}
                 }
             }
