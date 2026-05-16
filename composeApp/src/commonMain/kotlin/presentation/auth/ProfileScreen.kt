@@ -48,10 +48,9 @@ import domain.model.User
 import domain.model.UserRole
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
-import presentation.components.AppDangerButton
-import presentation.components.AppTopBarActionIcon
 import presentation.components.AppTopBar
 import presentation.components.ProfileMenuItem
+import presentation.components.ProfileBottomBar
 import presentation.theme.AccentCoral
 import presentation.theme.AccentCoralLight
 import presentation.theme.NeubrutalWhite
@@ -127,14 +126,14 @@ fun ProfileScreen(
         topBar = {
             AppTopBar(
                 title = stringResource(Res.string.my_profile_title),
+                onBackClick = null
+            )
+        },
+        bottomBar = {
+            ProfileBottomBar(
                 onBackClick = onBackClick,
-                actions = {
-                    AppTopBarActionIcon(
-                        icon = Icons.Default.Settings,
-                        contentDescription = stringResource(Res.string.settings),
-                        onClick = onSettingsClick
-                    )
-                }
+                onSettingsClick = onSettingsClick,
+                onLogoutClick = onLogout
             )
         },
         containerColor = neubrutalScreenBackground()
@@ -259,14 +258,6 @@ fun ProfileScreen(
                             )
                         }
                     }
-                }
-
-                // Logout Button
-                item {
-                    AppDangerButton(
-                        text = stringResource(Res.string.logout),
-                        onClick = onLogout
-                    )
                 }
 
                 item { Spacer(modifier = Modifier.height(24.dp)) }
