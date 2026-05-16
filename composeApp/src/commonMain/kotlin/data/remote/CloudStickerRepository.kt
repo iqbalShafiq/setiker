@@ -28,6 +28,8 @@ import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.Url
+import io.ktor.http.URLBuilder
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
@@ -187,10 +189,32 @@ class CloudStickerRepository(
     }
 
     suspend fun downloadBytes(url: String): ByteArray {
-        val response = client.get(url)
+        val response = client.get(normalizeDownloadUrl(url))
         if (!response.status.isSuccess()) {
             throw ApiException(code = AppErrorCode.CloudFetchFailed)
         }
         return response.body()
+    }
+
+    private fun normalizeDownloadUrl(rawUrl: String): String {
+        val trimmed = rawUrl.trim()
+        if (trimmed.isEmpty()) return trimmed
+
+        if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+            val path = if (trimmed.startsWith("/")) trimmed else "/$trimmed"
+            return baseUrl.trimEnd('/') + path
+        }
+
+        val sourceUrl = Url(trimmed)
+        val sourceHost = sourceUrl.host.lowercase()
+        val isLocalHost = sourceHost == "localhost" || sourceHost == "127.0.0.1" || sourceHost == "::1"
+        if (!isLocalHost) return trimmed
+
+        val apiBase = Url(baseUrl)
+        return URLBuilder(trimmed).apply {
+            protocol = apiBase.protocol
+            host = apiBase.host
+            port = apiBase.port
+        }.buildString()
     }
 }
