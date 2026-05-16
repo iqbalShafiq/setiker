@@ -11,6 +11,9 @@ interface StickerDao {
     @Query("SELECT * FROM stickers WHERE packId = :packId ORDER BY sortOrder")
     suspend fun getByPackId(packId: String): List<StickerEntity>
 
+    @Query("SELECT * FROM stickers WHERE cloudId = :cloudId")
+    suspend fun getByCloudId(cloudId: String): StickerEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(sticker: StickerEntity)
 
@@ -19,6 +22,9 @@ interface StickerDao {
 
     @Query("DELETE FROM stickers WHERE packId = :packId")
     suspend fun deleteByPackId(packId: String)
+
+    @Query("DELETE FROM stickers WHERE cloudId = :cloudId")
+    suspend fun deleteByCloudId(cloudId: String)
 
     @Query("SELECT COUNT(*) FROM stickers WHERE packId = :packId")
     suspend fun getCountByPackId(packId: String): Int

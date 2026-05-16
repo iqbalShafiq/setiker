@@ -11,14 +11,12 @@ import data.remote.StickerApiRepository
 import data.repository.StickerRepositoryImpl
 import data.storage.AnimatedStickerDraftStore
 import data.sync.NetworkMonitor
+import data.sync.SyncCursorStore
 import data.sync.SyncManager
 import data.sync.SyncManagerImpl
 import domain.repository.StickerRepository
 import org.koin.core.module.Module
-import org.koin.core.module.dsl.factoryOf
-import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
-import org.koin.dsl.bind
 import org.koin.dsl.module
 import presentation.auth.LoginViewModel
 import presentation.auth.ProfileViewModel
@@ -39,18 +37,19 @@ val appModule = module {
     includes(platformModule())
 
     // Repository
-    singleOf(::StickerRepositoryImpl) bind StickerRepository::class
-    single { SetikerApiService() }
+    single<StickerRepository> { StickerRepositoryImpl(get(), get(), get(), get(), get()) }
+    single { SetikerApiService(authManager = get(), authApiService = get()) }
     single { StickerApiRepository(api = get(), fileStorage = get()) }
     single { AnimatedStickerDraftStore() }
 
     // Auth
     single { AuthApiService() }
     single<AuthManager> { AuthManagerImpl(get()) }
-    single { CloudStickerRepository(authManager = get()) }
+    single { CloudStickerRepository(authManager = get(), authApiService = get()) }
     // NetworkMonitor is provided by platform-specific module
     single { get<StickerDatabase>().syncOperationDao() }
-    single<SyncManager> { SyncManagerImpl(get(), get(), get(), get()) }
+    single { SyncCursorStore(get()) }
+    single<SyncManager> { SyncManagerImpl(get(), get(), get(), get(), get(), get(), get(), get()) }
 
     // ViewModels (viewModelOf = scoped to NavBackStackEntry / LocalViewModelStoreOwner)
     viewModelOf(::HomeViewModel)

@@ -28,19 +28,68 @@ data class CloudStickerPack(
     val description: String? = null,
     val visibility: String,
     val createdAt: String,
-    val updatedAt: String
+    val updatedAt: String,
+    val deletedAt: String? = null,
+    val owner: CloudOwner? = null,
+    val stickers: List<CloudStickerPackSticker> = emptyList(),
+)
+
+@Serializable
+data class CloudOwner(
+    val id: String,
+    val username: String? = null,
+    val displayName: String? = null,
+)
+
+@Serializable
+data class CloudStickerPackSticker(
+    val id: String? = null,
+    val stickerPackId: String? = null,
+    val stickerId: String,
+    val order: Int = 0,
+    val sticker: CloudSticker? = null,
+)
+
+@Serializable
+data class CloudSticker(
+    val id: String,
+    val ownerId: String? = null,
+    val name: String,
+    val filename: String? = null,
+    val url: String,
+    val visibility: String? = null,
+    val width: Int? = null,
+    val height: Int? = null,
+    val fileSize: Int? = null,
+    val mimeType: String? = null,
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
+    val deletedAt: String? = null,
+)
+
+@Serializable
+data class CloudDeletedRef(
+    val id: String,
+    val deletedAt: String? = null,
 )
 
 @Serializable
 data class SyncData(
-    val stickerPacks: SyncDelta? = null,
-    val stickers: SyncDelta? = null,
+    val stickerPacks: SyncStickerPackDelta? = null,
+    val stickers: SyncStickerDelta? = null,
     val syncToken: String? = null
 )
 
 @Serializable
-data class SyncDelta(
+data class SyncStickerPackDelta(
     val created: List<CloudStickerPack> = emptyList(),
     val updated: List<CloudStickerPack> = emptyList(),
-    val deleted: List<CloudStickerPack> = emptyList()
+    val deleted: List<CloudDeletedRef> = emptyList()
+)
+
+@Serializable
+data class SyncStickerDelta(
+    val created: List<CloudSticker> = emptyList(),
+    val updated: List<CloudSticker> = emptyList(),
+    val deleted: List<CloudDeletedRef> = emptyList()
 )

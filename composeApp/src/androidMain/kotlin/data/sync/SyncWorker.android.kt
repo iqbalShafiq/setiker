@@ -54,7 +54,13 @@ class SyncWorkerTask(
     override suspend fun doWork(): Result {
         return try {
             val report = syncManager.sync()
-            if (report.result is SyncResult.Success) Result.success() else Result.retry()
+            when (report.result) {
+                is SyncResult.Failed -> Result.retry()
+                SyncResult.Success,
+                SyncResult.SkippedNotAuthenticated,
+                SyncResult.SkippedInProgress,
+                SyncResult.SkippedOffline -> Result.success()
+            }
         } catch (e: Exception) {
             Result.retry()
         }

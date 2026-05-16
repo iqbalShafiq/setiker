@@ -19,6 +19,9 @@ interface SyncOperationDao {
     @Query("SELECT * FROM sync_queue WHERE status = 'PENDING' ORDER BY priority DESC, createdAt ASC")
     suspend fun getPending(): List<PendingSyncOperationEntity>
 
+    @Query("SELECT * FROM sync_queue WHERE status IN ('PENDING', 'IN_PROGRESS', 'FAILED')")
+    suspend fun getBlockingOperations(): List<PendingSyncOperationEntity>
+
     @Query("SELECT * FROM sync_queue WHERE status IN ('PENDING', 'IN_PROGRESS', 'FAILED') ORDER BY createdAt DESC")
     fun observeAll(): Flow<List<PendingSyncOperationEntity>>
 
@@ -30,6 +33,9 @@ interface SyncOperationDao {
 
     @Query("UPDATE sync_queue SET status = 'FAILED', errorMessage = :errorMessage, retryCount = retryCount + 1 WHERE id = :id")
     suspend fun markFailed(id: String, errorMessage: String)
+
+    @Query("UPDATE sync_queue SET errorMessage = :errorMessage, retryCount = retryCount + 1 WHERE id = :id")
+    suspend fun markRetryableFailure(id: String, errorMessage: String)
 
     @Query("DELETE FROM sync_queue WHERE status = 'SUCCESS' AND completedAt < :beforeTimestamp")
     suspend fun deleteCompletedBefore(beforeTimestamp: Long)

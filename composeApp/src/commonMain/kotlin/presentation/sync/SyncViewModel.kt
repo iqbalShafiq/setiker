@@ -17,6 +17,7 @@ class SyncViewModel(private val syncManager: SyncManager) : ViewModel() {
     init {
         viewModelScope.launch { syncManager.operationsFlow.collect { ops -> _state.update { it.copy(operations = ops, isLoading = false) } } }
         viewModelScope.launch { syncManager.isSyncing.collect { syncing -> _state.update { it.copy(isSyncing = syncing) } } }
+        viewModelScope.launch { syncManager.syncStage.collect { stage -> _state.update { it.copy(syncStage = stage) } } }
         viewModelScope.launch { syncManager.lastSyncReport.collect { report -> _state.update { it.copy(lastReport = report) } } }
     }
     

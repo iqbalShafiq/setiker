@@ -1,5 +1,6 @@
 package data.remote
 
+import data.auth.AuthApiService
 import data.remote.model.ApiErrorEnvelope
 import data.remote.model.ApiImage
 import data.remote.model.ApiSuccessEnvelope
@@ -34,6 +35,7 @@ import io.ktor.client.request.header
 
 class SetikerApiService(
     private val authManager: AuthManager? = null,
+    private val authApiService: AuthApiService? = null,
     private val baseUrl: String = ApiConfig.baseUrl
 ) {
     private val json = Json {
@@ -59,6 +61,7 @@ class SetikerApiService(
                         println("KtorClient: $message")
                     }
                 }
+                sanitizeHeader { it == HttpHeaders.Authorization }
                 level = LogLevel.ALL
             }
         }
@@ -70,19 +73,26 @@ class SetikerApiService(
         }
     }
 
-    private fun io.ktor.client.request.HttpRequestBuilder.addAuthHeader() {
-        authManager?.let { manager ->
-            kotlinx.coroutines.runBlocking {
-                manager.getAccessToken()?.let { token ->
-                    header(HttpHeaders.Authorization, "Bearer $token")
-                }
-            }
-        }
+    private suspend fun resolveAccessToken(): String? {
+        val manager = authManager ?: return null
+
+        manager.getValidAccessToken()?.let { return it }
+
+        val refreshedToken = runCatching {
+            authApiService
+                ?.refreshToken()
+                ?.data
+                ?.accessToken
+                ?.also { manager.updateAccessToken(it) }
+        }.getOrNull()
+
+        return refreshedToken ?: manager.getAccessToken()
     }
 
     suspend fun removeBackground(imagePath: String): ApiImage {
+        val token = resolveAccessToken()
         val response = client.post("/api/v1/background/remove") {
-            addAuthHeader()
+            token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
             setMultipartBody(
                 imagePath = imagePath
             )
@@ -109,8 +119,9 @@ class SetikerApiService(
         normalize: Boolean? = true,
         inputImagePath: String? = null
     ): List<ApiImage> {
+        val token = resolveAccessToken()
         val response = client.post("/api/v1/generate") {
-            addAuthHeader()
+            token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
             setBody(
                 MultiPartFormDataContent(
                     formData {
@@ -154,8 +165,9 @@ class SetikerApiService(
     }
 
     suspend fun splitGrid(imagePath: String): List<ApiImage> {
+        val token = resolveAccessToken()
         val response = client.post("/api/v1/grid/split") {
-            addAuthHeader()
+            token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
             setMultipartBody(imagePath = imagePath)
         }
         val bodyText = response.bodyAsText()

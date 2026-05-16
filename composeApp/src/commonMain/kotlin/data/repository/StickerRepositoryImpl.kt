@@ -70,31 +70,38 @@ class StickerRepositoryImpl(
             trayImageFile = pack.trayImageFile,
             isAnimated = pack.isAnimated,
             createdAt = existing?.createdAt ?: now,
-            updatedAt = now
+            updatedAt = now,
+            cloudId = existing?.cloudId,
+            syncState = existing?.syncState ?: "LOCAL_ONLY",
+            lastSyncAt = existing?.lastSyncAt,
+            visibility = existing?.visibility ?: pack.visibility,
+            cloudOwnerId = existing?.cloudOwnerId,
         )
         packDao.insert(entity)
 
         // Enqueue cloud sync if authenticated
         if (authManager?.isAuthenticated() == true) {
-            val syncOp = SyncOperation(
+            val syncTarget = resolvePackSaveSyncTarget(existing, identifier)
+            val syncOp = createPackSyncOperation(
+                pack = entity,
+                stickers = pack.stickers.mapIndexed { index, sticker ->
+                    StickerEntity(
+                        id = Uuid.random().toString(),
+                        packId = identifier,
+                        imageFile = sticker.imageFile,
+                        sourceImageFile = sticker.sourceImageFile,
+                        emojis = Json.encodeToString(sticker.emojis),
+                        accessibilityText = sticker.accessibilityText,
+                        decorationsJson = Json.encodeToString(sticker.decorations),
+                        isAnimated = sticker.isAnimated,
+                        sourceVideoFile = sticker.sourceVideoFile,
+                        frameDecorationsJson = encodeFrameDecorations(sticker.frameDecorations),
+                        sortOrder = index,
+                    )
+                },
                 id = Uuid.random().toString(),
-                type = if (existing != null) SyncOperationType.UPDATE_PACK else SyncOperationType.CREATE_PACK,
-                targetId = identifier,
-                payload = Json.encodeToString(CreateStickerPackRequest(
-                    name = pack.name,
-                    description = null,
-                    visibility = "PRIVATE",
-                    stickers = pack.stickers.mapIndexed { index, sticker ->
-                        StickerPackStickerInput(
-                            name = "sticker_$index",
-                            filename = sticker.imageFile.substringAfterLast("/"),
-                            url = sticker.imageFile,
-                            order = index
-                        )
-                    }
-                )),
-                status = SyncOperationStatus.PENDING,
-                createdAt = Clock.System.now().toEpochMilliseconds()
+                createdAt = Clock.System.now().toEpochMilliseconds(),
+                syncTarget = syncTarget,
             )
             syncManager?.enqueue(syncOp)
         }
@@ -168,9 +175,10 @@ class StickerRepositoryImpl(
             stickerDao.insert(entity)
 
             packDao.getById(packId)?.let { pack ->
-                packDao.update(pack.copy(updatedAt = Clock.System.now().toEpochMilliseconds()))
+                markPackDirty(pack)
             }
         }
+        syncManager?.sync()
     }
 
     override suspend fun updateStickerInPack(packId: String, index: Int, sticker: Sticker) {
@@ -192,9 +200,10 @@ class StickerRepositoryImpl(
             stickerDao.insert(updatedEntity)
 
             packDao.getById(packId)?.let { pack ->
-                packDao.update(pack.copy(updatedAt = Clock.System.now().toEpochMilliseconds()))
+                markPackDirty(pack)
             }
         }
+        syncManager?.sync()
     }
 
     override suspend fun removeStickerFromPack(packId: String, index: Int) = withContext(Dispatchers.Default) {
@@ -205,6 +214,20 @@ class StickerRepositoryImpl(
             fileStorage.deleteImage(it)
         }
         stickerDao.deleteByPackAndIndex(packId, index)
+        packDao.getById(packId)?.let { pack ->
+            markPackDirty(pack)
+        }
+        syncManager?.sync()
+    }
+
+    private suspend fun markPackDirty(pack: StickerPackEntity) {
+        packDao.update(
+            pack.copy(
+                updatedAt = Clock.System.now().toEpochMilliseconds(),
+                syncState = "LOCAL_ONLY",
+                lastSyncAt = null,
+            )
+        )
     }
 
     private fun StickerPackEntity.toDomainModel(stickers: List<Sticker>) = StickerPack(
@@ -282,3 +305,49 @@ class StickerRepositoryImpl(
         } ?: 0
     }
 }
+
+internal data class PackSaveSyncTarget(
+    val type: SyncOperationType,
+    val targetId: String,
+)
+
+internal fun resolvePackSaveSyncTarget(
+    existing: StickerPackEntity?,
+    localIdentifier: String,
+): PackSaveSyncTarget {
+    val cloudId = existing?.cloudId
+    return if (cloudId.isNullOrBlank()) {
+        PackSaveSyncTarget(SyncOperationType.CREATE_PACK, localIdentifier)
+    } else {
+        PackSaveSyncTarget(SyncOperationType.UPDATE_PACK, cloudId)
+    }
+}
+
+internal fun createPackSyncOperation(
+    pack: StickerPackEntity,
+    stickers: List<StickerEntity>,
+    id: String,
+    createdAt: Long,
+    syncTarget: PackSaveSyncTarget = resolvePackSaveSyncTarget(pack, pack.identifier),
+): SyncOperation = SyncOperation(
+    id = id,
+    type = syncTarget.type,
+    targetId = syncTarget.targetId,
+    payload = Json.encodeToString(
+        CreateStickerPackRequest(
+            name = pack.name,
+            description = null,
+            visibility = pack.visibility,
+            stickers = stickers.sortedBy { it.sortOrder }.mapIndexed { index, sticker ->
+                StickerPackStickerInput(
+                    name = sticker.accessibilityText ?: "sticker_$index",
+                    filename = sticker.imageFile.substringAfterLast("/"),
+                    url = sticker.imageFile,
+                    order = index,
+                )
+            },
+        )
+    ),
+    status = SyncOperationStatus.PENDING,
+    createdAt = createdAt,
+)

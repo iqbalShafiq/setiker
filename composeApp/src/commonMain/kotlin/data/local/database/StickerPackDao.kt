@@ -29,7 +29,7 @@ interface StickerPackDao {
      @Query("SELECT * FROM sticker_packs WHERE syncState = :state")
      suspend fun getBySyncState(state: String): List<StickerPackEntity>
  
-     @Query("SELECT * FROM sticker_packs WHERE syncState != 'SYNCED'")
+     @Query("SELECT * FROM sticker_packs WHERE syncState NOT IN ('SYNCED', 'SUCCESS')")
      suspend fun getUnsynced(): List<StickerPackEntity>
  
      @Query("SELECT * FROM sticker_packs WHERE cloudId = :cloudId")

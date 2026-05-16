@@ -17,6 +17,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -32,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import org.jetbrains.compose.resources.stringResource
@@ -166,7 +169,7 @@ fun AiGenerateBottomSheet(
                 }
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                    verticalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
                         text = stringResource(
@@ -177,25 +180,31 @@ fun AiGenerateBottomSheet(
                             }
                         ),
                         style = MaterialTheme.typography.bodySmall,
-                        color = neubrutalMutedOnSurface()
+                        color = neubrutalMutedOnSurface(),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        AppSecondaryButton(
-                            text = stringResource(
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        NeubrutalIconButton(
+                            icon = Icons.Filled.Edit,
+                            contentDescription = stringResource(
                                 if (!inputImagePath.isNullOrBlank()) {
                                     Res.string.generate_replace_image
                                 } else {
                                     Res.string.generate_pick_image
                                 }
                             ),
-                            onClick = onPickInputImage,
-                            modifier = Modifier.weight(1f)
+                            onClick = onPickInputImage
                         )
                         if (!inputImagePath.isNullOrBlank()) {
-                            AppSecondaryButton(
-                                text = stringResource(Res.string.generate_clear_image),
-                                onClick = onClearInputImage,
-                                modifier = Modifier.weight(1f)
+                            NeubrutalIconButton(
+                                icon = Icons.Filled.Close,
+                                contentDescription = stringResource(Res.string.generate_clear_image),
+                                onClick = onClearInputImage
                             )
                         }
                     }

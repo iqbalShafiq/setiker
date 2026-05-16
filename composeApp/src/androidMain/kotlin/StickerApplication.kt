@@ -1,6 +1,7 @@
 package com.setiker.app
 
 import android.app.Application
+import data.sync.SyncWorker
 import di.appModule
 import di.platformModule
 import org.koin.android.ext.koin.androidContext
@@ -16,5 +17,8 @@ class StickerApplication : Application() {
             androidContext(this@StickerApplication)
             modules(platformModule() + appModule)
         }
+
+        SyncWorker(this).schedulePeriodicSync()
+        SyncWorker(this).scheduleImmediateSync()
     }
 }

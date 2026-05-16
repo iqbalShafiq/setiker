@@ -40,6 +40,7 @@ import domain.model.SyncOperationStatus
 import domain.model.SyncOperationType
 import domain.model.SyncReport
 import domain.model.SyncResult
+import domain.model.SyncStage
 import presentation.components.AppTopBar
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
@@ -90,6 +91,7 @@ fun SyncScreen(
         ) {
                 SyncStatusCard(
                 isSyncing = state.isSyncing,
+                syncStage = state.syncStage,
                 lastReport = state.lastReport,
                 pendingCount = state.operations.count { it.status == SyncOperationStatus.PENDING }
             )
@@ -138,7 +140,7 @@ fun SyncScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No sync operations",
+                        text = "No local changes. Cloud sync will run automatically when you are online.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -163,6 +165,7 @@ fun SyncScreen(
 @Composable
 private fun SyncStatusCard(
     isSyncing: Boolean,
+    syncStage: SyncStage,
     lastReport: SyncReport?,
     pendingCount: Int
 ) {
@@ -190,10 +193,15 @@ private fun SyncStatusCard(
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = if (isSyncing) "Syncing..." else if (pendingCount > 0) "$pendingCount pending" else "Up to date",
+                        text = syncTitle(isSyncing, syncStage, pendingCount, lastReport),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = neubrutalOnSurface()
+                    )
+                    Text(
+                        text = syncDetail(lastReport),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     lastReport?.let {
                         Text(
@@ -204,6 +212,48 @@ private fun SyncStatusCard(
                     }
                 }
             }
+        }
+    }
+}
+
+private fun syncTitle(
+    isSyncing: Boolean,
+    syncStage: SyncStage,
+    pendingCount: Int,
+    lastReport: SyncReport?,
+): String {
+    if (isSyncing) {
+        return when (syncStage) {
+            SyncStage.PUSHING_LOCAL -> "Syncing local changes"
+            SyncStage.PULLING_REMOTE -> "Downloading cloud changes"
+            SyncStage.WAITING_FOR_INTERNET -> "Waiting for internet"
+            SyncStage.SIGN_IN_REQUIRED -> "Sign in to sync"
+            SyncStage.IDLE -> "Syncing"
+        }
+    }
+    return when {
+        lastReport?.result is SyncResult.SkippedOffline -> "Waiting for internet"
+        lastReport?.result is SyncResult.SkippedNotAuthenticated -> "Sign in to sync"
+        lastReport?.result is SyncResult.SkippedInProgress -> "Sync already running"
+        lastReport?.remoteDownloadFailures?.let { it > 0 } == true -> "Synced with warnings"
+        pendingCount > 0 -> "$pendingCount pending"
+        else -> "Up to date"
+    }
+}
+
+private fun syncDetail(lastReport: SyncReport?): String {
+    val report = lastReport ?: return "Manual and background sync are ready."
+    return when (val result = report.result) {
+        is SyncResult.Failed -> result.error
+        SyncResult.SkippedOffline -> "Sync will resume automatically when your phone is online."
+        SyncResult.SkippedNotAuthenticated -> "Log in to upload local changes and download cloud packs."
+        SyncResult.SkippedInProgress -> "Another sync is already in progress."
+        SyncResult.Success -> buildString {
+            append("Uploaded ${report.operationsSucceeded}/${report.operationsProcessed}")
+            append(" - Downloaded ${report.remotePacksDownloaded} packs")
+            append(" and ${report.remoteStickersDownloaded} stickers")
+            if (report.remoteItemsDeleted > 0) append(" - Removed ${report.remoteItemsDeleted}")
+            if (report.remoteDownloadFailures > 0) append(" - ${report.remoteDownloadFailures} download issues")
         }
     }
 }
