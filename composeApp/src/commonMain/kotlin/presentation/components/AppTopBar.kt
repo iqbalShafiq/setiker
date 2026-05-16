@@ -127,6 +127,7 @@ fun AppTopBar(
     title: String,
     modifier: Modifier = Modifier,
     onBackClick: (() -> Unit)? = null,
+    titleContent: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     val border = neubrutalBorderColor()
@@ -145,18 +146,26 @@ fun AppTopBar(
     ) {
         TopAppBar(
             title = {
-                Text(
-                    text = title,
-                    modifier = Modifier.padding(start = if (onBackClick != null) 12.dp else 0.dp),
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = androidx.compose.ui.unit.TextUnit.Unspecified
-                    ),
-                    fontSize = 28.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                if (titleContent != null) {
+                    Box(
+                        modifier = Modifier.padding(start = if (onBackClick != null) 12.dp else 0.dp)
+                    ) {
+                        titleContent()
+                    }
+                } else {
+                    Text(
+                        text = title,
+                        modifier = Modifier.padding(start = if (onBackClick != null) 12.dp else 0.dp),
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = androidx.compose.ui.unit.TextUnit.Unspecified
+                        ),
+                        fontSize = 28.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             },
             navigationIcon = {
                 if (onBackClick != null) {

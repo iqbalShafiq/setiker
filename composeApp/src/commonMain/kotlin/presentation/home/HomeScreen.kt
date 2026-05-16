@@ -2,12 +2,22 @@ package presentation.home
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sort
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -21,7 +31,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import domain.model.Sticker
 import domain.model.StickerPack
@@ -32,7 +45,6 @@ import presentation.components.EmptyState
 import presentation.components.HomeBottomBar
 import presentation.components.LoadingIndicator
 import presentation.components.NeubrutalIconButton
-import presentation.components.NeubrutalSearchBar
 import presentation.components.SortBottomSheet
 import presentation.components.StickerPackListCard
 import presentation.theme.neubrutalMutedOnSurface
@@ -44,6 +56,7 @@ import setiker.composeapp.generated.resources.no_search_results_desc
 import setiker.composeapp.generated.resources.no_search_results_title
 import setiker.composeapp.generated.resources.no_stickers_yet_desc
 import setiker.composeapp.generated.resources.no_stickers_yet_title
+import setiker.composeapp.generated.resources.search_packs_placeholder
 import setiker.composeapp.generated.resources.sort_content_description
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,12 +73,74 @@ fun HomeScreen(
     }
 
     var showSortSheet by remember { mutableStateOf(false) }
+    var isSearchExpanded by remember { mutableStateOf(false) }
+    val searchFocusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(isSearchExpanded) {
+        if (isSearchExpanded) searchFocusRequester.requestFocus()
+    }
 
     Scaffold(
         topBar = {
             AppTopBar(
                 title = stringResource(Res.string.my_stickers_title),
+                titleContent = {
+                    AnimatedContent(
+                        targetState = isSearchExpanded,
+                        transitionSpec = {
+                            (fadeIn(animationSpec = tween(180)) togetherWith
+                                fadeOut(animationSpec = tween(120))).using(
+                                SizeTransform(clip = false)
+                            )
+                        },
+                        label = "home_topbar_title_transition"
+                    ) { expanded ->
+                        if (expanded) {
+                            BasicTextField(
+                                value = state.searchQuery,
+                                onValueChange = { onIntent(HomeIntent.SearchQueryChanged(it)) },
+                                singleLine = true,
+                                textStyle = MaterialTheme.typography.titleMedium.copy(
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .focusRequester(searchFocusRequester),
+                                decorationBox = { innerTextField ->
+                                    if (state.searchQuery.isEmpty()) {
+                                        Text(
+                                            text = stringResource(Res.string.search_packs_placeholder),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = neubrutalMutedOnSurface()
+                                        )
+                                    }
+                                    innerTextField()
+                                }
+                            )
+                        } else {
+                            Text(
+                                text = stringResource(Res.string.my_stickers_title),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 28.sp
+                            )
+                        }
+                    }
+                },
                 actions = {
+                    NeubrutalIconButton(
+                        icon = if (isSearchExpanded) Icons.Default.Close else Icons.Default.Search,
+                        contentDescription = if (isSearchExpanded) "Cancel search" else "Search",
+                        onClick = {
+                            if (isSearchExpanded) {
+                                isSearchExpanded = false
+                                onIntent(HomeIntent.SearchQueryChanged(""))
+                            } else {
+                                isSearchExpanded = true
+                            }
+                        }
+                    )
                     NeubrutalIconButton(
                         icon = Icons.Default.Sort,
                         contentDescription = stringResource(Res.string.sort_content_description),
@@ -123,18 +198,12 @@ fun HomeScreen(
                         .padding(innerPadding)
                         .padding(horizontal = 20.dp)
                 ) {
-                    NeubrutalSearchBar(
-                        query = state.searchQuery,
-                        onQueryChange = { onIntent(HomeIntent.SearchQueryChanged(it)) },
-                        modifier = Modifier.padding(top = 10.dp, bottom = 4.dp)
-                    )
-
                     Text(
                         text = stringResource(Res.string.home_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = neubrutalMutedOnSurface(),
                         fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(vertical = 4.dp)
+                        modifier = Modifier.padding(top = 16.dp, bottom = 12.dp)
                     )
 
                     val packsToShow = state.filteredPacks
@@ -149,7 +218,7 @@ fun HomeScreen(
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(
-                                top = 12.dp,
+                                top = 0.dp,
                                 bottom = 20.dp
                             ),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
