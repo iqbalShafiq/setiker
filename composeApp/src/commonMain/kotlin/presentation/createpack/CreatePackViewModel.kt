@@ -3,8 +3,8 @@ package presentation.createpack
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import data.remote.StickerApiRepository
-import data.storage.StickerFileStorage
-import domain.model.Sticker
+import data.repository.StickerPackDraftSaver
+import domain.model.StickerDraftInput
 import domain.model.StickerPack
 import domain.repository.StickerRepository
 import kotlinx.coroutines.channels.Channel
@@ -14,12 +14,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import presentation.common.PackIdentifierSanitizer
 import presentation.common.UiText
 import presentation.common.toUiText
 import kotlin.random.Random
-import kotlin.time.Clock
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_failed_generate_sticker
+import setiker.composeapp.generated.resources.error_failed_improve_sticker
+import setiker.composeapp.generated.resources.error_no_static_stickers_to_improve
 import setiker.composeapp.generated.resources.error_failed_save_pack
 import setiker.composeapp.generated.resources.error_failed_split_grid
 import setiker.composeapp.generated.resources.error_grid_image_required
@@ -34,8 +36,8 @@ import setiker.composeapp.generated.resources.error_tray_icon_required
 
 class CreatePackViewModel(
     private val repository: StickerRepository,
-    private val fileStorage: StickerFileStorage,
-    private val apiRepository: StickerApiRepository
+    private val apiRepository: StickerApiRepository,
+    private val draftSaver: StickerPackDraftSaver
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CreatePackState())
@@ -78,15 +80,6 @@ class CreatePackViewModel(
             is CreatePackIntent.UpdateGeneratePrompt -> {
                 _state.update { it.copy(generatePrompt = intent.prompt) }
             }
-            is CreatePackIntent.ToggleGenerateAsGrid -> {
-                _state.update { it.copy(generateAsGrid = intent.enabled) }
-            }
-            is CreatePackIntent.UpdateGridLayout -> {
-                _state.update { it.copy(gridLayout = intent.layout) }
-            }
-            is CreatePackIntent.ToggleNormalize -> {
-                _state.update { it.copy(normalizeOutput = intent.enabled) }
-            }
             is CreatePackIntent.UpdateGenerateInputImage -> {
                 _state.update { it.copy(generateInputImage = intent.path) }
             }
@@ -94,8 +87,10 @@ class CreatePackViewModel(
                 _state.update { it.copy(gridSplitSourcePath = intent.path) }
             }
             is CreatePackIntent.GenerateStickers -> generateStickers()
+            is CreatePackIntent.ImprovePackStickers -> improvePackStickers()
             is CreatePackIntent.ToggleGeneratedSelection -> {
                 _state.update {
+                    if (intent.index !in it.generatedPreview.indices) return@update it
                     val current = it.selectedGeneratedPreview
                     val next = if (current.contains(intent.index)) {
                         current - intent.index
@@ -106,11 +101,13 @@ class CreatePackViewModel(
                 }
             }
             is CreatePackIntent.AddSelectedGeneratedToPack -> addSelectedGeneratedToPack()
+            is CreatePackIntent.ReplacePackWithGenerated -> replacePackWithGenerated()
             is CreatePackIntent.CloseGeneratedSheet -> {
                 _state.update {
                     it.copy(
                         generatedPreview = emptyList(),
-                        selectedGeneratedPreview = emptySet()
+                        selectedGeneratedPreview = emptySet(),
+                        generatedPreviewMode = GeneratedPreviewMode.AddToPack
                     )
                 }
             }
@@ -254,81 +251,26 @@ class CreatePackViewModel(
                 val identifier = if (currentState.isEditing && currentState.packId.isNotBlank()) {
                     currentState.packId
                 } else {
-                    sanitizePackIdentifier(currentState.name, Random.nextInt(1000, 9999))
+                    PackIdentifierSanitizer.sanitize(currentState.name, Random.nextInt(1000, 9999))
                 }
                 
-                // Use a unique filename on every save so AsyncImage/Coil and the
-                // WhatsApp content provider see a new URI when the tray icon is
-                // changed. Reusing tray_<identifier>.png overwrote bytes at the
-                // same path, which made the UI look like the update failed due to
-                // image caching.
-                val trayFileName = "tray_${identifier}_${Clock.System.now().toEpochMilliseconds()}.png"
-                val trayPath = fileStorage.saveTrayImage(currentState.trayImagePath, trayFileName)
-                
-                // Pack is animated whenever it contains at least one animated sticker. WhatsApp
-                // packs cannot mix static + animated WebP files, so when the pack ends up animated
-                // we re-encode any static drafts as 1-frame animated WebP.
-                val packIsAnimated = currentState.containsAnimated
-
-                val stickers = currentState.stickers.mapIndexed { index, draft ->
-                    when {
-                        draft.isAnimated -> Sticker(
-                            imageFile = draft.imagePath,
-                            sourceImageFile = null,
-                            emojis = listOf("⭐"),
-                            decorations = draft.decorations,
-                            isAnimated = true,
-                            sourceVideoFile = draft.sourceVideoFile,
-                            frameDecorations = draft.frameDecorations
-                        )
-                        packIsAnimated -> {
-                            val animatedFileName = "sticker_${identifier}_${index}_anim.webp"
-                            val animatedPath = fileStorage.encodeSingleFrameAnimatedWebP(
-                                sourcePath = draft.imagePath,
-                                fileName = animatedFileName,
-                                decorations = draft.decorations
-                            )
-                            Sticker(
-                                imageFile = animatedPath,
-                                sourceImageFile = null,
-                                emojis = listOf("⭐"),
+                val pack = draftSaver.buildDraftPack(
+                    StickerDraftInput(
+                        identifier = identifier,
+                        name = currentState.name,
+                        publisher = currentState.publisher,
+                        visibility = currentState.visibility,
+                        trayImagePath = currentState.trayImagePath,
+                        stickers = currentState.stickers.map { draft ->
+                            StickerDraftInput.StickerInput(
+                                imagePath = draft.imagePath,
                                 decorations = draft.decorations,
-                                isAnimated = true
+                                isAnimated = draft.isAnimated,
+                                sourceVideoFile = draft.sourceVideoFile,
+                                frameDecorations = draft.frameDecorations
                             )
                         }
-                        else -> {
-                            val baseFileName = "sticker_${identifier}_${index}_base.webp"
-                            val basePath = fileStorage.saveStickerImage(
-                                sourcePath = draft.imagePath,
-                                fileName = baseFileName
-                            )
-                            val previewPath = if (draft.decorations.isEmpty()) {
-                                basePath
-                            } else {
-                                fileStorage.saveStickerImageWithDecorations(
-                                    sourcePath = basePath,
-                                    fileName = "sticker_${identifier}_${index}_preview.webp",
-                                    decorations = draft.decorations
-                                )
-                            }
-                            Sticker(
-                                imageFile = previewPath,
-                                sourceImageFile = basePath,
-                                emojis = listOf("⭐"),
-                                decorations = draft.decorations
-                            )
-                        }
-                    }
-                }
-
-                val pack = StickerPack(
-                    identifier = identifier,
-                    name = currentState.name,
-                    publisher = currentState.publisher,
-                    trayImageFile = trayPath,
-                    stickers = stickers,
-                    isAnimated = packIsAnimated,
-                    visibility = currentState.visibility
+                    )
                 )
                 
                 repository.savePack(pack)
@@ -359,19 +301,19 @@ class CreatePackViewModel(
 
             _state.update { it.copy(isApiLoading = true, error = null) }
             try {
-                val generated = apiRepository.generate(
+                val generated = apiRepository.generateStickers(
                     prompt = currentState.generatePrompt,
-                    grid = currentState.generateAsGrid,
-                    layout = if (currentState.generateAsGrid) currentState.gridLayout else null,
-                    normalize = if (currentState.generateAsGrid) currentState.normalizeOutput else null,
                     inputImagePath = currentState.generateInputImage
-                )
+                ).map { file ->
+                    DraftSticker(imagePath = file.localPath, decorations = file.decorations)
+                }
                 _state.update {
                     it.copy(
                         isApiLoading = false,
                         aiGenerateSheetOpen = false,
                         generatedPreview = generated,
-                        selectedGeneratedPreview = generated.indices.toSet()
+                        selectedGeneratedPreview = generated.indices.toSet(),
+                        generatedPreviewMode = GeneratedPreviewMode.AddToPack
                     )
                 }
             } catch (e: Exception) {
@@ -456,24 +398,6 @@ class CreatePackViewModel(
         }
     }
 
-    /**
-     * Produce a pack identifier that satisfies WhatsApp's `StickerPackValidator.checkStringValidity`:
-     * only `[a-zA-Z0-9_\-.,'\s]` is allowed, and the identifier must not contain `..`. Any other
-     * character (emoji, accented letter, slash, …) is replaced with `_` so users can name packs
-     * freely without breaking the export. We also collapse the result so it stays under the
-     * 128-char `CHAR_COUNT_MAX` limit even after appending the random suffix.
-     */
-    private fun sanitizePackIdentifier(rawName: String, suffix: Int): String {
-        val allowed = Regex("[^A-Za-z0-9_\\-.,' ]")
-        val cleaned = rawName.lowercase()
-            .replace(allowed, "_")
-            .replace("..", "_")
-            .replace(Regex("_+"), "_")
-            .trim('_', ' ')
-        val base = cleaned.ifBlank { "pack" }.take(110)
-        return "${base}_$suffix"
-    }
-
     private fun addSelectedGeneratedToPack() {
         val current = _state.value
         if (current.selectedGeneratedPreview.isEmpty()) return
@@ -486,18 +410,78 @@ class CreatePackViewModel(
 
         val selected = current.generatedPreview.filterIndexed { index, _ ->
             current.selectedGeneratedPreview.contains(index)
-        }.map { DraftSticker(it) }
+        }
         _state.update {
             it.copy(
                 stickers = (it.stickers + selected).take(StickerPack.MAX_STICKERS),
                 generatedPreview = emptyList(),
-                selectedGeneratedPreview = emptySet()
+                selectedGeneratedPreview = emptySet(),
+                generatedPreviewMode = GeneratedPreviewMode.AddToPack
             )
         }
         if (current.stickers.size + selected.size > StickerPack.MAX_STICKERS) {
             viewModelScope.launch {
                 _effect.send(CreatePackEffect.ShowError(UiText.StringRes(Res.string.error_partial_generate_not_added)))
             }
+        }
+    }
+
+    private fun improvePackStickers() {
+        viewModelScope.launch {
+            val currentState = _state.value
+            val sourceStickers = currentState.stickers.filter {
+                !it.isAnimated && it.imagePath.isNotBlank()
+            }
+            if (sourceStickers.isEmpty()) {
+                _effect.send(
+                    CreatePackEffect.ShowError(
+                        UiText.StringRes(Res.string.error_no_static_stickers_to_improve)
+                    )
+                )
+                return@launch
+            }
+
+            _state.update { it.copy(isApiLoading = true, error = null) }
+            try {
+                val improved = apiRepository.improve(sourceStickers.map { it.imagePath })
+                    .map { file ->
+                        DraftSticker(imagePath = file.localPath, decorations = file.decorations)
+                    }
+                _state.update {
+                    it.copy(
+                        isApiLoading = false,
+                        generatedPreview = improved,
+                        selectedGeneratedPreview = improved.indices.toSet(),
+                        generatedPreviewMode = GeneratedPreviewMode.ReplacePack
+                    )
+                }
+            } catch (e: Exception) {
+                _state.update { it.copy(isApiLoading = false, error = e.message) }
+                _effect.send(
+                    CreatePackEffect.ShowError(
+                        e.toUiText(Res.string.error_failed_improve_sticker)
+                    )
+                )
+            }
+        }
+    }
+
+    private fun replacePackWithGenerated() {
+        val current = _state.value
+        if (current.selectedGeneratedPreview.isEmpty()) return
+
+        val selected = current.generatedPreview.filterIndexed { index, _ ->
+            current.selectedGeneratedPreview.contains(index)
+        }
+        if (selected.isEmpty()) return
+        val animatedDrafts = current.stickers.filter { it.isAnimated }
+        _state.update {
+            it.copy(
+                stickers = (selected + animatedDrafts).take(StickerPack.MAX_STICKERS),
+                generatedPreview = emptyList(),
+                selectedGeneratedPreview = emptySet(),
+                generatedPreviewMode = GeneratedPreviewMode.AddToPack
+            )
         }
     }
 }

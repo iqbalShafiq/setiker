@@ -9,14 +9,13 @@ sealed interface CreatePackIntent {
     data class AddAnimatedDraft(val draft: DraftSticker) : CreatePackIntent
     data class RemoveSticker(val index: Int) : CreatePackIntent
     data class UpdateGeneratePrompt(val prompt: String) : CreatePackIntent
-    data class ToggleGenerateAsGrid(val enabled: Boolean) : CreatePackIntent
-    data class UpdateGridLayout(val layout: String) : CreatePackIntent
-    data class ToggleNormalize(val enabled: Boolean) : CreatePackIntent
     data class UpdateGenerateInputImage(val path: String?) : CreatePackIntent
     data class UpdateGridSplitSource(val path: String) : CreatePackIntent
     data object GenerateStickers : CreatePackIntent
+    data object ImprovePackStickers : CreatePackIntent
     data class ToggleGeneratedSelection(val index: Int) : CreatePackIntent
     data object AddSelectedGeneratedToPack : CreatePackIntent
+    data object ReplacePackWithGenerated : CreatePackIntent
     data object CloseGeneratedSheet : CreatePackIntent
     data object RunGridSplit : CreatePackIntent
     data class ToggleSplitSelection(val index: Int) : CreatePackIntent

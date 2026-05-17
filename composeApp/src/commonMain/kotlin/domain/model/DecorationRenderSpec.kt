@@ -20,4 +20,40 @@ object DecorationRenderSpec {
 
     /** Horizontal inset from sticker edge as a fraction of canvas width (caption max width uses the inset twice). */
     const val API_CAPTION_HORIZONTAL_INSET_RATIO = 0.032f
+
+    fun textBoxWidthPx(
+        decoration: TextDecoration,
+        canvasWidthPx: Float,
+        minDimPx: Float,
+        scale: Float
+    ): Float = if (decoration.isBottomCaption()) {
+        canvasWidthPx * (1f - 2f * API_CAPTION_HORIZONTAL_INSET_RATIO)
+    } else {
+        minDimPx * TEXT_BOX_RATIO * scale
+    }
+
+    fun textBoxHeightPx(
+        decoration: TextDecoration,
+        minDimPx: Float,
+        scale: Float
+    ): Float = if (decoration.isBottomCaption()) {
+        minDimPx * 0.46f * scale
+    } else {
+        minDimPx * TEXT_BOX_RATIO * scale
+    }
+
+    fun textSizePx(
+        decoration: TextDecoration,
+        minDimPx: Float,
+        scale: Float
+    ): Float = minDimPx * if (decoration.isBottomCaption()) {
+        API_CAPTION_TEXT_SIZE_RATIO
+    } else {
+        TEXT_SIZE_RATIO
+    } * scale
+
+    fun textMaxLines(decoration: TextDecoration): Int =
+        if (decoration.isBottomCaption()) 6 else 3
 }
+
+fun TextDecoration.isBottomCaption(): Boolean = layout == TextDecorationLayout.BottomCaption

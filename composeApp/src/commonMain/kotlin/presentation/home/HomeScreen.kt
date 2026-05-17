@@ -41,21 +41,25 @@ import domain.model.StickerPack
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import presentation.components.AppTopBar
+import presentation.components.AiGenerateStickerPackBottomSheet
 import presentation.components.EmptyState
 import presentation.components.HomeBottomBar
 import presentation.components.LoadingIndicator
 import presentation.components.NeubrutalIconButton
 import presentation.components.SortBottomSheet
 import presentation.components.StickerPackListCard
+import presentation.components.rememberImagePicker
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalScreenBackground
 import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.cancel_search
 import setiker.composeapp.generated.resources.home_hint
 import setiker.composeapp.generated.resources.my_stickers_title
 import setiker.composeapp.generated.resources.no_search_results_desc
 import setiker.composeapp.generated.resources.no_search_results_title
 import setiker.composeapp.generated.resources.no_stickers_yet_desc
 import setiker.composeapp.generated.resources.no_stickers_yet_title
+import setiker.composeapp.generated.resources.search
 import setiker.composeapp.generated.resources.search_packs_placeholder
 import setiker.composeapp.generated.resources.sort_content_description
 
@@ -68,6 +72,10 @@ fun HomeScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     modifier: Modifier = Modifier
 ) {
+    val generateInputImagePicker = rememberImagePicker { path ->
+        path?.let { onIntent(HomeIntent.UpdateGeneratePackInputImage(it)) }
+    }
+
     LaunchedEffect(Unit) {
         onIntent(HomeIntent.LoadPacks)
     }
@@ -131,7 +139,9 @@ fun HomeScreen(
                 actions = {
                     NeubrutalIconButton(
                         icon = if (isSearchExpanded) Icons.Default.Close else Icons.Default.Search,
-                        contentDescription = if (isSearchExpanded) "Cancel search" else "Search",
+                        contentDescription = stringResource(
+                            if (isSearchExpanded) Res.string.cancel_search else Res.string.search
+                        ),
                         onClick = {
                             if (isSearchExpanded) {
                                 isSearchExpanded = false
@@ -169,6 +179,7 @@ fun HomeScreen(
                         onIntent(HomeIntent.NavigateToLogin)
                     }
                 },
+                onGeneratePackClick = { onIntent(HomeIntent.OpenGeneratePackSheet) },
                 onAddPackClick = { onIntent(HomeIntent.CreateNewPack) }
             )
         },
@@ -245,6 +256,25 @@ fun HomeScreen(
                 currentSort = state.sortOrder,
                 onSortSelected = { onIntent(HomeIntent.SortOrderChanged(it)) },
                 onDismiss = { showSortSheet = false }
+            )
+        }
+
+        if (state.isGeneratePackSheetOpen) {
+            AiGenerateStickerPackBottomSheet(
+                packName = state.generatePackName,
+                onPackNameChange = { onIntent(HomeIntent.UpdateGeneratePackName(it)) },
+                publisher = state.generatePackPublisher,
+                onPublisherChange = { onIntent(HomeIntent.UpdateGeneratePackPublisher(it)) },
+                prompt = state.generatePackPrompt,
+                onPromptChange = { onIntent(HomeIntent.UpdateGeneratePackPrompt(it)) },
+                layout = state.generatePackLayout,
+                onLayoutChange = { onIntent(HomeIntent.UpdateGeneratePackLayout(it)) },
+                inputImagePath = state.generatePackInputImagePath,
+                onPickInputImage = { generateInputImagePicker.launch() },
+                onClearInputImage = { onIntent(HomeIntent.UpdateGeneratePackInputImage(null)) },
+                isGenerating = state.isGeneratePackLoading,
+                onGenerate = { onIntent(HomeIntent.GenerateStickerPack) },
+                onDismiss = { onIntent(HomeIntent.CloseGeneratePackSheet) }
             )
         }
     }

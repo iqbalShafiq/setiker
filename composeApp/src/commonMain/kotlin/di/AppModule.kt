@@ -10,6 +10,7 @@ import data.remote.CloudStickerRepository
 import data.remote.ExploreApiRepository
 import data.remote.SetikerApiService
 import data.remote.StickerApiRepository
+import data.repository.StickerPackDraftSaver
 import data.repository.StickerRepositoryImpl
 import data.storage.AnimatedStickerDraftStore
 import data.sync.NetworkMonitor
@@ -46,6 +47,7 @@ val appModule = module {
     single<StickerRepository> { StickerRepositoryImpl(get(), get(), get(), get(), get()) }
     single { SetikerApiService(authManager = get(), authTokenRefresher = get()) }
     single { StickerApiRepository(api = get(), fileStorage = get(), onDeviceImageProcessor = get()) }
+    single { StickerPackDraftSaver(fileStorage = get()) }
     single { AnimatedStickerDraftStore() }
 
     // Auth

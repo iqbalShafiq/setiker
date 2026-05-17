@@ -35,6 +35,7 @@ import domain.model.ImageDecoration
 import domain.model.StickerDecoration
 import domain.model.StickerPack
 import domain.model.TextDecoration
+import domain.model.isBottomCaption
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
@@ -834,8 +835,8 @@ actual class StickerFileStorage(private val context: Context) {
             )
             when (decoration) {
                 is TextDecoration -> {
-                    if (decoration.id.startsWith("api_txt_")) {
-                        drawApiOutsideForegroundCaption(
+                    if (decoration.isBottomCaption()) {
+                        drawBottomCaptionTextDecoration(
                             canvas = canvas,
                             decoration = decoration,
                             bitmapWidth = target.width,
@@ -848,7 +849,7 @@ actual class StickerFileStorage(private val context: Context) {
                             text = decoration.text,
                             centerX = centerX,
                             centerY = centerY,
-                            textSize = minDim * DecorationRenderSpec.TEXT_SIZE_RATIO * scale,
+                            textSize = DecorationRenderSpec.textSizePx(decoration, minDim, scale),
                             typeface = mapTypeface(decoration.font, decoration.fontWeight),
                             textColor = decoration.textColorArgb.toInt()
                         )
@@ -893,7 +894,7 @@ actual class StickerFileStorage(private val context: Context) {
         }
     }
 
-    private fun drawApiOutsideForegroundCaption(
+    private fun drawBottomCaptionTextDecoration(
         canvas: Canvas,
         decoration: TextDecoration,
         bitmapWidth: Int,
@@ -904,9 +905,13 @@ actual class StickerFileStorage(private val context: Context) {
             DecorationRenderSpec.MIN_SCALE,
             DecorationRenderSpec.MAX_SCALE
         )
-        val textSizePx = minDim * DecorationRenderSpec.API_CAPTION_TEXT_SIZE_RATIO * scale
-        val boxWidthPx =
-            bitmapWidth * (1f - 2f * DecorationRenderSpec.API_CAPTION_HORIZONTAL_INSET_RATIO)
+        val textSizePx = DecorationRenderSpec.textSizePx(decoration, minDim, scale)
+        val boxWidthPx = DecorationRenderSpec.textBoxWidthPx(
+            decoration = decoration,
+            canvasWidthPx = bitmapWidth.toFloat(),
+            minDimPx = minDim,
+            scale = scale
+        )
         val maxWidth = boxWidthPx.toInt().coerceAtLeast(1)
 
         val centerXPx = decoration.centerX.coerceIn(0f, 1f) * bitmapWidth

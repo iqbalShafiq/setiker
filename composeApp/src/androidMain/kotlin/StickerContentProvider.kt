@@ -13,7 +13,7 @@ import androidx.room.Room
 import data.local.database.DatabaseMigrations
 import data.local.database.StickerDatabase
 import data.storage.StickerFileStorage
-import domain.model.StickerDecoration
+import domain.model.decodeStickerDecorationsForCurrentSchema
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -317,11 +317,7 @@ class StickerContentProvider : ContentProvider() {
             } else if (stickerEntity?.decorationsJson.isNullOrBlank()) {
                 filePath
             } else {
-                val decorations = try {
-                    Json.decodeFromString<List<StickerDecoration>>(stickerEntity.decorationsJson)
-                } catch (_: Exception) {
-                    emptyList()
-                }
+                val decorations = decodeStickerDecorationsForCurrentSchema(stickerEntity.decorationsJson)
                 if (decorations.isEmpty()) {
                     filePath
                 } else {

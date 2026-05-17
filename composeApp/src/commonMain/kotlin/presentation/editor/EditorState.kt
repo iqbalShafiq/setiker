@@ -1,6 +1,7 @@
 package presentation.editor
 
 import domain.model.StickerDecoration
+import presentation.createpack.DraftSticker
 
 data class EditorState(
     val imagePath: String = "",
@@ -21,13 +22,9 @@ data class EditorState(
     val showDecorationEmojiPicker: Boolean = false,
     val decorationEmojiPickerTargetId: String? = null,
     val isTextDecorationSheetOpen: Boolean = false,
-    // AI generate mirrors the contract used in `CreatePackState` so the shared
-    // `AiGenerateBottomSheet` can be wired identically in both screens.
+    // AI generate mirrors the contract used in `CreatePackState`.
     val aiGenerateSheetOpen: Boolean = false,
     val generatePrompt: String = "",
-    val generateAsGrid: Boolean = true,
-    val gridLayout: String = "4x4",
-    val normalizeOutput: Boolean = true,
     /**
      * Optional reference image for `/api/v1/generate`. The sticker editor defaults this to the
      * current sticker image when the sheet opens; the user can override from gallery or clear.
@@ -35,5 +32,5 @@ data class EditorState(
     val generateInputImage: String? = null,
     val isApiLoading: Boolean = false,
     /** Generated images returned by the API, shown in the replacement picker sheet. */
-    val generatedPreview: List<String> = emptyList()
+    val generatedPreview: List<DraftSticker> = emptyList()
 )

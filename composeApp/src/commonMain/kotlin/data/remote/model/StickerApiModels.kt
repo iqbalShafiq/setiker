@@ -27,3 +27,10 @@ data class ApiTextAsset(
     val id: String,
     val textOutsideForeground: ApiTextOutsideForeground? = null
 )
+
+@Serializable
+data class ApiTextAssetDecoration(
+    val text: String? = null,
+    val style: ApiTextOutsideForegroundStyle? = null,
+    val source: String? = null
+)

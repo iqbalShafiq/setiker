@@ -2,6 +2,7 @@ package presentation.editor
 
 import domain.model.DecorationFont
 import domain.model.DecorationFontWeight
+import presentation.createpack.DraftSticker
 
 sealed interface EditorIntent {
     data class UpdateImagePath(val path: String) : EditorIntent
@@ -43,11 +44,9 @@ sealed interface EditorIntent {
     data object OpenAiGenerateSheet : EditorIntent
     data object CloseAiGenerateSheet : EditorIntent
     data class UpdateGeneratePrompt(val prompt: String) : EditorIntent
-    data class ToggleGenerateAsGrid(val enabled: Boolean) : EditorIntent
-    data class UpdateGridLayout(val layout: String) : EditorIntent
-    data class ToggleNormalize(val enabled: Boolean) : EditorIntent
     data class UpdateGenerateInputImage(val path: String?) : EditorIntent
     data object GenerateSticker : EditorIntent
-    data class ApplyGeneratedImage(val path: String) : EditorIntent
+    data object ImproveSticker : EditorIntent
+    data class ApplyGeneratedSticker(val draft: DraftSticker) : EditorIntent
     data object CloseGeneratedSheet : EditorIntent
 }

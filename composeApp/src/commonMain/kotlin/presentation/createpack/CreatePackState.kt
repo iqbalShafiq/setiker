@@ -6,6 +6,11 @@ enum class GridSplitSheetPhase {
     Results
 }
 
+enum class GeneratedPreviewMode {
+    AddToPack,
+    ReplacePack
+}
+
 data class CreatePackState(
     val isLoading: Boolean = false,
     val name: String = "",
@@ -14,17 +19,16 @@ data class CreatePackState(
     val trayImagePath: String = "",
     val stickers: List<DraftSticker> = emptyList(),
     val generatePrompt: String = "",
-    val generateAsGrid: Boolean = true,
     val gridLayout: String = "4x4",
-    val normalizeOutput: Boolean = true,
     /**
      * Optional reference image for `/api/v1/generate`. In pack editor we default to null
      * (text-only generation); user can explicitly add a reference. Sticker editor defaults
      * to the related sticker's image.
      */
     val generateInputImage: String? = null,
-    val generatedPreview: List<String> = emptyList(),
+    val generatedPreview: List<DraftSticker> = emptyList(),
     val selectedGeneratedPreview: Set<Int> = emptySet(),
+    val generatedPreviewMode: GeneratedPreviewMode = GeneratedPreviewMode.AddToPack,
     val gridSplitSourcePath: String = "",
     val splitPreview: List<DraftSticker> = emptyList(),
     val selectedSplitPreview: Set<Int> = emptySet(),

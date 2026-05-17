@@ -14,4 +14,12 @@ sealed interface HomeIntent {
     data object RefreshSync : HomeIntent
     data class SearchQueryChanged(val query: String) : HomeIntent
     data class SortOrderChanged(val order: SortOrder) : HomeIntent
+    data object OpenGeneratePackSheet : HomeIntent
+    data object CloseGeneratePackSheet : HomeIntent
+    data class UpdateGeneratePackPrompt(val prompt: String) : HomeIntent
+    data class UpdateGeneratePackName(val name: String) : HomeIntent
+    data class UpdateGeneratePackPublisher(val publisher: String) : HomeIntent
+    data class UpdateGeneratePackLayout(val layout: String) : HomeIntent
+    data class UpdateGeneratePackInputImage(val path: String?) : HomeIntent
+    data object GenerateStickerPack : HomeIntent
 }

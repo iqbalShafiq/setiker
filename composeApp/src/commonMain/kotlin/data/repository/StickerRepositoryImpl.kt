@@ -19,6 +19,8 @@ import domain.model.SyncOperationStatus
 import domain.model.SyncOperationType
 import domain.model.SyncReport
 import domain.model.SyncResult
+import domain.model.decodeStickerDecorationsForCurrentSchema
+import domain.model.normalizedForCurrentSchema
 import domain.repository.StickerRepository
 import domain.repository.SyncStatus
 import kotlinx.coroutines.Dispatchers
@@ -256,12 +258,7 @@ class StickerRepositoryImpl(
     )
 
     private fun parseDecorations(raw: String?): List<StickerDecoration> {
-        if (raw.isNullOrBlank()) return emptyList()
-        return try {
-            Json.decodeFromString<List<StickerDecoration>>(raw)
-        } catch (_: Exception) {
-            emptyList()
-        }
+        return decodeStickerDecorationsForCurrentSchema(raw)
     }
 
     private fun encodeFrameDecorations(map: Map<Int, List<StickerDecoration>>): String? {
@@ -274,7 +271,9 @@ class StickerRepositoryImpl(
         if (raw.isNullOrBlank()) return emptyMap()
         return try {
             val stringKeyed: Map<String, List<StickerDecoration>> = Json.decodeFromString(raw)
-            stringKeyed.mapNotNull { (k, v) -> k.toIntOrNull()?.let { it to v } }.toMap()
+            stringKeyed.mapNotNull { (k, v) ->
+                k.toIntOrNull()?.let { it to v.map { decoration -> decoration.normalizedForCurrentSchema() } }
+            }.toMap()
         } catch (_: Exception) {
             emptyMap()
         }

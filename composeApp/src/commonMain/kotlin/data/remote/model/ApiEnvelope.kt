@@ -49,5 +49,6 @@ data class ApiImage(
     val url: String,
     val width: Int? = null,
     val height: Int? = null,
-    val textOutsideForeground: ApiTextOutsideForeground? = null
+    val textOutsideForeground: ApiTextOutsideForeground? = null,
+    val textAssetDecoration: ApiTextAssetDecoration? = null
 )

@@ -21,6 +21,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Crop
 import androidx.compose.material.icons.filled.Edit
@@ -124,6 +125,7 @@ import setiker.composeapp.generated.resources.generate_ai
 import setiker.composeapp.generated.resources.generate_pick_result
 import setiker.composeapp.generated.resources.generate_replace_sticker_subtitle
 import setiker.composeapp.generated.resources.generate_replace_sticker_title
+import setiker.composeapp.generated.resources.improve_sticker
 import setiker.composeapp.generated.resources.remove_background_title
 import setiker.composeapp.generated.resources.remove_bg
 import setiker.composeapp.generated.resources.remove_bg_preview_content_description
@@ -213,6 +215,12 @@ fun EditorScreen(
                                 contentDescription = stringResource(Res.string.generate_ai),
                                 onClick = { onIntent(EditorIntent.OpenAiGenerateSheet) },
                                 enabled = !isOperationInProgress
+                            )
+                            PackBottomBarIconButton(
+                                icon = Icons.Filled.AutoFixHigh,
+                                contentDescription = stringResource(Res.string.improve_sticker),
+                                onClick = { onIntent(EditorIntent.ImproveSticker) },
+                                enabled = state.imagePath.isNotBlank() && !isOperationInProgress
                             )
                         }
                         when (selectedDecoration) {
@@ -515,12 +523,6 @@ fun EditorScreen(
         AiGenerateBottomSheet(
             prompt = state.generatePrompt,
             onPromptChange = { onIntent(EditorIntent.UpdateGeneratePrompt(it)) },
-            generateAsGrid = state.generateAsGrid,
-            onToggleGrid = { onIntent(EditorIntent.ToggleGenerateAsGrid(it)) },
-            gridLayout = state.gridLayout,
-            onGridLayoutChange = { onIntent(EditorIntent.UpdateGridLayout(it)) },
-            normalizeOutput = state.normalizeOutput,
-            onToggleNormalize = { onIntent(EditorIntent.ToggleNormalize(it)) },
             inputImagePath = state.generateInputImage,
             onPickInputImage = { generateInputImagePicker.launch() },
             onClearInputImage = { onIntent(EditorIntent.UpdateGenerateInputImage(null)) },
@@ -563,7 +565,7 @@ fun EditorScreen(
                 // Reuse the same selectable grid component as pack editor, but only allow a
                 // single selection — replacement is a single-sticker operation.
                 SelectableStickerGrid(
-                    stickers = state.generatedPreview.map { DraftSticker(it) },
+                    stickers = state.generatedPreview,
                     selectedIndices = selectedGeneratedIndex?.let { setOf(it) } ?: emptySet(),
                     onToggle = { index ->
                         selectedGeneratedIndex = if (selectedGeneratedIndex == index) null else index
@@ -575,8 +577,8 @@ fun EditorScreen(
                     enabled = selectedGeneratedIndex != null && !isOperationInProgress,
                     onClick = {
                         val idx = selectedGeneratedIndex ?: return@AppPrimaryButton
-                        val path = state.generatedPreview.getOrNull(idx) ?: return@AppPrimaryButton
-                        onIntent(EditorIntent.ApplyGeneratedImage(path))
+                        val draft = state.generatedPreview.getOrNull(idx) ?: return@AppPrimaryButton
+                        onIntent(EditorIntent.ApplyGeneratedSticker(draft))
                     }
                 )
                 Spacer(modifier = Modifier.height(8.dp))

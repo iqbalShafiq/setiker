@@ -36,7 +36,7 @@ import kotlin.math.roundToInt
 
 /**
  * Renders persisted sticker decorations read-only (used for thumbnails and grid picks).
- * Layout matches [presentation.components.DecorationPreviewLayer] (including api_txt caption geometry).
+ * Layout matches [presentation.components.DecorationPreviewLayer].
  */
 @Composable
 fun ReadOnlyDecorationOverlay(
@@ -58,14 +58,17 @@ fun ReadOnlyDecorationOverlay(
             val itemHeightPx: Float
             when (decoration) {
                 is TextDecoration -> {
-                    if (decoration.id.startsWith("api_txt_")) {
-                        itemWidthPx = widthPx * (1f - 2f * DecorationRenderSpec.API_CAPTION_HORIZONTAL_INSET_RATIO)
-                        itemHeightPx = minDim * 0.46f * scale
-                    } else {
-                        val sq = minDim * DecorationRenderSpec.TEXT_BOX_RATIO * scale
-                        itemWidthPx = sq
-                        itemHeightPx = sq
-                    }
+                    itemWidthPx = DecorationRenderSpec.textBoxWidthPx(
+                        decoration = decoration,
+                        canvasWidthPx = widthPx,
+                        minDimPx = minDim,
+                        scale = scale
+                    )
+                    itemHeightPx = DecorationRenderSpec.textBoxHeightPx(
+                        decoration = decoration,
+                        minDimPx = minDim,
+                        scale = scale
+                    )
                 }
                 is EmojiDecoration -> {
                     val sq = minDim * DecorationRenderSpec.EMOJI_BOX_RATIO * scale
@@ -102,11 +105,6 @@ fun ReadOnlyDecorationOverlay(
             ) {
                 when (decoration) {
                     is TextDecoration -> {
-                        val textRatio = if (decoration.id.startsWith("api_txt_")) {
-                            DecorationRenderSpec.API_CAPTION_TEXT_SIZE_RATIO
-                        } else {
-                            DecorationRenderSpec.TEXT_SIZE_RATIO
-                        }
                         Text(
                             text = decoration.text,
                             style = TextStyle(
@@ -114,14 +112,14 @@ fun ReadOnlyDecorationOverlay(
                                 fontFamily = mapDecorationFont(decoration.font),
                                 fontWeight = mapDecorationFontWeight(decoration.fontWeight),
                                 fontSize = with(density) {
-                                    (minDim * textRatio * scale).toSp()
+                                    DecorationRenderSpec.textSizePx(decoration, minDim, scale).toSp()
                                 },
                                 textAlign = TextAlign.Center
                             ),
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(Color.Transparent),
-                            maxLines = if (decoration.id.startsWith("api_txt_")) 6 else 3
+                            maxLines = DecorationRenderSpec.textMaxLines(decoration)
                         )
                     }
 

@@ -30,6 +30,7 @@ import presentation.common.UiText
 import presentation.common.toUiText
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_failed_apply_removal
+import setiker.composeapp.generated.resources.error_failed_improve_sticker
 import setiker.composeapp.generated.resources.error_failed_generate_sticker
 import setiker.composeapp.generated.resources.error_failed_save_sticker
 import setiker.composeapp.generated.resources.error_pack_id_missing
@@ -57,7 +58,6 @@ class EditorViewModel(
     fun onIntent(intent: EditorIntent) {
         when (intent) {
             is EditorIntent.UpdateImagePath -> {
-                android.util.Log.d("EditorViewModel", "UpdateImagePath: ${intent.path}")
                 _state.update {
                     it.copy(
                         imagePath = intent.path,
@@ -92,7 +92,6 @@ class EditorViewModel(
                 this.packId = intent.packId
                 intent.stickerIndex?.let { this.stickerIndex = it }
                 _state.update { it.copy(packId = intent.packId, stickerIndex = intent.stickerIndex) }
-                android.util.Log.d("EditorViewModel", "SetPackId: ${intent.packId}, stickerIndex: ${intent.stickerIndex}")
             }
             is EditorIntent.LoadSticker -> loadSticker(intent.stickerIndex, intent.packId)
             is EditorIntent.ShowEmojiPicker -> {
@@ -166,20 +165,12 @@ class EditorViewModel(
             is EditorIntent.UpdateGeneratePrompt -> {
                 _state.update { it.copy(generatePrompt = intent.prompt) }
             }
-            is EditorIntent.ToggleGenerateAsGrid -> {
-                _state.update { it.copy(generateAsGrid = intent.enabled) }
-            }
-            is EditorIntent.UpdateGridLayout -> {
-                _state.update { it.copy(gridLayout = intent.layout) }
-            }
-            is EditorIntent.ToggleNormalize -> {
-                _state.update { it.copy(normalizeOutput = intent.enabled) }
-            }
             is EditorIntent.UpdateGenerateInputImage -> {
                 _state.update { it.copy(generateInputImage = intent.path) }
             }
             is EditorIntent.GenerateSticker -> generateSticker()
-            is EditorIntent.ApplyGeneratedImage -> applyGeneratedImage(intent.path)
+            is EditorIntent.ImproveSticker -> improveSticker()
+            is EditorIntent.ApplyGeneratedSticker -> applyGeneratedSticker(intent.draft)
             is EditorIntent.CloseGeneratedSheet -> {
                 _state.update {
                     it.copy(generatedPreview = emptyList())
@@ -212,13 +203,15 @@ class EditorViewModel(
 
             _state.update { it.copy(isApiLoading = true) }
             try {
-                val generated = apiRepository.generate(
+                val generated = apiRepository.generateStickers(
                     prompt = currentState.generatePrompt,
-                    grid = currentState.generateAsGrid,
-                    layout = if (currentState.generateAsGrid) currentState.gridLayout else null,
-                    normalize = if (currentState.generateAsGrid) currentState.normalizeOutput else null,
                     inputImagePath = currentState.generateInputImage
-                )
+                ).map { file ->
+                    presentation.createpack.DraftSticker(
+                        imagePath = file.localPath,
+                        decorations = file.decorations
+                    )
+                }
                 _state.update {
                     it.copy(
                         isApiLoading = false,
@@ -237,18 +230,51 @@ class EditorViewModel(
         }
     }
 
-    private fun applyGeneratedImage(path: String) {
-        if (path.isBlank()) return
+    private fun applyGeneratedSticker(draft: presentation.createpack.DraftSticker) {
+        if (draft.imagePath.isBlank()) return
         // Replacing the sticker invalidates the existing decorations because the underlying
-        // image likely has a different composition. Mirror `UpdateImagePath` behaviour to keep
-        // the editor state consistent.
+        // image likely has a different composition. API-provided decorations are part of the
+        // generated result, so preserve them with the selected draft.
         _state.update {
             it.copy(
-                imagePath = path,
-                decorations = emptyList(),
+                imagePath = draft.imagePath,
+                decorations = draft.decorations,
                 selectedDecorationId = null,
                 generatedPreview = emptyList()
             )
+        }
+    }
+
+    private fun improveSticker() {
+        viewModelScope.launch {
+            val currentState = _state.value
+            if (currentState.imagePath.isBlank()) {
+                _effect.send(EditorEffect.ShowError(UiText.StringRes(Res.string.error_select_image)))
+                return@launch
+            }
+
+            _state.update { it.copy(isApiLoading = true) }
+            try {
+                val improved = apiRepository.improve(listOf(currentState.imagePath)).map { file ->
+                    presentation.createpack.DraftSticker(
+                        imagePath = file.localPath,
+                        decorations = file.decorations
+                    )
+                }
+                _state.update {
+                    it.copy(
+                        isApiLoading = false,
+                        generatedPreview = improved
+                    )
+                }
+            } catch (e: Exception) {
+                _state.update { it.copy(isApiLoading = false) }
+                _effect.send(
+                    EditorEffect.ShowError(
+                        e.toUiText(Res.string.error_failed_improve_sticker)
+                    )
+                )
+            }
         }
     }
 

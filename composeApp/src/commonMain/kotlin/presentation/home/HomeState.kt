@@ -12,7 +12,14 @@ data class HomeState(
     val error: String? = null,
     val currentUser: User? = null,
     val isSyncing: Boolean = false,
-    val pendingSyncCount: Int = 0
+    val pendingSyncCount: Int = 0,
+    val isGeneratePackSheetOpen: Boolean = false,
+    val generatePackPrompt: String = "",
+    val generatePackName: String = "",
+    val generatePackPublisher: String = "",
+    val generatePackLayout: String = "4x4",
+    val generatePackInputImagePath: String? = null,
+    val isGeneratePackLoading: Boolean = false
 ) {
     val filteredPacks: List<StickerPack>
         get() = packs

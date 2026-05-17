@@ -21,7 +21,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -59,13 +58,8 @@ import setiker.composeapp.generated.resources.generate_input_image_hint
 import setiker.composeapp.generated.resources.generate_input_image_label
 import setiker.composeapp.generated.resources.generate_pick_image
 import setiker.composeapp.generated.resources.generate_replace_image
-import setiker.composeapp.generated.resources.generate_single_hint
 import setiker.composeapp.generated.resources.generate_tip
 import setiker.composeapp.generated.resources.generating
-import setiker.composeapp.generated.resources.grid_off
-import setiker.composeapp.generated.resources.grid_on
-import setiker.composeapp.generated.resources.normalize_off
-import setiker.composeapp.generated.resources.normalize_on
 import setiker.composeapp.generated.resources.prompt_label
 import setiker.composeapp.generated.resources.prompt_placeholder
 
@@ -76,7 +70,7 @@ import setiker.composeapp.generated.resources.prompt_placeholder
  *     reference image is the sticker being edited.
  *
  * The same state shape lives in both screens to keep the contract identical:
- *   - `prompt`, `generateAsGrid`, `gridLayout`, `normalizeOutput` mirror the API multipart fields.
+ *   - `prompt` maps to API text input.
  *   - `inputImagePath` is the optional `image` multipart field. The callers decide the default.
  *
  * @param hasContextualDefault true when the input image already represents something meaningful
@@ -90,12 +84,6 @@ import setiker.composeapp.generated.resources.prompt_placeholder
 fun AiGenerateBottomSheet(
     prompt: String,
     onPromptChange: (String) -> Unit,
-    generateAsGrid: Boolean,
-    onToggleGrid: (Boolean) -> Unit,
-    gridLayout: String,
-    onGridLayoutChange: (String) -> Unit,
-    normalizeOutput: Boolean,
-    onToggleNormalize: (Boolean) -> Unit,
     inputImagePath: String?,
     onPickInputImage: () -> Unit,
     onClearInputImage: () -> Unit,
@@ -225,56 +213,6 @@ fun AiGenerateBottomSheet(
                 style = MaterialTheme.typography.bodySmall,
                 color = neubrutalMutedOnSurface()
             )
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
-                    selected = generateAsGrid,
-                    onClick = { onToggleGrid(true) },
-                    label = { Text(stringResource(Res.string.grid_on)) }
-                )
-                FilterChip(
-                    selected = !generateAsGrid,
-                    onClick = { onToggleGrid(false) },
-                    label = { Text(stringResource(Res.string.grid_off)) }
-                )
-            }
-            if (generateAsGrid) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("2x2", "3x3", "4x4").forEach { layout ->
-                        FilterChip(
-                            selected = gridLayout == layout,
-                            onClick = { onGridLayoutChange(layout) },
-                            label = { Text(layout) }
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                FilterChip(
-                    selected = normalizeOutput,
-                    onClick = { onToggleNormalize(!normalizeOutput) },
-                    label = {
-                        Text(
-                            stringResource(
-                                if (normalizeOutput) Res.string.normalize_on else Res.string.normalize_off
-                            )
-                        )
-                    }
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = stringResource(Res.string.generate_grid_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = neubrutalMutedOnSurface()
-                )
-            } else {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = stringResource(Res.string.generate_single_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = neubrutalMutedOnSurface()
-                )
-            }
             Spacer(modifier = Modifier.height(20.dp))
             AppPrimaryButton(
                 text = stringResource(if (isGenerating) Res.string.generating else Res.string.generate),
@@ -300,12 +238,6 @@ private fun AiGenerateBottomSheetPreview() {
         AiGenerateBottomSheet(
             prompt = "A cute cat sticker",
             onPromptChange = {},
-            generateAsGrid = false,
-            onToggleGrid = {},
-            gridLayout = "2x2",
-            onGridLayoutChange = {},
-            normalizeOutput = true,
-            onToggleNormalize = {},
             inputImagePath = null,
             onPickInputImage = {},
             onClearInputImage = {},
@@ -325,12 +257,6 @@ private fun AiGenerateBottomSheetGridPreview() {
         AiGenerateBottomSheet(
             prompt = "A cute cat sticker",
             onPromptChange = {},
-            generateAsGrid = true,
-            onToggleGrid = {},
-            gridLayout = "3x3",
-            onGridLayoutChange = {},
-            normalizeOutput = true,
-            onToggleNormalize = {},
             inputImagePath = null,
             onPickInputImage = {},
             onClearInputImage = {},
@@ -350,12 +276,6 @@ private fun AiGenerateBottomSheetGeneratingPreview() {
         AiGenerateBottomSheet(
             prompt = "A cute cat sticker",
             onPromptChange = {},
-            generateAsGrid = false,
-            onToggleGrid = {},
-            gridLayout = "2x2",
-            onGridLayoutChange = {},
-            normalizeOutput = true,
-            onToggleNormalize = {},
             inputImagePath = null,
             onPickInputImage = {},
             onClearInputImage = {},

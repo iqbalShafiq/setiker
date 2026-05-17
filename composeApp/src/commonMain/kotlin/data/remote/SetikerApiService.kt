@@ -17,6 +17,7 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.request.forms.FormBuilder
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.get
@@ -124,11 +125,7 @@ class SetikerApiService(
 
     suspend fun generate(
         prompt: String,
-        grid: Boolean = true,
-        gridLayout: String? = "4x4",
-        normalize: Boolean? = true,
-        inputImagePath: String? = null,
-        splitGridOnServer: Boolean = true
+        inputImagePath: String? = null
     ): List<ApiImage> {
         val response = withAuthRetry { authHeader ->
             client.post("/api/v1/generate") {
@@ -137,24 +134,53 @@ class SetikerApiService(
                     MultiPartFormDataContent(
                         formData {
                             append("text", prompt)
-                            append("grid", grid.toString())
-                            if (grid) {
-                                gridLayout?.let { append("layout", it) }
-                                normalize?.let { append("normalize", it.toString()) }
-                                append("split", splitGridOnServer.toString())
-                            }
                             if (!inputImagePath.isNullOrBlank()) {
-                                val bytes = readFileBytes(inputImagePath)
-                                append(
-                                    key = "image",
-                                    value = bytes,
-                                    headers = io.ktor.http.Headers.build {
-                                        append(HttpHeaders.ContentType, ContentType.Image.Any.toString())
-                                        append(
-                                            HttpHeaders.ContentDisposition,
-                                            "filename=\"input.png\""
-                                        )
-                                    }
+                                appendImageFile(key = "image", path = inputImagePath, filename = "input.png")
+                            }
+                        }
+                    )
+                )
+            }
+        }
+        return parseGenerateImages(response)
+    }
+
+    suspend fun generateStickerPack(
+        prompt: String,
+        layout: String,
+        inputImagePath: String? = null
+    ): List<ApiImage> {
+        val response = withAuthRetry { authHeader ->
+            client.post("/api/v1/generate/sticker-pack") {
+                authHeader?.let { header(HttpHeaders.Authorization, it) }
+                setBody(
+                    MultiPartFormDataContent(
+                        formData {
+                            append("text", prompt)
+                            append("layout", layout)
+                            if (!inputImagePath.isNullOrBlank()) {
+                                appendImageFile(key = "image", path = inputImagePath, filename = "input.png")
+                            }
+                        }
+                    )
+                )
+            }
+        }
+        return parseGenerateImages(response)
+    }
+
+    suspend fun improve(imagePaths: List<String>): List<ApiImage> {
+        val response = withAuthRetry { authHeader ->
+            client.post("/api/v1/generate/improvement") {
+                authHeader?.let { header(HttpHeaders.Authorization, it) }
+                setBody(
+                    MultiPartFormDataContent(
+                        formData {
+                            imagePaths.forEachIndexed { index, path ->
+                                appendImageFile(
+                                    key = "images",
+                                    path = path,
+                                    filename = "image_${index + 1}.png"
                                 )
                             }
                         }
@@ -162,6 +188,10 @@ class SetikerApiService(
                 )
             }
         }
+        return parseGenerateImages(response)
+    }
+
+    private suspend fun parseGenerateImages(response: HttpResponse): List<ApiImage> {
         val bodyText = response.bodyAsText()
         if (!response.status.isSuccess()) {
             throw ApiException(
@@ -274,6 +304,22 @@ class SetikerApiService(
             return urlPath
         }
         return if (urlPath.startsWith("/")) urlPath else "/$urlPath"
+    }
+
+    private fun FormBuilder.appendImageFile(
+        key: String,
+        path: String,
+        filename: String
+    ) {
+        val bytes = readFileBytes(path)
+        append(
+            key = key,
+            value = bytes,
+            headers = io.ktor.http.Headers.build {
+                append(HttpHeaders.ContentType, ContentType.Image.Any.toString())
+                append(HttpHeaders.ContentDisposition, "filename=\"$filename\"")
+            }
+        )
     }
 
     private fun io.ktor.client.request.HttpRequestBuilder.setMultipartBody(

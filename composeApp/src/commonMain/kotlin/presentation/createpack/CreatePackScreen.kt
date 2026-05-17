@@ -93,22 +93,17 @@ import setiker.composeapp.generated.resources.generate_ai
 import setiker.composeapp.generated.resources.generate_ai_sheet_title
 import setiker.composeapp.generated.resources.generate_confirm_subtitle
 import setiker.composeapp.generated.resources.generate_confirm_title
-import setiker.composeapp.generated.resources.generate_grid_hint
-import setiker.composeapp.generated.resources.generate_single_hint
+import setiker.composeapp.generated.resources.generate_improve_confirm_title
 import setiker.composeapp.generated.resources.generate_tip
 import setiker.composeapp.generated.resources.generating
 import setiker.composeapp.generated.resources.grid_confirm_hint
 import setiker.composeapp.generated.resources.grid_confirm_title
-import setiker.composeapp.generated.resources.grid_off
-import setiker.composeapp.generated.resources.grid_on
 import setiker.composeapp.generated.resources.grid_source_content_description
 import setiker.composeapp.generated.resources.grid_split
 import setiker.composeapp.generated.resources.import_crop_sheet_message_sticker
 import setiker.composeapp.generated.resources.import_crop_sheet_message_tray
 import setiker.composeapp.generated.resources.import_crop_sheet_primary
 import setiker.composeapp.generated.resources.import_crop_sheet_title
-import setiker.composeapp.generated.resources.normalize_off
-import setiker.composeapp.generated.resources.normalize_on
 import setiker.composeapp.generated.resources.pack_name_label
 import setiker.composeapp.generated.resources.pack_name_placeholder
 import setiker.composeapp.generated.resources.processing
@@ -116,7 +111,9 @@ import setiker.composeapp.generated.resources.prompt_label
 import setiker.composeapp.generated.resources.prompt_placeholder
 import setiker.composeapp.generated.resources.publisher_label
 import setiker.composeapp.generated.resources.publisher_placeholder
+import setiker.composeapp.generated.resources.improve_stickers
 import setiker.composeapp.generated.resources.remove_sticker
+import setiker.composeapp.generated.resources.replace_stickers
 import setiker.composeapp.generated.resources.save_pack
 import setiker.composeapp.generated.resources.saving
 import setiker.composeapp.generated.resources.selected_count
@@ -182,6 +179,7 @@ fun CreatePackScreen(
     val stickerImportSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val trayImportSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val isOperationInProgress = state.isApiLoading || state.isSaving
+    val canImprovePack = state.stickers.any { !it.isAnimated && it.imagePath.isNotBlank() } && !isOperationInProgress
     val bottomOperationLabel = when {
         state.isSaving && state.isEditing -> stringResource(Res.string.updating)
         state.isSaving -> stringResource(Res.string.saving)
@@ -193,12 +191,6 @@ fun CreatePackScreen(
         AiGenerateBottomSheet(
             prompt = state.generatePrompt,
             onPromptChange = { onIntent(CreatePackIntent.UpdateGeneratePrompt(it)) },
-            generateAsGrid = state.generateAsGrid,
-            onToggleGrid = { onIntent(CreatePackIntent.ToggleGenerateAsGrid(it)) },
-            gridLayout = state.gridLayout,
-            onGridLayoutChange = { onIntent(CreatePackIntent.UpdateGridLayout(it)) },
-            normalizeOutput = state.normalizeOutput,
-            onToggleNormalize = { onIntent(CreatePackIntent.ToggleNormalize(it)) },
             inputImagePath = state.generateInputImage,
             onPickInputImage = { generateInputImagePicker.launch() },
             onClearInputImage = { onIntent(CreatePackIntent.UpdateGenerateInputImage(null)) },
@@ -226,7 +218,13 @@ fun CreatePackScreen(
                     .verticalScroll(rememberScrollState())
             ) {
                 Text(
-                    text = stringResource(Res.string.generate_confirm_title),
+                    text = stringResource(
+                        if (state.generatedPreviewMode == GeneratedPreviewMode.ReplacePack) {
+                            Res.string.generate_improve_confirm_title
+                        } else {
+                            Res.string.generate_confirm_title
+                        }
+                    ),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = neubrutalOnSurface()
@@ -249,15 +247,29 @@ fun CreatePackScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 SelectableStickerGrid(
-                    stickers = state.generatedPreview.map { DraftSticker(it) },
+                    stickers = state.generatedPreview,
                     selectedIndices = state.selectedGeneratedPreview,
                     onToggle = { onIntent(CreatePackIntent.ToggleGeneratedSelection(it)) }
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 AppPrimaryButton(
-                    text = stringResource(Res.string.add_to_pack),
+                    text = stringResource(
+                        if (state.generatedPreviewMode == GeneratedPreviewMode.ReplacePack) {
+                            Res.string.replace_stickers
+                        } else {
+                            Res.string.add_to_pack
+                        }
+                    ),
                     enabled = state.selectedGeneratedPreview.isNotEmpty(),
-                    onClick = { onIntent(CreatePackIntent.AddSelectedGeneratedToPack) }
+                    onClick = {
+                        onIntent(
+                            if (state.generatedPreviewMode == GeneratedPreviewMode.ReplacePack) {
+                                CreatePackIntent.ReplacePackWithGenerated
+                            } else {
+                                CreatePackIntent.AddSelectedGeneratedToPack
+                            }
+                        )
+                    }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 AppSecondaryButton(
@@ -521,6 +533,12 @@ fun CreatePackScreen(
                         contentDescription = stringResource(Res.string.generate_ai),
                         onClick = { onIntent(CreatePackIntent.OpenAiGenerateSheet) },
                         enabled = !isOperationInProgress
+                    )
+                    PackBottomBarIconButton(
+                        icon = Icons.Filled.AutoAwesome,
+                        contentDescription = stringResource(Res.string.improve_stickers),
+                        onClick = { onIntent(CreatePackIntent.ImprovePackStickers) },
+                        enabled = canImprovePack
                     )
                     PackBottomBarIconButton(
                         icon = Icons.Filled.ViewModule,

@@ -1,7 +1,9 @@
 package data.remote
 
-import data.remote.mapper.toOverlayTextDecoration
+import data.remote.mapper.toDecorationApiImage
+import data.remote.mapper.toStickerDecorations
 import data.remote.model.ApiImage
+import data.remote.model.GeneratedStickerFile
 import data.remote.model.GridSplitStickerFile
 import data.storage.StickerFileStorage
 import data.util.OnDeviceImageProcessor
@@ -19,28 +21,51 @@ class StickerApiRepository(
         return downloadAndPersist(image)
     }
 
-    suspend fun generate(
+    suspend fun generateStickers(
         prompt: String,
-        grid: Boolean,
-        layout: String?,
-        normalize: Boolean?,
         inputImagePath: String? = null
-    ): List<String> {
+    ): List<GeneratedStickerFile> {
         val images = api.generate(
             prompt = prompt,
-            grid = grid,
-            gridLayout = layout,
-            normalize = normalize,
-            inputImagePath = inputImagePath,
-            splitGridOnServer = !grid
+            inputImagePath = inputImagePath
         )
-        if (grid) {
-            val rawGridPath = images.firstOrNull()?.let { downloadAndPersist(it) }
-                ?: return emptyList()
-            val (rows, cols) = parseGridLayout(layout)
-            return splitGridOnDevice(rawGridPath, "${rows}x${cols}").map { it.localPath }
+        return downloadGeneratedStickerFiles(images, operationTag = "generate")
+    }
+
+    suspend fun generateStickerPack(
+        prompt: String,
+        layout: String,
+        inputImagePath: String? = null
+    ): List<GridSplitStickerFile> {
+        val images = api.generateStickerPack(
+            prompt = prompt,
+            layout = layout,
+            inputImagePath = inputImagePath
+        )
+        val rawGridPath = images.firstOrNull()?.let { downloadAndPersist(it) }
+            ?: return emptyList()
+        return splitGridOnDevice(rawGridPath, layout)
+    }
+
+    suspend fun improve(imagePaths: List<String>): List<GeneratedStickerFile> {
+        val images = api.improve(imagePaths)
+        if (imagePaths.size <= 1) {
+            return downloadGeneratedStickerFiles(images, operationTag = "improve")
         }
-        return downloadAndPersistAll(images, operationTag = "generate")
+
+        val chunkSizes = imagePaths.chunked(16).map { it.size }
+        validateImproveGridResponseCount(images = images, chunkSizes = chunkSizes)
+        return images.zip(chunkSizes).flatMap { (image, cellCount) ->
+            val rawGridPath = downloadAndPersist(image)
+            splitGridOnDevice(rawGridPath, "4x4")
+                .take(cellCount)
+                .map { splitFile ->
+                    GeneratedStickerFile(
+                        localPath = splitFile.localPath,
+                        decorations = splitFile.decorations
+                    )
+                }
+        }
     }
 
     suspend fun splitGridOnDevice(
@@ -56,13 +81,13 @@ class StickerApiRepository(
         val textAssets = extractTextAssetsOrEmpty(rawCellPaths)
         return rawCellPaths.mapIndexed { index, rawCellPath ->
             val processedPath = onDeviceImageProcessor.removeBackground(rawCellPath)
-            val decoration = textAssets.getOrNull(index)
-                ?.textOutsideForeground
-                .toOverlayTextDecoration()
             GridSplitStickerFile(
                 localPath = processedPath,
                 rawCellPath = rawCellPath,
-                decorations = listOfNotNull(decoration)
+                decorations = textAssets.getOrNull(index)
+                    ?.toDecorationApiImage()
+                    ?.toStickerDecorations()
+                    .orEmpty()
             )
         }
     }
@@ -83,13 +108,16 @@ class StickerApiRepository(
         )
     }
 
-    private suspend fun downloadAndPersistAll(
+    private suspend fun downloadAndPersistGenerated(image: ApiImage): GeneratedStickerFile =
+        image.toGeneratedStickerFile(localPath = downloadAndPersist(image))
+
+    private suspend fun downloadGeneratedStickerFiles(
         images: List<ApiImage>,
         operationTag: String
-    ): List<String> {
-        val results = mutableListOf<String>()
+    ): List<GeneratedStickerFile> {
+        val results = mutableListOf<GeneratedStickerFile>()
         images.forEach { image ->
-            runCatching { downloadAndPersist(image) }
+            runCatching { downloadAndPersistGenerated(image) }
                 .onSuccess { results += it }
                 .onFailure {
                     println(
@@ -98,7 +126,6 @@ class StickerApiRepository(
                 }
         }
         if (results.isEmpty() && images.isNotEmpty()) {
-            // If every download failed, surface a controlled error to UI.
             throw ApiException(code = AppErrorCode.ImageDownloadFailed)
         }
         return results
@@ -112,9 +139,10 @@ class StickerApiRepository(
         images.forEach { image ->
             runCatching { downloadAndPersist(image) }
                 .onSuccess { path ->
-                    val decoration = image.textOutsideForeground.toOverlayTextDecoration()
-                    val decorations = listOfNotNull(decoration)
-                    results += GridSplitStickerFile(localPath = path, decorations = decorations)
+                    results += GridSplitStickerFile(
+                        localPath = path,
+                        decorations = image.toStickerDecorations()
+                    )
                 }
                 .onFailure {
                     println(
@@ -137,4 +165,19 @@ class StickerApiRepository(
                 )
             }
             .getOrElse { emptyList() }
+}
+
+internal fun ApiImage.toGeneratedStickerFile(localPath: String): GeneratedStickerFile =
+    GeneratedStickerFile(
+        localPath = localPath,
+        decorations = toStickerDecorations()
+    )
+
+internal fun validateImproveGridResponseCount(
+    images: List<ApiImage>,
+    chunkSizes: List<Int>
+) {
+    if (images.size != chunkSizes.size) {
+        throw ApiException(code = AppErrorCode.InvalidGenerateResponse)
+    }
 }

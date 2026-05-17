@@ -2,6 +2,7 @@ package presentation.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.AccountCircle
@@ -13,9 +14,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import domain.model.User
 import domain.model.UserRole
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.create_new_pack
+import setiker.composeapp.generated.resources.explore
+import setiker.composeapp.generated.resources.generate_sticker_pack
+import setiker.composeapp.generated.resources.login
+import setiker.composeapp.generated.resources.profile
+import setiker.composeapp.generated.resources.sync
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,6 +35,7 @@ fun HomeBottomBar(
     onExploreClick: () -> Unit,
     onProfileClick: () -> Unit,
     onSyncClick: () -> Unit,
+    onGeneratePackClick: () -> Unit,
     onAddPackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -33,12 +43,14 @@ fun HomeBottomBar(
         actions = {
             PackBottomBarIconButton(
                 icon = Icons.Default.Explore,
-                contentDescription = "Explore",
+                contentDescription = stringResource(Res.string.explore),
                 onClick = onExploreClick
             )
             PackBottomBarIconButton(
                 icon = if (currentUser != null) Icons.Default.Person else Icons.Outlined.AccountCircle,
-                contentDescription = if (currentUser != null) "Profile" else "Login",
+                contentDescription = stringResource(
+                    if (currentUser != null) Res.string.profile else Res.string.login
+                ),
                 onClick = onProfileClick
             )
             BadgedBox(
@@ -50,15 +62,20 @@ fun HomeBottomBar(
             ) {
                 PackBottomBarIconButton(
                     icon = Icons.Default.Refresh,
-                    contentDescription = "Sync",
+                    contentDescription = stringResource(Res.string.sync),
                     onClick = onSyncClick
                 )
             }
+            PackBottomBarIconButton(
+                icon = Icons.Default.AutoAwesome,
+                contentDescription = stringResource(Res.string.generate_sticker_pack),
+                onClick = onGeneratePackClick
+            )
         },
         floatingActionButton = {
             PackBottomBarFab(
                 icon = Icons.Default.Add,
-                contentDescription = "Create Pack",
+                contentDescription = stringResource(Res.string.create_new_pack),
                 onClick = onAddPackClick
             )
         },
@@ -89,6 +106,7 @@ private fun HomeBottomBarLoggedInPreview() {
             onExploreClick = {},
             onProfileClick = {},
             onSyncClick = {},
+            onGeneratePackClick = {},
             onAddPackClick = {}
         )
     }
@@ -106,6 +124,7 @@ private fun HomeBottomBarGuestPreview() {
             onExploreClick = {},
             onProfileClick = {},
             onSyncClick = {},
+            onGeneratePackClick = {},
             onAddPackClick = {}
         )
     }

@@ -1,29 +1,69 @@
 package data.remote.mapper
 
+import data.remote.model.ApiImage
+import data.remote.model.ApiTextAsset
+import data.remote.model.ApiTextAssetDecoration
 import data.remote.model.ApiTextOutsideForeground
+import data.remote.model.ApiTextOutsideForegroundStyle
 import domain.model.DecorationFont
 import domain.model.DecorationFontWeight
+import domain.model.StickerDecoration
 import domain.model.TextDecoration
-import kotlin.random.Random
+import domain.model.TextDecorationLayout
+import domain.model.TextDecorationSource
 
 private const val DEFAULT_BOTTOM_CENTER_Y = 0.88f
 private const val DEFAULT_OVERLAY_SCALE = 0.58f
 
-/**
- * Maps grid-split API caption metadata to a single bottom-centered text decoration.
- */
-fun ApiTextOutsideForeground?.toOverlayTextDecoration(): TextDecoration? {
+fun ApiImage.toStickerDecorations(): List<StickerDecoration> = listOfNotNull(
+    textAssetDecoration.toTextDecoration(
+        id = "api_text_${TextDecorationSource.ApiTextAsset.name}_$id",
+        source = TextDecorationSource.ApiTextAsset
+    ) ?: textOutsideForeground.toTextDecoration(
+        id = "api_text_${TextDecorationSource.ApiOutsideForeground.name}_$id",
+        source = TextDecorationSource.ApiOutsideForeground
+    )
+)
+
+internal fun ApiTextAsset.toDecorationApiImage(): ApiImage = ApiImage(
+    id = id,
+    url = "",
+    textOutsideForeground = textOutsideForeground
+)
+
+private fun ApiTextAssetDecoration?.toTextDecoration(
+    id: String,
+    source: TextDecorationSource
+): TextDecoration? {
     val raw = this ?: return null
-    val trimmed = raw.text?.trim().orEmpty()
+    return buildApiTextDecoration(id = id, text = raw.text, style = raw.style, source = source)
+}
+
+private fun ApiTextOutsideForeground?.toTextDecoration(
+    id: String,
+    source: TextDecorationSource
+): TextDecoration? {
+    val raw = this ?: return null
+    return buildApiTextDecoration(id = id, text = raw.text, style = raw.style, source = source)
+}
+
+private fun buildApiTextDecoration(
+    id: String,
+    text: String?,
+    style: ApiTextOutsideForegroundStyle?,
+    source: TextDecorationSource
+): TextDecoration? {
+    val trimmed = text?.trim().orEmpty()
     if (trimmed.isEmpty()) return null
 
-    val style = raw.style
     return TextDecoration(
-        id = "api_txt_${Random.Default.nextLong()}_${Random.Default.nextInt()}",
+        id = id,
         text = trimmed,
         font = mapApiFontFamily(style?.fontFamily),
         fontWeight = mapApiFontWeight(style?.weight),
         textColorArgb = parseApiColorToArgb(style?.color) ?: 0xFF000000L,
+        source = source,
+        layout = TextDecorationLayout.BottomCaption,
         centerX = 0.5f,
         centerY = DEFAULT_BOTTOM_CENTER_Y,
         scale = DEFAULT_OVERLAY_SCALE
