@@ -104,6 +104,12 @@ fun VideoCropScreen(
                 primaryDescription = stringResource(Res.string.apply),
                 onPrimary = { onIntent(VideoCropIntent.Apply) },
                 primaryEnabled = state.currentPreviewPath != null && !state.isApplying,
+                primaryLoading = state.isApplying,
+                actionStatusText = if (state.isApplying) {
+                    state.applyProgressLabel ?: stringResource(Res.string.extracting_frames)
+                } else {
+                    null
+                },
                 onCancel = { onIntent(VideoCropIntent.Cancel) },
                 cancelEnabled = !state.isApplying,
                 isPlaying = state.isPlaying,

@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,6 +39,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -72,12 +75,14 @@ import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.common.rememberShareTextAction
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.add_to_whatsapp
 import setiker.composeapp.generated.resources.delete
 import setiker.composeapp.generated.resources.delete_pack
 import setiker.composeapp.generated.resources.delete_pack_dialog_message
 import setiker.composeapp.generated.resources.delete_pack_dialog_title
+import setiker.composeapp.generated.resources.deleting
 import setiker.composeapp.generated.resources.delete_sticker_dialog_message
 import setiker.composeapp.generated.resources.delete_sticker_dialog_title
 import setiker.composeapp.generated.resources.edit_pack
@@ -87,6 +92,7 @@ import setiker.composeapp.generated.resources.pack_details_title
 import setiker.composeapp.generated.resources.pack_not_found_desc
 import setiker.composeapp.generated.resources.pack_not_found_title
 import setiker.composeapp.generated.resources.pack_stickers_hint
+import setiker.composeapp.generated.resources.processing
 import setiker.composeapp.generated.resources.share_pack
 import setiker.composeapp.generated.resources.stickers_title
 import setiker.composeapp.generated.resources.stickers_with_count
@@ -97,7 +103,15 @@ import setiker.composeapp.generated.resources.import_crop_sheet_message_detail
 import setiker.composeapp.generated.resources.import_crop_sheet_primary
 import setiker.composeapp.generated.resources.import_crop_sheet_title
 import setiker.composeapp.generated.resources.loading_pack
+import setiker.composeapp.generated.resources.cloud_links_title
+import setiker.composeapp.generated.resources.cloud_links_create
+import setiker.composeapp.generated.resources.cloud_links_refresh
+import setiker.composeapp.generated.resources.cloud_links_empty
+import setiker.composeapp.generated.resources.cloud_links_copy
+import setiker.composeapp.generated.resources.cloud_links_share
+import setiker.composeapp.generated.resources.cloud_links_revoke
 import setiker.composeapp.generated.resources.sticker_preview_content_description
+import data.remote.model.CloudStickerPackShareLink
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -114,6 +128,12 @@ fun PackDetailScreen(
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     var deleteStickerIndex by remember { mutableStateOf(-1) }
+    val isOperationInProgress = state.isDeleting || state.cloudShareLinksLoading
+    val bottomOperationLabel = when {
+        state.isDeleting -> stringResource(Res.string.deleting)
+        state.cloudShareLinksLoading -> stringResource(Res.string.processing)
+        else -> null
+    }
 
     val multipleImagePicker = rememberMultipleImagePicker { imagePaths ->
         if (imagePaths.isNotEmpty()) {
@@ -184,6 +204,27 @@ fun PackDetailScreen(
         }
     }
 
+    if (state.cloudShareSheetOpen) {
+        ModalBottomSheet(
+            onDismissRequest = { onIntent(PackDetailIntent.DismissCloudShareSheet) },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = neubrutalScreenBackground()
+        ) {
+            CloudShareLinksSheet(
+                isLoading = state.cloudShareLinksLoading,
+                links = state.cloudShareLinks,
+                enabled = !state.cloudShareLinksLoading,
+                onRefresh = { onIntent(PackDetailIntent.RefreshCloudShareLinks) },
+                onCreate = { onIntent(PackDetailIntent.CreateCloudShareLink) },
+                onRevoke = { onIntent(PackDetailIntent.RevokeCloudShareLink(it)) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 8.dp)
+                    .padding(bottom = 24.dp)
+            )
+        }
+    }
+
     Scaffold(
         topBar = {
             AppTopBar(
@@ -193,18 +234,19 @@ fun PackDetailScreen(
         },
         bottomBar = {
             PackBottomBar(
+                actionStatusText = bottomOperationLabel,
                 actions = {
                     PackBottomBarIconButton(
                         icon = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = stringResource(Res.string.back),
                         onClick = onBackClick,
-                        enabled = !state.isLoading
+                        enabled = !state.isLoading && !isOperationInProgress
                     )
                     PackBottomBarIconButton(
                         icon = Icons.Default.Delete,
                         contentDescription = stringResource(Res.string.delete_pack),
                         onClick = { showDeleteDialog = true },
-                        enabled = !state.isLoading
+                        enabled = !state.isLoading && !isOperationInProgress
                     )
                 },
                 floatingActionButton = {
@@ -212,7 +254,7 @@ fun PackDetailScreen(
                         icon = Icons.Default.Edit,
                         contentDescription = stringResource(Res.string.edit_pack),
                         onClick = onEditPack,
-                        enabled = !state.isLoading
+                        enabled = !state.isLoading && !isOperationInProgress
                     )
                 }
             )
@@ -241,6 +283,7 @@ fun PackDetailScreen(
             else -> {
                 PackDetailContent(
                     pack = state.pack,
+                    enabled = !isOperationInProgress,
                     onIntent = onIntent,
                     onEditSticker = onEditSticker,
                     modifier = modifier
@@ -283,6 +326,7 @@ fun PackDetailScreen(
 @Composable
 private fun PackDetailContent(
     pack: StickerPack,
+    enabled: Boolean,
     onIntent: (PackDetailIntent) -> Unit,
     onEditSticker: (Int) -> Unit,
     modifier: Modifier = Modifier
@@ -373,14 +417,16 @@ private fun PackDetailContent(
         // Action Buttons
         AppPrimaryButton(
             text = stringResource(Res.string.add_to_whatsapp),
-            onClick = { onIntent(PackDetailIntent.AddToWhatsApp(pack.identifier)) }
+            onClick = { onIntent(PackDetailIntent.AddToWhatsApp(pack.identifier)) },
+            enabled = enabled
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         AppSecondaryButton(
             text = stringResource(Res.string.share_pack),
-            onClick = { onIntent(PackDetailIntent.SharePack(pack.identifier)) }
+            onClick = { onIntent(PackDetailIntent.OpenCloudShareSheet) },
+            enabled = enabled
         )
 
         Spacer(modifier = Modifier.height(28.dp))
@@ -424,6 +470,110 @@ private fun PackDetailContent(
                         onDeleteClick = { onIntent(PackDetailIntent.DeleteSticker(index)) },
                         modifier = Modifier.animateItem()
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CloudShareLinksSheet(
+    isLoading: Boolean,
+    links: List<CloudStickerPackShareLink>,
+    enabled: Boolean,
+    onRefresh: () -> Unit,
+    onCreate: () -> Unit,
+    onRevoke: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val clipboard = LocalClipboardManager.current
+    val shareText = rememberShareTextAction()
+    Column(modifier = modifier) {
+        Text(
+            text = stringResource(Res.string.cloud_links_title),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = neubrutalOnSurface()
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        AppPrimaryButton(
+            text = stringResource(Res.string.cloud_links_create),
+            onClick = onCreate,
+            enabled = enabled
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        AppSecondaryButton(
+            text = stringResource(Res.string.cloud_links_refresh),
+            onClick = onRefresh,
+            enabled = enabled
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        if (isLoading) {
+            LoadingIndicator(label = "Loading links")
+            return
+        }
+        if (links.isEmpty()) {
+            Text(
+                text = stringResource(Res.string.cloud_links_empty),
+                style = MaterialTheme.typography.bodyMedium,
+                color = neubrutalMutedOnSurface()
+            )
+            return
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            links.forEach { link ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(NeubrutalCardRadius))
+                        .background(neubrutalCardSurface())
+                        .border(
+                            width = NeubrutalBorderWidth,
+                            color = neubrutalBorderColor(),
+                            shape = RoundedCornerShape(NeubrutalCardRadius)
+                        )
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = link.shareUrl ?: link.token,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = neubrutalOnSurface(),
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(
+                        onClick = {
+                        val value = link.shareUrl ?: link.token
+                        clipboard.setText(AnnotatedString(value))
+                        },
+                        enabled = enabled
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = stringResource(Res.string.cloud_links_copy)
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                        val value = link.shareUrl ?: link.token
+                        shareText(value)
+                        },
+                        enabled = enabled
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = stringResource(Res.string.cloud_links_share)
+                        )
+                    }
+                    IconButton(
+                        onClick = { onRevoke(link.id) },
+                        enabled = enabled
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = stringResource(Res.string.cloud_links_revoke)
+                        )
+                    }
                 }
             }
         }

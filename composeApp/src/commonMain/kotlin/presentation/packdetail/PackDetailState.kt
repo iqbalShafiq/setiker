@@ -1,6 +1,7 @@
 package presentation.packdetail
 
 import domain.model.StickerPack
+import data.remote.model.CloudStickerPackShareLink
 
 data class PackDetailState(
     // Default to true so the first composition shows the loading indicator
@@ -10,8 +11,12 @@ data class PackDetailState(
     val isLoading: Boolean = true,
     val pack: StickerPack? = null,
     val error: String? = null,
+    val isDeleting: Boolean = false,
     val isAddedToWhatsApp: Boolean = false,
     val stickerImportQueue: List<String> = emptyList(),
     /** Original multi-select count; used for success copy when the queue is finished. */
-    val stickerImportBatchTotal: Int = 0
+    val stickerImportBatchTotal: Int = 0,
+    val cloudShareSheetOpen: Boolean = false,
+    val cloudShareLinksLoading: Boolean = false,
+    val cloudShareLinks: List<CloudStickerPackShareLink> = emptyList()
 )

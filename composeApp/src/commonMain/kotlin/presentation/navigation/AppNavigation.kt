@@ -17,6 +17,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.navDeepLink
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -36,10 +37,14 @@ import presentation.createpack.CreatePackScreenRoot
 import presentation.createpack.DraftSticker
 import presentation.crop.CropScreenRoot
 import presentation.editor.EditorScreenRoot
+import presentation.explore.ExploreScreenRoot
+import presentation.history.ProcessingHistoryScreenRoot
 import presentation.home.HomeScreenRoot
 import presentation.packdetail.PackDetailScreenRoot
+import presentation.publicpack.PublicPackDetailScreenRoot
 import presentation.sync.SyncScreenRoot
 import presentation.sync.SyncViewModel
+import presentation.sharepreview.SharePreviewScreenRoot
 import presentation.videocrop.VideoCropScreenRoot
 import presentation.videotrim.VideoTrimScreenRoot
 import org.koin.compose.koinInject
@@ -63,7 +68,7 @@ fun AppNavigation(
     val authState by authManager.authState.collectAsState()
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
-    val loginGuardRoutes = setOf("home", "profile", "sync")
+    val loginGuardRoutes = setOf("home", "profile", "sync", "history")
 
     LaunchedEffect(authState, currentRoute) {
         if (authState == AuthState.UNAUTHENTICATED) {
@@ -100,6 +105,9 @@ fun AppNavigation(
                 },
                 onCreatePackClick = {
                     navController.navigate("createPack")
+                },
+                onExploreClick = {
+                    navController.navigate("explore")
                 },
                 onProfileClick = {
                     navController.navigate("profile")
@@ -254,7 +262,100 @@ fun AppNavigation(
                     }
                 },
                 onBackClick = { navController.navigateUp() },
-                onSettingsClick = {}
+                onSettingsClick = {},
+                onNavigateHome = {
+                    navController.navigate("home") {
+                        popUpTo("home") { inclusive = true }
+                    }
+                },
+                onNavigateExplore = {
+                    navController.navigate("explore")
+                },
+                onNavigateHistory = {
+                    if (authState == AuthState.AUTHENTICATED) {
+                        navController.navigate("history")
+                    } else {
+                        navController.navigate("login")
+                    }
+                }
+            )
+        }
+
+        composable("explore") {
+            ExploreScreenRoot(
+                onBackClick = { navController.popBackStack() },
+                onPackClick = { packId -> navController.navigate("publicPack/$packId") },
+                onHistoryClick = {
+                    if (authState == AuthState.AUTHENTICATED) navController.navigate("history")
+                    else navController.navigate("login")
+                }
+            )
+        }
+
+        composable(
+            route = "publicPack/{packId}",
+            arguments = listOf(navArgument("packId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val packId = backStackEntry.arguments?.getString("packId") ?: return@composable
+            PublicPackDetailScreenRoot(
+                packId = packId,
+                onBackClick = { navController.popBackStack() },
+                onNavigateToLocalPack = { localPackId ->
+                    navController.navigate("packDetail/$localPackId") {
+                        popUpTo("home") { inclusive = false }
+                    }
+                },
+                onNavigateToLogin = { navController.navigate("login") }
+            )
+        }
+
+        composable("history") {
+            ProcessingHistoryScreenRoot(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = "sharePreview/pack/{token}",
+            arguments = listOf(navArgument("token") { type = NavType.StringType }),
+            deepLinks = listOf(
+                navDeepLink { uriPattern = "http://13.251.98.162/api/v1/share/pack/{token}" },
+                navDeepLink { uriPattern = "setiker://share/pack/{token}" }
+            )
+        ) { backStackEntry ->
+            val token = backStackEntry.arguments?.getString("token") ?: return@composable
+            SharePreviewScreenRoot(
+                kind = "pack",
+                token = token,
+                onBackClick = { navController.popBackStack() },
+                onNavigateToLogin = { navController.navigate("login") },
+                onNavigateToLocalPack = { localPackId ->
+                    navController.navigate("packDetail/$localPackId") {
+                        popUpTo("home") { inclusive = false }
+                    }
+                }
+            )
+        }
+
+        composable(
+            route = "sharePreview/sticker/{token}",
+            arguments = listOf(navArgument("token") { type = NavType.StringType }),
+            deepLinks = listOf(
+                navDeepLink { uriPattern = "http://13.251.98.162/api/v1/share/sticker/{token}" },
+                navDeepLink { uriPattern = "setiker://share/sticker/{token}" }
+            )
+        ) { backStackEntry ->
+            val token = backStackEntry.arguments?.getString("token") ?: return@composable
+            SharePreviewScreenRoot(
+                kind = "sticker",
+                token = token,
+                onBackClick = { navController.popBackStack() },
+                onNavigateToLogin = { navController.navigate("login") },
+                onNavigateToLocalPack = { localPackId ->
+                    navController.navigate("packDetail/$localPackId") {
+                        popUpTo("home") { inclusive = false }
+                    }
+                }
             )
         }
 

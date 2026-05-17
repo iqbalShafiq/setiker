@@ -130,6 +130,8 @@ import setiker.composeapp.generated.resources.remove_bg_preview_content_descript
 import setiker.composeapp.generated.resources.remove_bg_result_hint
 import setiker.composeapp.generated.resources.result_confirmation_title
 import setiker.composeapp.generated.resources.save_sticker
+import setiker.composeapp.generated.resources.saving
+import setiker.composeapp.generated.resources.processing
 import setiker.composeapp.generated.resources.select_image
 import setiker.composeapp.generated.resources.sticker_preview
 import setiker.composeapp.generated.resources.tags_with_count
@@ -167,6 +169,12 @@ fun EditorScreen(
         path?.let { onIntent(EditorIntent.UpdateGenerateInputImage(it)) }
     }
     var selectedGeneratedIndex by remember(state.generatedPreview) { mutableStateOf<Int?>(null) }
+    val isOperationInProgress = state.isSaving || state.isApiLoading || state.isBackgroundRemoving
+    val bottomOperationLabel = when {
+        state.isSaving -> stringResource(Res.string.saving)
+        state.isApiLoading || state.isBackgroundRemoving -> stringResource(Res.string.processing)
+        else -> null
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -179,30 +187,32 @@ fun EditorScreen(
         bottomBar = {
             if (!state.isLoading) {
                 PackBottomBar(
+                    actionStatusText = bottomOperationLabel,
                     actions = {
                         PackBottomBarIconButton(
                             icon = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(Res.string.back),
-                            onClick = onBackClick
+                            onClick = onBackClick,
+                            enabled = !isOperationInProgress
                         )
                         if (selectedDecoration == null) {
                             PackBottomBarIconButton(
                                 icon = Icons.Filled.Crop,
                                 contentDescription = stringResource(Res.string.crop),
                                 onClick = { onIntent(EditorIntent.NavigateToCrop) },
-                                enabled = state.imagePath.isNotBlank()
+                                enabled = state.imagePath.isNotBlank() && !isOperationInProgress
                             )
                             PackBottomBarIconButton(
                                 icon = Icons.Filled.LayersClear,
                                 contentDescription = stringResource(Res.string.remove_bg),
                                 onClick = { onIntent(EditorIntent.RemoveBackground) },
-                                enabled = state.imagePath.isNotBlank() && !state.isBackgroundRemoving
+                                enabled = state.imagePath.isNotBlank() && !isOperationInProgress
                             )
                             PackBottomBarIconButton(
                                 icon = Icons.Filled.AutoAwesome,
                                 contentDescription = stringResource(Res.string.generate_ai),
                                 onClick = { onIntent(EditorIntent.OpenAiGenerateSheet) },
-                                enabled = !state.isApiLoading && !state.isBackgroundRemoving
+                                enabled = !isOperationInProgress
                             )
                         }
                         when (selectedDecoration) {
@@ -210,22 +220,26 @@ fun EditorScreen(
                                 PackBottomBarIconButton(
                                     icon = Icons.Filled.Edit,
                                     contentDescription = stringResource(Res.string.edit_text_decoration),
-                                    onClick = { isEditTextSheetOpen = true }
+                                    onClick = { isEditTextSheetOpen = true },
+                                    enabled = !isOperationInProgress
                                 )
                                 PackBottomBarIconButton(
                                     icon = Icons.Filled.FontDownload,
                                     contentDescription = stringResource(Res.string.change_font),
-                                    onClick = { isFontSheetOpen = true }
+                                    onClick = { isFontSheetOpen = true },
+                                    enabled = !isOperationInProgress
                                 )
                                 PackBottomBarIconButton(
                                     icon = Icons.Filled.FormatBold,
                                     contentDescription = stringResource(Res.string.change_font_weight),
-                                    onClick = { isFontWeightSheetOpen = true }
+                                    onClick = { isFontWeightSheetOpen = true },
+                                    enabled = !isOperationInProgress
                                 )
                                 PackBottomBarIconButton(
                                     icon = Icons.Filled.FormatColorText,
                                     contentDescription = stringResource(Res.string.change_color),
-                                    onClick = { isColorSheetOpen = true }
+                                    onClick = { isColorSheetOpen = true },
+                                    enabled = !isOperationInProgress
                                 )
                             }
 
@@ -235,7 +249,8 @@ fun EditorScreen(
                                     contentDescription = stringResource(Res.string.change_emoji),
                                     onClick = {
                                         onIntent(EditorIntent.ShowDecorationEmojiPicker(selectedDecoration.id))
-                                    }
+                                    },
+                                    enabled = !isOperationInProgress
                                 )
                             }
 
@@ -243,7 +258,8 @@ fun EditorScreen(
                                 PackBottomBarIconButton(
                                     icon = Icons.Filled.Image,
                                     contentDescription = stringResource(Res.string.change_image),
-                                    onClick = { replaceDecorationImagePicker.launch() }
+                                    onClick = { replaceDecorationImagePicker.launch() },
+                                    enabled = !isOperationInProgress
                                 )
                             }
 
@@ -255,7 +271,8 @@ fun EditorScreen(
                             icon = Icons.Filled.Check,
                             contentDescription = stringResource(Res.string.save_sticker),
                             onClick = { onIntent(EditorIntent.SaveSticker) },
-                            enabled = !state.isLoading
+                            enabled = !isOperationInProgress,
+                            isLoading = state.isSaving
                         )
                     }
                 )
@@ -389,7 +406,8 @@ fun EditorScreen(
                     if (state.emojis.size < Sticker.MAX_EMOJIS) {
                         NeubrutalAddTagPill(
                             label = stringResource(Res.string.add),
-                            onClick = { onIntent(EditorIntent.ShowEmojiPicker) }
+                            onClick = { onIntent(EditorIntent.ShowEmojiPicker) },
+                            enabled = !isOperationInProgress
                         )
                     }
                 }
@@ -403,7 +421,8 @@ fun EditorScreen(
                     label = stringResource(Res.string.accessibility_text),
                     placeholder = stringResource(Res.string.accessibility_text_placeholder),
                     singleLine = false,
-                    maxLines = 3
+                    maxLines = 3,
+                    enabled = !isOperationInProgress
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -553,7 +572,7 @@ fun EditorScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 AppPrimaryButton(
                     text = stringResource(Res.string.generate_pick_result),
-                    enabled = selectedGeneratedIndex != null,
+                    enabled = selectedGeneratedIndex != null && !isOperationInProgress,
                     onClick = {
                         val idx = selectedGeneratedIndex ?: return@AppPrimaryButton
                         val path = state.generatedPreview.getOrNull(idx) ?: return@AppPrimaryButton
@@ -563,7 +582,8 @@ fun EditorScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 AppSecondaryButton(
                     text = stringResource(Res.string.cancel),
-                    onClick = { onIntent(EditorIntent.CloseGeneratedSheet) }
+                    onClick = { onIntent(EditorIntent.CloseGeneratedSheet) },
+                    enabled = !isOperationInProgress
                 )
             }
         }
@@ -645,12 +665,14 @@ fun EditorScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         AppPrimaryButton(
                             text = stringResource(Res.string.use_result),
-                            onClick = { onIntent(EditorIntent.ConfirmBackgroundRemoval) }
+                            onClick = { onIntent(EditorIntent.ConfirmBackgroundRemoval) },
+                            enabled = !isOperationInProgress
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         AppSecondaryButton(
                             text = stringResource(Res.string.cancel),
-                            onClick = { onIntent(EditorIntent.DismissBackgroundRemoverSheet) }
+                            onClick = { onIntent(EditorIntent.DismissBackgroundRemoverSheet) },
+                            enabled = !isOperationInProgress
                         )
                     }
                 }

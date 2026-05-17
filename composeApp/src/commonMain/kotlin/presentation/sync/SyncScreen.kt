@@ -52,6 +52,9 @@ import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
+import org.jetbrains.compose.resources.stringResource
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.syncing
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,17 +89,19 @@ fun SyncScreen(
         },
         bottomBar = {
             PackBottomBar(
+                actionStatusText = if (state.isSyncing) stringResource(Res.string.syncing) else null,
                 actions = {
                     PackBottomBarIconButton(
                         icon = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        onClick = onBackClick
+                        onClick = onBackClick,
+                        enabled = !state.isSyncing
                     )
                     PackBottomBarIconButton(
                         icon = Icons.Default.DoneAll,
                         contentDescription = "Clear done",
                         onClick = { onIntent(SyncIntent.ClearCompleted) },
-                        enabled = state.operations.any { it.status == SyncOperationStatus.SUCCESS }
+                        enabled = !state.isSyncing && state.operations.any { it.status == SyncOperationStatus.SUCCESS }
                     )
                 },
                 floatingActionButton = {
@@ -104,7 +109,8 @@ fun SyncScreen(
                         icon = Icons.Default.Refresh,
                         contentDescription = "Sync now",
                         onClick = { onIntent(SyncIntent.SyncNow) },
-                        enabled = !state.isSyncing
+                        enabled = !state.isSyncing,
+                        isLoading = state.isSyncing
                     )
                 }
             )

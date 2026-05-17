@@ -32,6 +32,13 @@ data class CloudStickerPack(
     val deletedAt: String? = null,
     val owner: CloudOwner? = null,
     val stickers: List<CloudStickerPackSticker> = emptyList(),
+    val likeCount: Int = 0,
+    val saveCount: Int = 0,
+    val downloadCount: Int = 0,
+    val liked: Boolean? = null,
+    val saved: Boolean? = null,
+    val downloaded: Boolean? = null,
+    val following: Boolean? = null,
 )
 
 @Serializable
@@ -39,6 +46,8 @@ data class CloudOwner(
     val id: String,
     val username: String? = null,
     val displayName: String? = null,
+    val followerCount: Int? = null,
+    val followingCount: Int? = null,
 )
 
 @Serializable
@@ -65,6 +74,7 @@ data class CloudSticker(
     val createdAt: String? = null,
     val updatedAt: String? = null,
     val deletedAt: String? = null,
+    val owner: CloudOwner? = null,
 )
 
 @Serializable
@@ -99,4 +109,18 @@ data class UploadData(
     val stickerPackId: String? = null,
     val stickers: List<CloudSticker> = emptyList(),
     val message: String? = null,
+)
+
+@Serializable
+data class CloudStickerPackShareLink(
+    val id: String,
+    val stickerPackId: String,
+    val token: String,
+    val permission: String? = null,
+    val maxUses: Int? = null,
+    val usesCount: Int = 0,
+    val isActive: Boolean = true,
+    val expiresAt: String? = null,
+    val createdAt: String,
+    val shareUrl: String? = null
 )

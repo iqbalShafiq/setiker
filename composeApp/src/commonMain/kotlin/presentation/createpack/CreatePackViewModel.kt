@@ -52,6 +52,9 @@ class CreatePackViewModel(
             is CreatePackIntent.UpdatePublisher -> {
                 _state.update { it.copy(publisher = intent.publisher) }
             }
+            is CreatePackIntent.UpdateVisibility -> {
+                _state.update { it.copy(visibility = intent.visibility) }
+            }
             is CreatePackIntent.UpdateTrayImage -> {
                 _state.update { it.copy(trayImagePath = intent.imagePath) }
             }
@@ -202,6 +205,7 @@ class CreatePackViewModel(
                         isLoading = false,
                         name = pack.name,
                         publisher = pack.publisher,
+                        visibility = pack.visibility,
                         trayImagePath = pack.trayImageFile,
                         stickers = mergedStickers,
                         isEditing = true,
@@ -219,6 +223,7 @@ class CreatePackViewModel(
     private fun savePack() {
         viewModelScope.launch {
             val currentState = _state.value
+            if (currentState.isSaving || currentState.isApiLoading) return@launch
             
             if (currentState.name.isBlank()) {
                 _effect.send(CreatePackEffect.ShowError(UiText.StringRes(Res.string.error_pack_name_required)))
@@ -245,6 +250,7 @@ class CreatePackViewModel(
             }
 
             try {
+                _state.update { it.copy(isSaving = true, error = null) }
                 val identifier = if (currentState.isEditing && currentState.packId.isNotBlank()) {
                     currentState.packId
                 } else {
@@ -321,12 +327,15 @@ class CreatePackViewModel(
                     publisher = currentState.publisher,
                     trayImageFile = trayPath,
                     stickers = stickers,
-                    isAnimated = packIsAnimated
+                    isAnimated = packIsAnimated,
+                    visibility = currentState.visibility
                 )
                 
                 repository.savePack(pack)
+                _state.update { it.copy(isSaving = false) }
                 _effect.send(CreatePackEffect.PackSaved(identifier))
             } catch (e: Exception) {
+                _state.update { it.copy(isSaving = false) }
                 _effect.send(
                     CreatePackEffect.ShowError(
                         e.toUiText(Res.string.error_failed_save_pack)

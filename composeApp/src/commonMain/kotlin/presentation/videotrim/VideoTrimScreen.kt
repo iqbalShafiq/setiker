@@ -55,6 +55,7 @@ import setiker.composeapp.generated.resources.animation_duration_cap
 import setiker.composeapp.generated.resources.continue_action
 import setiker.composeapp.generated.resources.frames_per_second
 import setiker.composeapp.generated.resources.loading_frames
+import setiker.composeapp.generated.resources.processing
 import setiker.composeapp.generated.resources.source_video
 import setiker.composeapp.generated.resources.speed
 import setiker.composeapp.generated.resources.trim
@@ -84,6 +85,8 @@ fun VideoTrimScreen(
                     primaryDescription = stringResource(Res.string.continue_action),
                     onPrimary = { onIntent(VideoTrimIntent.Confirm) },
                     primaryEnabled = !state.isExtracting && state.effectiveTrimMs > 0,
+                    primaryLoading = state.isExtracting,
+                    actionStatusText = if (state.isExtracting) stringResource(Res.string.processing) else null,
                     onCancel = { onIntent(VideoTrimIntent.Cancel) },
                     cancelEnabled = !state.isExtracting,
                     isPlaying = state.isPlaying,

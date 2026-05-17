@@ -3,6 +3,7 @@ package presentation.createpack
 sealed interface CreatePackIntent {
     data class UpdateName(val name: String) : CreatePackIntent
     data class UpdatePublisher(val publisher: String) : CreatePackIntent
+    data class UpdateVisibility(val visibility: String) : CreatePackIntent
     data class UpdateTrayImage(val imagePath: String) : CreatePackIntent
     data class AddSticker(val imagePath: String) : CreatePackIntent
     data class AddAnimatedDraft(val draft: DraftSticker) : CreatePackIntent

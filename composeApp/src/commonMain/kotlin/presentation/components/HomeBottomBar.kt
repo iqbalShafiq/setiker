@@ -2,6 +2,7 @@ package presentation.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.filled.Refresh
@@ -22,6 +23,7 @@ fun HomeBottomBar(
     currentUser: User?,
     pendingSyncCount: Int,
     isSyncing: Boolean,
+    onExploreClick: () -> Unit,
     onProfileClick: () -> Unit,
     onSyncClick: () -> Unit,
     onAddPackClick: () -> Unit,
@@ -29,6 +31,11 @@ fun HomeBottomBar(
 ) {
     PackBottomBar(
         actions = {
+            PackBottomBarIconButton(
+                icon = Icons.Default.Explore,
+                contentDescription = "Explore",
+                onClick = onExploreClick
+            )
             PackBottomBarIconButton(
                 icon = if (currentUser != null) Icons.Default.Person else Icons.Outlined.AccountCircle,
                 contentDescription = if (currentUser != null) "Profile" else "Login",
@@ -79,6 +86,7 @@ private fun HomeBottomBarLoggedInPreview() {
             currentUser = mockUser,
             pendingSyncCount = 3,
             isSyncing = false,
+            onExploreClick = {},
             onProfileClick = {},
             onSyncClick = {},
             onAddPackClick = {}
@@ -95,6 +103,7 @@ private fun HomeBottomBarGuestPreview() {
             currentUser = null,
             pendingSyncCount = 0,
             isSyncing = false,
+            onExploreClick = {},
             onProfileClick = {},
             onSyncClick = {},
             onAddPackClick = {}

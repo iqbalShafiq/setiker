@@ -154,6 +154,7 @@ fun HomeScreen(
                 currentUser = state.currentUser,
                 pendingSyncCount = state.pendingSyncCount,
                 isSyncing = state.isSyncing,
+                onExploreClick = { onIntent(HomeIntent.NavigateToExplore) },
                 onProfileClick = {
                     if (state.currentUser != null) {
                         onIntent(HomeIntent.NavigateToProfile)

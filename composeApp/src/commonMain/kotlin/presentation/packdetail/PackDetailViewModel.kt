@@ -2,8 +2,9 @@ package presentation.packdetail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import data.remote.ExploreApiRepository
+import data.remote.model.CreateStickerPackLinkRequest
 import data.storage.StickerFileStorage
-import domain.actions.PackActions
 import domain.model.Sticker
 import domain.model.StickerPack
 import domain.repository.StickerRepository
@@ -22,16 +23,13 @@ import setiker.composeapp.generated.resources.error_failed_add_pack
 import setiker.composeapp.generated.resources.error_failed_add_stickers
 import setiker.composeapp.generated.resources.error_failed_delete_pack
 import setiker.composeapp.generated.resources.error_failed_delete_sticker
-import setiker.composeapp.generated.resources.error_failed_share_pack
-import setiker.composeapp.generated.resources.error_pack_min_stickers_share
 import setiker.composeapp.generated.resources.error_pack_min_stickers_whatsapp
-import setiker.composeapp.generated.resources.success_pack_shared
 import setiker.composeapp.generated.resources.success_stickers_added
 
 class PackDetailViewModel(
     private val repository: StickerRepository,
-    private val packActions: PackActions,
-    private val fileStorage: StickerFileStorage
+    private val fileStorage: StickerFileStorage,
+    private val exploreApiRepository: ExploreApiRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(PackDetailState())
@@ -64,7 +62,16 @@ class PackDetailViewModel(
                     _effect.send(PackDetailEffect.NavigateToEditSticker(intent.index))
                 }
             }
-            is PackDetailIntent.SharePack -> sharePack(intent.packId)
+            PackDetailIntent.OpenCloudShareSheet -> {
+                _state.update { it.copy(cloudShareSheetOpen = true) }
+                refreshCloudShareLinks()
+            }
+            PackDetailIntent.DismissCloudShareSheet -> {
+                _state.update { it.copy(cloudShareSheetOpen = false) }
+            }
+            PackDetailIntent.RefreshCloudShareLinks -> refreshCloudShareLinks()
+            PackDetailIntent.CreateCloudShareLink -> createCloudShareLink()
+            is PackDetailIntent.RevokeCloudShareLink -> revokeCloudShareLink(intent.linkId)
         }
     }
 
@@ -80,9 +87,9 @@ class PackDetailViewModel(
             }
             try {
                 val pack = repository.getPack(packId)
-                _state.update { it.copy(isLoading = false, pack = pack) }
+                _state.update { it.copy(isLoading = false, isDeleting = false, pack = pack) }
             } catch (e: Exception) {
-                _state.update { it.copy(isLoading = false, error = e.message) }
+                _state.update { it.copy(isLoading = false, isDeleting = false, error = e.message) }
             }
         }
     }
@@ -113,39 +120,87 @@ class PackDetailViewModel(
         }
     }
 
-    private fun sharePack(packId: String) {
+    private fun refreshCloudShareLinks() {
         viewModelScope.launch {
-            try {
-                val pack = repository.getPack(packId)
-                if (pack.stickers.size < StickerPack.MIN_STICKERS) {
-                    _effect.send(
-                        PackDetailEffect.ShowError(
-                            UiText.StringRes(
-                                Res.string.error_pack_min_stickers_share,
-                                listOf(StickerPack.MIN_STICKERS)
-                            )
-                        )
+            val pack = _state.value.pack ?: return@launch
+            val cloudId = pack.cloudId
+            if (cloudId.isNullOrBlank()) {
+                _effect.send(PackDetailEffect.ShowError(UiText.DynamicString("Pack belum tersinkron ke cloud.")))
+                return@launch
+            }
+            _state.update { it.copy(cloudShareLinksLoading = true) }
+            runCatching {
+                exploreApiRepository.getPackLinks(cloudId)
+            }.onSuccess { links ->
+                _state.update { it.copy(cloudShareLinksLoading = false, cloudShareLinks = links) }
+            }.onFailure { error ->
+                _state.update { it.copy(cloudShareLinksLoading = false) }
+                _effect.send(PackDetailEffect.ShowError(UiText.DynamicString(error.message ?: "Failed to load cloud links")))
+            }
+        }
+    }
+
+    private fun createCloudShareLink() {
+        viewModelScope.launch {
+            val pack = _state.value.pack ?: return@launch
+            val cloudId = pack.cloudId
+            if (cloudId.isNullOrBlank()) {
+                _effect.send(PackDetailEffect.ShowError(UiText.DynamicString("Pack belum tersinkron ke cloud.")))
+                return@launch
+            }
+            _state.update { it.copy(cloudShareLinksLoading = true) }
+            runCatching {
+                exploreApiRepository.createPackLink(cloudId, CreateStickerPackLinkRequest())
+            }.onSuccess { link ->
+                val shareUrl = link.shareUrl ?: "${cloudId}:${link.token}"
+                _state.update {
+                    it.copy(
+                        cloudShareLinksLoading = false,
+                        cloudShareLinks = listOf(link) + it.cloudShareLinks
                     )
-                    return@launch
                 }
-                packActions.sharePack(packId)
-                _effect.send(PackDetailEffect.ShowSuccess(UiText.StringRes(Res.string.success_pack_shared)))
-            } catch (e: Exception) {
-                _effect.send(
-                    PackDetailEffect.ShowError(
-                        e.toUiText(Res.string.error_failed_share_pack)
+                _effect.send(PackDetailEffect.ShareText(shareUrl))
+            }.onFailure { error ->
+                _state.update { it.copy(cloudShareLinksLoading = false) }
+                _effect.send(PackDetailEffect.ShowError(UiText.DynamicString(error.message ?: "Failed to create cloud link")))
+            }
+        }
+    }
+
+    private fun revokeCloudShareLink(linkId: String) {
+        viewModelScope.launch {
+            val pack = _state.value.pack ?: return@launch
+            val cloudId = pack.cloudId
+            if (cloudId.isNullOrBlank()) {
+                _effect.send(PackDetailEffect.ShowError(UiText.DynamicString("Pack belum tersinkron ke cloud.")))
+                return@launch
+            }
+            _state.update { it.copy(cloudShareLinksLoading = true) }
+            runCatching {
+                exploreApiRepository.revokePackLink(cloudId, linkId)
+            }.onSuccess {
+                _state.update {
+                    it.copy(
+                        cloudShareLinksLoading = false,
+                        cloudShareLinks = it.cloudShareLinks.filterNot { link -> link.id == linkId }
                     )
-                )
+                }
+            }.onFailure { error ->
+                _state.update { it.copy(cloudShareLinksLoading = false) }
+                _effect.send(PackDetailEffect.ShowError(UiText.DynamicString(error.message ?: "Failed to revoke link")))
             }
         }
     }
 
     private fun deletePack(packId: String) {
         viewModelScope.launch {
+            if (_state.value.isDeleting) return@launch
             try {
+                _state.update { it.copy(isDeleting = true) }
                 repository.deletePack(packId)
                 _effect.send(PackDetailEffect.NavigateBack)
             } catch (e: Exception) {
+                _state.update { it.copy(isDeleting = false) }
                 _effect.send(
                     PackDetailEffect.ShowError(
                         e.toUiText(Res.string.error_failed_delete_pack)
@@ -157,11 +212,14 @@ class PackDetailViewModel(
 
     private fun deleteSticker(index: Int) {
         viewModelScope.launch {
+            if (_state.value.isDeleting) return@launch
             try {
                 val pack = _state.value.pack ?: return@launch
+                _state.update { it.copy(isDeleting = true) }
                 repository.removeStickerFromPack(pack.identifier, index)
                 loadPack(pack.identifier)
             } catch (e: Exception) {
+                _state.update { it.copy(isDeleting = false) }
                 _effect.send(
                     PackDetailEffect.ShowError(
                         e.toUiText(Res.string.error_failed_delete_sticker)

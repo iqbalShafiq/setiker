@@ -9,6 +9,7 @@ sealed interface HomeIntent {
     data object CreateNewPack : HomeIntent
     data object NavigateToProfile : HomeIntent
     data object NavigateToSync : HomeIntent
+    data object NavigateToExplore : HomeIntent
     data object NavigateToLogin : HomeIntent
     data object RefreshSync : HomeIntent
     data class SearchQueryChanged(val query: String) : HomeIntent

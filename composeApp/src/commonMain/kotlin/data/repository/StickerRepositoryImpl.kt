@@ -74,7 +74,7 @@ class StickerRepositoryImpl(
             cloudId = existing?.cloudId,
             syncState = existing?.syncState ?: "LOCAL_ONLY",
             lastSyncAt = existing?.lastSyncAt,
-            visibility = existing?.visibility ?: pack.visibility,
+            visibility = pack.visibility,
             cloudOwnerId = existing?.cloudOwnerId,
         )
         packDao.insert(entity)

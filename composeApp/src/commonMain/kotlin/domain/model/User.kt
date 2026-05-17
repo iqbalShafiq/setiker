@@ -10,7 +10,9 @@ data class User(
     val name: String?,
     val role: UserRole,
     val isActive: Boolean,
-    val createdAt: Long
+    val createdAt: Long,
+    val followerCount: Int = 0,
+    val followingCount: Int = 0
 )
 
 @Serializable

@@ -55,6 +55,9 @@ fun PackDetailScreenRoot(
                 is PackDetailEffect.LaunchAddToWhatsApp -> {
                     onAddToWhatsApp?.invoke(effect.packId, effect.packName)
                 }
+                is PackDetailEffect.ShareText -> {
+                    snackbarHostState.showSnackbar(effect.text)
+                }
             }
         }
     }

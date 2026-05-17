@@ -49,7 +49,8 @@ fun AppTextField(
     isError: Boolean = false,
     supportingText: @Composable (() -> Unit)? = null,
     keyboardType: KeyboardType = KeyboardType.Text,
-    imeAction: ImeAction = ImeAction.Done
+    imeAction: ImeAction = ImeAction.Done,
+    enabled: Boolean = true
 ) {
     val border = neubrutalBorderColor()
     val surface = neubrutalCardSurface()
@@ -67,7 +68,7 @@ fun AppTextField(
 
         BasicTextField(
             value = value,
-            onValueChange = onValueChange,
+            onValueChange = { if (enabled) onValueChange(it) },
             modifier = Modifier
                 .fillMaxWidth()
                 .neubrutalShadow(
@@ -87,7 +88,7 @@ fun AppTextField(
             singleLine = singleLine,
             maxLines = maxLines,
             textStyle = TextStyle(
-                color = onSurface,
+                color = if (enabled) onSurface else onSurface.copy(alpha = 0.45f),
                 fontSize = MaterialTheme.typography.bodyLarge.fontSize,
                 fontWeight = FontWeight.Normal
             ),

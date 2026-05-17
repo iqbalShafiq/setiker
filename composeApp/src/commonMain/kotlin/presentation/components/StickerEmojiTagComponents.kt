@@ -81,7 +81,8 @@ fun StickerEmojiTagChip(
 fun NeubrutalAddTagPill(
     label: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     Box(
         modifier = modifier
@@ -98,14 +99,14 @@ fun NeubrutalAddTagPill(
                 color = neubrutalBorderColor(),
                 shape = CircleShape
             )
-            .clickable(onClick = onClick)
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            color = AccentCoral,
+            color = if (enabled) AccentCoral else AccentCoral.copy(alpha = 0.4f),
             fontWeight = FontWeight.Medium
         )
     }

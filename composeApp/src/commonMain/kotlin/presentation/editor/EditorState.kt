@@ -7,6 +7,7 @@ data class EditorState(
     val emojis: List<String> = emptyList(),
     val accessibilityText: String = "",
     val isLoading: Boolean = false,
+    val isSaving: Boolean = false,
     val error: String? = null,
     val showEmojiPicker: Boolean = false,
     val recentEmojis: List<String> = emptyList(),

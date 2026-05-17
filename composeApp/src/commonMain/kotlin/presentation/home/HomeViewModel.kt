@@ -81,6 +81,11 @@ class HomeViewModel(
                     _effect.send(HomeEffect.NavigateToSync)
                 }
             }
+            is HomeIntent.NavigateToExplore -> {
+                viewModelScope.launch {
+                    _effect.send(HomeEffect.NavigateToExplore)
+                }
+            }
             is HomeIntent.NavigateToLogin -> {
                 viewModelScope.launch {
                     _effect.send(HomeEffect.NavigateToLogin)

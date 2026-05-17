@@ -83,6 +83,9 @@ import setiker.composeapp.generated.resources.my_profile_title
 import setiker.composeapp.generated.resources.my_stickers_title
 import setiker.composeapp.generated.resources.packs_label
 import setiker.composeapp.generated.resources.premium_badge
+import setiker.composeapp.generated.resources.profile_explore_packs
+import setiker.composeapp.generated.resources.profile_guest_login_prompt
+import setiker.composeapp.generated.resources.profile_processing_history
 import setiker.composeapp.generated.resources.send_feedback
 import setiker.composeapp.generated.resources.settings
 import setiker.composeapp.generated.resources.stickers_label
@@ -92,6 +95,9 @@ import setiker.composeapp.generated.resources.support_section
 fun ProfileScreenRoot(
     viewModel: ProfileViewModel,
     onLogout: () -> Unit,
+    onNavigateHome: () -> Unit = {},
+    onNavigateExplore: () -> Unit = {},
+    onNavigateHistory: () -> Unit = {},
     onBackClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -104,6 +110,9 @@ fun ProfileScreenRoot(
             viewModel.logout()
             onLogout()
         },
+        onNavigateHome = onNavigateHome,
+        onNavigateExplore = onNavigateExplore,
+        onNavigateHistory = onNavigateHistory,
         onBackClick = onBackClick,
         onSettingsClick = onSettingsClick,
         modifier = modifier
@@ -114,6 +123,9 @@ fun ProfileScreenRoot(
 fun ProfileScreen(
     state: ProfileState,
     onLogout: () -> Unit,
+    onNavigateHome: () -> Unit = {},
+    onNavigateExplore: () -> Unit = {},
+    onNavigateHistory: () -> Unit = {},
     onBackClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -155,7 +167,7 @@ fun ProfileScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Not logged in",
+                    text = stringResource(Res.string.profile_guest_login_prompt),
                     style = MaterialTheme.typography.bodyLarge,
                     color = neubrutalMutedOnSurface()
                 )
@@ -203,28 +215,21 @@ fun ProfileScreen(
                                 icon = Icons.Default.Image,
                                 label = stringResource(Res.string.my_stickers_title),
                                 iconBackgroundColor = PastelYellow,
-                                onClick = {}
+                                onClick = onNavigateHome
                             )
                             MenuDivider()
                             ProfileMenuItem(
                                 icon = Icons.Default.Favorite,
-                                label = stringResource(Res.string.liked_stickers),
+                                label = stringResource(Res.string.profile_explore_packs),
                                 iconBackgroundColor = PastelPink,
-                                onClick = {}
+                                onClick = onNavigateExplore
                             )
                             MenuDivider()
                             ProfileMenuItem(
                                 icon = Icons.Default.Download,
-                                label = stringResource(Res.string.downloaded_packs),
+                                label = stringResource(Res.string.profile_processing_history),
                                 iconBackgroundColor = PastelBlue,
-                                onClick = {}
-                            )
-                            MenuDivider()
-                            ProfileMenuItem(
-                                icon = Icons.Default.People,
-                                label = stringResource(Res.string.following),
-                                iconBackgroundColor = PastelPurple,
-                                onClick = {}
+                                onClick = onNavigateHistory
                             )
                         }
                     }

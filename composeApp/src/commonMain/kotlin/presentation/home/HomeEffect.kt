@@ -9,5 +9,6 @@ sealed interface HomeEffect {
     data class ShowSuccess(val message: UiText) : HomeEffect
     data object NavigateToProfile : HomeEffect
     data object NavigateToSync : HomeEffect
+    data object NavigateToExplore : HomeEffect
     data object NavigateToLogin : HomeEffect
 }

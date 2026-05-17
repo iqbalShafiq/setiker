@@ -146,6 +146,11 @@ fun AnimatedEditorScreen(
     }
 
     val isReadyToSave = state.frames.isNotEmpty() && !state.isSaving
+    val bottomOperationLabel = if (state.isSaving) {
+        state.saveProgressLabel ?: stringResource(Res.string.encoding_webp)
+    } else {
+        null
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -165,8 +170,10 @@ fun AnimatedEditorScreen(
                         primaryDescription = stringResource(Res.string.save_sticker),
                         onPrimary = { onIntent(AnimatedEditorIntent.Save) },
                         primaryEnabled = isReadyToSave,
+                        primaryLoading = state.isSaving,
                         onCancel = onBackClick,
                         cancelEnabled = !state.isSaving,
+                        actionStatusText = bottomOperationLabel,
                         isPlaying = state.isPlaying,
                         playEnabled = state.frames.size > 1 && !state.isSaving,
                         onTogglePlay = {
@@ -193,33 +200,39 @@ fun AnimatedEditorScreen(
                     // decoration-specific buttons used by the static editor for parity.
                     // "Back" deselects the decoration so the user can return to the playback bar.
                     PackBottomBar(
+                        actionStatusText = bottomOperationLabel,
                         actions = {
                             PackBottomBarIconButton(
                                 icon = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(Res.string.back),
-                                onClick = { onIntent(AnimatedEditorIntent.SelectDecoration(null)) }
+                                onClick = { onIntent(AnimatedEditorIntent.SelectDecoration(null)) },
+                                enabled = !state.isSaving
                             )
                             when (selectedDecoration) {
                                 is TextDecoration -> {
                                     PackBottomBarIconButton(
                                         icon = Icons.Filled.Edit,
                                         contentDescription = stringResource(Res.string.edit_text_decoration),
-                                        onClick = { isEditTextSheetOpen = true }
+                                        onClick = { isEditTextSheetOpen = true },
+                                        enabled = !state.isSaving
                                     )
                                     PackBottomBarIconButton(
                                         icon = Icons.Filled.FontDownload,
                                         contentDescription = stringResource(Res.string.change_font),
-                                        onClick = { isFontSheetOpen = true }
+                                        onClick = { isFontSheetOpen = true },
+                                        enabled = !state.isSaving
                                     )
                                     PackBottomBarIconButton(
                                         icon = Icons.Filled.FormatBold,
                                         contentDescription = stringResource(Res.string.change_font_weight),
-                                        onClick = { isFontWeightSheetOpen = true }
+                                        onClick = { isFontWeightSheetOpen = true },
+                                        enabled = !state.isSaving
                                     )
                                     PackBottomBarIconButton(
                                         icon = Icons.Filled.FormatColorText,
                                         contentDescription = stringResource(Res.string.change_color),
-                                        onClick = { isColorSheetOpen = true }
+                                        onClick = { isColorSheetOpen = true },
+                                        enabled = !state.isSaving
                                     )
                                 }
                                 is EmojiDecoration -> {
@@ -232,14 +245,16 @@ fun AnimatedEditorScreen(
                                                     selectedDecoration.id
                                                 )
                                             )
-                                        }
+                                        },
+                                        enabled = !state.isSaving
                                     )
                                 }
                                 is ImageDecoration -> {
                                     PackBottomBarIconButton(
                                         icon = Icons.Filled.Image,
                                         contentDescription = stringResource(Res.string.change_image),
-                                        onClick = { replaceDecorationImagePicker.launch() }
+                                        onClick = { replaceDecorationImagePicker.launch() },
+                                        enabled = !state.isSaving
                                     )
                                 }
                             }
@@ -249,7 +264,8 @@ fun AnimatedEditorScreen(
                                 icon = Icons.Filled.Check,
                                 contentDescription = stringResource(Res.string.save_sticker),
                                 onClick = { onIntent(AnimatedEditorIntent.Save) },
-                                enabled = isReadyToSave
+                                enabled = isReadyToSave,
+                                isLoading = state.isSaving
                             )
                         }
                     )

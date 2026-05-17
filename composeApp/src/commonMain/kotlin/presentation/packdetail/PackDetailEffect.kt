@@ -10,4 +10,5 @@ sealed interface PackDetailEffect {
     data class ShowError(val message: UiText) : PackDetailEffect
     data class ShowSuccess(val message: UiText) : PackDetailEffect
     data class LaunchAddToWhatsApp(val packId: String, val packName: String) : PackDetailEffect
+    data class ShareText(val text: String) : PackDetailEffect
 }

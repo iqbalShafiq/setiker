@@ -15,6 +15,8 @@ import kotlinx.datetime.Instant
              name = role ?: "user"
          ),
          isActive = isActive ?: true,
-         createdAt = createdAt?.let { runCatching { Instant.parse(it).toEpochMilliseconds() }.getOrDefault(0L) } ?: 0L
+         createdAt = createdAt?.let { runCatching { Instant.parse(it).toEpochMilliseconds() }.getOrDefault(0L) } ?: 0L,
+         followerCount = followerCount ?: 0,
+         followingCount = followingCount ?: 0
      )
  }

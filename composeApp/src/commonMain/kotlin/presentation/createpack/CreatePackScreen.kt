@@ -118,6 +118,7 @@ import setiker.composeapp.generated.resources.publisher_label
 import setiker.composeapp.generated.resources.publisher_placeholder
 import setiker.composeapp.generated.resources.remove_sticker
 import setiker.composeapp.generated.resources.save_pack
+import setiker.composeapp.generated.resources.saving
 import setiker.composeapp.generated.resources.selected_count
 import setiker.composeapp.generated.resources.select_tray_icon
 import setiker.composeapp.generated.resources.split_grid
@@ -128,6 +129,10 @@ import setiker.composeapp.generated.resources.stickers_count
 import setiker.composeapp.generated.resources.tray_icon
 import setiker.composeapp.generated.resources.tray_icon_content_description
 import setiker.composeapp.generated.resources.update_pack
+import setiker.composeapp.generated.resources.updating
+import setiker.composeapp.generated.resources.visibility_label
+import setiker.composeapp.generated.resources.visibility_private
+import setiker.composeapp.generated.resources.visibility_public
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -176,6 +181,13 @@ fun CreatePackScreen(
     val gridSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val stickerImportSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val trayImportSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val isOperationInProgress = state.isApiLoading || state.isSaving
+    val bottomOperationLabel = when {
+        state.isSaving && state.isEditing -> stringResource(Res.string.updating)
+        state.isSaving -> stringResource(Res.string.saving)
+        state.isApiLoading -> stringResource(Res.string.processing)
+        else -> null
+    }
 
     if (state.aiGenerateSheetOpen) {
         AiGenerateBottomSheet(
@@ -496,30 +508,31 @@ fun CreatePackScreen(
         },
         bottomBar = {
             PackBottomBar(
+                actionStatusText = bottomOperationLabel,
                 actions = {
                     PackBottomBarIconButton(
                         icon = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = stringResource(Res.string.back),
                         onClick = onBackClick,
-                        enabled = !state.isApiLoading
+                        enabled = !isOperationInProgress
                     )
                     PackBottomBarIconButton(
                         icon = Icons.Filled.AutoAwesome,
                         contentDescription = stringResource(Res.string.generate_ai),
                         onClick = { onIntent(CreatePackIntent.OpenAiGenerateSheet) },
-                        enabled = !state.isApiLoading
+                        enabled = !isOperationInProgress
                     )
                     PackBottomBarIconButton(
                         icon = Icons.Filled.ViewModule,
                         contentDescription = stringResource(Res.string.grid_split),
                         onClick = { gridSourcePicker.launch() },
-                        enabled = !state.isApiLoading
+                        enabled = !isOperationInProgress
                     )
                     PackBottomBarIconButton(
                         icon = Icons.Filled.Movie,
                         contentDescription = stringResource(Res.string.cd_add_animated_sticker),
                         onClick = { videoPicker.launch() },
-                        enabled = !state.isApiLoading
+                        enabled = !isOperationInProgress
                     )
                 },
                 floatingActionButton = {
@@ -529,7 +542,8 @@ fun CreatePackScreen(
                             if (state.isEditing) Res.string.update_pack else Res.string.save_pack
                         ),
                         onClick = { onIntent(CreatePackIntent.SavePack) },
-                        enabled = !state.isApiLoading
+                        enabled = !isOperationInProgress,
+                        isLoading = state.isSaving
                     )
                 }
             )
@@ -555,7 +569,8 @@ fun CreatePackScreen(
                     value = state.name,
                     onValueChange = { onIntent(CreatePackIntent.UpdateName(it)) },
                     label = stringResource(Res.string.pack_name_label),
-                    placeholder = stringResource(Res.string.pack_name_placeholder)
+                    placeholder = stringResource(Res.string.pack_name_placeholder),
+                    enabled = !isOperationInProgress
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -564,8 +579,36 @@ fun CreatePackScreen(
                     value = state.publisher,
                     onValueChange = { onIntent(CreatePackIntent.UpdatePublisher(it)) },
                     label = stringResource(Res.string.publisher_label),
-                    placeholder = stringResource(Res.string.publisher_placeholder)
+                    placeholder = stringResource(Res.string.publisher_placeholder),
+                    enabled = !isOperationInProgress
                 )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Text(
+                    text = stringResource(Res.string.visibility_label),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = neubrutalOnSurface()
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = state.visibility.equals("PRIVATE", ignoreCase = true),
+                        onClick = { onIntent(CreatePackIntent.UpdateVisibility("PRIVATE")) },
+                        label = { Text(stringResource(Res.string.visibility_private)) },
+                        enabled = !isOperationInProgress
+                    )
+                    FilterChip(
+                        selected = state.visibility.equals("PUBLIC", ignoreCase = true),
+                        onClick = { onIntent(CreatePackIntent.UpdateVisibility("PUBLIC")) },
+                        label = { Text(stringResource(Res.string.visibility_public)) },
+                        enabled = !isOperationInProgress
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
@@ -580,7 +623,8 @@ fun CreatePackScreen(
 
                 TrayIconSelector(
                     imagePath = state.trayImagePath,
-                    onClick = { trayIconPicker.launch() }
+                    onClick = { trayIconPicker.launch() },
+                    enabled = !isOperationInProgress
                 )
 
                 Spacer(modifier = Modifier.height(28.dp))
@@ -597,7 +641,10 @@ fun CreatePackScreen(
                         color = neubrutalOnSurface()
                     )
 
-                    IconButton(onClick = { stickerPicker.launch() }) {
+                    IconButton(
+                        onClick = { stickerPicker.launch() },
+                        enabled = !isOperationInProgress
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = stringResource(Res.string.add_sticker),
@@ -628,6 +675,7 @@ fun CreatePackScreen(
                                 StickerPreviewItem(
                                     sticker = stickerDraft,
                                     onRemove = { onIntent(CreatePackIntent.RemoveSticker(stickerIndex)) },
+                                    enabled = !isOperationInProgress,
                                     modifier = Modifier
                                         .weight(1f)
                                         .aspectRatio(1f)
@@ -654,7 +702,8 @@ fun CreatePackScreen(
 private fun TrayIconSelector(
     imagePath: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     val border = neubrutalBorderColor()
     val shadow = neubrutalShadowColor()
@@ -675,7 +724,7 @@ private fun TrayIconSelector(
                     color = border,
                     shape = RoundedCornerShape(NeubrutalCardRadius)
                 )
-                .clickable(onClick = onClick),
+                .clickable(enabled = enabled, onClick = onClick),
             contentAlignment = Alignment.Center
         ) {
             AsyncImage(
@@ -702,7 +751,7 @@ private fun TrayIconSelector(
                     color = border,
                     shape = RoundedCornerShape(NeubrutalCardRadius)
                 )
-                .clickable(onClick = onClick),
+                .clickable(enabled = enabled, onClick = onClick),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -719,7 +768,8 @@ private fun TrayIconSelector(
 private fun StickerPreviewItem(
     sticker: DraftSticker,
     onRemove: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     val border = neubrutalBorderColor()
     Box(
@@ -767,7 +817,7 @@ private fun StickerPreviewItem(
                     color = border,
                     shape = RoundedCornerShape(6.dp)
                 )
-                .clickable(onClick = onRemove),
+                .clickable(enabled = enabled, onClick = onRemove),
             contentAlignment = Alignment.Center
         ) {
             Icon(

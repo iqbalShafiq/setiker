@@ -41,12 +41,15 @@ fun MediaPreviewBottomBar(
     onTogglePlay: (() -> Unit)? = null,
     playEnabled: Boolean = true,
     cancelDescription: String? = null,
+    actionStatusText: String? = null,
+    primaryLoading: Boolean = false,
     extraActions: @Composable (RowScope.() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val resolvedCancelDescription = cancelDescription ?: stringResource(Res.string.cancel)
     PackBottomBar(
         modifier = modifier,
+        actionStatusText = actionStatusText,
         actions = {
             PackBottomBarIconButton(
                 icon = Icons.Filled.Close,
@@ -71,7 +74,8 @@ fun MediaPreviewBottomBar(
                 icon = primaryIcon,
                 contentDescription = primaryDescription,
                 onClick = onPrimary,
-                enabled = primaryEnabled
+                enabled = primaryEnabled,
+                isLoading = primaryLoading
             )
         }
     )

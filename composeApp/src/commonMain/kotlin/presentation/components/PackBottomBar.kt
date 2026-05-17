@@ -1,5 +1,7 @@
 package presentation.components
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -25,8 +27,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -35,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import presentation.theme.AccentCoral
@@ -55,7 +60,8 @@ import presentation.theme.neubrutalShadowColor
 fun PackBottomBar(
     actions: @Composable RowScope.() -> Unit,
     floatingActionButton: @Composable (() -> Unit)?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    actionStatusText: String? = null
 ) {
     val border = neubrutalBorderColor()
     val bottomBarSurface = neubrutalBottomAppBarSurface()
@@ -85,13 +91,48 @@ fun PackBottomBar(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                actions()
+                AnimatedContent(
+                    targetState = actionStatusText,
+                    label = "bottom_bar_actions_content"
+                ) { statusText ->
+                    if (statusText.isNullOrBlank()) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            content = actions
+                        )
+                    } else {
+                        PackBottomBarStatusText(text = statusText)
+                    }
+                }
             }
             if (floatingActionButton != null) {
                 floatingActionButton()
             }
         }
     }
+}
+
+@Composable
+private fun PackBottomBarStatusText(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Text(
+        text = text,
+        modifier = modifier
+            .clip(RoundedCornerShape(NeubrutalSmallRadius))
+            .background(neubrutalCardSurface())
+            .border(
+                width = NeubrutalBorderWidth,
+                color = neubrutalBorderColor(),
+                shape = RoundedCornerShape(NeubrutalSmallRadius)
+            )
+            .padding(horizontal = 14.dp, vertical = 11.dp),
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.SemiBold,
+        color = neubrutalOnSurface()
+    )
 }
 
 @Composable
@@ -158,12 +199,13 @@ fun PackBottomBarFab(
     contentDescription: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    isLoading: Boolean = false
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (isPressed && enabled) 0.95f else 1f,
+        targetValue = if (isPressed && enabled && !isLoading) 0.95f else 1f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessMedium
@@ -174,8 +216,9 @@ fun PackBottomBarFab(
     val border = neubrutalBorderColor()
     val shadow = neubrutalShadowColor()
     val shape = RoundedCornerShape(NeubrutalButtonRadius)
-    val shadowX = if (isPressed && enabled) NeubrutalSmallShadowOffset else NeubrutalShadowOffset
-    val shadowY = if (isPressed && enabled) NeubrutalSmallShadowOffset else NeubrutalShadowOffset
+    val shadowX = if (isPressed && enabled && !isLoading) NeubrutalSmallShadowOffset else NeubrutalShadowOffset
+    val shadowY = if (isPressed && enabled && !isLoading) NeubrutalSmallShadowOffset else NeubrutalShadowOffset
+    val isClickable = enabled && !isLoading
 
     Box(
         modifier = modifier
@@ -188,7 +231,7 @@ fun PackBottomBarFab(
                 color = shadow
             )
             .clip(shape)
-            .background(if (enabled) AccentCoral else AccentCoral.copy(alpha = 0.4f))
+            .background(if (enabled || isLoading) AccentCoral else AccentCoral.copy(alpha = 0.4f))
             .border(
                 width = NeubrutalBorderWidth,
                 color = border,
@@ -197,16 +240,26 @@ fun PackBottomBarFab(
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
-                enabled = enabled,
+                enabled = isClickable,
                 onClick = onClick
             ),
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = if (enabled) NeubrutalWhite else NeubrutalWhite.copy(alpha = 0.5f)
-        )
+        Crossfade(targetState = isLoading, label = "fab_loading_content") { loading ->
+            if (loading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 3.dp,
+                    color = NeubrutalWhite
+                )
+            } else {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = contentDescription,
+                    tint = if (enabled) NeubrutalWhite else NeubrutalWhite.copy(alpha = 0.5f)
+                )
+            }
+        }
     }
 }
 

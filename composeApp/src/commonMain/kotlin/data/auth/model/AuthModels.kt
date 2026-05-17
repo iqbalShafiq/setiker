@@ -68,7 +68,9 @@ data class UserDto(
     val role: String? = null,
     val isActive: Boolean? = null,
     val emailVerified: Boolean? = null,
-    val createdAt: String? = null
+    val createdAt: String? = null,
+    val followerCount: Int? = null,
+    val followingCount: Int? = null
 )
 
 @Serializable

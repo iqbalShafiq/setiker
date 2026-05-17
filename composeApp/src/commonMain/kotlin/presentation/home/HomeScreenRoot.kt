@@ -13,6 +13,7 @@ import presentation.common.resolveOrDefault
 fun HomeScreenRoot(
     onPackClick: (String) -> Unit,
     onCreatePackClick: () -> Unit,
+    onExploreClick: () -> Unit,
     onProfileClick: () -> Unit,
     onSyncClick: () -> Unit,
     onLoginClick: () -> Unit,
@@ -34,6 +35,7 @@ fun HomeScreenRoot(
                 }
                 is HomeEffect.NavigateToProfile -> onProfileClick()
                 is HomeEffect.NavigateToSync -> onSyncClick()
+                is HomeEffect.NavigateToExplore -> onExploreClick()
                 is HomeEffect.NavigateToLogin -> onLoginClick()
             }
         }

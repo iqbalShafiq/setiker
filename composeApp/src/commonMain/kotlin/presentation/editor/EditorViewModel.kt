@@ -526,6 +526,7 @@ class EditorViewModel(
     private fun saveSticker() {
         viewModelScope.launch {
             val currentState = _state.value
+            if (currentState.isSaving || currentState.isApiLoading || currentState.isBackgroundRemoving) return@launch
 
             if (currentState.imagePath.isBlank()) {
                 _effect.send(EditorEffect.ShowError(UiText.StringRes(Res.string.error_select_image)))
@@ -541,6 +542,7 @@ class EditorViewModel(
             }
 
             try {
+                _state.update { it.copy(isSaving = true) }
                 android.util.Log.d("EditorViewModel", "Saving sticker with packId: '$effectivePackId'")
                 
                 // Save editable base image and flattened preview image separately
@@ -583,8 +585,10 @@ class EditorViewModel(
                     repository.addStickerToPack(effectivePackId, sticker)
                     android.util.Log.d("EditorViewModel", "Added new sticker")
                 }
+                _state.update { it.copy(isSaving = false) }
                 _effect.send(EditorEffect.StickerSaved)
             } catch (e: Exception) {
+                _state.update { it.copy(isSaving = false) }
                 android.util.Log.e("EditorViewModel", "Failed to save sticker: ${e.message}", e)
                 _effect.send(
                     EditorEffect.ShowError(
