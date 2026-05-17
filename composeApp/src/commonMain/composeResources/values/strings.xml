@@ -147,6 +147,8 @@
     <string name="change_font">Change font</string>
     <string name="change_font_weight">Change font weight</string>
     <string name="change_color">Change color</string>
+    <string name="change_border_color">Change border color</string>
+    <string name="change_border_thickness">Change border thickness</string>
     <string name="edit_text_decoration">Edit text</string>
     <string name="change_emoji">Change emoji</string>
     <string name="change_image">Change image</string>

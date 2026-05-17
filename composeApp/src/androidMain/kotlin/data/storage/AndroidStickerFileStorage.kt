@@ -851,7 +851,9 @@ actual class StickerFileStorage(private val context: Context) {
                             centerY = centerY,
                             textSize = DecorationRenderSpec.textSizePx(decoration, minDim, scale),
                             typeface = mapTypeface(decoration.font, decoration.fontWeight),
-                            textColor = decoration.textColorArgb.toInt()
+                            textColor = decoration.textColorArgb.toInt(),
+                            borderColor = decoration.borderColorArgb.toInt(),
+                            borderWidthRatio = decoration.borderWidthRatio
                         )
                     }
                 }
@@ -864,7 +866,9 @@ actual class StickerFileStorage(private val context: Context) {
                         centerY = centerY,
                         textSize = minDim * DecorationRenderSpec.EMOJI_SIZE_RATIO * scale,
                         typeface = Typeface.DEFAULT,
-                        textColor = android.graphics.Color.WHITE
+                        textColor = android.graphics.Color.WHITE,
+                        borderColor = decoration.borderColorArgb.toInt(),
+                        borderWidthRatio = decoration.borderWidthRatio
                     )
                 }
 
@@ -924,6 +928,12 @@ actual class StickerFileStorage(private val context: Context) {
             isAntiAlias = true
             setShadowLayer(textSizePx * 0.14f, 0f, 1f, android.graphics.Color.BLACK)
         }
+        val strokePaint = TextPaint(textPaint).apply {
+            style = Paint.Style.STROKE
+            color = decoration.borderColorArgb.toInt()
+            strokeWidth = (textSizePx * decoration.borderWidthRatio.coerceIn(0f, 0.2f)).coerceAtLeast(0f)
+            setShadowLayer(0f, 0f, 0f, android.graphics.Color.TRANSPARENT)
+        }
 
         val staticLayout = StaticLayout.Builder.obtain(
             decoration.text,
@@ -944,6 +954,19 @@ actual class StickerFileStorage(private val context: Context) {
 
         canvas.save()
         canvas.translate(left, top)
+        if (strokePaint.strokeWidth > 0f) {
+            StaticLayout.Builder.obtain(
+                decoration.text,
+                0,
+                decoration.text.length,
+                strokePaint,
+                maxWidth
+            ).setAlignment(Layout.Alignment.ALIGN_CENTER)
+                .setIncludePad(false)
+                .setLineSpacing(0f, 1f)
+                .build()
+                .draw(canvas)
+        }
         staticLayout.draw(canvas)
         canvas.restore()
     }
@@ -955,7 +978,9 @@ actual class StickerFileStorage(private val context: Context) {
         centerY: Float,
         textSize: Float,
         typeface: Typeface,
-        textColor: Int
+        textColor: Int,
+        borderColor: Int,
+        borderWidthRatio: Float
     ) {
         val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = textColor
@@ -965,12 +990,14 @@ actual class StickerFileStorage(private val context: Context) {
             style = Paint.Style.FILL
         }
         val strokePaint = Paint(fillPaint).apply {
-            color = android.graphics.Color.BLACK
+            color = borderColor
             style = Paint.Style.STROKE
-            strokeWidth = (textSize * 0.08f).coerceAtLeast(2f)
+            strokeWidth = (textSize * borderWidthRatio.coerceIn(0f, 0.2f)).coerceAtLeast(0f)
         }
         val baselineY = centerY - (fillPaint.descent() + fillPaint.ascent()) / 2f
-        canvas.drawText(text, centerX, baselineY, strokePaint)
+        if (strokePaint.strokeWidth > 0f) {
+            canvas.drawText(text, centerX, baselineY, strokePaint)
+        }
         canvas.drawText(text, centerX, baselineY, fillPaint)
     }
 

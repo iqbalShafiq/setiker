@@ -45,6 +45,7 @@ import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.add_decoration
 import setiker.composeapp.generated.resources.add_text
 import setiker.composeapp.generated.resources.cancel
+import setiker.composeapp.generated.resources.change_border_thickness
 import setiker.composeapp.generated.resources.edit_text_decoration
 import setiker.composeapp.generated.resources.text_decoration
 import setiker.composeapp.generated.resources.text_decoration_placeholder
@@ -148,7 +149,9 @@ fun EditTextDecorationBottomSheet(
 @Composable
 fun FontPickerBottomSheet(
     selectedFont: DecorationFont,
-    onSelect: (DecorationFont) -> Unit,
+    selectedWeight: DecorationFontWeight,
+    onSelectFont: (DecorationFont) -> Unit,
+    onSelectWeight: (DecorationFontWeight) -> Unit,
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -168,40 +171,11 @@ fun FontPickerBottomSheet(
                 text = "Sample Aa Bb 123",
                 style = MaterialTheme.typography.headlineSmall,
                 fontFamily = mapFontFamily(selectedFont),
-                color = neubrutalOnSurface()
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            FontChipRow(selectedFont = selectedFont, onSelect = onSelect)
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
-@Composable
-fun FontWeightPickerBottomSheet(
-    selectedWeight: DecorationFontWeight,
-    onSelect: (DecorationFontWeight) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = neubrutalScreenBackground(),
-        scrimColor = Color.Black.copy(alpha = 0.45f)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 8.dp)
-                .padding(bottom = 24.dp)
-        ) {
-            Text(
-                text = "Sample Aa Bb 123",
-                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = mapFontWeight(selectedWeight),
                 color = neubrutalOnSurface()
             )
+            Spacer(modifier = Modifier.height(12.dp))
+            FontChipRow(selectedFont = selectedFont, onSelect = onSelectFont)
             Spacer(modifier = Modifier.height(12.dp))
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -210,7 +184,7 @@ fun FontWeightPickerBottomSheet(
                 DecorationFontWeight.entries.forEach { weight ->
                     FilterChip(
                         selected = selectedWeight == weight,
-                        onClick = { onSelect(weight) },
+                        onClick = { onSelectWeight(weight) },
                         label = { Text(weight.name, fontWeight = mapFontWeight(weight)) }
                     )
                 }
@@ -308,6 +282,97 @@ fun ColorPickerBottomSheet(
             AppPrimaryButton(
                 text = stringResource(Res.string.add_decoration),
                 onClick = { onSelect(selectedColor.toArgb().toLong() and 0xFFFFFFFFL) }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BorderStyleBottomSheet(
+    initialBorderColorArgb: Long,
+    initialWidthRatio: Float,
+    onSelect: (Long, Float) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val initialHsv = remember(initialBorderColorArgb) { argbToHsv(initialBorderColorArgb.toInt()) }
+    var hue by remember(initialBorderColorArgb) { mutableStateOf(initialHsv[0]) }
+    var saturation by remember(initialBorderColorArgb) { mutableStateOf(initialHsv[1]) }
+    var value by remember(initialBorderColorArgb) { mutableStateOf(initialHsv[2]) }
+    val selectedColor = Color.hsv(hue = hue, saturation = saturation, value = value)
+    var widthRatio by remember(initialWidthRatio) { mutableStateOf(initialWidthRatio.coerceIn(0f, 0.2f)) }
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = neubrutalScreenBackground(),
+        scrimColor = Color.Black.copy(alpha = 0.45f)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 8.dp)
+                .padding(bottom = 24.dp)
+        ) {
+            Text(
+                text = stringResource(Res.string.change_border_thickness),
+                style = MaterialTheme.typography.titleMedium,
+                color = neubrutalOnSurface()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .clip(RoundedCornerShape(NeubrutalSmallRadius))
+                    .background(selectedColor)
+                    .border(NeubrutalBorderWidth, neubrutalBorderColor(), RoundedCornerShape(NeubrutalSmallRadius))
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            ColorSliderRow(
+                label = "Hue",
+                value = hue,
+                valueRange = 0f..360f,
+                trackBrush = Brush.horizontalGradient(
+                    listOf(Color.Red, Color.Yellow, Color.Green, Color.Cyan, Color.Blue, Color.Magenta, Color.Red)
+                ),
+                onValueChange = { hue = it }
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            ColorSliderRow(
+                label = "Saturation",
+                value = saturation,
+                valueRange = 0f..1f,
+                trackBrush = Brush.horizontalGradient(
+                    listOf(Color.hsv(hue, 0f, value), Color.hsv(hue, 1f, value))
+                ),
+                onValueChange = { saturation = it }
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            ColorSliderRow(
+                label = "Brightness",
+                value = value,
+                valueRange = 0f..1f,
+                trackBrush = Brush.horizontalGradient(
+                    listOf(Color.Black, Color.hsv(hue, saturation, 1f))
+                ),
+                onValueChange = { value = it }
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "${(widthRatio * 100f).toInt()}%",
+                style = MaterialTheme.typography.labelLarge,
+                color = neubrutalOnSurface()
+            )
+            Slider(
+                value = widthRatio,
+                onValueChange = { widthRatio = it },
+                valueRange = 0f..0.2f
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            AppPrimaryButton(
+                text = stringResource(Res.string.add_decoration),
+                onClick = { onSelect(selectedColor.toArgb().toLong() and 0xFFFFFFFFL, widthRatio) }
             )
         }
     }
@@ -435,26 +500,15 @@ private fun FontPickerBottomSheetPreview() {
     MaterialTheme {
         FontPickerBottomSheet(
             selectedFont = DecorationFont.Sans,
-            onSelect = {},
+            selectedWeight = DecorationFontWeight.Regular,
+            onSelectFont = {},
+            onSelectWeight = {},
             onDismiss = {}
         )
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
-@Preview
-@Composable
-private fun FontWeightPickerBottomSheetPreview() {
-    MaterialTheme {
-        FontWeightPickerBottomSheet(
-            selectedWeight = DecorationFontWeight.Bold,
-            onSelect = {},
-            onDismiss = {}
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
 private fun ColorPickerBottomSheetPreview() {

@@ -23,10 +23,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.BorderColor
 import androidx.compose.material.icons.filled.Crop
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FontDownload
-import androidx.compose.material.icons.filled.FormatBold
 import androidx.compose.material.icons.filled.FormatColorText
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.LayersClear
@@ -80,7 +80,7 @@ import presentation.components.DecorationPreviewLayer
 import presentation.components.EditTextDecorationBottomSheet
 import presentation.components.EmojiPickerBottomSheet
 import presentation.components.FontPickerBottomSheet
-import presentation.components.FontWeightPickerBottomSheet
+import presentation.components.BorderStyleBottomSheet
 import presentation.components.LoadingIndicator
 import presentation.components.NeubrutalAddTagPill
 import presentation.components.NeubrutalStickerPreviewFrame
@@ -111,9 +111,10 @@ import setiker.composeapp.generated.resources.add_text
 import setiker.composeapp.generated.resources.back
 import setiker.composeapp.generated.resources.cancel
 import setiker.composeapp.generated.resources.change_color
+import setiker.composeapp.generated.resources.change_border_color
+import setiker.composeapp.generated.resources.change_border_thickness
 import setiker.composeapp.generated.resources.change_emoji
 import setiker.composeapp.generated.resources.change_font
-import setiker.composeapp.generated.resources.change_font_weight
 import setiker.composeapp.generated.resources.change_image
 import setiker.composeapp.generated.resources.crop
 import setiker.composeapp.generated.resources.decoration_hint
@@ -152,8 +153,8 @@ fun EditorScreen(
 ) {
     val selectedDecoration = state.decorations.firstOrNull { it.id == state.selectedDecorationId }
     var isFontSheetOpen by remember { mutableStateOf(false) }
-    var isFontWeightSheetOpen by remember { mutableStateOf(false) }
     var isColorSheetOpen by remember { mutableStateOf(false) }
+    var isBorderSheetOpen by remember { mutableStateOf(false) }
     var isEditTextSheetOpen by remember { mutableStateOf(false) }
 
     val decorationImagePicker = rememberImagePicker { path ->
@@ -238,15 +239,15 @@ fun EditorScreen(
                                     enabled = !isOperationInProgress
                                 )
                                 PackBottomBarIconButton(
-                                    icon = Icons.Filled.FormatBold,
-                                    contentDescription = stringResource(Res.string.change_font_weight),
-                                    onClick = { isFontWeightSheetOpen = true },
-                                    enabled = !isOperationInProgress
-                                )
-                                PackBottomBarIconButton(
                                     icon = Icons.Filled.FormatColorText,
                                     contentDescription = stringResource(Res.string.change_color),
                                     onClick = { isColorSheetOpen = true },
+                                    enabled = !isOperationInProgress
+                                )
+                                PackBottomBarIconButton(
+                                    icon = Icons.Filled.BorderColor,
+                                    contentDescription = stringResource(Res.string.change_border_thickness),
+                                    onClick = { isBorderSheetOpen = true },
                                     enabled = !isOperationInProgress
                                 )
                             }
@@ -258,6 +259,12 @@ fun EditorScreen(
                                     onClick = {
                                         onIntent(EditorIntent.ShowDecorationEmojiPicker(selectedDecoration.id))
                                     },
+                                    enabled = !isOperationInProgress
+                                )
+                                PackBottomBarIconButton(
+                                    icon = Icons.Filled.BorderColor,
+                                    contentDescription = stringResource(Res.string.change_border_thickness),
+                                    onClick = { isBorderSheetOpen = true },
                                     enabled = !isOperationInProgress
                                 )
                             }
@@ -493,19 +500,14 @@ fun EditorScreen(
     if (isFontSheetOpen && selectedDecoration is TextDecoration) {
         FontPickerBottomSheet(
             selectedFont = selectedDecoration.font,
-            onSelect = { font ->
+            selectedWeight = selectedDecoration.fontWeight,
+            onSelectFont = { font ->
                 onIntent(EditorIntent.UpdateTextDecorationFont(selectedDecoration.id, font))
             },
-            onDismiss = { isFontSheetOpen = false }
-        )
-    }
-    if (isFontWeightSheetOpen && selectedDecoration is TextDecoration) {
-        FontWeightPickerBottomSheet(
-            selectedWeight = selectedDecoration.fontWeight,
-            onSelect = { weight ->
+            onSelectWeight = { weight ->
                 onIntent(EditorIntent.UpdateTextDecorationFontWeight(selectedDecoration.id, weight))
             },
-            onDismiss = { isFontWeightSheetOpen = false }
+            onDismiss = { isFontSheetOpen = false }
         )
     }
     if (isColorSheetOpen && selectedDecoration is TextDecoration) {
@@ -516,6 +518,30 @@ fun EditorScreen(
                 isColorSheetOpen = false
             },
             onDismiss = { isColorSheetOpen = false }
+        )
+    }
+    if (isBorderSheetOpen && selectedDecoration is TextDecoration) {
+        BorderStyleBottomSheet(
+            initialBorderColorArgb = selectedDecoration.borderColorArgb,
+            initialWidthRatio = selectedDecoration.borderWidthRatio,
+            onSelect = { color, width ->
+                onIntent(EditorIntent.UpdateTextDecorationBorderColor(selectedDecoration.id, color))
+                onIntent(EditorIntent.UpdateTextDecorationBorderWidth(selectedDecoration.id, width))
+                isBorderSheetOpen = false
+            },
+            onDismiss = { isBorderSheetOpen = false }
+        )
+    }
+    if (isBorderSheetOpen && selectedDecoration is EmojiDecoration) {
+        BorderStyleBottomSheet(
+            initialBorderColorArgb = selectedDecoration.borderColorArgb,
+            initialWidthRatio = selectedDecoration.borderWidthRatio,
+            onSelect = { color, width ->
+                onIntent(EditorIntent.UpdateEmojiDecorationBorderColor(selectedDecoration.id, color))
+                onIntent(EditorIntent.UpdateEmojiDecorationBorderWidth(selectedDecoration.id, width))
+                isBorderSheetOpen = false
+            },
+            onDismiss = { isBorderSheetOpen = false }
         )
     }
 

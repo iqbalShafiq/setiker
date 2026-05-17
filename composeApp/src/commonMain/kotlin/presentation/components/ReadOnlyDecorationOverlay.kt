@@ -105,7 +105,7 @@ fun ReadOnlyDecorationOverlay(
             ) {
                 when (decoration) {
                     is TextDecoration -> {
-                        Text(
+                        OutlinedDecorationText(
                             text = decoration.text,
                             style = TextStyle(
                                 color = Color(decoration.textColorArgb.toInt()),
@@ -116,6 +116,9 @@ fun ReadOnlyDecorationOverlay(
                                 },
                                 textAlign = TextAlign.Center
                             ),
+                            borderColor = Color(decoration.borderColorArgb.toInt()),
+                            borderWidthPx = DecorationRenderSpec.textSizePx(decoration, minDim, scale) *
+                                decoration.borderWidthRatio.coerceIn(0f, 0.2f),
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(Color.Transparent),
@@ -124,15 +127,19 @@ fun ReadOnlyDecorationOverlay(
                     }
 
                     is EmojiDecoration -> {
-                        Text(
+                        OutlinedDecorationText(
                             text = decoration.emoji,
                             style = MaterialTheme.typography.headlineLarge.copy(
                                 fontSize = with(density) {
                                     (minDim * DecorationRenderSpec.EMOJI_SIZE_RATIO * scale).toSp()
-                                }
+                                },
+                                color = Color.White
                             ),
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxSize()
+                            borderColor = Color(decoration.borderColorArgb.toInt()),
+                            borderWidthPx = (minDim * DecorationRenderSpec.EMOJI_SIZE_RATIO * scale) *
+                                decoration.borderWidthRatio.coerceIn(0f, 0.2f),
+                            modifier = Modifier.fillMaxSize(),
+                            maxLines = 1
                         )
                     }
 

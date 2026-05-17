@@ -156,7 +156,11 @@ class EditorViewModel(
             is EditorIntent.UpdateTextDecorationFont -> updateTextDecorationFont(intent.id, intent.font)
             is EditorIntent.UpdateTextDecorationFontWeight -> updateTextDecorationFontWeight(intent.id, intent.fontWeight)
             is EditorIntent.UpdateTextDecorationColor -> updateTextDecorationColor(intent.id, intent.colorArgb)
+            is EditorIntent.UpdateTextDecorationBorderColor -> updateTextDecorationBorderColor(intent.id, intent.colorArgb)
+            is EditorIntent.UpdateTextDecorationBorderWidth -> updateTextDecorationBorderWidth(intent.id, intent.widthRatio)
             is EditorIntent.UpdateEmojiDecorationValue -> updateEmojiDecorationValue(intent.id, intent.emoji)
+            is EditorIntent.UpdateEmojiDecorationBorderColor -> updateEmojiDecorationBorderColor(intent.id, intent.colorArgb)
+            is EditorIntent.UpdateEmojiDecorationBorderWidth -> updateEmojiDecorationBorderWidth(intent.id, intent.widthRatio)
             is EditorIntent.UpdateImageDecorationPath -> updateImageDecorationPath(intent.id, intent.imagePath)
             is EditorIntent.OpenAiGenerateSheet -> openAiGenerateSheet()
             is EditorIntent.CloseAiGenerateSheet -> {
@@ -387,6 +391,30 @@ class EditorViewModel(
             )
         }
     }
+    private fun updateTextDecorationBorderColor(id: String, colorArgb: Long) {
+        _state.update { current ->
+            current.copy(
+                decorations = current.decorations.map { decoration ->
+                    if (decoration is TextDecoration && decoration.id == id) {
+                        decoration.copy(borderColorArgb = colorArgb)
+                    } else decoration
+                }
+            )
+        }
+    }
+
+    private fun updateTextDecorationBorderWidth(id: String, widthRatio: Float) {
+        val clamped = widthRatio.coerceIn(0f, 0.2f)
+        _state.update { current ->
+            current.copy(
+                decorations = current.decorations.map { decoration ->
+                    if (decoration is TextDecoration && decoration.id == id) {
+                        decoration.copy(borderWidthRatio = clamped)
+                    } else decoration
+                }
+            )
+        }
+    }
 
     private fun updateEmojiDecorationValue(id: String, emoji: String) {
         if (emoji.isBlank()) return
@@ -398,6 +426,30 @@ class EditorViewModel(
                     } else {
                         decoration
                     }
+                }
+            )
+        }
+    }
+    private fun updateEmojiDecorationBorderColor(id: String, colorArgb: Long) {
+        _state.update { current ->
+            current.copy(
+                decorations = current.decorations.map { decoration ->
+                    if (decoration is EmojiDecoration && decoration.id == id) {
+                        decoration.copy(borderColorArgb = colorArgb)
+                    } else decoration
+                }
+            )
+        }
+    }
+
+    private fun updateEmojiDecorationBorderWidth(id: String, widthRatio: Float) {
+        val clamped = widthRatio.coerceIn(0f, 0.2f)
+        _state.update { current ->
+            current.copy(
+                decorations = current.decorations.map { decoration ->
+                    if (decoration is EmojiDecoration && decoration.id == id) {
+                        decoration.copy(borderWidthRatio = clamped)
+                    } else decoration
                 }
             )
         }

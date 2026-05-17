@@ -25,7 +25,11 @@ sealed interface AnimatedEditorIntent {
     data class UpdateTextDecorationFont(val id: String, val font: DecorationFont) : AnimatedEditorIntent
     data class UpdateTextDecorationFontWeight(val id: String, val weight: DecorationFontWeight) : AnimatedEditorIntent
     data class UpdateTextDecorationColor(val id: String, val colorArgb: Long) : AnimatedEditorIntent
+    data class UpdateTextDecorationBorderColor(val id: String, val colorArgb: Long) : AnimatedEditorIntent
+    data class UpdateTextDecorationBorderWidth(val id: String, val widthRatio: Float) : AnimatedEditorIntent
     data class UpdateEmojiDecoration(val id: String, val emoji: String) : AnimatedEditorIntent
+    data class UpdateEmojiDecorationBorderColor(val id: String, val colorArgb: Long) : AnimatedEditorIntent
+    data class UpdateEmojiDecorationBorderWidth(val id: String, val widthRatio: Float) : AnimatedEditorIntent
     data class UpdateImageDecorationPath(val id: String, val imagePath: String) : AnimatedEditorIntent
     data class AddEmojiTag(val emoji: String) : AnimatedEditorIntent
     data class RemoveEmojiTag(val index: Int) : AnimatedEditorIntent

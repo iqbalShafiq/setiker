@@ -64,7 +64,11 @@ class AnimatedEditorViewModel(
             is AnimatedEditorIntent.UpdateTextDecorationFont -> mutateText(intent.id) { it.copy(font = intent.font) }
             is AnimatedEditorIntent.UpdateTextDecorationFontWeight -> mutateText(intent.id) { it.copy(fontWeight = intent.weight) }
             is AnimatedEditorIntent.UpdateTextDecorationColor -> mutateText(intent.id) { it.copy(textColorArgb = intent.colorArgb) }
+            is AnimatedEditorIntent.UpdateTextDecorationBorderColor -> mutateText(intent.id) { it.copy(borderColorArgb = intent.colorArgb) }
+            is AnimatedEditorIntent.UpdateTextDecorationBorderWidth -> mutateText(intent.id) { it.copy(borderWidthRatio = intent.widthRatio.coerceIn(0f, 0.2f)) }
             is AnimatedEditorIntent.UpdateEmojiDecoration -> mutateEmoji(intent.id) { it.copy(emoji = intent.emoji) }
+            is AnimatedEditorIntent.UpdateEmojiDecorationBorderColor -> mutateEmoji(intent.id) { it.copy(borderColorArgb = intent.colorArgb) }
+            is AnimatedEditorIntent.UpdateEmojiDecorationBorderWidth -> mutateEmoji(intent.id) { it.copy(borderWidthRatio = intent.widthRatio.coerceIn(0f, 0.2f)) }
             is AnimatedEditorIntent.UpdateImageDecorationPath -> mutateImage(intent.id) { it.copy(imagePath = intent.imagePath) }
             is AnimatedEditorIntent.AddEmojiTag -> {
                 if (_state.value.emojis.size < AnimatedEditorState.MAX_EMOJIS_PER_STICKER) {

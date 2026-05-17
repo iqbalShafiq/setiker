@@ -19,9 +19,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.BorderColor
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FontDownload
-import androidx.compose.material.icons.filled.FormatBold
 import androidx.compose.material.icons.filled.FormatColorText
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.SkipNext
@@ -64,7 +64,7 @@ import presentation.components.DecorationPreviewLayer
 import presentation.components.EditTextDecorationBottomSheet
 import presentation.components.EmojiPickerBottomSheet
 import presentation.components.FontPickerBottomSheet
-import presentation.components.FontWeightPickerBottomSheet
+import presentation.components.BorderStyleBottomSheet
 import presentation.components.LoadingIndicator
 import presentation.components.MediaPreviewBottomBar
 import presentation.components.NeubrutalAddTagPill
@@ -93,9 +93,10 @@ import setiker.composeapp.generated.resources.apply_all_frames
 import setiker.composeapp.generated.resources.back
 import setiker.composeapp.generated.resources.cancel
 import setiker.composeapp.generated.resources.change_color
+import setiker.composeapp.generated.resources.change_border_color
+import setiker.composeapp.generated.resources.change_border_thickness
 import setiker.composeapp.generated.resources.change_emoji
 import setiker.composeapp.generated.resources.change_font
-import setiker.composeapp.generated.resources.change_font_weight
 import setiker.composeapp.generated.resources.change_image
 import setiker.composeapp.generated.resources.edit_animated_sticker_title
 import setiker.composeapp.generated.resources.edit_text_decoration
@@ -132,8 +133,8 @@ fun AnimatedEditorScreen(
     val selectedDecoration = state.visibleDecorations.firstOrNull { it.id == state.selectedDecorationId }
     var isEditTextSheetOpen by remember { mutableStateOf(false) }
     var isFontSheetOpen by remember { mutableStateOf(false) }
-    var isFontWeightSheetOpen by remember { mutableStateOf(false) }
     var isColorSheetOpen by remember { mutableStateOf(false) }
+    var isBorderSheetOpen by remember { mutableStateOf(false) }
 
     val decorationImagePicker = rememberImagePicker { path ->
         path?.let { onIntent(AnimatedEditorIntent.AddImageDecoration(it)) }
@@ -223,15 +224,15 @@ fun AnimatedEditorScreen(
                                         enabled = !state.isSaving
                                     )
                                     PackBottomBarIconButton(
-                                        icon = Icons.Filled.FormatBold,
-                                        contentDescription = stringResource(Res.string.change_font_weight),
-                                        onClick = { isFontWeightSheetOpen = true },
-                                        enabled = !state.isSaving
-                                    )
-                                    PackBottomBarIconButton(
                                         icon = Icons.Filled.FormatColorText,
                                         contentDescription = stringResource(Res.string.change_color),
                                         onClick = { isColorSheetOpen = true },
+                                        enabled = !state.isSaving
+                                    )
+                                    PackBottomBarIconButton(
+                                        icon = Icons.Filled.BorderColor,
+                                        contentDescription = stringResource(Res.string.change_border_thickness),
+                                        onClick = { isBorderSheetOpen = true },
                                         enabled = !state.isSaving
                                     )
                                 }
@@ -246,6 +247,12 @@ fun AnimatedEditorScreen(
                                                 )
                                             )
                                         },
+                                        enabled = !state.isSaving
+                                    )
+                                    PackBottomBarIconButton(
+                                        icon = Icons.Filled.BorderColor,
+                                        contentDescription = stringResource(Res.string.change_border_thickness),
+                                        onClick = { isBorderSheetOpen = true },
                                         enabled = !state.isSaving
                                     )
                                 }
@@ -498,19 +505,14 @@ fun AnimatedEditorScreen(
     if (isFontSheetOpen && selectedDecoration is TextDecoration) {
         FontPickerBottomSheet(
             selectedFont = selectedDecoration.font,
-            onSelect = { font ->
+            selectedWeight = selectedDecoration.fontWeight,
+            onSelectFont = { font ->
                 onIntent(AnimatedEditorIntent.UpdateTextDecorationFont(selectedDecoration.id, font))
             },
-            onDismiss = { isFontSheetOpen = false }
-        )
-    }
-    if (isFontWeightSheetOpen && selectedDecoration is TextDecoration) {
-        FontWeightPickerBottomSheet(
-            selectedWeight = selectedDecoration.fontWeight,
-            onSelect = { weight ->
+            onSelectWeight = { weight ->
                 onIntent(AnimatedEditorIntent.UpdateTextDecorationFontWeight(selectedDecoration.id, weight))
             },
-            onDismiss = { isFontWeightSheetOpen = false }
+            onDismiss = { isFontSheetOpen = false }
         )
     }
     if (isColorSheetOpen && selectedDecoration is TextDecoration) {
@@ -521,6 +523,30 @@ fun AnimatedEditorScreen(
                 isColorSheetOpen = false
             },
             onDismiss = { isColorSheetOpen = false }
+        )
+    }
+    if (isBorderSheetOpen && selectedDecoration is TextDecoration) {
+        BorderStyleBottomSheet(
+            initialBorderColorArgb = selectedDecoration.borderColorArgb,
+            initialWidthRatio = selectedDecoration.borderWidthRatio,
+            onSelect = { color, width ->
+                onIntent(AnimatedEditorIntent.UpdateTextDecorationBorderColor(selectedDecoration.id, color))
+                onIntent(AnimatedEditorIntent.UpdateTextDecorationBorderWidth(selectedDecoration.id, width))
+                isBorderSheetOpen = false
+            },
+            onDismiss = { isBorderSheetOpen = false }
+        )
+    }
+    if (isBorderSheetOpen && selectedDecoration is EmojiDecoration) {
+        BorderStyleBottomSheet(
+            initialBorderColorArgb = selectedDecoration.borderColorArgb,
+            initialWidthRatio = selectedDecoration.borderWidthRatio,
+            onSelect = { color, width ->
+                onIntent(AnimatedEditorIntent.UpdateEmojiDecorationBorderColor(selectedDecoration.id, color))
+                onIntent(AnimatedEditorIntent.UpdateEmojiDecorationBorderWidth(selectedDecoration.id, width))
+                isBorderSheetOpen = false
+            },
+            onDismiss = { isBorderSheetOpen = false }
         )
     }
 

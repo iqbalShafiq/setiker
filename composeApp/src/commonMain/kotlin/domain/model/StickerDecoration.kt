@@ -45,6 +45,9 @@ sealed interface StickerDecoration {
     val scale: Float
 }
 
+const val DEFAULT_DECORATION_BORDER_COLOR_ARGB: Long = 0xFFFFFFFFL
+const val DEFAULT_DECORATION_BORDER_WIDTH_RATIO: Float = 0.08f
+
 @Serializable
 @SerialName("text")
 data class TextDecoration(
@@ -53,6 +56,8 @@ data class TextDecoration(
     val font: DecorationFont,
     val fontWeight: DecorationFontWeight = DecorationFontWeight.Regular,
     val textColorArgb: Long = 0xFFFFFFFFL,
+    val borderColorArgb: Long = DEFAULT_DECORATION_BORDER_COLOR_ARGB,
+    val borderWidthRatio: Float = DEFAULT_DECORATION_BORDER_WIDTH_RATIO,
     val source: TextDecorationSource = TextDecorationSource.User,
     val layout: TextDecorationLayout = TextDecorationLayout.Freeform,
     override val centerX: Float = 0.5f,
@@ -87,6 +92,8 @@ fun decodeStickerDecorationsForCurrentSchema(raw: String?): List<StickerDecorati
 data class EmojiDecoration(
     override val id: String,
     val emoji: String,
+    val borderColorArgb: Long = DEFAULT_DECORATION_BORDER_COLOR_ARGB,
+    val borderWidthRatio: Float = DEFAULT_DECORATION_BORDER_WIDTH_RATIO,
     override val centerX: Float = 0.5f,
     override val centerY: Float = 0.5f,
     override val scale: Float = 1f
