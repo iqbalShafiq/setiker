@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -45,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -52,6 +54,7 @@ import domain.model.Sticker
 import domain.model.StickerPack
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.resources.painterResource
 import presentation.components.AppDialog
 import presentation.components.AppPrimaryButton
 import presentation.components.AppTopBar
@@ -102,6 +105,7 @@ import setiker.composeapp.generated.resources.cancel
 import setiker.composeapp.generated.resources.import_crop_sheet_message_detail
 import setiker.composeapp.generated.resources.import_crop_sheet_primary
 import setiker.composeapp.generated.resources.import_crop_sheet_title
+import setiker.composeapp.generated.resources.ic_whatsapp
 import setiker.composeapp.generated.resources.loading_pack
 import setiker.composeapp.generated.resources.cloud_links_title
 import setiker.composeapp.generated.resources.cloud_links_create
@@ -243,6 +247,22 @@ fun PackDetailScreen(
                         enabled = !state.isLoading && !isOperationInProgress
                     )
                     PackBottomBarIconButton(
+                        painter = painterResource(Res.drawable.ic_whatsapp),
+                        contentDescription = stringResource(Res.string.add_to_whatsapp),
+                        onClick = {
+                            state.pack?.let { onIntent(PackDetailIntent.AddToWhatsApp(it.identifier)) }
+                        },
+                        enabled = !state.isLoading && !isOperationInProgress && state.pack != null,
+                        containerColor = androidx.compose.ui.graphics.Color(0xFF25D366),
+                        iconTint = androidx.compose.ui.graphics.Color.White
+                    )
+                    PackBottomBarIconButton(
+                        icon = Icons.Default.Share,
+                        contentDescription = stringResource(Res.string.share_pack),
+                        onClick = { onIntent(PackDetailIntent.OpenCloudShareSheet) },
+                        enabled = !state.isLoading && !isOperationInProgress
+                    )
+                    PackBottomBarIconButton(
                         icon = Icons.Default.Delete,
                         contentDescription = stringResource(Res.string.delete_pack),
                         onClick = { showDeleteDialog = true },
@@ -334,7 +354,8 @@ private fun PackDetailContent(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 20.dp, vertical = 16.dp)
+            .padding(horizontal = 20.dp)
+            .padding(top = 16.dp)
     ) {
         // Pack Info Card (Neubrutal)
         val border = neubrutalBorderColor()
@@ -412,24 +433,7 @@ private fun PackDetailContent(
             )
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // Action Buttons
-        AppPrimaryButton(
-            text = stringResource(Res.string.add_to_whatsapp),
-            onClick = { onIntent(PackDetailIntent.AddToWhatsApp(pack.identifier)) },
-            enabled = enabled
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        AppSecondaryButton(
-            text = stringResource(Res.string.share_pack),
-            onClick = { onIntent(PackDetailIntent.OpenCloudShareSheet) },
-            enabled = enabled
-        )
-
-        Spacer(modifier = Modifier.height(28.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         // Stickers Grid
         Text(
@@ -455,10 +459,14 @@ private fun PackDetailContent(
             )
         } else {
             LazyVerticalGrid(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f, fill = true)
+                    .graphicsLayer { clip = false },
                 columns = GridCells.Fixed(3),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
-                contentPadding = PaddingValues(vertical = 10.dp)
+                contentPadding = PaddingValues(top = 10.dp, bottom = 16.dp)
             ) {
                 itemsIndexed(
                     items = pack.stickers,

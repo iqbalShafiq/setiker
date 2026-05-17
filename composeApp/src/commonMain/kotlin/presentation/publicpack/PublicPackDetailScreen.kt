@@ -72,13 +72,19 @@ fun PublicPackDetailScreen(
         topBar = {
             AppTopBar(
                 title = state.pack?.name ?: "",
-                onBackClick = { onIntent(PublicPackDetailIntent.NavigateBack) }
+                onBackClick = null
             )
         },
         bottomBar = {
             PackBottomBar(
                 actionStatusText = if (state.isActionLoading) stringResource(Res.string.processing) else null,
                 actions = {
+                    PackBottomBarIconButton(
+                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        onClick = { onIntent(PublicPackDetailIntent.NavigateBack) },
+                        enabled = !state.isActionLoading
+                    )
                     PackBottomBarIconButton(
                         icon = Icons.Default.Favorite,
                         contentDescription = if (state.isLiked) "Unlike" else "Like",

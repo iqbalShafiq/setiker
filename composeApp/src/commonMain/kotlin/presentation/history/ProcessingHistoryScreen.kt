@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -74,13 +75,19 @@ fun ProcessingHistoryScreen(
         topBar = {
             AppTopBar(
                 title = stringResource(Res.string.history_title),
-                onBackClick = { onIntent(ProcessingHistoryIntent.NavigateBack) }
+                onBackClick = null
             )
         },
         bottomBar = {
             PackBottomBar(
                 actionStatusText = if (state.isClearing) stringResource(Res.string.deleting) else null,
                 actions = {
+                    PackBottomBarIconButton(
+                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        onClick = { onIntent(ProcessingHistoryIntent.NavigateBack) },
+                        enabled = !state.isClearing
+                    )
                     PackBottomBarIconButton(
                         icon = Icons.Default.Refresh,
                         contentDescription = stringResource(Res.string.history_refresh),
@@ -144,6 +151,7 @@ fun ProcessingHistoryScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(top = 12.dp),
+                        contentPadding = PaddingValues(bottom = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         items(state.items, key = { it.id }) { item ->

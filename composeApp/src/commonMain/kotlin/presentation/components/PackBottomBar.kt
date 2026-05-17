@@ -38,6 +38,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -140,7 +142,9 @@ fun PackBottomBarIconButton(
     icon: ImageVector,
     contentDescription: String,
     onClick: () -> Unit,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    containerColor: Color = neubrutalCardSurface(),
+    iconTint: Color = neubrutalOnSurface()
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -170,7 +174,7 @@ fun PackBottomBarIconButton(
                 color = shadow
             )
             .clip(shape)
-            .background(neubrutalCardSurface())
+            .background(containerColor)
             .border(
                 width = NeubrutalBorderWidth,
                 color = border,
@@ -188,7 +192,67 @@ fun PackBottomBarIconButton(
             imageVector = icon,
             contentDescription = contentDescription,
             modifier = Modifier.size(22.dp),
-            tint = if (enabled) neubrutalOnSurface() else neubrutalOnSurface().copy(alpha = 0.4f)
+            tint = if (enabled) iconTint else iconTint.copy(alpha = 0.4f)
+        )
+    }
+}
+
+@Composable
+fun PackBottomBarIconButton(
+    painter: Painter,
+    contentDescription: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    containerColor: Color = neubrutalCardSurface(),
+    iconTint: Color = neubrutalOnSurface()
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed && enabled) 0.92f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "bottom_painter_icon_scale"
+    )
+
+    val border = neubrutalBorderColor()
+    val shadow = neubrutalShadowColor()
+    val shape = RoundedCornerShape(NeubrutalSmallRadius)
+    val shadowX = if (isPressed && enabled) 1.dp else NeubrutalSmallShadowOffset
+    val shadowY = if (isPressed && enabled) 1.dp else NeubrutalSmallShadowOffset
+
+    Box(
+        modifier = Modifier
+            .size(44.dp)
+            .scale(scale)
+            .neubrutalShadow(
+                offsetX = shadowX,
+                offsetY = shadowY,
+                cornerRadius = NeubrutalSmallRadius,
+                color = shadow
+            )
+            .clip(shape)
+            .background(containerColor)
+            .border(
+                width = NeubrutalBorderWidth,
+                color = border,
+                shape = shape
+            )
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                enabled = enabled,
+                onClick = onClick
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            painter = painter,
+            contentDescription = contentDescription,
+            modifier = Modifier.size(22.dp),
+            tint = if (enabled) iconTint else iconTint.copy(alpha = 0.4f)
         )
     }
 }

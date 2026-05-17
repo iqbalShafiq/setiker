@@ -91,12 +91,17 @@ fun ExploreScreen(
         topBar = {
             AppTopBar(
                 title = stringResource(Res.string.explore_title),
-                onBackClick = { onIntent(ExploreIntent.NavigateBack) }
+                onBackClick = null
             )
         },
         bottomBar = {
             PackBottomBar(
                 actions = {
+                    PackBottomBarIconButton(
+                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(Res.string.explore_back),
+                        onClick = { onIntent(ExploreIntent.NavigateBack) }
+                    )
                     PackBottomBarIconButton(
                         icon = Icons.Default.History,
                         contentDescription = stringResource(Res.string.explore_history),
