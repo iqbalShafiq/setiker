@@ -46,6 +46,7 @@ import presentation.sync.SyncScreenRoot
 import presentation.sync.SyncViewModel
 import presentation.sharepreview.SharePreviewScreenRoot
 import presentation.videocrop.VideoCropScreenRoot
+import presentation.videostickerpack.VideoStickerPackScreenRoot
 import presentation.videotrim.VideoTrimScreenRoot
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -58,6 +59,10 @@ private object CropRecipient {
 }
 
 private const val ANIMATION_DURATION = 300
+private const val VIDEO_STICKER_PACK_ROUTE = "videoStickerPack/{videoPath}"
+
+private fun Screen.VideoStickerPack.toRoute(): String =
+    "videoStickerPack/${PathEncoder.encode(videoPath)}"
 
 @Composable
 fun AppNavigation(
@@ -117,6 +122,26 @@ fun AppNavigation(
                 },
                 onLoginClick = {
                     navController.navigate("login")
+                },
+                onVideoStickerPackClick = { videoPath ->
+                    navController.navigate(Screen.VideoStickerPack(videoPath).toRoute())
+                }
+            )
+        }
+
+        composable(
+            route = VIDEO_STICKER_PACK_ROUTE,
+            arguments = listOf(navArgument("videoPath") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val encodedPath = backStackEntry.arguments?.getString("videoPath") ?: return@composable
+            val route = Screen.VideoStickerPack(PathEncoder.decode(encodedPath))
+            VideoStickerPackScreenRoot(
+                videoPath = route.videoPath,
+                onBackClick = { navController.popBackStack() },
+                onNavigateToPackDetail = { packId ->
+                    navController.navigate("packDetail/$packId") {
+                        popUpTo("home") { inclusive = false }
+                    }
                 }
             )
         }

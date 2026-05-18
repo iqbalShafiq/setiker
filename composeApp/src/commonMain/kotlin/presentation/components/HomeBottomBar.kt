@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.filled.Refresh
@@ -25,6 +26,7 @@ import setiker.composeapp.generated.resources.generate_sticker_pack
 import setiker.composeapp.generated.resources.login
 import setiker.composeapp.generated.resources.profile
 import setiker.composeapp.generated.resources.sync
+import setiker.composeapp.generated.resources.video_to_sticker_pack
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,6 +38,7 @@ fun HomeBottomBar(
     onProfileClick: () -> Unit,
     onSyncClick: () -> Unit,
     onGeneratePackClick: () -> Unit,
+    onVideoPackClick: () -> Unit,
     onAddPackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -70,6 +73,11 @@ fun HomeBottomBar(
                 icon = Icons.Default.AutoAwesome,
                 contentDescription = stringResource(Res.string.generate_sticker_pack),
                 onClick = onGeneratePackClick
+            )
+            PackBottomBarIconButton(
+                icon = Icons.Default.Movie,
+                contentDescription = stringResource(Res.string.video_to_sticker_pack),
+                onClick = onVideoPackClick
             )
         },
         floatingActionButton = {
@@ -107,6 +115,7 @@ private fun HomeBottomBarLoggedInPreview() {
             onProfileClick = {},
             onSyncClick = {},
             onGeneratePackClick = {},
+            onVideoPackClick = {},
             onAddPackClick = {}
         )
     }
@@ -125,6 +134,7 @@ private fun HomeBottomBarGuestPreview() {
             onProfileClick = {},
             onSyncClick = {},
             onGeneratePackClick = {},
+            onVideoPackClick = {},
             onAddPackClick = {}
         )
     }

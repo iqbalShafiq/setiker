@@ -9,6 +9,7 @@ import data.storage.StickerFileStorage
 import data.util.OnDeviceImageProcessor
 import data.util.parseGridLayout
 import domain.error.AppErrorCode
+import kotlinx.datetime.Clock
 import kotlin.random.Random
 
 class StickerApiRepository(
@@ -45,6 +46,27 @@ class StickerApiRepository(
         val rawGridPath = images.firstOrNull()?.let { downloadAndPersist(it) }
             ?: return emptyList()
         return splitGridOnDevice(rawGridPath, layout)
+    }
+
+    suspend fun generateVideoStickerPack(
+        candidateGridPaths: List<String>,
+        candidateCount: Int,
+        selectedStartMs: Long,
+        selectedEndMs: Long,
+        sourceDurationMs: Long,
+        prompt: String? = null
+    ): List<GridSplitStickerFile> {
+        val images = api.generateVideoStickerPack(
+            candidateGridPaths = candidateGridPaths,
+            candidateCount = candidateCount,
+            selectedStartMs = selectedStartMs,
+            selectedEndMs = selectedEndMs,
+            sourceDurationMs = sourceDurationMs,
+            prompt = prompt
+        )
+        val rawGridPath = images.firstOrNull()?.let { downloadAndPersist(it) }
+            ?: return emptyList()
+        return splitGridOnDevice(rawGridPath, "4x4")
     }
 
     suspend fun improve(imagePaths: List<String>): List<GeneratedStickerFile> {
@@ -101,7 +123,12 @@ class StickerApiRepository(
 
     private suspend fun downloadAndPersist(image: ApiImage): String {
         val bytes = api.downloadImageBytes(image.url)
-        val safeId = image.id.ifBlank { Random.nextInt(1000, 9999).toString() }
+        val safeId = image.id
+            .replace(Regex("[^A-Za-z0-9._-]"), "_")
+            .trim('_')
+            .ifBlank {
+                "${Clock.System.now().toEpochMilliseconds()}_${Random.nextInt(100000, 999999)}"
+            }
         return fileStorage.saveBytes(
             bytes = bytes,
             fileName = "api_$safeId.png"

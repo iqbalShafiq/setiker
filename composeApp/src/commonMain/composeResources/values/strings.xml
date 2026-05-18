@@ -295,9 +295,20 @@
 
     <string name="video_crop_title">Pick crop area</string>
     <string name="video_crop_hint">Pinch to zoom, drag to position. The square preview is exactly what you will see in WhatsApp.</string>
+    <string name="video_to_sticker_pack">Video to Sticker Pack</string>
+    <string name="video_pack_title">Video to Sticker Pack</string>
+    <string name="video_pack_subtitle">Pick the best minute. AI will choose clear, unique frames and turn them into a sticker pack.</string>
+    <string name="video_pack_max_duration">Max selected duration: 60s</string>
+    <string name="video_pack_find_frames">Finding clear frames</string>
+    <string name="video_pack_build_grids">Building candidate grids</string>
+    <string name="video_pack_ask_ai">Asking AI Agent</string>
+    <string name="video_pack_generate">Generate</string>
+    <string name="video_pack_save">Save Pack</string>
+    <string name="video_pack_regenerate">Regenerate</string>
     <string name="apply">Apply</string>
     <string name="extracting_preview">Loading preview…</string>
     <string name="error_failed_extract_preview">Could not load video preview.</string>
     <string name="error_failed_decode_frames">Failed to decode video frames.</string>
+    <string name="error_failed_generate_video_sticker_pack">Failed to generate video sticker pack.</string>
     <string name="cd_add_animated_sticker">Add animated sticker from video or GIF</string>
 </resources>

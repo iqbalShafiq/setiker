@@ -135,6 +135,11 @@ class HomeViewModel(
                 _state.update { it.copy(generatePackInputImagePath = intent.path) }
             }
             is HomeIntent.GenerateStickerPack -> generateStickerPack()
+            is HomeIntent.StartVideoStickerPack -> {
+                viewModelScope.launch {
+                    _effect.send(HomeEffect.NavigateToVideoStickerPack(intent.videoPath))
+                }
+            }
         }
     }
 

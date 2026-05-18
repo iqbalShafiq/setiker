@@ -22,6 +22,9 @@ sealed class Screen {
     data class VideoTrim(val videoPath: String) : Screen()
 
     @Serializable
+    data class VideoStickerPack(val videoPath: String) : Screen()
+
+    @Serializable
     data class VideoCrop(
         val videoPath: String,
         val packId: String,

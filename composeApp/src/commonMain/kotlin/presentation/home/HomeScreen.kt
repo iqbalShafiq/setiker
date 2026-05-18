@@ -49,6 +49,7 @@ import presentation.components.NeubrutalIconButton
 import presentation.components.SortBottomSheet
 import presentation.components.StickerPackListCard
 import presentation.components.rememberImagePicker
+import presentation.components.rememberVideoPicker
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalScreenBackground
 import setiker.composeapp.generated.resources.Res
@@ -74,6 +75,9 @@ fun HomeScreen(
 ) {
     val generateInputImagePicker = rememberImagePicker { path ->
         path?.let { onIntent(HomeIntent.UpdateGeneratePackInputImage(it)) }
+    }
+    val videoPicker = rememberVideoPicker { path ->
+        path?.let { onIntent(HomeIntent.StartVideoStickerPack(it)) }
     }
 
     LaunchedEffect(Unit) {
@@ -180,6 +184,7 @@ fun HomeScreen(
                     }
                 },
                 onGeneratePackClick = { onIntent(HomeIntent.OpenGeneratePackSheet) },
+                onVideoPackClick = { videoPicker.launch() },
                 onAddPackClick = { onIntent(HomeIntent.CreateNewPack) }
             )
         },

@@ -73,7 +73,7 @@ class SetikerApiService(
         install(DefaultRequest) {
             url(baseUrl)
             if (url.protocol.name.isBlank()) {
-                url.protocol = URLProtocol.HTTP
+                url.protocol = URLProtocol.HTTPS
             }
         }
     }
@@ -160,6 +160,44 @@ class SetikerApiService(
                             append("layout", layout)
                             if (!inputImagePath.isNullOrBlank()) {
                                 appendImageFile(key = "image", path = inputImagePath, filename = "input.png")
+                            }
+                        }
+                    )
+                )
+            }
+        }
+        return parseGenerateImages(response)
+    }
+
+    suspend fun generateVideoStickerPack(
+        candidateGridPaths: List<String>,
+        candidateCount: Int,
+        selectedStartMs: Long,
+        selectedEndMs: Long,
+        sourceDurationMs: Long,
+        prompt: String? = null
+    ): List<ApiImage> {
+        val response = withAuthRetry { authHeader ->
+            client.post("/api/v1/generate/video-sticker-pack") {
+                authHeader?.let { header(HttpHeaders.Authorization, it) }
+                setBody(
+                    MultiPartFormDataContent(
+                        formData {
+                            append("layout", "4x4")
+                            append("candidateLayout", "4x4")
+                            append("candidateCount", candidateCount.toString())
+                            append("selectedStartMs", selectedStartMs.toString())
+                            append("selectedEndMs", selectedEndMs.toString())
+                            append("sourceDurationMs", sourceDurationMs.toString())
+                            if (!prompt.isNullOrBlank()) {
+                                append("prompt", prompt)
+                            }
+                            candidateGridPaths.forEachIndexed { i, path ->
+                                appendImageFile(
+                                    key = "candidate_grids",
+                                    path = path,
+                                    filename = "candidate_grid_${i}.png"
+                                )
                             }
                         }
                     )

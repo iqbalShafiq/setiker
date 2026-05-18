@@ -17,6 +17,7 @@ fun HomeScreenRoot(
     onProfileClick: () -> Unit,
     onSyncClick: () -> Unit,
     onLoginClick: () -> Unit,
+    onVideoStickerPackClick: (String) -> Unit,
     viewModel: HomeViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -37,6 +38,7 @@ fun HomeScreenRoot(
                 is HomeEffect.NavigateToSync -> onSyncClick()
                 is HomeEffect.NavigateToExplore -> onExploreClick()
                 is HomeEffect.NavigateToLogin -> onLoginClick()
+                is HomeEffect.NavigateToVideoStickerPack -> onVideoStickerPackClick(effect.videoPath)
             }
         }
     }

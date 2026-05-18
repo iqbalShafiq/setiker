@@ -33,6 +33,7 @@ import presentation.createpack.CreatePackViewModel
 import presentation.editor.EditorViewModel
 import presentation.crop.CropViewModel
 import presentation.videocrop.VideoCropViewModel
+import presentation.videostickerpack.VideoStickerPackViewModel
 import presentation.videotrim.VideoTrimViewModel
 import presentation.animatededitor.AnimatedEditorViewModel
 import presentation.sync.SyncViewModel
@@ -73,6 +74,7 @@ val appModule = module {
     viewModelOf(::CropViewModel)
     viewModelOf(::VideoTrimViewModel)
     viewModelOf(::VideoCropViewModel)
+    viewModelOf(::VideoStickerPackViewModel)
     viewModelOf(::AnimatedEditorViewModel)
     viewModelOf(::LoginViewModel)
     viewModelOf(::RegisterViewModel)
