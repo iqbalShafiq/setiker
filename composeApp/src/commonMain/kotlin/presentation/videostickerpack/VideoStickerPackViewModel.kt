@@ -7,9 +7,12 @@ import data.repository.StickerPackDraftSaver
 import data.storage.StickerFileStorage
 import data.video.CandidateGridComposer
 import data.video.VideoFrameCandidateExtractor
+import domain.model.AnimatedStickerSpec
+import domain.model.DecodedFrame
 import domain.model.StickerDraftInput
 import domain.repository.StickerRepository
 import domain.util.VideoStickerPackPlanner
+import kotlin.time.Clock
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,6 +45,7 @@ class VideoStickerPackViewModel(
             is VideoStickerPackIntent.LoadVideo -> loadVideo(intent.path)
             is VideoStickerPackIntent.UpdateStart -> updateRange(startMs = intent.ms)
             is VideoStickerPackIntent.UpdateEnd -> updateRange(endMs = intent.ms)
+            is VideoStickerPackIntent.UpdatePrompt -> _state.update { it.copy(prompt = intent.value, generatedPlan = null) }
             is VideoStickerPackIntent.UpdatePackName -> _state.update { it.copy(packName = intent.value) }
             is VideoStickerPackIntent.UpdatePublisher -> _state.update { it.copy(publisher = intent.value) }
             VideoStickerPackIntent.Generate -> generate(extractFreshCandidates = true)
@@ -61,12 +65,13 @@ class VideoStickerPackViewModel(
                     sourceDurationMs = duration,
                     selectedStartMs = 0L,
                     selectedEndMs = duration.coerceAtMost(VideoStickerPackPlanner.MAX_SEGMENT_MS),
-                    candidates = emptyList(),
-                    candidateGrids = emptyList(),
-                    generatedStickers = emptyList()
-                )
+                        candidates = emptyList(),
+                        candidateGrids = emptyList(),
+                        candidateManifest = emptyList(),
+                        generatedPlan = null
+                    )
+                }
             }
-        }
     }
 
     private fun updateRange(startMs: Long? = null, endMs: Long? = null) {
@@ -77,7 +82,14 @@ class VideoStickerPackViewModel(
             val nextEnd = requestedEnd
                 .coerceAtMost(nextStart + VideoStickerPackPlanner.MAX_SEGMENT_MS)
                 .coerceAtMost(source)
-            current.copy(selectedStartMs = nextStart, selectedEndMs = nextEnd, generatedStickers = emptyList())
+            current.copy(
+                selectedStartMs = nextStart,
+                selectedEndMs = nextEnd,
+                candidates = emptyList(),
+                candidateGrids = emptyList(),
+                candidateManifest = emptyList(),
+                generatedPlan = null
+            )
         }
     }
 
@@ -101,27 +113,33 @@ class VideoStickerPackViewModel(
             }
 
             try {
-                val grids = if (extractFreshCandidates || current.candidateGrids.isEmpty()) {
-                    val candidates = extractor.extractCandidates(
+                val (candidates, grids, manifest) = if (extractFreshCandidates || current.candidateGrids.isEmpty() || current.candidateManifest.isEmpty()) {
+                    val extracted = extractor.extractCandidates(
                         videoPath = current.videoPath,
                         startMs = current.selectedStartMs,
                         endMs = current.selectedEndMs,
                         onProgress = { done, total ->
                             _state.update { it.copy(processingProgress = done.toFloat() / total.coerceAtLeast(1)) }
                         }
-                    )
-                    if (candidates.isEmpty()) error("No usable frames extracted")
+                    ).take(VideoStickerPackPlanner.MAX_CANDIDATES)
+                    if (extracted.isEmpty()) error("No usable frames extracted")
                     _state.update {
                         it.copy(
-                            candidates = candidates,
+                            candidates = extracted,
                             processingStep = VideoStickerPackProcessingStep.BuildingGrids
                         )
                     }
-                    gridComposer.composeGrids(candidates.map { it.filePath }).also { composed ->
-                        _state.update { it.copy(candidateGrids = composed) }
+                    val composed = gridComposer.composeGrids(extracted.map { it.filePath })
+                    val builtManifest = VideoStickerPackPlanner.buildCandidateManifest(extracted, composed)
+                    _state.update {
+                        it.copy(
+                            candidateGrids = composed,
+                            candidateManifest = builtManifest
+                        )
                     }
+                    Triple(extracted, composed, builtManifest)
                 } else {
-                    current.candidateGrids
+                    Triple(current.candidates, current.candidateGrids, current.candidateManifest)
                 }
 
                 _state.update {
@@ -132,19 +150,24 @@ class VideoStickerPackViewModel(
                 }
                 val generated = apiRepository.generateVideoStickerPack(
                     candidateGridPaths = grids.map { it.filePath },
-                    candidateCount = grids.sumOf { it.frameCount },
+                    candidateManifest = manifest,
+                    candidates = candidates,
                     selectedStartMs = current.selectedStartMs,
                     selectedEndMs = current.selectedEndMs,
-                    sourceDurationMs = current.sourceDurationMs
+                    sourceDurationMs = current.sourceDurationMs,
+                    prompt = current.prompt.takeIf { it.isNotBlank() }
                 )
-                if (generated.isEmpty()) error("No generated stickers returned")
+                if (generated.staticStickers.isEmpty() && generated.animatedStickers.isEmpty()) {
+                    error("No generated stickers returned")
+                }
+                _state.update { it.copy(processingStep = VideoStickerPackProcessingStep.PreparingPreview) }
 
                 _state.update {
                     it.copy(
                         isProcessing = false,
                         processingStep = null,
                         processingProgress = 1f,
-                        generatedStickers = generated
+                        generatedPlan = generated
                     )
                 }
             } catch (e: Exception) {
@@ -170,8 +193,69 @@ class VideoStickerPackViewModel(
             val current = _state.value
             if (!current.canSave) return@launch
             try {
+                _state.update {
+                    it.copy(
+                        isProcessing = true,
+                        processingStep = VideoStickerPackProcessingStep.Saving,
+                        processingProgress = 0f
+                    )
+                }
+                val generated = current.generatedPlan ?: return@launch
                 val identifier = PackIdentifierSanitizer.sanitize(current.packName, Random.nextInt(1000, 9999))
-                val tray = current.generatedStickers.first().localPath
+                val staticInputs = generated.staticStickers.map { sticker ->
+                    StickerDraftInput.StickerInput(
+                        imagePath = sticker.localPath,
+                        decorations = sticker.plan.decorations
+                    )
+                }
+                val animatedInputs = generated.animatedStickers.mapIndexed { index, sticker ->
+                    val loadedFrames = sticker.timeline.map { resolved ->
+                        fileStorage.loadImage(resolved.localPath)?.takeIf { it.isNotEmpty() }?.let { bytes ->
+                            DecodedFrame(bytes = bytes, durationMs = resolved.frame.durationMs)
+                        }
+                    }
+                    val frames = loadedFrames.takeIf { loaded -> loaded.all { it != null } }
+                        ?.filterNotNull()
+                        .orEmpty()
+                    val animatedPath = if (frames.size >= 2) {
+                        fileStorage.saveAnimatedStickerImage(
+                            frames = frames,
+                            fileName = "video_pack_${identifier}_anim_${index}_${Clock.System.now().toEpochMilliseconds()}.webp",
+                            baseDecorations = sticker.plan.baseDecorations,
+                            frameDecorations = sticker.plan.frameDecorations
+                        )
+                    } else {
+                        val start = sticker.plan.timeline.minOfOrNull { it.timestampMs } ?: current.selectedStartMs
+                        val end = (sticker.plan.timeline.maxOfOrNull { it.timestampMs } ?: current.selectedEndMs)
+                            .coerceAtLeast(start + 1_000L)
+                        val decoded = fileStorage.decodeVideoFrames(
+                            videoPath = current.videoPath,
+                            spec = AnimatedStickerSpec(
+                                trimStartMs = start,
+                                trimEndMs = end.coerceAtMost(current.sourceDurationMs),
+                                fps = sticker.plan.fps,
+                                loopCount = sticker.plan.loopCount
+                            )
+                        )
+                        fileStorage.saveAnimatedStickerImage(
+                            frames = decoded,
+                            fileName = "video_pack_${identifier}_anim_${index}_${Clock.System.now().toEpochMilliseconds()}.webp",
+                            baseDecorations = sticker.plan.baseDecorations,
+                            frameDecorations = sticker.plan.frameDecorations
+                        )
+                    }
+                    StickerDraftInput.StickerInput(
+                        imagePath = animatedPath,
+                        decorations = sticker.plan.baseDecorations,
+                        isAnimated = true,
+                        sourceVideoFile = current.videoPath,
+                        frameDecorations = sticker.plan.frameDecorations
+                    )
+                }
+                val stickerInputs = staticInputs + animatedInputs
+                val tray = generated.staticStickers.firstOrNull()?.localPath
+                    ?: animatedInputs.firstOrNull()?.imagePath
+                    ?: error("No generated stickers returned")
                 val pack = draftSaver.buildDraftPack(
                     StickerDraftInput(
                         identifier = identifier,
@@ -179,17 +263,20 @@ class VideoStickerPackViewModel(
                         publisher = current.publisher,
                         visibility = "PRIVATE",
                         trayImagePath = tray,
-                        stickers = current.generatedStickers.map { file ->
-                            StickerDraftInput.StickerInput(
-                                imagePath = file.localPath,
-                                decorations = file.decorations
-                            )
-                        }
+                        stickers = stickerInputs
                     )
                 )
                 stickerRepository.savePack(pack)
+                _state.update {
+                    it.copy(
+                        isProcessing = false,
+                        processingStep = null,
+                        processingProgress = 1f
+                    )
+                }
                 _effect.send(VideoStickerPackEffect.NavigateToPackDetail(pack.identifier))
             } catch (e: Exception) {
+                _state.update { it.copy(isProcessing = false, processingStep = null) }
                 _effect.send(
                     VideoStickerPackEffect.ShowError(
                         UiText.DynamicString(e.message ?: "Failed to save pack.")

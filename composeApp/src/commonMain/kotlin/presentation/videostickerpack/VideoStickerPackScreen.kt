@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -45,6 +46,9 @@ import setiker.composeapp.generated.resources.video_pack_build_grids
 import setiker.composeapp.generated.resources.video_pack_find_frames
 import setiker.composeapp.generated.resources.video_pack_generate
 import setiker.composeapp.generated.resources.video_pack_max_duration
+import setiker.composeapp.generated.resources.video_pack_prepare_preview
+import setiker.composeapp.generated.resources.video_pack_prompt_label
+import setiker.composeapp.generated.resources.video_pack_prompt_placeholder
 import setiker.composeapp.generated.resources.video_pack_regenerate
 import setiker.composeapp.generated.resources.video_pack_save
 import setiker.composeapp.generated.resources.video_pack_subtitle
@@ -122,6 +126,13 @@ fun VideoStickerPackScreen(
             }
 
             AppTextField(
+                value = state.prompt,
+                onValueChange = { onIntent(VideoStickerPackIntent.UpdatePrompt(it)) },
+                label = stringResource(Res.string.video_pack_prompt_label),
+                placeholder = stringResource(Res.string.video_pack_prompt_placeholder)
+            )
+
+            AppTextField(
                 value = state.packName,
                 onValueChange = { onIntent(VideoStickerPackIntent.UpdatePackName(it)) },
                 label = stringResource(Res.string.pack_name_label),
@@ -134,9 +145,22 @@ fun VideoStickerPackScreen(
                 placeholder = stringResource(Res.string.publisher_placeholder)
             )
 
-            if (state.generatedStickers.isNotEmpty()) {
+            val generatedPlan = state.generatedPlan
+            if (generatedPlan != null) {
                 Text(
-                    text = "Generated stickers: ${state.generatedStickers.size}",
+                    text = generatedPlan.plan.packTitle,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                generatedPlan.plan.summary?.takeIf { it.isNotBlank() }?.let { summary ->
+                    Text(
+                        text = summary,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = neubrutalMutedOnSurface()
+                    )
+                }
+                Text(
+                    text = "Static stickers: ${generatedPlan.staticStickers.size}",
                     style = MaterialTheme.typography.bodySmall,
                     color = neubrutalMutedOnSurface()
                 )
@@ -145,23 +169,58 @@ fun VideoStickerPackScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    state.generatedStickers.forEach { generated ->
-                        StickerCard(
-                            sticker = Sticker(imageFile = generated.localPath),
-                            onClick = {},
-                            modifier = Modifier.size(108.dp)
-                        )
+                    generatedPlan.staticStickers.forEach { generated ->
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            StickerCard(
+                                sticker = Sticker(
+                                    imageFile = generated.localPath,
+                                    decorations = generated.plan.decorations,
+                                    accessibilityText = generated.plan.accessibilityText
+                                ),
+                                onClick = {},
+                                showDecorations = true,
+                                modifier = Modifier.size(108.dp)
+                            )
+                            Text(
+                                text = "${generated.plan.candidateId} • ${formatMs(generated.plan.timestampMs)}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = neubrutalSubtleOnSurface()
+                            )
+                            if (generated.plan.emojis.isNotEmpty()) {
+                                Text(
+                                    text = generated.plan.emojis.joinToString(" "),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = neubrutalMutedOnSurface()
+                                )
+                            }
+                        }
+                    }
+                }
+                if (generatedPlan.animatedStickers.isNotEmpty()) {
+                    Text(
+                        text = "Animated stickers: ${generatedPlan.animatedStickers.size}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = neubrutalMutedOnSurface()
+                    )
+                    generatedPlan.animatedStickers.forEachIndexed { index, animated ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                text = "Loop ${index + 1}: ${animated.timeline.size} frames at ${animated.plan.fps} fps",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = neubrutalSubtleOnSurface()
+                            )
+                        }
                     }
                 }
             }
 
             AppPrimaryButton(
                 text = stringResource(
-                    if (state.generatedStickers.isEmpty()) Res.string.video_pack_generate
+                    if (state.generatedPlan == null) Res.string.video_pack_generate
                     else Res.string.video_pack_regenerate
                 ),
                 onClick = {
-                    if (state.generatedStickers.isEmpty()) onIntent(VideoStickerPackIntent.Generate)
+                    if (state.generatedPlan == null) onIntent(VideoStickerPackIntent.Generate)
                     else onIntent(VideoStickerPackIntent.Regenerate)
                 },
                 enabled = state.canGenerate
@@ -192,6 +251,8 @@ private fun VideoStickerPackProcessingStep.toUiLabel(): String {
         VideoStickerPackProcessingStep.FindingFrames -> Res.string.video_pack_find_frames
         VideoStickerPackProcessingStep.BuildingGrids -> Res.string.video_pack_build_grids
         VideoStickerPackProcessingStep.AskingAi -> Res.string.video_pack_ask_ai
+        VideoStickerPackProcessingStep.PreparingPreview -> Res.string.video_pack_prepare_preview
+        VideoStickerPackProcessingStep.Saving -> Res.string.video_pack_save
     }
     return stringResource(resId)
 }

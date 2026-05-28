@@ -8,6 +8,8 @@ import data.remote.model.GenerateData
 import data.remote.model.GridSplitData
 import data.remote.model.GridSplitTextAssetsData
 import data.remote.model.ApiTextAsset
+import data.remote.model.VideoStickerPackPlanData
+import domain.model.VideoStickerCandidateManifestItem
 import domain.error.AppErrorCode
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -32,6 +34,7 @@ import io.ktor.http.isSuccess
 import kotlinx.coroutines.delay
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
 import data.auth.AuthManager
 import data.auth.AuthTokenRefresher
 import io.ktor.client.request.header
@@ -171,12 +174,32 @@ class SetikerApiService(
 
     suspend fun generateVideoStickerPack(
         candidateGridPaths: List<String>,
-        candidateCount: Int,
+        candidateManifest: List<VideoStickerCandidateManifestItem>,
         selectedStartMs: Long,
         selectedEndMs: Long,
         sourceDurationMs: Long,
         prompt: String? = null
-    ): List<ApiImage> {
+    ) = generateVideoStickerPack(
+        candidateGridPaths = candidateGridPaths,
+        candidateManifest = candidateManifest,
+        selectedStartMs = selectedStartMs,
+        selectedEndMs = selectedEndMs,
+        sourceDurationMs = sourceDurationMs,
+        prompt = prompt,
+        maxStaticStickers = null,
+        maxAnimatedStickers = null
+    )
+
+    suspend fun generateVideoStickerPack(
+        candidateGridPaths: List<String>,
+        candidateManifest: List<VideoStickerCandidateManifestItem>,
+        selectedStartMs: Long,
+        selectedEndMs: Long,
+        sourceDurationMs: Long,
+        prompt: String? = null,
+        maxStaticStickers: Int? = null,
+        maxAnimatedStickers: Int? = null
+    ): data.remote.model.ApiVideoStickerPackPlan {
         val response = withAuthRetry { authHeader ->
             client.post("/api/v1/generate/video-sticker-pack") {
                 authHeader?.let { header(HttpHeaders.Authorization, it) }
@@ -185,13 +208,15 @@ class SetikerApiService(
                         formData {
                             append("layout", "4x4")
                             append("candidateLayout", "4x4")
-                            append("candidateCount", candidateCount.toString())
+                            append("candidateManifest", json.encodeToString(candidateManifest))
                             append("selectedStartMs", selectedStartMs.toString())
                             append("selectedEndMs", selectedEndMs.toString())
                             append("sourceDurationMs", sourceDurationMs.toString())
                             if (!prompt.isNullOrBlank()) {
                                 append("prompt", prompt)
                             }
+                            maxStaticStickers?.let { append("maxStaticStickers", it.toString()) }
+                            maxAnimatedStickers?.let { append("maxAnimatedStickers", it.toString()) }
                             candidateGridPaths.forEachIndexed { i, path ->
                                 appendImageFile(
                                     key = "candidate_grids",
@@ -204,7 +229,18 @@ class SetikerApiService(
                 )
             }
         }
-        return parseGenerateImages(response)
+        val bodyText = response.bodyAsText()
+        if (!response.status.isSuccess()) {
+            throw ApiException(
+                code = AppErrorCode.GenerateRequestFailed,
+                message = runCatching { json.decodeFromString<ApiErrorEnvelope>(bodyText) }
+                    .getOrNull()
+                    ?.error
+                    ?.message
+            )
+        }
+        return json.decodeFromString<ApiSuccessEnvelope<VideoStickerPackPlanData>>(bodyText).data?.plan
+            ?: throw ApiException(code = AppErrorCode.InvalidGenerateResponse)
     }
 
     suspend fun improve(imagePaths: List<String>): List<ApiImage> {

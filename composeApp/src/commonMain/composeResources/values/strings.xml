@@ -302,6 +302,9 @@
     <string name="video_pack_find_frames">Finding clear frames</string>
     <string name="video_pack_build_grids">Building candidate grids</string>
     <string name="video_pack_ask_ai">Asking AI Agent</string>
+    <string name="video_pack_prepare_preview">Preparing preview</string>
+    <string name="video_pack_prompt_label">Style prompt (optional)</string>
+    <string name="video_pack_prompt_placeholder">e.g. funny reactions, bold captions</string>
     <string name="video_pack_generate">Generate</string>
     <string name="video_pack_save">Save Pack</string>
     <string name="video_pack_regenerate">Regenerate</string>

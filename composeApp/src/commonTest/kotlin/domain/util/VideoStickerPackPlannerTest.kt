@@ -1,5 +1,7 @@
 package domain.util
 
+import domain.model.CandidateGridImage
+import domain.model.VideoFrameCandidate
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -74,5 +76,50 @@ class VideoStickerPackPlannerTest {
         assertEquals(2, batches.size)
         assertEquals(16, batches[0].size)
         assertEquals(2, batches[1].size)
+    }
+
+    @Test
+    fun buildCandidateManifestAssignsStableIdsGridIndexesAndCellIds() {
+        val candidates = (0 until 18).map { index ->
+            VideoFrameCandidate(
+                filePath = "/tmp/frame_$index.png",
+                timestampMs = index * 1000L,
+                sharpnessScore = index + 0.1,
+                brightnessScore = index + 0.2,
+                differenceScore = index + 0.3
+            )
+        }
+        val grids = listOf(
+            CandidateGridImage(filePath = "/tmp/grid_0.png", frameCount = 16),
+            CandidateGridImage(filePath = "/tmp/grid_1.png", frameCount = 2)
+        )
+
+        val manifest = VideoStickerPackPlanner.buildCandidateManifest(candidates, grids)
+
+        assertEquals(18, manifest.size)
+        assertEquals("frame_0000", manifest[0].candidateId)
+        assertEquals(0, manifest[0].frameIndex)
+        assertEquals(0, manifest[0].gridIndex)
+        assertEquals("A1", manifest[0].cellId)
+        assertEquals("frame_0015", manifest[15].candidateId)
+        assertEquals(0, manifest[15].gridIndex)
+        assertEquals("D4", manifest[15].cellId)
+        assertEquals("frame_0016", manifest[16].candidateId)
+        assertEquals(1, manifest[16].gridIndex)
+        assertEquals("A1", manifest[16].cellId)
+        assertEquals(17_000L, manifest[17].timestampMs)
+        assertEquals(17.1, manifest[17].sharpnessScore)
+    }
+
+    @Test
+    fun buildCandidateManifestRejectsGridAndCandidateCountMismatch() {
+        val candidates = listOf(
+            VideoFrameCandidate("/tmp/frame_0.png", 0L, 1.0, 1.0, 1.0)
+        )
+        val grids = listOf(CandidateGridImage(filePath = "/tmp/grid_0.png", frameCount = 2))
+
+        assertFailsWith<IllegalArgumentException> {
+            VideoStickerPackPlanner.buildCandidateManifest(candidates, grids)
+        }
     }
 }

@@ -43,6 +43,7 @@ fun StickerCard(
     sticker: Sticker,
     onClick: () -> Unit,
     onDeleteClick: (() -> Unit)? = null,
+    showDecorations: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val border = neubrutalBorderColor()
@@ -76,6 +77,19 @@ fun StickerCard(
                 .clip(innerShape),
             contentScale = ContentScale.Crop
         )
+
+        if (showDecorations && sticker.decorations.isNotEmpty()) {
+            DecorationPreviewLayer(
+                decorations = sticker.decorations,
+                selectedDecorationId = null,
+                onSelectDecoration = {},
+                onUpdateDecoration = { _, _, _, _ -> },
+                onDeleteDecoration = {},
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(innerShape)
+            )
+        }
 
         if (onDeleteClick != null) {
             val deleteShape = RoundedCornerShape(6.dp)

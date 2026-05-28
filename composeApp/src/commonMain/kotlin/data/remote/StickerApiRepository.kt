@@ -1,6 +1,7 @@
 package data.remote
 
 import data.remote.mapper.toDecorationApiImage
+import data.remote.mapper.toDomain
 import data.remote.mapper.toStickerDecorations
 import data.remote.model.ApiImage
 import data.remote.model.GeneratedStickerFile
@@ -9,7 +10,13 @@ import data.storage.StickerFileStorage
 import data.util.OnDeviceImageProcessor
 import data.util.parseGridLayout
 import domain.error.AppErrorCode
-import kotlinx.datetime.Clock
+import domain.model.ResolvedVideoAnimatedSticker
+import domain.model.ResolvedVideoAnimatedTimelineFrame
+import domain.model.ResolvedVideoStaticSticker
+import domain.model.ResolvedVideoStickerPackPlan
+import domain.model.VideoFrameCandidate
+import domain.model.VideoStickerCandidateManifestItem
+import kotlin.time.Clock
 import kotlin.random.Random
 
 class StickerApiRepository(
@@ -50,23 +57,52 @@ class StickerApiRepository(
 
     suspend fun generateVideoStickerPack(
         candidateGridPaths: List<String>,
-        candidateCount: Int,
+        candidateManifest: List<VideoStickerCandidateManifestItem>,
+        candidates: List<VideoFrameCandidate>,
         selectedStartMs: Long,
         selectedEndMs: Long,
         sourceDurationMs: Long,
         prompt: String? = null
-    ): List<GridSplitStickerFile> {
-        val images = api.generateVideoStickerPack(
+    ): ResolvedVideoStickerPackPlan {
+        val plan = api.generateVideoStickerPack(
             candidateGridPaths = candidateGridPaths,
-            candidateCount = candidateCount,
+            candidateManifest = candidateManifest,
             selectedStartMs = selectedStartMs,
             selectedEndMs = selectedEndMs,
             sourceDurationMs = sourceDurationMs,
             prompt = prompt
+        ).toDomain()
+        val candidatesById = candidateManifest.associate { manifestItem ->
+            val candidate = candidates.getOrNull(manifestItem.frameIndex)
+                ?: throw ApiException(code = AppErrorCode.InvalidGenerateResponse)
+            manifestItem.candidateId to candidate
+        }
+
+        val resolvedStatic = plan.staticStickers.map { sticker ->
+            val candidate = candidatesById[sticker.candidateId]
+                ?: throw ApiException(code = AppErrorCode.InvalidGenerateResponse)
+            ResolvedVideoStaticSticker(plan = sticker, localPath = candidate.filePath)
+        }
+
+        val resolvedAnimated = plan.animatedStickers.map { sticker ->
+            ResolvedVideoAnimatedSticker(
+                plan = sticker,
+                timeline = sticker.timeline.map { frame ->
+                    val candidate = if (frame.candidateId != null) {
+                        candidatesById[frame.candidateId]
+                    } else {
+                        candidates.getOrNull(frame.frameIndex)
+                    } ?: throw ApiException(code = AppErrorCode.InvalidGenerateResponse)
+                    ResolvedVideoAnimatedTimelineFrame(frame = frame, localPath = candidate.filePath)
+                }
+            )
+        }
+
+        return ResolvedVideoStickerPackPlan(
+            plan = plan,
+            staticStickers = resolvedStatic,
+            animatedStickers = resolvedAnimated
         )
-        val rawGridPath = images.firstOrNull()?.let { downloadAndPersist(it) }
-            ?: return emptyList()
-        return splitGridOnDevice(rawGridPath, "4x4")
     }
 
     suspend fun improve(imagePaths: List<String>): List<GeneratedStickerFile> {

@@ -1,6 +1,9 @@
 package domain.util
 
+import domain.model.CandidateGridImage
+import domain.model.VideoFrameCandidate
 import domain.model.VideoStickerPackGridSpec
+import domain.model.VideoStickerCandidateManifestItem
 
 object VideoStickerPackPlanner {
     const val MAX_SEGMENT_MS: Long = 60_000L
@@ -36,4 +39,37 @@ object VideoStickerPackPlanner {
         capCandidatePaths(paths)
             .chunked(GRID_CELL_COUNT)
             .take(2)
+
+    fun buildCandidateManifest(
+        candidates: List<VideoFrameCandidate>,
+        grids: List<CandidateGridImage>
+    ): List<VideoStickerCandidateManifestItem> {
+        val cappedCandidates = candidates.take(MAX_CANDIDATES)
+        require(grids.size <= 2) { "At most 2 candidate grids are supported" }
+        require(grids.all { it.layout == GRID_LAYOUT }) { "Candidate grids must use $GRID_LAYOUT layout" }
+        require(grids.sumOf { it.frameCount } == cappedCandidates.size) {
+            "Candidate manifest size must match candidate grid frame count"
+        }
+
+        return cappedCandidates.mapIndexed { index, candidate ->
+            val gridIndex = index / GRID_CELL_COUNT
+            val cellIndex = index % GRID_CELL_COUNT
+            VideoStickerCandidateManifestItem(
+                candidateId = "frame_${index.toString().padStart(4, '0')}",
+                frameIndex = index,
+                gridIndex = gridIndex,
+                cellId = cellIdFor(cellIndex),
+                timestampMs = candidate.timestampMs,
+                sharpnessScore = candidate.sharpnessScore,
+                brightnessScore = candidate.brightnessScore,
+                differenceScore = candidate.differenceScore
+            )
+        }
+    }
+
+    private fun cellIdFor(cellIndex: Int): String {
+        val row = cellIndex / 4
+        val col = cellIndex % 4
+        return "${'A' + row}${col + 1}"
+    }
 }
