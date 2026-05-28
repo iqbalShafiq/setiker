@@ -7,6 +7,7 @@ import domain.model.VideoStickerCandidateManifestItem
 
 data class VideoStickerPackState(
     val videoPath: String = "",
+    val previewFramePath: String? = null,
     val sourceDurationMs: Long = 0L,
     val selectedStartMs: Long = 0L,
     val selectedEndMs: Long = 0L,

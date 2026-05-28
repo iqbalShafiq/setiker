@@ -1,5 +1,8 @@
 package presentation.videostickerpack
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -11,7 +14,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RangeSlider
@@ -20,22 +28,40 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import data.remote.readFileBytes
 import domain.model.Sticker
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.stringResource
-import presentation.components.AppPrimaryButton
-import presentation.components.AppSecondaryButton
 import presentation.components.AppTextField
 import presentation.components.AppTopBar
+import presentation.components.LoadingIndicator
+import presentation.components.NeubrutalStickerPreviewFrame
+import presentation.components.PackBottomBar
+import presentation.components.PackBottomBarFab
+import presentation.components.PackBottomBarIconButton
 import presentation.components.StickerCard
+import presentation.theme.NeubrutalBlack
+import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalSubtleOnSurface
 import setiker.composeapp.generated.resources.Res
-import setiker.composeapp.generated.resources.cancel
+import setiker.composeapp.generated.resources.back
+import setiker.composeapp.generated.resources.loading_frames
 import setiker.composeapp.generated.resources.pack_name_label
 import setiker.composeapp.generated.resources.pack_name_placeholder
 import setiker.composeapp.generated.resources.publisher_label
@@ -52,6 +78,8 @@ import setiker.composeapp.generated.resources.video_pack_regenerate
 import setiker.composeapp.generated.resources.video_pack_save
 import setiker.composeapp.generated.resources.video_pack_subtitle
 import setiker.composeapp.generated.resources.video_pack_title
+import setiker.composeapp.generated.resources.video_preview
+import util.decodeImageBitmap
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -63,10 +91,45 @@ fun VideoStickerPackScreen(
     modifier: Modifier = Modifier
 ) {
     Scaffold(
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
         topBar = {
             AppTopBar(
                 title = stringResource(Res.string.video_pack_title),
-                onBackClick = onBackClick
+                onBackClick = null
+            )
+        },
+        bottomBar = {
+            PackBottomBar(
+                actionStatusText = state.processingStep?.toUiLabel()?.takeIf { state.isProcessing },
+                actions = {
+                    PackBottomBarIconButton(
+                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(Res.string.back),
+                        onClick = onBackClick,
+                        enabled = !state.isProcessing
+                    )
+                    PackBottomBarIconButton(
+                        icon = Icons.Filled.Save,
+                        contentDescription = stringResource(Res.string.video_pack_save),
+                        onClick = { onIntent(VideoStickerPackIntent.SavePack) },
+                        enabled = state.canSave
+                    )
+                },
+                floatingActionButton = {
+                    PackBottomBarFab(
+                        icon = Icons.Filled.AutoAwesome,
+                        contentDescription = stringResource(
+                            if (state.generatedPlan == null) Res.string.video_pack_generate
+                            else Res.string.video_pack_regenerate
+                        ),
+                        onClick = {
+                            if (state.generatedPlan == null) onIntent(VideoStickerPackIntent.Generate)
+                            else onIntent(VideoStickerPackIntent.Regenerate)
+                        },
+                        enabled = state.canGenerate,
+                        isLoading = state.isProcessing && state.processingStep != VideoStickerPackProcessingStep.Saving
+                    )
+                }
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -92,6 +155,11 @@ fun VideoStickerPackScreen(
             )
 
             if (state.sourceDurationMs > 0L) {
+                VideoSourcePreview(
+                    previewFramePath = state.previewFramePath,
+                    durationMs = state.selectedDurationMs,
+                    modifier = Modifier.fillMaxWidth()
+                )
                 Text(
                     text = "${formatMs(state.selectedStartMs)} -> ${formatMs(state.selectedEndMs)}",
                     style = MaterialTheme.typography.titleSmall,
@@ -240,30 +308,76 @@ fun VideoStickerPackScreen(
                 }
             }
 
-            AppPrimaryButton(
-                text = stringResource(
-                    if (state.generatedPlan == null) Res.string.video_pack_generate
-                    else Res.string.video_pack_regenerate
-                ),
-                onClick = {
-                    if (state.generatedPlan == null) onIntent(VideoStickerPackIntent.Generate)
-                    else onIntent(VideoStickerPackIntent.Regenerate)
-                },
-                enabled = state.canGenerate
-            )
-            AppPrimaryButton(
-                text = stringResource(Res.string.video_pack_save),
-                onClick = { onIntent(VideoStickerPackIntent.SavePack) },
-                enabled = state.canSave
-            )
-            AppSecondaryButton(
-                text = stringResource(Res.string.cancel),
-                onClick = { onIntent(VideoStickerPackIntent.Cancel) },
-                enabled = !state.isProcessing
-            )
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(88.dp))
         }
     }
+}
+
+@Composable
+private fun VideoSourcePreview(
+    previewFramePath: String?,
+    durationMs: Long,
+    modifier: Modifier = Modifier
+) {
+    val bitmap = rememberPreviewBitmap(previewFramePath)
+
+    NeubrutalStickerPreviewFrame(
+        cornerRadius = NeubrutalCardRadius,
+        modifier = modifier
+    ) {
+        when {
+            bitmap != null -> {
+                Image(
+                    bitmap = bitmap,
+                    contentDescription = stringResource(Res.string.video_preview),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(NeubrutalCardRadius)),
+                    contentScale = ContentScale.Crop
+                )
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(8.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(NeubrutalBlack.copy(alpha = 0.6f))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = formatMs(durationMs),
+                        color = NeubrutalWhite,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+            }
+            else -> {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    LoadingIndicator(modifier = Modifier.size(40.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(Res.string.loading_frames),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = neubrutalSubtleOnSurface()
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun rememberPreviewBitmap(path: String?): ImageBitmap? {
+    var bitmap by remember(path) { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(path) {
+        bitmap = null
+        if (path.isNullOrBlank()) return@LaunchedEffect
+        bitmap = withContext(Dispatchers.Default) {
+            runCatching { readFileBytes(path) }
+                .getOrNull()
+                ?.let { decodeImageBitmap(it) }
+        }
+    }
+    return bitmap
 }
 
 private fun formatMs(ms: Long): String {

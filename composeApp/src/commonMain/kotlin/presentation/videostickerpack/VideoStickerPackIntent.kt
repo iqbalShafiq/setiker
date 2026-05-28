@@ -10,5 +10,4 @@ sealed interface VideoStickerPackIntent {
     data object Generate : VideoStickerPackIntent
     data object Regenerate : VideoStickerPackIntent
     data object SavePack : VideoStickerPackIntent
-    data object Cancel : VideoStickerPackIntent
 }

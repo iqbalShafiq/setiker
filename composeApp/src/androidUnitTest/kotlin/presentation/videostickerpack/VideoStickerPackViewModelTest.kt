@@ -55,6 +55,7 @@ class VideoStickerPackViewModelTest {
     fun regenerateReusesExistingCandidateGrids() = runTest {
         val fileStorage = mockk<StickerFileStorage>()
         coEvery { fileStorage.getVideoDurationMs(any()) } returns 120_000L
+        coEvery { fileStorage.extractVideoFrameToFile(any(), any(), any()) } returns "/tmp/video_preview.png"
         val extractor = mockk<VideoFrameCandidateExtractor>()
         coEvery { extractor.extractCandidates(any(), any(), any(), any()) } returns listOf(
             VideoFrameCandidate("/tmp/c1.png", 1_000L, 0.4, 0.5, 0.3)
@@ -115,6 +116,7 @@ class VideoStickerPackViewModelTest {
     fun savePackPersistsGeneratedStickersAfterPreview() = runTest {
         val fileStorage = mockk<StickerFileStorage>()
         coEvery { fileStorage.getVideoDurationMs(any()) } returns 60_000L
+        coEvery { fileStorage.extractVideoFrameToFile(any(), any(), any()) } returns "/tmp/video_preview.png"
         coEvery { fileStorage.loadImage(any()) } returns null
         val extractor = mockk<VideoFrameCandidateExtractor>()
         coEvery { extractor.extractCandidates(any(), any(), any(), any()) } returns listOf(
@@ -163,6 +165,7 @@ class VideoStickerPackViewModelTest {
     fun saveAnimatedPlanFallsBackToVideoDecodeWhenAnyTimelineFrameFileIsMissing() = runTest {
         val fileStorage = mockk<StickerFileStorage>()
         coEvery { fileStorage.getVideoDurationMs(any()) } returns 60_000L
+        coEvery { fileStorage.extractVideoFrameToFile(any(), any(), any()) } returns "/tmp/video_preview.png"
         val extractor = mockk<VideoFrameCandidateExtractor>()
         coEvery { extractor.extractCandidates(any(), any(), any(), any()) } returns listOf(
             VideoFrameCandidate("/tmp/c1.png", 1_000L, 0.4, 0.5, 0.3),

@@ -51,17 +51,22 @@ class VideoStickerPackViewModel(
             VideoStickerPackIntent.Generate -> generate(extractFreshCandidates = true)
             VideoStickerPackIntent.Regenerate -> generate(extractFreshCandidates = false)
             VideoStickerPackIntent.SavePack -> savePack()
-            VideoStickerPackIntent.Cancel -> viewModelScope.launch { _effect.send(VideoStickerPackEffect.NavigateBack) }
         }
     }
 
     private fun loadVideo(path: String) {
         viewModelScope.launch {
-            _state.update { it.copy(isLoadingVideo = true, videoPath = path, errorMessage = null) }
+            _state.update { it.copy(isLoadingVideo = true, videoPath = path, previewFramePath = null, errorMessage = null) }
             val duration = fileStorage.getVideoDurationMs(path).takeIf { it > 0L } ?: 60_000L
+            val previewPath = fileStorage.extractVideoFrameToFile(
+                videoPath = path,
+                atMs = 0L,
+                fileName = "video_pack_preview_${Clock.System.now().toEpochMilliseconds()}.png"
+            )
             _state.update {
                 it.copy(
                     isLoadingVideo = false,
+                    previewFramePath = previewPath,
                     sourceDurationMs = duration,
                     selectedStartMs = 0L,
                     selectedEndMs = duration.coerceAtMost(VideoStickerPackPlanner.MAX_SEGMENT_MS),
