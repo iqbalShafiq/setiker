@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -203,12 +202,39 @@ fun VideoStickerPackScreen(
                         color = neubrutalMutedOnSurface()
                     )
                     generatedPlan.animatedStickers.forEachIndexed { index, animated ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(
                                 text = "Loop ${index + 1}: ${animated.timeline.size} frames at ${animated.plan.fps} fps",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = neubrutalSubtleOnSurface()
                             )
+                            FlowRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                animated.timeline.forEachIndexed { frameIndex, frame ->
+                                    val decorations = animated.plan.baseDecorations +
+                                        animated.plan.frameDecorations[frameIndex].orEmpty()
+                                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                        StickerCard(
+                                            sticker = Sticker(
+                                                imageFile = frame.localPath,
+                                                decorations = decorations,
+                                                accessibilityText = animated.plan.accessibilityText
+                                            ),
+                                            onClick = {},
+                                            showDecorations = true,
+                                            modifier = Modifier.size(72.dp)
+                                        )
+                                        Text(
+                                            text = formatMs(frame.frame.timestampMs),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = neubrutalSubtleOnSurface()
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
