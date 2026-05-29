@@ -98,7 +98,7 @@ actual class StickerFileStorage(private val context: Context) {
                 ?: throw IllegalArgumentException("Cannot decode image: $sourcePath")
 
             try {
-                val scaledBitmap = Bitmap.createScaledBitmap(bitmap, 512, 512, true)
+                val scaledBitmap = resizeAndCenterCropTo512(bitmap)
 
                 val destFile = File(stickersDir, outputFileName)
                 FileOutputStream(destFile).use { out ->
@@ -160,7 +160,7 @@ actual class StickerFileStorage(private val context: Context) {
                 ?: throw IllegalArgumentException("Cannot decode image: $sourcePath")
 
             try {
-                val scaledBitmap = Bitmap.createScaledBitmap(bitmap, 512, 512, true)
+                val scaledBitmap = resizeAndCenterCropTo512(bitmap)
 
                 var quality = 90
                 var bytes: ByteArray
@@ -462,13 +462,14 @@ actual class StickerFileStorage(private val context: Context) {
     ): String = withContext(Dispatchers.IO) {
         val source = BitmapFactory.decodeFile(sourcePath)
             ?: throw IllegalArgumentException("Cannot decode image: $sourcePath")
-        val target = StickerPack.STICKER_SIZE
         try {
-            val scaled = if (source.width == target && source.height == target) {
-                source.copy(Bitmap.Config.ARGB_8888, true)
+            val cropped = resizeAndCenterCropTo512(source)
+            val scaled = if (cropped.config == Bitmap.Config.ARGB_8888 && cropped.isMutable) {
+                cropped
             } else {
-                Bitmap.createScaledBitmap(source, target, target, true)
-                    .copy(Bitmap.Config.ARGB_8888, true)
+                val converted = cropped.copy(Bitmap.Config.ARGB_8888, true)
+                if (cropped !== source) cropped.recycle()
+                converted
             }
             if (decorations.isNotEmpty()) {
                 composeDecorationsOntoBitmap(scaled, decorations)

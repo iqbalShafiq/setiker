@@ -11,6 +11,7 @@ import domain.model.AnimatedStickerSpec
 import domain.model.DecodedFrame
 import domain.model.ResolvedVideoAnimatedSticker
 import domain.model.ResolvedVideoStaticSticker
+import domain.model.Sticker
 import domain.model.StickerDraftInput
 import domain.model.StickerPack
 import domain.repository.StickerRepository
@@ -401,7 +402,7 @@ class VideoStickerPackViewModel(
                         decorations = sticker.plan.decorations
                     )
                 }
-                val animatedInputs = selectedAnimated.mapIndexed { index, sticker ->
+                val animatedStickers = selectedAnimated.mapIndexed { index, sticker ->
                     val loadedFrames = sticker.timeline.map { resolved ->
                         fileStorage.loadImage(resolved.localPath)
                             ?.takeIf { it.isNotEmpty() }
@@ -412,18 +413,13 @@ class VideoStickerPackViewModel(
                     val frames = loadedFrames.takeIf { loaded -> loaded.all { it != null } }
                         ?.filterNotNull()
                         .orEmpty()
-                    val animatedPath = if (frames.size >= 2) {
-                        fileStorage.saveAnimatedStickerImage(
-                            frames = frames,
-                            fileName = "video_pack_${identifier}_anim_${index}_${Clock.System.now().toEpochMilliseconds()}.webp",
-                            baseDecorations = sticker.plan.baseDecorations,
-                            frameDecorations = sticker.plan.frameDecorations
-                        )
+                    val sourceFrames = if (frames.size >= 2) {
+                        frames
                     } else {
                         val start = sticker.plan.timeline.minOfOrNull { it.timestampMs } ?: current.selectedStartMs
                         val end = (sticker.plan.timeline.maxOfOrNull { it.timestampMs } ?: current.selectedEndMs)
                             .coerceAtLeast(start + 1_000L)
-                        val decoded = fileStorage.decodeVideoFrames(
+                        fileStorage.decodeVideoFrames(
                             videoPath = current.videoPath,
                             spec = AnimatedStickerSpec(
                                 trimStartMs = start,
@@ -432,15 +428,29 @@ class VideoStickerPackViewModel(
                                 loopCount = sticker.plan.loopCount
                             )
                         )
+                    }
+                    val timestamp = Clock.System.now().toEpochMilliseconds()
+                    val baseAnimatedPath = fileStorage.saveAnimatedStickerImage(
+                        frames = sourceFrames,
+                        fileName = "video_pack_${identifier}_anim_${index}_${timestamp}_base.webp"
+                    )
+                    val previewAnimatedPath = if (
+                        sticker.plan.baseDecorations.isEmpty() &&
+                        sticker.plan.frameDecorations.isEmpty()
+                    ) {
+                        baseAnimatedPath
+                    } else {
                         fileStorage.saveAnimatedStickerImage(
-                            frames = decoded,
-                            fileName = "video_pack_${identifier}_anim_${index}_${Clock.System.now().toEpochMilliseconds()}.webp",
+                            frames = sourceFrames,
+                            fileName = "video_pack_${identifier}_anim_${index}_${timestamp}_preview.webp",
                             baseDecorations = sticker.plan.baseDecorations,
                             frameDecorations = sticker.plan.frameDecorations
                         )
                     }
-                    StickerDraftInput.StickerInput(
-                        imagePath = animatedPath,
+                    Sticker(
+                        imageFile = previewAnimatedPath,
+                        sourceImageFile = baseAnimatedPath,
+                        emojis = listOf("⭐"),
                         decorations = sticker.plan.baseDecorations,
                         isAnimated = true,
                         sourceVideoFile = current.videoPath,
@@ -464,17 +474,19 @@ class VideoStickerPackViewModel(
                     stickerRepository.savePack(staticPack)
                     savedPacks += staticPack
                 }
-                if (animatedInputs.isNotEmpty()) {
+                if (animatedStickers.isNotEmpty()) {
                     val animatedIdentifier = if (shouldSplitNames) "${identifier}_animated" else identifier
-                    val animatedPack = draftSaver.buildDraftPack(
-                        StickerDraftInput(
-                            identifier = animatedIdentifier,
-                            name = if (shouldSplitNames) "${current.packName} Animated" else current.packName,
-                            publisher = current.publisher,
-                            visibility = "PRIVATE",
-                            trayImagePath = animatedInputs.first().imagePath,
-                            stickers = animatedInputs
-                        )
+                    val animatedPack = StickerPack(
+                        identifier = animatedIdentifier,
+                        name = if (shouldSplitNames) "${current.packName} Animated" else current.packName,
+                        publisher = current.publisher,
+                        trayImageFile = fileStorage.saveTrayImage(
+                            sourcePath = animatedStickers.first().imageFile,
+                            fileName = "tray_${animatedIdentifier}_${Clock.System.now().toEpochMilliseconds()}.png"
+                        ),
+                        stickers = animatedStickers,
+                        isAnimated = true,
+                        visibility = "PRIVATE"
                     )
                     stickerRepository.savePack(animatedPack)
                     savedPacks += animatedPack

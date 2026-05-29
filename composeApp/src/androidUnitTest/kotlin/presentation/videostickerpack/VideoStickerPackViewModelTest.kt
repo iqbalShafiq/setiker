@@ -182,11 +182,17 @@ class VideoStickerPackViewModelTest {
             DecodedFrame(byteArrayOf(11), 83L)
         )
         coEvery { fileStorage.saveAnimatedStickerImage(any(), any(), any(), any(), any()) } returns "/tmp/anim.webp"
+        coEvery { fileStorage.saveTrayImage(any(), any()) } returns "/tmp/tray.png"
         val apiRepository = mockk<StickerApiRepository>()
         coEvery {
             apiRepository.generateVideoStickerPack(any(), any(), any(), any(), any(), any(), any())
         } returns animatedResolvedPlan()
-        val repository = mockk<StickerRepository>(relaxed = true)
+        val savedPacks = mutableListOf<StickerPack>()
+        val repository = mockk<StickerRepository>()
+        coEvery { repository.savePack(any()) } answers {
+            savedPacks += firstArg<StickerPack>()
+            Unit
+        }
         val saver = CapturingDraftSaver(fakePack(id = "video_pack_anim"))
         val viewModel = VideoStickerPackViewModel(
             fileStorage = fileStorage,
@@ -216,13 +222,17 @@ class VideoStickerPackViewModelTest {
                 onProgress = any()
             )
         }
-        assertEquals(true, assertNotNull(saver.lastInput).stickers.single().isAnimated)
+        val savedSticker = savedPacks.single().stickers.single()
+        assertEquals(true, savedSticker.isAnimated)
+        assertEquals("/tmp/anim.webp", savedSticker.imageFile)
+        assertEquals("/tmp/anim.webp", savedSticker.sourceImageFile)
     }
 
     @Test
     fun generateSelectsAllGeneratedVideoStickersByDefault() = runTest {
         val fileStorage = mockk<StickerFileStorage>()
         coEvery { fileStorage.getVideoDurationMs(any()) } returns 60_000L
+        coEvery { fileStorage.extractVideoFrameToFile(any(), any(), any()) } returns "/tmp/video_preview.png"
         val extractor = mockk<VideoFrameCandidateExtractor>()
         coEvery { extractor.extractCandidates(any(), any(), any(), any()) } returns listOf(
             VideoFrameCandidate("/tmp/c1.png", 1_000L, 0.4, 0.5, 0.3),
@@ -258,9 +268,11 @@ class VideoStickerPackViewModelTest {
     fun saveMixedVideoSelectionPersistsStaticAndAnimatedPacksSeparately() = runTest {
         val fileStorage = mockk<StickerFileStorage>()
         coEvery { fileStorage.getVideoDurationMs(any()) } returns 60_000L
+        coEvery { fileStorage.extractVideoFrameToFile(any(), any(), any()) } returns "/tmp/video_preview.png"
         coEvery { fileStorage.loadImage("/tmp/a1.png") } returns byteArrayOf(1)
         coEvery { fileStorage.loadImage("/tmp/a2.png") } returns byteArrayOf(2)
         coEvery { fileStorage.saveAnimatedStickerImage(any(), any(), any(), any(), any()) } returns "/tmp/animated.webp"
+        coEvery { fileStorage.saveTrayImage(any(), any()) } returns "/tmp/animated_tray.png"
         val extractor = mockk<VideoFrameCandidateExtractor>()
         coEvery { extractor.extractCandidates(any(), any(), any(), any()) } returns listOf(
             VideoFrameCandidate("/tmp/c1.png", 1_000L, 0.4, 0.5, 0.3),
@@ -272,7 +284,12 @@ class VideoStickerPackViewModelTest {
         coEvery {
             apiRepository.generateVideoStickerPack(any(), any(), any(), any(), any(), any(), any())
         } returns mixedResolvedPlan()
-        val repository = mockk<StickerRepository>(relaxed = true)
+        val savedPacks = mutableListOf<StickerPack>()
+        val repository = mockk<StickerRepository>()
+        coEvery { repository.savePack(any()) } answers {
+            savedPacks += firstArg<StickerPack>()
+            Unit
+        }
         val saver = MultiCapturingDraftSaver()
         val viewModel = VideoStickerPackViewModel(
             fileStorage = fileStorage,
@@ -292,13 +309,16 @@ class VideoStickerPackViewModelTest {
         viewModel.onIntent(VideoStickerPackIntent.SavePack)
         advanceUntilIdle()
 
-        assertEquals(2, saver.inputs.size)
+        assertEquals(1, saver.inputs.size)
         assertEquals("Video Pack Static", saver.inputs[0].name)
-        assertEquals("Video Pack Animated", saver.inputs[1].name)
         assertEquals(false, saver.inputs[0].stickers.single().isAnimated)
-        assertEquals(true, saver.inputs[1].stickers.single().isAnimated)
         assertEquals(true, saver.inputs[0].identifier.endsWith("_static"))
-        assertEquals(true, saver.inputs[1].identifier.endsWith("_animated"))
+        val animatedPack = savedPacks.first { it.identifier.endsWith("_animated") }
+        val animatedSticker = animatedPack.stickers.single()
+        assertEquals("Video Pack Animated", animatedPack.name)
+        assertEquals(true, animatedSticker.isAnimated)
+        assertEquals("/tmp/animated.webp", animatedSticker.imageFile)
+        assertEquals("/tmp/animated.webp", animatedSticker.sourceImageFile)
         coVerify(exactly = 2) { repository.savePack(any()) }
     }
 
