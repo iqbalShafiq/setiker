@@ -22,16 +22,26 @@ data class VideoStickerPackState(
     val candidateGrids: List<CandidateGridImage> = emptyList(),
     val candidateManifest: List<VideoStickerCandidateManifestItem> = emptyList(),
     val generatedPlan: ResolvedVideoStickerPackPlan? = null,
+    val selectedStaticStickerKeys: Set<String> = emptySet(),
+    val selectedAnimatedStickerKeys: Set<String> = emptySet(),
     val errorMessage: String? = null
 ) {
     val selectedDurationMs: Long get() = selectedEndMs - selectedStartMs
+
+    val selectedStickerCount: Int
+        get() = selectedStaticStickerKeys.size + selectedAnimatedStickerKeys.size
+
+    val isSaving: Boolean
+        get() = processingStep == VideoStickerPackProcessingStep.Saving && isProcessing
+
+    val isBlockingUi: Boolean
+        get() = isSaving
 
     val canGenerate: Boolean
         get() = videoPath.isNotBlank() && selectedDurationMs in 1L..60_000L && !isProcessing
 
     val canSave: Boolean
-        get() = generatedPlan?.let { it.staticStickers.isNotEmpty() || it.animatedStickers.isNotEmpty() } == true &&
-            packName.isNotBlank() && publisher.isNotBlank() && !isProcessing
+        get() = selectedStickerCount > 0 && packName.isNotBlank() && publisher.isNotBlank() && !isProcessing
 }
 
 enum class VideoStickerPackProcessingStep {

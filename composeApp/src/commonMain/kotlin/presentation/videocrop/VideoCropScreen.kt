@@ -54,6 +54,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.stringResource
 import presentation.components.AppTopBar
+import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
 import presentation.components.MediaPreviewBottomBar
 import presentation.components.NeubrutalStickerPreviewFrame
@@ -123,12 +124,17 @@ fun VideoCropScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
-        Column(
+        InteractionBlockedBox(
+            blocked = state.isApplying,
             modifier = modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp, vertical = 16.dp)
+            ) {
             // Decode every preview frame to an ImageBitmap and keep them in a
             // path-keyed map. Same approach the animated editor uses for buttery
             // smooth playback — once decoded the swap between frames during play
@@ -178,9 +184,10 @@ fun VideoCropScreen(
                             color = neubrutalSubtleOnSurface(),
                             style = MaterialTheme.typography.bodyMedium
                         )
-                    }
-                }
             }
+        }
+    }
+}
 
             Spacer(modifier = Modifier.height(12.dp))
             Text(

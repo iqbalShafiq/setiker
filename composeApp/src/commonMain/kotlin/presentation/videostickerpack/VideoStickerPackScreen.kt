@@ -1,9 +1,9 @@
 package presentation.videostickerpack
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -11,15 +11,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RangeSlider
@@ -27,41 +27,36 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import data.remote.readFileBytes
+import domain.model.ResolvedVideoAnimatedSticker
 import domain.model.Sticker
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
+import presentation.components.AppPrimaryButton
 import presentation.components.AppTextField
 import presentation.components.AppTopBar
-import presentation.components.LoadingIndicator
-import presentation.components.NeubrutalStickerPreviewFrame
+import presentation.components.InteractionBlockedBox
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
 import presentation.components.StickerCard
-import presentation.theme.NeubrutalBlack
-import presentation.theme.NeubrutalCardRadius
-import presentation.theme.NeubrutalWhite
+import presentation.theme.AccentCoral
+import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalSubtleOnSurface
+import presentation.theme.neubrutalBorderColor
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.back
-import setiker.composeapp.generated.resources.loading_frames
 import setiker.composeapp.generated.resources.pack_name_label
 import setiker.composeapp.generated.resources.pack_name_placeholder
 import setiker.composeapp.generated.resources.publisher_label
@@ -78,8 +73,6 @@ import setiker.composeapp.generated.resources.video_pack_regenerate
 import setiker.composeapp.generated.resources.video_pack_save
 import setiker.composeapp.generated.resources.video_pack_subtitle
 import setiker.composeapp.generated.resources.video_pack_title
-import setiker.composeapp.generated.resources.video_preview
-import util.decodeImageBitmap
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -90,17 +83,17 @@ fun VideoStickerPackScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     modifier: Modifier = Modifier
 ) {
+    val contentEnabled = !state.isBlockingUi
     Scaffold(
-        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
         topBar = {
             AppTopBar(
                 title = stringResource(Res.string.video_pack_title),
-                onBackClick = null
+                onBackClick = onBackClick
             )
         },
         bottomBar = {
             PackBottomBar(
-                actionStatusText = state.processingStep?.toUiLabel()?.takeIf { state.isProcessing },
+                actionStatusText = if (state.isSaving) stringResource(Res.string.video_pack_save) else null,
                 actions = {
                     PackBottomBarIconButton(
                         icon = Icons.AutoMirrored.Filled.ArrowBack,
@@ -108,26 +101,14 @@ fun VideoStickerPackScreen(
                         onClick = onBackClick,
                         enabled = !state.isProcessing
                     )
-                    PackBottomBarIconButton(
-                        icon = Icons.Filled.Save,
-                        contentDescription = stringResource(Res.string.video_pack_save),
-                        onClick = { onIntent(VideoStickerPackIntent.SavePack) },
-                        enabled = state.canSave
-                    )
                 },
                 floatingActionButton = {
                     PackBottomBarFab(
-                        icon = Icons.Filled.AutoAwesome,
-                        contentDescription = stringResource(
-                            if (state.generatedPlan == null) Res.string.video_pack_generate
-                            else Res.string.video_pack_regenerate
-                        ),
-                        onClick = {
-                            if (state.generatedPlan == null) onIntent(VideoStickerPackIntent.Generate)
-                            else onIntent(VideoStickerPackIntent.Regenerate)
-                        },
-                        enabled = state.canGenerate,
-                        isLoading = state.isProcessing && state.processingStep != VideoStickerPackProcessingStep.Saving
+                        icon = Icons.Filled.Check,
+                        contentDescription = stringResource(Res.string.video_pack_save),
+                        onClick = { onIntent(VideoStickerPackIntent.SavePack) },
+                        enabled = state.canSave,
+                        isLoading = state.isSaving
                     )
                 }
             )
@@ -135,14 +116,20 @@ fun VideoStickerPackScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
-        Column(
+        InteractionBlockedBox(
+            blocked = state.isSaving,
             modifier = modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 20.dp, vertical = 16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .imePadding()
+                    .padding(horizontal = 20.dp, vertical = 16.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
             Text(
                 text = stringResource(Res.string.video_pack_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
@@ -155,11 +142,6 @@ fun VideoStickerPackScreen(
             )
 
             if (state.sourceDurationMs > 0L) {
-                VideoSourcePreview(
-                    previewFramePath = state.previewFramePath,
-                    durationMs = state.selectedDurationMs,
-                    modifier = Modifier.fillMaxWidth()
-                )
                 Text(
                     text = "${formatMs(state.selectedStartMs)} -> ${formatMs(state.selectedEndMs)}",
                     style = MaterialTheme.typography.titleSmall,
@@ -173,7 +155,7 @@ fun VideoStickerPackScreen(
                     },
                     valueRange = 0f..state.sourceDurationMs.toFloat(),
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !state.isProcessing
+                    enabled = contentEnabled && !state.isProcessing
                 )
             }
 
@@ -196,20 +178,23 @@ fun VideoStickerPackScreen(
                 value = state.prompt,
                 onValueChange = { onIntent(VideoStickerPackIntent.UpdatePrompt(it)) },
                 label = stringResource(Res.string.video_pack_prompt_label),
-                placeholder = stringResource(Res.string.video_pack_prompt_placeholder)
+                placeholder = stringResource(Res.string.video_pack_prompt_placeholder),
+                enabled = contentEnabled
             )
 
             AppTextField(
                 value = state.packName,
                 onValueChange = { onIntent(VideoStickerPackIntent.UpdatePackName(it)) },
                 label = stringResource(Res.string.pack_name_label),
-                placeholder = stringResource(Res.string.pack_name_placeholder)
+                placeholder = stringResource(Res.string.pack_name_placeholder),
+                enabled = contentEnabled
             )
             AppTextField(
                 value = state.publisher,
                 onValueChange = { onIntent(VideoStickerPackIntent.UpdatePublisher(it)) },
                 label = stringResource(Res.string.publisher_label),
-                placeholder = stringResource(Res.string.publisher_placeholder)
+                placeholder = stringResource(Res.string.publisher_placeholder),
+                enabled = contentEnabled
             )
 
             val generatedPlan = state.generatedPlan
@@ -237,17 +222,25 @@ fun VideoStickerPackScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     generatedPlan.staticStickers.forEach { generated ->
+                        val key = "static:${generated.plan.candidateId}:${generated.plan.timestampMs}:${generated.localPath}"
+                        val isSelected = key in state.selectedStaticStickerKeys
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            StickerCard(
-                                sticker = Sticker(
-                                    imageFile = generated.localPath,
-                                    decorations = generated.plan.decorations,
-                                    accessibilityText = generated.plan.accessibilityText
-                                ),
-                                onClick = {},
-                                showDecorations = true,
-                                modifier = Modifier.size(108.dp)
-                            )
+                            SelectableGeneratedStickerCard(
+                                selected = isSelected,
+                                enabled = contentEnabled,
+                                onClick = { onIntent(VideoStickerPackIntent.ToggleStaticStickerSelection(key)) }
+                            ) {
+                                StickerCard(
+                                    sticker = Sticker(
+                                        imageFile = generated.localPath,
+                                        decorations = generated.plan.decorations,
+                                        accessibilityText = generated.plan.accessibilityText
+                                    ),
+                                    onClick = {},
+                                    showDecorations = true,
+                                    modifier = Modifier.size(108.dp)
+                                )
+                            }
                             Text(
                                 text = "${generated.plan.candidateId} • ${formatMs(generated.plan.timestampMs)}",
                                 style = MaterialTheme.typography.labelSmall,
@@ -269,115 +262,107 @@ fun VideoStickerPackScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = neubrutalMutedOnSurface()
                     )
-                    generatedPlan.animatedStickers.forEachIndexed { index, animated ->
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(
-                                text = "Loop ${index + 1}: ${animated.timeline.size} frames at ${animated.plan.fps} fps",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = neubrutalSubtleOnSurface()
-                            )
-                            FlowRow(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                animated.timeline.forEachIndexed { frameIndex, frame ->
-                                    val decorations = animated.plan.baseDecorations +
-                                        animated.plan.frameDecorations[frameIndex].orEmpty()
-                                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                                        StickerCard(
-                                            sticker = Sticker(
-                                                imageFile = frame.localPath,
-                                                decorations = decorations,
-                                                accessibilityText = animated.plan.accessibilityText
-                                            ),
-                                            onClick = {},
-                                            showDecorations = true,
-                                            modifier = Modifier.size(72.dp)
-                                        )
-                                        Text(
-                                            text = formatMs(frame.frame.timestampMs),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = neubrutalSubtleOnSurface()
-                                        )
-                                    }
-                                }
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        generatedPlan.animatedStickers.forEachIndexed { index, animated ->
+                            val key = "animated:$index:${animated.plan.timeline.firstOrNull()?.timestampMs ?: 0}:${animated.plan.timeline.lastOrNull()?.timestampMs ?: 0}"
+                            val isSelected = key in state.selectedAnimatedStickerKeys
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                AnimatedVideoStickerPreviewCard(
+                                    animated = animated,
+                                    selected = isSelected,
+                                    enabled = contentEnabled,
+                                    onClick = { onIntent(VideoStickerPackIntent.ToggleAnimatedStickerSelection(key)) }
+                                )
+                                Text(
+                                    text = "Loop ${index + 1}: ${animated.timeline.size} frames at ${animated.plan.fps} fps",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = neubrutalSubtleOnSurface()
+                                )
                             }
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(88.dp))
+            AppPrimaryButton(
+                text = stringResource(
+                    if (state.generatedPlan == null) Res.string.video_pack_generate
+                    else Res.string.video_pack_regenerate
+                ),
+                onClick = {
+                    if (state.generatedPlan == null) onIntent(VideoStickerPackIntent.Generate)
+                    else onIntent(VideoStickerPackIntent.Regenerate)
+                },
+                enabled = state.canGenerate
+            )
+                Spacer(modifier = Modifier.height(20.dp))
+            }
         }
     }
 }
 
 @Composable
-private fun VideoSourcePreview(
-    previewFramePath: String?,
-    durationMs: Long,
+private fun AnimatedVideoStickerPreviewCard(
+    animated: ResolvedVideoAnimatedSticker,
+    selected: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val bitmap = rememberPreviewBitmap(previewFramePath)
+    var frameIndex by remember(animated) { mutableIntStateOf(0) }
+    LaunchedEffect(animated, frameIndex) {
+        val duration = animated.timeline.getOrNull(frameIndex)?.frame?.durationMs ?: 83L
+        delay(duration.coerceAtLeast(16L))
+        frameIndex = if (animated.timeline.isEmpty()) 0 else (frameIndex + 1) % animated.timeline.size
+    }
+    val frame = animated.timeline.getOrNull(frameIndex) ?: return
+    val decorations = animated.plan.baseDecorations + animated.plan.frameDecorations[frameIndex].orEmpty()
 
-    NeubrutalStickerPreviewFrame(
-        cornerRadius = NeubrutalCardRadius,
+    SelectableGeneratedStickerCard(
+        selected = selected,
+        enabled = enabled,
+        onClick = onClick,
         modifier = modifier
     ) {
-        when {
-            bitmap != null -> {
-                Image(
-                    bitmap = bitmap,
-                    contentDescription = stringResource(Res.string.video_preview),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(NeubrutalCardRadius)),
-                    contentScale = ContentScale.Crop
-                )
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(8.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(NeubrutalBlack.copy(alpha = 0.6f))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = formatMs(durationMs),
-                        color = NeubrutalWhite,
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                }
-            }
-            else -> {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    LoadingIndicator(modifier = Modifier.size(40.dp))
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = stringResource(Res.string.loading_frames),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = neubrutalSubtleOnSurface()
-                    )
-                }
-            }
-        }
+        StickerCard(
+            sticker = Sticker(
+                imageFile = frame.localPath,
+                decorations = decorations,
+                accessibilityText = animated.plan.accessibilityText
+            ),
+            onClick = {},
+            showDecorations = true,
+            modifier = Modifier.size(108.dp)
+        )
     }
 }
 
 @Composable
-private fun rememberPreviewBitmap(path: String?): ImageBitmap? {
-    var bitmap by remember(path) { mutableStateOf<ImageBitmap?>(null) }
-    LaunchedEffect(path) {
-        bitmap = null
-        if (path.isNullOrBlank()) return@LaunchedEffect
-        bitmap = withContext(Dispatchers.Default) {
-            runCatching { readFileBytes(path) }
-                .getOrNull()
-                ?.let { decodeImageBitmap(it) }
-        }
+private fun SelectableGeneratedStickerCard(
+    selected: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    val borderColor = if (selected) AccentCoral else neubrutalBorderColor().copy(alpha = 0.35f)
+    Box(
+        modifier = modifier
+            .border(
+                width = if (selected) 3.dp else NeubrutalBorderWidth,
+                color = borderColor,
+                shape = RoundedCornerShape(18.dp)
+            )
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        content()
     }
-    return bitmap
 }
 
 private fun formatMs(ms: Long): String {

@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
 import presentation.components.AppTopBar
+import presentation.components.InteractionBlockedBox
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
@@ -88,13 +89,18 @@ fun SharePreviewScreen(
                     .padding(innerPadding)
             )
             else -> {
-                Column(
+                InteractionBlockedBox(
+                    blocked = state.isAccepting,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
-                        .padding(horizontal = 20.dp, vertical = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 20.dp, vertical = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
                     Text(
                         text = if (state.kind == "sticker") {
                             stringResource(Res.string.share_preview_sticker_title)
@@ -136,6 +142,7 @@ fun SharePreviewScreen(
                         color = neubrutalMutedOnSurface(),
                         modifier = Modifier.fillMaxWidth()
                     )
+                    }
                 }
             }
         }

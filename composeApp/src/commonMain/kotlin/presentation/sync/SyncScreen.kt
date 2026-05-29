@@ -45,6 +45,7 @@ import domain.model.SyncReport
 import domain.model.SyncResult
 import domain.model.SyncStage
 import presentation.components.AppTopBar
+import presentation.components.InteractionBlockedBox
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
@@ -117,12 +118,17 @@ fun SyncScreen(
         },
         containerColor = neubrutalScreenBackground()
     ) { padding ->
-        Column(
+        InteractionBlockedBox(
+            blocked = state.isSyncing,
             modifier = modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
             SyncStatusCard(
                 isSyncing = state.isSyncing,
                 syncStage = state.syncStage,
@@ -168,6 +174,7 @@ fun SyncScreen(
                         )
                     }
                 }
+            }
             }
         }
     }

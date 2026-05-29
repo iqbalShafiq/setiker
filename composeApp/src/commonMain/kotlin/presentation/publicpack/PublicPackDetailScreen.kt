@@ -38,6 +38,7 @@ import coil3.compose.AsyncImage
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
 import presentation.components.AppTopBar
+import presentation.components.InteractionBlockedBox
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
@@ -133,12 +134,17 @@ fun PublicPackDetailScreen(
             )
             else -> {
                 val pack = state.pack
-                Column(
+                InteractionBlockedBox(
+                    blocked = state.isActionLoading,
                     modifier = modifier
                         .fillMaxSize()
                         .padding(innerPadding)
-                        .padding(horizontal = 20.dp, vertical = 16.dp)
                 ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 20.dp, vertical = 16.dp)
+                    ) {
                     Text(
                         text = pack.name,
                         style = MaterialTheme.typography.headlineSmall,
@@ -197,6 +203,7 @@ fun PublicPackDetailScreen(
                                 )
                             }
                         }
+                    }
                     }
                 }
             }

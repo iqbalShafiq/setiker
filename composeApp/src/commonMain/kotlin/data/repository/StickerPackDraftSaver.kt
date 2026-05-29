@@ -27,22 +27,6 @@ open class StickerPackDraftSaver(
                     frameDecorations = draft.frameDecorations
                 )
 
-                packIsAnimated -> {
-                    val animatedFileName = "sticker_${input.identifier}_${index}_anim.webp"
-                    val animatedPath = fileStorage.encodeSingleFrameAnimatedWebP(
-                        sourcePath = draft.imagePath,
-                        fileName = animatedFileName,
-                        decorations = draft.decorations
-                    )
-                    Sticker(
-                        imageFile = animatedPath,
-                        sourceImageFile = null,
-                        emojis = listOf("⭐"),
-                        decorations = draft.decorations,
-                        isAnimated = true
-                    )
-                }
-
                 else -> {
                     val baseFileName = "sticker_${input.identifier}_${index}_base.webp"
                     val basePath = fileStorage.saveStickerImage(

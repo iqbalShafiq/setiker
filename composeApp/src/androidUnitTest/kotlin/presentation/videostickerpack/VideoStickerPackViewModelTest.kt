@@ -219,6 +219,89 @@ class VideoStickerPackViewModelTest {
         assertEquals(true, assertNotNull(saver.lastInput).stickers.single().isAnimated)
     }
 
+    @Test
+    fun generateSelectsAllGeneratedVideoStickersByDefault() = runTest {
+        val fileStorage = mockk<StickerFileStorage>()
+        coEvery { fileStorage.getVideoDurationMs(any()) } returns 60_000L
+        val extractor = mockk<VideoFrameCandidateExtractor>()
+        coEvery { extractor.extractCandidates(any(), any(), any(), any()) } returns listOf(
+            VideoFrameCandidate("/tmp/c1.png", 1_000L, 0.4, 0.5, 0.3),
+            VideoFrameCandidate("/tmp/c2.png", 2_000L, 0.4, 0.5, 0.3)
+        )
+        val gridComposer = mockk<CandidateGridComposer>()
+        coEvery { gridComposer.composeGrids(any()) } returns listOf(CandidateGridImage("/tmp/grid.png", 2))
+        val apiRepository = mockk<StickerApiRepository>()
+        coEvery {
+            apiRepository.generateVideoStickerPack(any(), any(), any(), any(), any(), any(), any())
+        } returns mixedResolvedPlan()
+        val viewModel = VideoStickerPackViewModel(
+            fileStorage = fileStorage,
+            extractor = extractor,
+            gridComposer = gridComposer,
+            apiRepository = apiRepository,
+            stickerRepository = mockk(relaxed = true),
+            draftSaver = CapturingDraftSaver(fakePack())
+        )
+
+        viewModel.onIntent(VideoStickerPackIntent.LoadVideo("/tmp/video.mp4"))
+        advanceUntilIdle()
+        viewModel.onIntent(VideoStickerPackIntent.Generate)
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertEquals(1, state.selectedStaticStickerKeys.size)
+        assertEquals(1, state.selectedAnimatedStickerKeys.size)
+        assertEquals(2, state.selectedStickerCount)
+    }
+
+    @Test
+    fun saveMixedVideoSelectionPersistsStaticAndAnimatedPacksSeparately() = runTest {
+        val fileStorage = mockk<StickerFileStorage>()
+        coEvery { fileStorage.getVideoDurationMs(any()) } returns 60_000L
+        coEvery { fileStorage.loadImage("/tmp/a1.png") } returns byteArrayOf(1)
+        coEvery { fileStorage.loadImage("/tmp/a2.png") } returns byteArrayOf(2)
+        coEvery { fileStorage.saveAnimatedStickerImage(any(), any(), any(), any(), any()) } returns "/tmp/animated.webp"
+        val extractor = mockk<VideoFrameCandidateExtractor>()
+        coEvery { extractor.extractCandidates(any(), any(), any(), any()) } returns listOf(
+            VideoFrameCandidate("/tmp/c1.png", 1_000L, 0.4, 0.5, 0.3),
+            VideoFrameCandidate("/tmp/c2.png", 2_000L, 0.4, 0.5, 0.3)
+        )
+        val gridComposer = mockk<CandidateGridComposer>()
+        coEvery { gridComposer.composeGrids(any()) } returns listOf(CandidateGridImage("/tmp/grid.png", 2))
+        val apiRepository = mockk<StickerApiRepository>()
+        coEvery {
+            apiRepository.generateVideoStickerPack(any(), any(), any(), any(), any(), any(), any())
+        } returns mixedResolvedPlan()
+        val repository = mockk<StickerRepository>(relaxed = true)
+        val saver = MultiCapturingDraftSaver()
+        val viewModel = VideoStickerPackViewModel(
+            fileStorage = fileStorage,
+            extractor = extractor,
+            gridComposer = gridComposer,
+            apiRepository = apiRepository,
+            stickerRepository = repository,
+            draftSaver = saver
+        )
+
+        viewModel.onIntent(VideoStickerPackIntent.LoadVideo("/tmp/video.mp4"))
+        advanceUntilIdle()
+        viewModel.onIntent(VideoStickerPackIntent.Generate)
+        advanceUntilIdle()
+        viewModel.onIntent(VideoStickerPackIntent.UpdatePackName("Video Pack"))
+        viewModel.onIntent(VideoStickerPackIntent.UpdatePublisher("Setiker"))
+        viewModel.onIntent(VideoStickerPackIntent.SavePack)
+        advanceUntilIdle()
+
+        assertEquals(2, saver.inputs.size)
+        assertEquals("Video Pack Static", saver.inputs[0].name)
+        assertEquals("Video Pack Animated", saver.inputs[1].name)
+        assertEquals(false, saver.inputs[0].stickers.single().isAnimated)
+        assertEquals(true, saver.inputs[1].stickers.single().isAnimated)
+        assertEquals(true, saver.inputs[0].identifier.endsWith("_static"))
+        assertEquals(true, saver.inputs[1].identifier.endsWith("_animated"))
+        coVerify(exactly = 2) { repository.savePack(any()) }
+    }
+
     private fun fakePack(id: String = "id"): StickerPack = StickerPack(
         identifier = id,
         name = "Name",
@@ -278,6 +361,46 @@ class VideoStickerPackViewModelTest {
         )
     }
 
+    private fun mixedResolvedPlan(): ResolvedVideoStickerPackPlan {
+        val static = ResolvedVideoStaticSticker(
+            plan = VideoStaticStickerPlan(
+                candidateId = "frame_0000",
+                frameIndex = 0,
+                timestampMs = 1_000L,
+                cellId = "A1",
+                emojis = emptyList()
+            ),
+            localPath = "/tmp/static.png"
+        )
+        val frames = listOf(
+            VideoAnimatedTimelineFrame("frame_0001", 1, 2_000L, 83L),
+            VideoAnimatedTimelineFrame("frame_0002", 2, 3_000L, 83L)
+        )
+        val animatedPlan = VideoAnimatedStickerPlan(
+            timeline = frames,
+            fps = 12,
+            loopCount = 0,
+            emojis = emptyList()
+        )
+        return ResolvedVideoStickerPackPlan(
+            plan = VideoStickerPackPlan(
+                packTitle = "Plan",
+                staticStickers = listOf(static.plan),
+                animatedStickers = listOf(animatedPlan)
+            ),
+            staticStickers = listOf(static),
+            animatedStickers = listOf(
+                ResolvedVideoAnimatedSticker(
+                    plan = animatedPlan,
+                    timeline = listOf(
+                        ResolvedVideoAnimatedTimelineFrame(frames[0], "/tmp/a1.png"),
+                        ResolvedVideoAnimatedTimelineFrame(frames[1], "/tmp/a2.png")
+                    )
+                )
+            )
+        )
+    }
+
     private class CapturingDraftSaver(
         private val resultPack: StickerPack
     ) : StickerPackDraftSaver(fileStorage = mockk<StickerFileStorage>(relaxed = true)) {
@@ -286,6 +409,23 @@ class VideoStickerPackViewModelTest {
         override suspend fun buildDraftPack(input: StickerDraftInput): StickerPack {
             lastInput = input
             return resultPack
+        }
+    }
+
+    private class MultiCapturingDraftSaver : StickerPackDraftSaver(fileStorage = mockk<StickerFileStorage>(relaxed = true)) {
+        val inputs = mutableListOf<StickerDraftInput>()
+
+        override suspend fun buildDraftPack(input: StickerDraftInput): StickerPack {
+            inputs += input
+            return StickerPack(
+                identifier = input.identifier,
+                name = input.name,
+                publisher = input.publisher,
+                trayImageFile = input.trayImagePath,
+                stickers = input.stickers.map { Sticker(imageFile = it.imagePath, isAnimated = it.isAnimated) },
+                isAnimated = input.stickers.any { it.isAnimated },
+                visibility = input.visibility
+            )
         }
     }
 }

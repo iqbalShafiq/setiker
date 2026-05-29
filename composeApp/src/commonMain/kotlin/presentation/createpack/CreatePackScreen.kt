@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
@@ -54,6 +55,7 @@ import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
 import presentation.components.AppTextField
 import presentation.components.AppTopBar
+import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
@@ -576,13 +578,19 @@ fun CreatePackScreen(
                     .padding(innerPadding)
             )
         } else {
-            Column(
+            InteractionBlockedBox(
+                blocked = state.isSaving,
                 modifier = modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .padding(horizontal = 20.dp, vertical = 16.dp)
-                    .verticalScroll(rememberScrollState())
             ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .imePadding()
+                        .padding(horizontal = 20.dp, vertical = 16.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
                 AppTextField(
                     value = state.name,
                     onValueChange = { onIntent(CreatePackIntent.UpdateName(it)) },
@@ -711,6 +719,7 @@ fun CreatePackScreen(
                 }
 
                 Spacer(modifier = Modifier.height(80.dp))
+                }
             }
         }
     }
