@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
 import presentation.components.AppTopBar
+import presentation.components.InteractionBlockedBox
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
@@ -123,12 +124,17 @@ fun ProcessingHistoryScreen(
                     .padding(innerPadding)
             )
             else -> {
-                Column(
+                InteractionBlockedBox(
+                    blocked = state.isClearing,
                     modifier = modifier
                         .fillMaxSize()
                         .padding(innerPadding)
-                        .padding(horizontal = 20.dp)
                 ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 20.dp)
+                    ) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         listOf(null, "generate", "grid-split", "background-remove").forEach { filter ->
                             FilterChip(
@@ -193,6 +199,7 @@ fun ProcessingHistoryScreen(
                                 )
                             }
                         }
+                    }
                     }
                 }
             }

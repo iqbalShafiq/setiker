@@ -39,6 +39,7 @@ import kotlinx.coroutines.withContext
 import data.remote.readFileBytes
 import org.jetbrains.compose.resources.stringResource
 import presentation.components.AppTopBar
+import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
 import presentation.components.MediaPreviewBottomBar
 import presentation.components.NeubrutalStickerPreviewFrame
@@ -108,13 +109,18 @@ fun VideoTrimScreen(
                     .padding(innerPadding)
             )
         } else {
-            Column(
+            InteractionBlockedBox(
+                blocked = state.isExtracting,
                 modifier = modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .padding(horizontal = 20.dp, vertical = 16.dp)
-                    .verticalScroll(rememberScrollState())
             ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 20.dp, vertical = 16.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
                 ScreenSectionTitle(text = stringResource(Res.string.source_video))
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -241,6 +247,7 @@ fun VideoTrimScreen(
                 }
 
                 Spacer(modifier = Modifier.height(40.dp))
+                }
             }
         }
     }

@@ -62,17 +62,18 @@ class StickerPackDraftSaverTest {
     }
 
     @Test
-    fun convertsStaticDraftsWhenPackContainsAnimatedSticker() = runTest {
+    fun preservesDraftTypesWhenInputContainsStaticAndAnimatedStickers() = runTest {
         val fileStorage = mockk<StickerFileStorage>()
         val decoration = mockk<StickerDecoration>()
         coEvery { fileStorage.saveTrayImage("/tmp/tray.png", "tray_pack_1710000000000.png") } returns "/saved/tray.webp"
+        coEvery { fileStorage.saveStickerImage("/tmp/static.png", "sticker_pack_0_base.webp") } returns "/saved/static_base.webp"
         coEvery {
-            fileStorage.encodeSingleFrameAnimatedWebP(
-                sourcePath = "/tmp/static.png",
-                fileName = "sticker_pack_0_anim.webp",
+            fileStorage.saveStickerImageWithDecorations(
+                sourcePath = "/saved/static_base.webp",
+                fileName = "sticker_pack_0_preview.webp",
                 decorations = listOf(decoration)
             )
-        } returns "/saved/static_anim.webp"
+        } returns "/saved/static_preview.webp"
 
         val saver = StickerPackDraftSaver(fileStorage = fileStorage, nowEpochMillis = { 1710000000000L })
 
@@ -100,29 +101,22 @@ class StickerPackDraftSaverTest {
         )
 
         assertTrue(pack.isAnimated)
-        assertEquals("/saved/static_anim.webp", pack.stickers[0].imageFile)
-        assertTrue(pack.stickers[0].isAnimated)
-        assertNull(pack.stickers[0].sourceImageFile)
+        assertEquals("/saved/static_preview.webp", pack.stickers[0].imageFile)
+        assertEquals("/saved/static_base.webp", pack.stickers[0].sourceImageFile)
+        assertFalse(pack.stickers[0].isAnimated)
         assertEquals("/tmp/anim.webp", pack.stickers[1].imageFile)
         assertTrue(pack.stickers[1].isAnimated)
         assertEquals("/tmp/video.mp4", pack.stickers[1].sourceVideoFile)
         assertEquals(mapOf(0 to listOf(decoration)), pack.stickers[1].frameDecorations)
 
-        coVerify(exactly = 0) { fileStorage.saveStickerImage(any(), any()) }
-        coVerify(exactly = 0) { fileStorage.saveStickerImageWithDecorations(any(), any(), any()) }
+        coVerify(exactly = 0) { fileStorage.encodeSingleFrameAnimatedWebP(any(), any(), any()) }
     }
 
     @Test
-    fun convertsStaticWithoutDecorationsInAnimatedPack() = runTest {
+    fun preservesPlainStaticDraftWhenInputAlsoContainsAnimatedSticker() = runTest {
         val fileStorage = mockk<StickerFileStorage>()
         coEvery { fileStorage.saveTrayImage("/tmp/tray.png", "tray_pack_1710000000000.png") } returns "/saved/tray.webp"
-        coEvery {
-            fileStorage.encodeSingleFrameAnimatedWebP(
-                sourcePath = "/tmp/plain.png",
-                fileName = "sticker_pack_0_anim.webp",
-                decorations = emptyList()
-            )
-        } returns "/saved/plain_anim.webp"
+        coEvery { fileStorage.saveStickerImage("/tmp/plain.png", "sticker_pack_0_base.webp") } returns "/saved/plain_base.webp"
 
         val saver = StickerPackDraftSaver(fileStorage = fileStorage, nowEpochMillis = { 1710000000000L })
 
@@ -141,10 +135,12 @@ class StickerPackDraftSaverTest {
         )
 
         assertTrue(pack.isAnimated)
-        assertEquals("/saved/plain_anim.webp", pack.stickers[0].imageFile)
-        assertTrue(pack.stickers[0].isAnimated)
-        assertTrue(pack.stickers[0].decorations.isEmpty())
-        coVerify(exactly = 0) { fileStorage.saveStickerImage(any(), any()) }
+        assertEquals("/saved/plain_base.webp", pack.stickers[0].imageFile)
+        assertEquals("/saved/plain_base.webp", pack.stickers[0].sourceImageFile)
+        assertFalse(pack.stickers[0].isAnimated)
+        assertEquals("/tmp/anim.webp", pack.stickers[1].imageFile)
+        assertTrue(pack.stickers[1].isAnimated)
+        coVerify(exactly = 0) { fileStorage.encodeSingleFrameAnimatedWebP(any(), any(), any()) }
     }
 
     @Test

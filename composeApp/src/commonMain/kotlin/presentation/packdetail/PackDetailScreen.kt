@@ -60,6 +60,7 @@ import presentation.components.AppPrimaryButton
 import presentation.components.AppTopBar
 import presentation.components.EmptyState
 import presentation.components.AppSecondaryButton
+import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
 import presentation.components.SyncStatusIndicator
 import presentation.components.PackBottomBar
@@ -301,15 +302,20 @@ fun PackDetailScreen(
                 )
             }
             else -> {
-                PackDetailContent(
-                    pack = state.pack,
-                    enabled = !isOperationInProgress,
-                    onIntent = onIntent,
-                    onEditSticker = onEditSticker,
+                InteractionBlockedBox(
+                    blocked = isOperationInProgress,
                     modifier = modifier
                         .fillMaxSize()
                         .padding(innerPadding)
-                )
+                ) {
+                    PackDetailContent(
+                        pack = state.pack,
+                        enabled = !isOperationInProgress,
+                        onIntent = onIntent,
+                        onEditSticker = onEditSticker,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
         }
     }

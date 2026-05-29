@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -65,6 +66,7 @@ import presentation.components.EditTextDecorationBottomSheet
 import presentation.components.EmojiPickerBottomSheet
 import presentation.components.FontPickerBottomSheet
 import presentation.components.BorderStyleBottomSheet
+import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
 import presentation.components.MediaPreviewBottomBar
 import presentation.components.NeubrutalAddTagPill
@@ -285,12 +287,18 @@ fun AnimatedEditorScreen(
         if (state.isLoading) {
             LoadingIndicator(modifier = modifier.fillMaxSize().padding(innerPadding))
         } else {
-            Column(
+            InteractionBlockedBox(
+                blocked = state.isSaving,
                 modifier = modifier
                     .fillMaxSize()
                     .padding(top = innerPadding.calculateTopPadding())
-                    .padding(horizontal = 20.dp, vertical = 16.dp)
             ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .imePadding()
+                        .padding(horizontal = 20.dp, vertical = 16.dp)
+                ) {
                 NeubrutalStickerPreviewFrame {
                     Box(modifier = Modifier.fillMaxSize()) {
                         frameBitmap?.let { bmp ->
@@ -452,6 +460,7 @@ fun AnimatedEditorScreen(
                     }
 
                     Spacer(modifier = Modifier.height(120.dp))
+                }
                 }
             }
         }

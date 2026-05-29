@@ -9,7 +9,10 @@ import data.video.CandidateGridComposer
 import data.video.VideoFrameCandidateExtractor
 import domain.model.AnimatedStickerSpec
 import domain.model.DecodedFrame
+import domain.model.ResolvedVideoAnimatedSticker
+import domain.model.ResolvedVideoStaticSticker
 import domain.model.StickerDraftInput
+import domain.model.StickerPack
 import domain.repository.StickerRepository
 import domain.util.VideoStickerPackPlanner
 import kotlin.time.Clock
@@ -45,9 +48,18 @@ class VideoStickerPackViewModel(
             is VideoStickerPackIntent.LoadVideo -> loadVideo(intent.path)
             is VideoStickerPackIntent.UpdateStart -> updateRange(startMs = intent.ms)
             is VideoStickerPackIntent.UpdateEnd -> updateRange(endMs = intent.ms)
-            is VideoStickerPackIntent.UpdatePrompt -> _state.update { it.copy(prompt = intent.value, generatedPlan = null) }
+            is VideoStickerPackIntent.UpdatePrompt -> _state.update {
+                it.copy(
+                    prompt = intent.value,
+                    generatedPlan = null,
+                    selectedStaticStickerKeys = emptySet(),
+                    selectedAnimatedStickerKeys = emptySet()
+                )
+            }
             is VideoStickerPackIntent.UpdatePackName -> _state.update { it.copy(packName = intent.value) }
             is VideoStickerPackIntent.UpdatePublisher -> _state.update { it.copy(publisher = intent.value) }
+            is VideoStickerPackIntent.ToggleStaticStickerSelection -> toggleStaticSelection(intent.key)
+            is VideoStickerPackIntent.ToggleAnimatedStickerSelection -> toggleAnimatedSelection(intent.key)
             VideoStickerPackIntent.Generate -> generate(extractFreshCandidates = true)
             VideoStickerPackIntent.Regenerate -> generate(extractFreshCandidates = false)
             VideoStickerPackIntent.SavePack -> savePack()
@@ -68,7 +80,9 @@ class VideoStickerPackViewModel(
                         candidates = emptyList(),
                         candidateGrids = emptyList(),
                         candidateManifest = emptyList(),
-                        generatedPlan = null
+                        generatedPlan = null,
+                        selectedStaticStickerKeys = emptySet(),
+                        selectedAnimatedStickerKeys = emptySet()
                     )
                 }
             }
@@ -88,8 +102,22 @@ class VideoStickerPackViewModel(
                 candidates = emptyList(),
                 candidateGrids = emptyList(),
                 candidateManifest = emptyList(),
-                generatedPlan = null
+                generatedPlan = null,
+                selectedStaticStickerKeys = emptySet(),
+                selectedAnimatedStickerKeys = emptySet()
             )
+        }
+    }
+
+    private fun toggleStaticSelection(key: String) {
+        _state.update { current ->
+            current.copy(selectedStaticStickerKeys = current.selectedStaticStickerKeys.toggle(key))
+        }
+    }
+
+    private fun toggleAnimatedSelection(key: String) {
+        _state.update { current ->
+            current.copy(selectedAnimatedStickerKeys = current.selectedAnimatedStickerKeys.toggle(key))
         }
     }
 
@@ -161,13 +189,19 @@ class VideoStickerPackViewModel(
                     error("No generated stickers returned")
                 }
                 _state.update { it.copy(processingStep = VideoStickerPackProcessingStep.PreparingPreview) }
+                val selectedStaticKeys = generated.staticStickers.map { it.selectionKey() }.toSet()
+                val selectedAnimatedKeys = generated.animatedStickers.mapIndexed { index, sticker ->
+                    sticker.selectionKey(index)
+                }.toSet()
 
                 _state.update {
                     it.copy(
                         isProcessing = false,
                         processingStep = null,
                         processingProgress = 1f,
-                        generatedPlan = generated
+                        generatedPlan = generated,
+                        selectedStaticStickerKeys = selectedStaticKeys,
+                        selectedAnimatedStickerKeys = selectedAnimatedKeys
                     )
                 }
             } catch (e: Exception) {
@@ -201,14 +235,23 @@ class VideoStickerPackViewModel(
                     )
                 }
                 val generated = current.generatedPlan ?: return@launch
+                val selectedStatic = generated.staticStickers.filter {
+                    it.selectionKey() in current.selectedStaticStickerKeys
+                }
+                val selectedAnimated = generated.animatedStickers.filterIndexed { index, sticker ->
+                    sticker.selectionKey(index) in current.selectedAnimatedStickerKeys
+                }
+                if (selectedStatic.isEmpty() && selectedAnimated.isEmpty()) return@launch
+
+                val shouldSplitNames = selectedStatic.isNotEmpty() && selectedAnimated.isNotEmpty()
                 val identifier = PackIdentifierSanitizer.sanitize(current.packName, Random.nextInt(1000, 9999))
-                val staticInputs = generated.staticStickers.map { sticker ->
+                val staticInputs = selectedStatic.map { sticker ->
                     StickerDraftInput.StickerInput(
                         imagePath = sticker.localPath,
                         decorations = sticker.plan.decorations
                     )
                 }
-                val animatedInputs = generated.animatedStickers.mapIndexed { index, sticker ->
+                val animatedInputs = selectedAnimated.mapIndexed { index, sticker ->
                     val loadedFrames = sticker.timeline.map { resolved ->
                         fileStorage.loadImage(resolved.localPath)?.takeIf { it.isNotEmpty() }?.let { bytes ->
                             DecodedFrame(bytes = bytes, durationMs = resolved.frame.durationMs)
@@ -252,21 +295,38 @@ class VideoStickerPackViewModel(
                         frameDecorations = sticker.plan.frameDecorations
                     )
                 }
-                val stickerInputs = staticInputs + animatedInputs
-                val tray = generated.staticStickers.firstOrNull()?.localPath
-                    ?: animatedInputs.firstOrNull()?.imagePath
-                    ?: error("No generated stickers returned")
-                val pack = draftSaver.buildDraftPack(
-                    StickerDraftInput(
-                        identifier = identifier,
-                        name = current.packName,
-                        publisher = current.publisher,
-                        visibility = "PRIVATE",
-                        trayImagePath = tray,
-                        stickers = stickerInputs
+
+                val savedPacks = mutableListOf<StickerPack>()
+                if (staticInputs.isNotEmpty()) {
+                    val staticIdentifier = if (shouldSplitNames) "${identifier}_static" else identifier
+                    val staticPack = draftSaver.buildDraftPack(
+                        StickerDraftInput(
+                            identifier = staticIdentifier,
+                            name = if (shouldSplitNames) "${current.packName} Static" else current.packName,
+                            publisher = current.publisher,
+                            visibility = "PRIVATE",
+                            trayImagePath = selectedStatic.first().localPath,
+                            stickers = staticInputs
+                        )
                     )
-                )
-                stickerRepository.savePack(pack)
+                    stickerRepository.savePack(staticPack)
+                    savedPacks += staticPack
+                }
+                if (animatedInputs.isNotEmpty()) {
+                    val animatedIdentifier = if (shouldSplitNames) "${identifier}_animated" else identifier
+                    val animatedPack = draftSaver.buildDraftPack(
+                        StickerDraftInput(
+                            identifier = animatedIdentifier,
+                            name = if (shouldSplitNames) "${current.packName} Animated" else current.packName,
+                            publisher = current.publisher,
+                            visibility = "PRIVATE",
+                            trayImagePath = animatedInputs.first().imagePath,
+                            stickers = animatedInputs
+                        )
+                    )
+                    stickerRepository.savePack(animatedPack)
+                    savedPacks += animatedPack
+                }
                 _state.update {
                     it.copy(
                         isProcessing = false,
@@ -274,7 +334,8 @@ class VideoStickerPackViewModel(
                         processingProgress = 1f
                     )
                 }
-                _effect.send(VideoStickerPackEffect.NavigateToPackDetail(pack.identifier))
+                val destination = savedPacks.firstOrNull()?.identifier ?: error("No selected stickers returned")
+                _effect.send(VideoStickerPackEffect.NavigateToPackDetail(destination))
             } catch (e: Exception) {
                 _state.update { it.copy(isProcessing = false, processingStep = null) }
                 _effect.send(
@@ -286,3 +347,12 @@ class VideoStickerPackViewModel(
         }
     }
 }
+
+private fun ResolvedVideoStaticSticker.selectionKey(): String =
+    "static:${plan.candidateId}:${plan.timestampMs}:$localPath"
+
+private fun ResolvedVideoAnimatedSticker.selectionKey(index: Int): String =
+    "animated:$index:${plan.timeline.firstOrNull()?.timestampMs ?: 0}:${plan.timeline.lastOrNull()?.timestampMs ?: 0}"
+
+private fun Set<String>.toggle(key: String): Set<String> =
+    if (key in this) this - key else this + key
