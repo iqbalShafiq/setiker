@@ -15,19 +15,22 @@ import domain.model.StickerDraftInput
 import domain.model.StickerPack
 import domain.repository.StickerRepository
 import domain.util.VideoStickerPackPlanner
+import kotlin.random.Random
 import kotlin.time.Clock
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import presentation.common.PackIdentifierSanitizer
 import presentation.common.UiText
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_failed_generate_video_sticker_pack
-import kotlin.random.Random
 
 class VideoStickerPackViewModel(
     private val fileStorage: StickerFileStorage,
@@ -43,11 +46,21 @@ class VideoStickerPackViewModel(
     private val _effect = Channel<VideoStickerPackEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
 
+    private var previewPlaybackJob: Job? = null
+    private var previewExtractJob: Job? = null
+
     fun onIntent(intent: VideoStickerPackIntent) {
         when (intent) {
             is VideoStickerPackIntent.LoadVideo -> loadVideo(intent.path)
-            is VideoStickerPackIntent.UpdateStart -> updateRange(startMs = intent.ms)
-            is VideoStickerPackIntent.UpdateEnd -> updateRange(endMs = intent.ms)
+            is VideoStickerPackIntent.UpdateStart -> {
+                stopPreviewPlayback()
+                updateRange(startMs = intent.ms)
+            }
+            is VideoStickerPackIntent.UpdateEnd -> {
+                stopPreviewPlayback()
+                updateRange(endMs = intent.ms)
+            }
+            is VideoStickerPackIntent.ScrubPreviewTo -> scrubPreviewTo(intent.index)
             is VideoStickerPackIntent.UpdatePrompt -> _state.update {
                 it.copy(
                     prompt = intent.value,
@@ -60,15 +73,34 @@ class VideoStickerPackViewModel(
             is VideoStickerPackIntent.UpdatePublisher -> _state.update { it.copy(publisher = intent.value) }
             is VideoStickerPackIntent.ToggleStaticStickerSelection -> toggleStaticSelection(intent.key)
             is VideoStickerPackIntent.ToggleAnimatedStickerSelection -> toggleAnimatedSelection(intent.key)
+            VideoStickerPackIntent.PlayPreview -> startPreviewPlayback()
+            VideoStickerPackIntent.PausePreview -> stopPreviewPlayback()
             VideoStickerPackIntent.Generate -> generate(extractFreshCandidates = true)
             VideoStickerPackIntent.Regenerate -> generate(extractFreshCandidates = false)
             VideoStickerPackIntent.SavePack -> savePack()
         }
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        previewPlaybackJob?.cancel()
+        previewExtractJob?.cancel()
+    }
+
     private fun loadVideo(path: String) {
         viewModelScope.launch {
-            _state.update { it.copy(isLoadingVideo = true, videoPath = path, previewFramePath = null, errorMessage = null) }
+            stopPreviewPlayback()
+            _state.update {
+                it.copy(
+                    isLoadingVideo = true,
+                    videoPath = path,
+                    previewFramePath = null,
+                    previewFrames = emptyList(),
+                    currentPreviewIndex = 0,
+                    isPreviewPlaying = false,
+                    errorMessage = null
+                )
+            }
             val duration = fileStorage.getVideoDurationMs(path).takeIf { it > 0L } ?: 60_000L
             val previewPath = fileStorage.extractVideoFrameToFile(
                 videoPath = path,
@@ -82,15 +114,19 @@ class VideoStickerPackViewModel(
                     sourceDurationMs = duration,
                     selectedStartMs = 0L,
                     selectedEndMs = duration.coerceAtMost(VideoStickerPackPlanner.MAX_SEGMENT_MS),
-                        candidates = emptyList(),
-                        candidateGrids = emptyList(),
-                        candidateManifest = emptyList(),
-                        generatedPlan = null,
-                        selectedStaticStickerKeys = emptySet(),
-                        selectedAnimatedStickerKeys = emptySet()
-                    )
-                }
+                    previewFrames = emptyList(),
+                    currentPreviewIndex = 0,
+                    isPreviewPlaying = false,
+                    candidates = emptyList(),
+                    candidateGrids = emptyList(),
+                    candidateManifest = emptyList(),
+                    generatedPlan = null,
+                    selectedStaticStickerKeys = emptySet(),
+                    selectedAnimatedStickerKeys = emptySet()
+                )
             }
+            reschedulePreviewExtraction(immediate = true)
+        }
     }
 
     private fun updateRange(startMs: Long? = null, endMs: Long? = null) {
@@ -104,6 +140,8 @@ class VideoStickerPackViewModel(
             current.copy(
                 selectedStartMs = nextStart,
                 selectedEndMs = nextEnd,
+                previewFrames = emptyList(),
+                currentPreviewIndex = 0,
                 candidates = emptyList(),
                 candidateGrids = emptyList(),
                 candidateManifest = emptyList(),
@@ -112,6 +150,96 @@ class VideoStickerPackViewModel(
                 selectedAnimatedStickerKeys = emptySet()
             )
         }
+        reschedulePreviewExtraction(immediate = false)
+    }
+
+    private fun scrubPreviewTo(index: Int) {
+        stopPreviewPlayback()
+        _state.update { current ->
+            val maxIndex = (current.activePreviewFrames.size - 1).coerceAtLeast(0)
+            current.copy(currentPreviewIndex = index.coerceIn(0, maxIndex))
+        }
+    }
+
+    private fun reschedulePreviewExtraction(immediate: Boolean) {
+        previewExtractJob?.cancel()
+        val snapshot = _state.value
+        if (snapshot.videoPath.isBlank()) return
+        if (snapshot.selectedEndMs <= snapshot.selectedStartMs) return
+
+        previewExtractJob = viewModelScope.launch {
+            if (!immediate) delay(PREVIEW_EXTRACT_DEBOUNCE_MS)
+            val current = _state.value
+            if (current.videoPath.isBlank()) return@launch
+            if (current.selectedEndMs <= current.selectedStartMs) return@launch
+            extractPreviewFramesForRange(
+                videoPath = current.videoPath,
+                startMs = current.selectedStartMs,
+                endMs = current.selectedEndMs
+            )
+        }
+    }
+
+    private suspend fun extractPreviewFramesForRange(
+        videoPath: String,
+        startMs: Long,
+        endMs: Long
+    ) {
+        val span = (endMs - startMs).coerceAtLeast(1L)
+        val count = VideoStickerPackState.PREVIEW_FRAME_COUNT
+        val timestamps = (0 until count).map { index ->
+            if (count == 1) startMs else startMs + (index.toLong() * span / (count - 1))
+        }
+        val frames = mutableListOf<VideoStickerPackPreviewFrame>()
+        timestamps.forEachIndexed { index, timestampMs ->
+            val path = fileStorage.extractVideoFrameToFile(
+                videoPath = videoPath,
+                atMs = timestampMs,
+                fileName = "video_pack_preview_${Clock.System.now().toEpochMilliseconds()}_$index.png"
+            )
+            if (path != null) {
+                frames += VideoStickerPackPreviewFrame(timestampMs = timestampMs, filePath = path)
+                _state.update {
+                    it.copy(
+                        previewFrames = frames.toList(),
+                        currentPreviewIndex = it.currentPreviewIndex.coerceIn(0, (frames.size - 1).coerceAtLeast(0))
+                    )
+                }
+            }
+        }
+    }
+
+    private fun startPreviewPlayback() {
+        if (_state.value.isPreviewPlaying) return
+        if (!_state.value.canPlayPreview) return
+        _state.update { it.copy(isPreviewPlaying = true) }
+        previewPlaybackJob?.cancel()
+        previewPlaybackJob = viewModelScope.launch {
+            while (isActive && _state.value.isPreviewPlaying) {
+                val frames = _state.value.activePreviewFrames
+                if (frames.isEmpty()) break
+                _state.update {
+                    it.copy(currentPreviewIndex = (it.currentPreviewIndex + 1) % frames.size)
+                }
+                delay(previewFrameDelayMs())
+            }
+            _state.update { it.copy(isPreviewPlaying = false) }
+        }
+    }
+
+    private fun stopPreviewPlayback() {
+        previewPlaybackJob?.cancel()
+        previewPlaybackJob = null
+        if (_state.value.isPreviewPlaying) {
+            _state.update { it.copy(isPreviewPlaying = false) }
+        }
+    }
+
+    private fun previewFrameDelayMs(): Long {
+        val state = _state.value
+        val frameCount = state.activePreviewFrames.size.coerceAtLeast(1)
+        val trimMs = state.selectedDurationMs.coerceAtLeast(1L)
+        return (trimMs / frameCount).coerceAtLeast(80L)
     }
 
     private fun toggleStaticSelection(key: String) {
@@ -132,9 +260,14 @@ class VideoStickerPackViewModel(
             if (current.isProcessing) return@launch
             runCatching { VideoStickerPackPlanner.validateSelectedRange(current.selectedStartMs, current.selectedEndMs) }
                 .onFailure {
-                    _effect.send(VideoStickerPackEffect.ShowError(UiText.DynamicString("Choose a segment up to 60 seconds.")))
+                    _effect.send(
+                        VideoStickerPackEffect.ShowError(
+                            UiText.DynamicString("Choose a segment up to 60 seconds.")
+                        )
+                    )
                     return@launch
                 }
+            stopPreviewPlayback()
 
             _state.update {
                 it.copy(
@@ -146,13 +279,19 @@ class VideoStickerPackViewModel(
             }
 
             try {
-                val (candidates, grids, manifest) = if (extractFreshCandidates || current.candidateGrids.isEmpty() || current.candidateManifest.isEmpty()) {
+                val (candidates, grids, manifest) = if (
+                    extractFreshCandidates ||
+                    current.candidateGrids.isEmpty() ||
+                    current.candidateManifest.isEmpty()
+                ) {
                     val extracted = extractor.extractCandidates(
                         videoPath = current.videoPath,
                         startMs = current.selectedStartMs,
                         endMs = current.selectedEndMs,
                         onProgress = { done, total ->
-                            _state.update { it.copy(processingProgress = done.toFloat() / total.coerceAtLeast(1)) }
+                            _state.update {
+                                it.copy(processingProgress = done.toFloat() / total.coerceAtLeast(1))
+                            }
                         }
                     ).take(VideoStickerPackPlanner.MAX_CANDIDATES)
                     if (extracted.isEmpty()) error("No usable frames extracted")
@@ -194,6 +333,7 @@ class VideoStickerPackViewModel(
                     error("No generated stickers returned")
                 }
                 _state.update { it.copy(processingStep = VideoStickerPackProcessingStep.PreparingPreview) }
+
                 val selectedStaticKeys = generated.staticStickers.map { it.selectionKey() }.toSet()
                 val selectedAnimatedKeys = generated.animatedStickers.mapIndexed { index, sticker ->
                     sticker.selectionKey(index)
@@ -232,6 +372,7 @@ class VideoStickerPackViewModel(
             val current = _state.value
             if (!current.canSave) return@launch
             try {
+                stopPreviewPlayback()
                 _state.update {
                     it.copy(
                         isProcessing = true,
@@ -249,7 +390,11 @@ class VideoStickerPackViewModel(
                 if (selectedStatic.isEmpty() && selectedAnimated.isEmpty()) return@launch
 
                 val shouldSplitNames = selectedStatic.isNotEmpty() && selectedAnimated.isNotEmpty()
-                val identifier = PackIdentifierSanitizer.sanitize(current.packName, Random.nextInt(1000, 9999))
+                val identifier = PackIdentifierSanitizer.sanitize(
+                    current.packName,
+                    Random.nextInt(1000, 9999)
+                )
+
                 val staticInputs = selectedStatic.map { sticker ->
                     StickerDraftInput.StickerInput(
                         imagePath = sticker.localPath,
@@ -258,9 +403,11 @@ class VideoStickerPackViewModel(
                 }
                 val animatedInputs = selectedAnimated.mapIndexed { index, sticker ->
                     val loadedFrames = sticker.timeline.map { resolved ->
-                        fileStorage.loadImage(resolved.localPath)?.takeIf { it.isNotEmpty() }?.let { bytes ->
-                            DecodedFrame(bytes = bytes, durationMs = resolved.frame.durationMs)
-                        }
+                        fileStorage.loadImage(resolved.localPath)
+                            ?.takeIf { it.isNotEmpty() }
+                            ?.let { bytes ->
+                                DecodedFrame(bytes = bytes, durationMs = resolved.frame.durationMs)
+                            }
                     }
                     val frames = loadedFrames.takeIf { loaded -> loaded.all { it != null } }
                         ?.filterNotNull()
@@ -339,7 +486,8 @@ class VideoStickerPackViewModel(
                         processingProgress = 1f
                     )
                 }
-                val destination = savedPacks.firstOrNull()?.identifier ?: error("No selected stickers returned")
+                val destination = savedPacks.firstOrNull()?.identifier
+                    ?: error("No selected stickers returned")
                 _effect.send(VideoStickerPackEffect.NavigateToPackDetail(destination))
             } catch (e: Exception) {
                 _state.update { it.copy(isProcessing = false, processingStep = null) }
@@ -351,12 +499,16 @@ class VideoStickerPackViewModel(
             }
         }
     }
+
+    private companion object {
+        const val PREVIEW_EXTRACT_DEBOUNCE_MS = 250L
+    }
 }
 
-private fun ResolvedVideoStaticSticker.selectionKey(): String =
+fun ResolvedVideoStaticSticker.selectionKey(): String =
     "static:${plan.candidateId}:${plan.timestampMs}:$localPath"
 
-private fun ResolvedVideoAnimatedSticker.selectionKey(index: Int): String =
+fun ResolvedVideoAnimatedSticker.selectionKey(index: Int): String =
     "animated:$index:${plan.timeline.firstOrNull()?.timestampMs ?: 0}:${plan.timeline.lastOrNull()?.timestampMs ?: 0}"
 
 private fun Set<String>.toggle(key: String): Set<String> =

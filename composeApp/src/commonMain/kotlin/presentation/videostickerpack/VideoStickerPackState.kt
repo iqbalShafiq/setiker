@@ -5,9 +5,17 @@ import domain.model.ResolvedVideoStickerPackPlan
 import domain.model.VideoFrameCandidate
 import domain.model.VideoStickerCandidateManifestItem
 
+data class VideoStickerPackPreviewFrame(
+    val timestampMs: Long,
+    val filePath: String
+)
+
 data class VideoStickerPackState(
     val videoPath: String = "",
     val previewFramePath: String? = null,
+    val previewFrames: List<VideoStickerPackPreviewFrame> = emptyList(),
+    val currentPreviewIndex: Int = 0,
+    val isPreviewPlaying: Boolean = false,
     val sourceDurationMs: Long = 0L,
     val selectedStartMs: Long = 0L,
     val selectedEndMs: Long = 0L,
@@ -26,7 +34,25 @@ data class VideoStickerPackState(
     val selectedAnimatedStickerKeys: Set<String> = emptySet(),
     val errorMessage: String? = null
 ) {
-    val selectedDurationMs: Long get() = selectedEndMs - selectedStartMs
+    val selectedDurationMs: Long
+        get() = selectedEndMs - selectedStartMs
+
+    val previewFramesInRange: List<VideoStickerPackPreviewFrame>
+        get() = previewFrames.filter { it.timestampMs in selectedStartMs..selectedEndMs }
+
+    val activePreviewFrames: List<VideoStickerPackPreviewFrame>
+        get() = previewFramesInRange.ifEmpty { previewFrames }
+
+    val currentPreviewFrame: VideoStickerPackPreviewFrame?
+        get() = activePreviewFrames.getOrNull(
+            currentPreviewIndex.coerceIn(0, (activePreviewFrames.size - 1).coerceAtLeast(0))
+        )
+
+    val currentPreviewTimestampMs: Long
+        get() = currentPreviewFrame?.timestampMs ?: selectedStartMs
+
+    val currentPreviewPathResolved: String?
+        get() = currentPreviewFrame?.filePath ?: previewFramePath
 
     val selectedStickerCount: Int
         get() = selectedStaticStickerKeys.size + selectedAnimatedStickerKeys.size
@@ -42,6 +68,13 @@ data class VideoStickerPackState(
 
     val canSave: Boolean
         get() = selectedStickerCount > 0 && packName.isNotBlank() && publisher.isNotBlank() && !isProcessing
+
+    val canPlayPreview: Boolean
+        get() = activePreviewFrames.size > 1 && !isLoadingVideo && !isProcessing
+
+    companion object {
+        const val PREVIEW_FRAME_COUNT = 24
+    }
 }
 
 enum class VideoStickerPackProcessingStep {
