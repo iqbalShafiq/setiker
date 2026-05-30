@@ -2,6 +2,7 @@ package presentation.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,8 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -45,7 +44,6 @@ import presentation.theme.neubrutalSubtleOnSurface
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.close
 import setiker.composeapp.generated.resources.generate_clear_image
-import setiker.composeapp.generated.resources.generate_input_image_content_description
 import setiker.composeapp.generated.resources.generate_input_image_default_hint
 import setiker.composeapp.generated.resources.generate_input_image_label
 import setiker.composeapp.generated.resources.generate_pick_image
@@ -150,63 +148,55 @@ fun AiGenerateStickerPackBottomSheet(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                val path = inputImagePath
+                val pickContentDescription = stringResource(
+                    if (!path.isNullOrBlank()) {
+                        Res.string.generate_replace_image
+                    } else {
+                        Res.string.generate_pick_image
+                    }
+                )
                 Box(
                     modifier = Modifier
                         .size(96.dp)
                         .clip(RoundedCornerShape(NeubrutalCardRadius))
+                        .combinedClickable(
+                            onClick = onPickInputImage,
+                            onLongClickLabel = if (!path.isNullOrBlank()) {
+                                stringResource(Res.string.generate_clear_image)
+                            } else {
+                                null
+                            },
+                            onLongClick = if (!path.isNullOrBlank()) onClearInputImage else null
+                        )
                         .background(neubrutalCardSurface())
                         .border(NeubrutalBorderWidth, neubrutalBorderColor(), RoundedCornerShape(NeubrutalCardRadius))
                         .padding(4.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (!inputImagePath.isNullOrBlank()) {
+                    if (!path.isNullOrBlank()) {
                         AsyncImage(
-                            model = inputImagePath,
-                            contentDescription = stringResource(Res.string.generate_input_image_content_description),
+                            model = path,
+                            contentDescription = pickContentDescription,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
                     } else {
                         androidx.compose.material3.Icon(
                             imageVector = Icons.Filled.Image,
-                            contentDescription = null,
+                            contentDescription = pickContentDescription,
                             tint = neubrutalSubtleOnSurface()
                         )
                     }
                 }
-                Column(
+                Text(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = stringResource(Res.string.generate_input_image_default_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = neubrutalMutedOnSurface(),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        NeubrutalIconButton(
-                            icon = Icons.Filled.Edit,
-                            contentDescription = stringResource(
-                                if (!inputImagePath.isNullOrBlank()) Res.string.generate_replace_image
-                                else Res.string.generate_pick_image
-                            ),
-                            onClick = onPickInputImage
-                        )
-                        if (!inputImagePath.isNullOrBlank()) {
-                            NeubrutalIconButton(
-                                icon = Icons.Filled.Close,
-                                contentDescription = stringResource(Res.string.generate_clear_image),
-                                onClick = onClearInputImage
-                            )
-                        }
-                    }
-                }
+                    text = stringResource(Res.string.generate_input_image_default_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = neubrutalMutedOnSurface(),
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
 
             Spacer(modifier = Modifier.height(20.dp))
