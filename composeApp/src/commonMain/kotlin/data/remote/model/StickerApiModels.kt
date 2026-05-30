@@ -25,6 +25,7 @@ data class GridSplitTextAssetsData(
 @Serializable
 data class ApiTextAsset(
     val id: String,
+    val textAssetDecoration: ApiTextAssetDecoration? = null,
     val textOutsideForeground: ApiTextOutsideForeground? = null
 )
 

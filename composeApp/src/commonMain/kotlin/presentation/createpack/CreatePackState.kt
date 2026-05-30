@@ -41,7 +41,9 @@ data class CreatePackState(
     val error: String? = null,
     /** Raw gallery path; user must confirm crop before AddSticker / tray update. */
     val pendingStickerGalleryPath: String? = null,
-    val pendingTrayGalleryPath: String? = null
+    val pendingTrayGalleryPath: String? = null,
+    val workspaceDraftId: String? = null,
+    val backgroundJobMessage: String? = null
 ) {
     /**
      * Pack is treated as animated whenever at least one sticker is animated. This is decided

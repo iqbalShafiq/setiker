@@ -314,4 +314,27 @@
     <string name="error_failed_decode_frames">Failed to decode video frames.</string>
     <string name="error_failed_generate_video_sticker_pack">Failed to generate video sticker pack.</string>
     <string name="cd_add_animated_sticker">Add animated sticker from video or GIF</string>
+
+    <string name="ai_jobs_title">AI Jobs &amp; Drafts</string>
+    <string name="home_ai_jobs_cd">AI jobs and drafts</string>
+    <string name="ai_jobs_empty_title">No AI jobs yet</string>
+    <string name="ai_jobs_empty_desc">Start generating stickers and they will appear here while processing in the background.</string>
+    <string name="ai_jobs_running_status">%1$d running in background</string>
+    <string name="ai_jobs_section_running">Running</string>
+    <string name="ai_jobs_section_needs_attention">Needs attention</string>
+    <string name="ai_jobs_section_ready">Ready to review</string>
+    <string name="ai_jobs_section_saved">Saved</string>
+    <string name="ai_jobs_section_cancelled">Cancelled</string>
+    <string name="ai_jobs_section_other">Other</string>
+    <string name="ai_jobs_open">Open</string>
+    <string name="ai_jobs_retry">Retry</string>
+    <string name="ai_jobs_cancel">Cancel</string>
+    <string name="ai_jobs_delete">Delete</string>
+    <string name="success_generate_pack_background">Sticker pack ready — check your list.</string>
+    <string name="info_ai_job_started_background">Processing in background. You can keep using the app.</string>
+    <string name="ai_jobs_status_processing">Processing in background — safe to leave the app</string>
+    <string name="ai_jobs_status_ready">Ready to review</string>
+    <string name="ai_jobs_status_saved">Saved</string>
+    <string name="ai_jobs_status_cancelled">Cancelled</string>
+    <string name="ai_jobs_status_draft">Draft</string>
 </resources>

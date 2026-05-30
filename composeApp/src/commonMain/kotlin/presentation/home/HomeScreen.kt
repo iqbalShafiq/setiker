@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.filled.Workspaces
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.tween
@@ -41,12 +42,14 @@ import domain.model.StickerPack
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import presentation.components.AppTopBar
+import presentation.components.AppTopBarBadgedActionIcon
 import presentation.components.AiGenerateStickerPackBottomSheet
 import presentation.components.EmptyState
 import presentation.components.HomeBottomBar
 import presentation.components.LoadingIndicator
 import presentation.components.NeubrutalIconButton
 import presentation.components.SortBottomSheet
+import presentation.components.ProcessingPackListCard
 import presentation.components.StickerPackListCard
 import presentation.components.rememberImagePicker
 import presentation.components.rememberVideoPicker
@@ -62,6 +65,7 @@ import setiker.composeapp.generated.resources.no_stickers_yet_desc
 import setiker.composeapp.generated.resources.no_stickers_yet_title
 import setiker.composeapp.generated.resources.search
 import setiker.composeapp.generated.resources.search_packs_placeholder
+import setiker.composeapp.generated.resources.home_ai_jobs_cd
 import setiker.composeapp.generated.resources.sort_content_description
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -160,6 +164,12 @@ fun HomeScreen(
                         contentDescription = stringResource(Res.string.sort_content_description),
                         onClick = { showSortSheet = true }
                     )
+                    AppTopBarBadgedActionIcon(
+                        icon = Icons.Default.Workspaces,
+                        contentDescription = stringResource(Res.string.home_ai_jobs_cd),
+                        badgeCount = state.aiJobsBadgeCount,
+                        onClick = { onIntent(HomeIntent.NavigateToAiJobs) }
+                    )
                 }
             )
         },
@@ -178,7 +188,11 @@ fun HomeScreen(
                 },
                 onSyncClick = {
                     if (state.currentUser != null) {
-                        onIntent(HomeIntent.NavigateToSync)
+                        if (state.activeAiJobCount > 0) {
+                            onIntent(HomeIntent.NavigateToAiJobs)
+                        } else {
+                            onIntent(HomeIntent.NavigateToSync)
+                        }
                     } else {
                         onIntent(HomeIntent.NavigateToLogin)
                     }

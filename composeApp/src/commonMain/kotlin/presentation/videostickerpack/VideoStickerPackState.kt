@@ -32,7 +32,9 @@ data class VideoStickerPackState(
     val generatedPlan: ResolvedVideoStickerPackPlan? = null,
     val selectedStaticStickerKeys: Set<String> = emptySet(),
     val selectedAnimatedStickerKeys: Set<String> = emptySet(),
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val workspaceDraftId: String? = null,
+    val backgroundJobMessage: String? = null
 ) {
     val selectedDurationMs: Long
         get() = selectedEndMs - selectedStartMs

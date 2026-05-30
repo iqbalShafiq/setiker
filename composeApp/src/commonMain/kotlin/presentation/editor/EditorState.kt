@@ -32,5 +32,7 @@ data class EditorState(
     val generateInputImage: String? = null,
     val isApiLoading: Boolean = false,
     /** Generated images returned by the API, shown in the replacement picker sheet. */
-    val generatedPreview: List<DraftSticker> = emptyList()
+    val generatedPreview: List<DraftSticker> = emptyList(),
+    val workspaceDraftId: String? = null,
+    val backgroundJobMessage: String? = null
 )

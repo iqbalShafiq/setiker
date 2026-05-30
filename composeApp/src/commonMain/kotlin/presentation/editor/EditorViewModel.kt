@@ -2,8 +2,25 @@ package presentation.editor
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import data.aijob.AiJobManager
 import data.remote.StickerApiRepository
 import data.storage.StickerFileStorage
+import domain.model.aijob.AiJobOrigin
+import domain.model.aijob.GenerateStickersPayload
+import domain.model.aijob.ImproveStickersPayload
+import domain.model.aijob.RemoveBackgroundPayload
+import domain.model.aijob.WorkspaceDraftContext
+import domain.model.aijob.WorkspaceDraftKind
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
+import presentation.aijob.AiJobEnqueueHelper
+import presentation.aijob.DraftResultApplier
+import presentation.aijob.WorkspaceDraftFactory
+import presentation.aijob.toSnapshot
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 import data.util.EmojiPreferences
 import data.util.OnDeviceImageProcessor
 import domain.model.DecorationFont
@@ -37,12 +54,16 @@ import setiker.composeapp.generated.resources.error_pack_id_missing
 import setiker.composeapp.generated.resources.error_prompt_required
 import setiker.composeapp.generated.resources.error_select_image
 
+@OptIn(ExperimentalUuidApi::class)
 class EditorViewModel(
     private val repository: StickerRepository,
     private val emojiPreferences: EmojiPreferences,
     private val fileStorage: StickerFileStorage,
     private val apiRepository: StickerApiRepository,
-    private val onDeviceImageProcessor: OnDeviceImageProcessor
+    private val onDeviceImageProcessor: OnDeviceImageProcessor,
+    private val aiJobManager: AiJobManager,
+    private val enqueueHelper: AiJobEnqueueHelper,
+    private val draftResultApplier: DraftResultApplier
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(EditorState())
@@ -54,6 +75,31 @@ class EditorViewModel(
     private var packId: String = ""
     private var stickerIndex: Int? = null
     private var backgroundRemovalJob: Job? = null
+
+    init {
+        observeWorkspaceDraftResults()
+    }
+
+    private fun observeWorkspaceDraftResults() {
+        viewModelScope.launch {
+            _state
+                .map { it.workspaceDraftId }
+                .distinctUntilChanged()
+                .filterNotNull()
+                .collect { draftId ->
+                    combine(
+                        draftResultApplier.observeDraft(draftId),
+                        draftResultApplier.observeJobCompletion(draftId)
+                    ) { draft, job -> draft to job }
+                        .collect { (draft, job) ->
+                            if (draft == null) return@collect
+                            _state.update { current ->
+                                draftResultApplier.applyToEditor(current, draft, job)
+                            }
+                        }
+                }
+        }
+    }
 
     fun onIntent(intent: EditorIntent) {
         when (intent) {
@@ -175,6 +221,7 @@ class EditorViewModel(
             is EditorIntent.GenerateSticker -> generateSticker()
             is EditorIntent.ImproveSticker -> improveSticker()
             is EditorIntent.ApplyGeneratedSticker -> applyGeneratedSticker(intent.draft)
+            is EditorIntent.RestoreWorkspaceDraft -> restoreWorkspaceDraft(intent.draftId)
             is EditorIntent.CloseGeneratedSheet -> {
                 _state.update {
                     it.copy(generatedPreview = emptyList())
@@ -204,31 +251,19 @@ class EditorViewModel(
                 _effect.send(EditorEffect.ShowError(UiText.StringRes(Res.string.error_prompt_required)))
                 return@launch
             }
-
-            _state.update { it.copy(isApiLoading = true) }
-            try {
-                val generated = apiRepository.generateStickers(
+            val draft = upsertEditorDraft(currentState)
+            enqueueHelper.enqueueGenerateStickers(
+                draft = draft,
+                origin = AiJobOrigin.EDITOR,
+                payload = GenerateStickersPayload(
                     prompt = currentState.generatePrompt,
                     inputImagePath = currentState.generateInputImage
-                ).map { file ->
-                    presentation.createpack.DraftSticker(
-                        imagePath = file.localPath,
-                        decorations = file.decorations
-                    )
-                }
-                _state.update {
-                    it.copy(
-                        isApiLoading = false,
-                        aiGenerateSheetOpen = false,
-                        generatedPreview = generated
-                    )
-                }
-            } catch (e: Exception) {
-                _state.update { it.copy(isApiLoading = false) }
-                _effect.send(
-                    EditorEffect.ShowError(
-                        e.toUiText(Res.string.error_failed_generate_sticker)
-                    )
+                )
+            )
+            _state.update {
+                it.copy(
+                    isApiLoading = false,
+                    backgroundJobMessage = "Sedang diproses di background"
                 )
             }
         }
@@ -256,27 +291,56 @@ class EditorViewModel(
                 _effect.send(EditorEffect.ShowError(UiText.StringRes(Res.string.error_select_image)))
                 return@launch
             }
+            val draft = upsertEditorDraft(currentState)
+            enqueueHelper.enqueueImproveStickers(
+                draft = draft,
+                origin = AiJobOrigin.EDITOR,
+                payload = ImproveStickersPayload(imagePaths = listOf(currentState.imagePath))
+            )
+            _state.update {
+                it.copy(isApiLoading = false, backgroundJobMessage = "Sedang diproses di background")
+            }
+        }
+    }
 
-            _state.update { it.copy(isApiLoading = true) }
-            try {
-                val improved = apiRepository.improve(listOf(currentState.imagePath)).map { file ->
-                    presentation.createpack.DraftSticker(
-                        imagePath = file.localPath,
-                        decorations = file.decorations
-                    )
-                }
-                _state.update {
+    private suspend fun upsertEditorDraft(state: EditorState): domain.model.aijob.WorkspaceDraft {
+        val context = WorkspaceDraftContext(
+            prompt = state.generatePrompt,
+            inputImagePath = state.generateInputImage,
+            editorImagePath = state.imagePath,
+            editorDecorations = state.decorations,
+            backgroundPreviewPath = state.backgroundRemoverPreviewPath
+        )
+        val draft = WorkspaceDraftFactory.create(
+            kind = WorkspaceDraftKind.EDITOR_SESSION,
+            origin = AiJobOrigin.EDITOR,
+            displayTitle = "Sticker editor",
+            context = context,
+            originRoute = "editor?packId=$packId&stickerIndex=${stickerIndex ?: -1}",
+            packId = packId,
+            stickerIndex = stickerIndex,
+            id = state.workspaceDraftId ?: Uuid.random().toString()
+        )
+        aiJobManager.upsertDraft(draft)
+        _state.update { it.copy(workspaceDraftId = draft.id) }
+        return draft
+    }
+
+    private fun restoreWorkspaceDraft(draftId: String) {
+        viewModelScope.launch {
+            val draft = aiJobManager.getDraft(draftId) ?: return@launch
+            val context = WorkspaceDraftFactory.decodeContext(draft)
+            _state.update {
+                draftResultApplier.applyToEditor(
                     it.copy(
-                        isApiLoading = false,
-                        generatedPreview = improved
-                    )
-                }
-            } catch (e: Exception) {
-                _state.update { it.copy(isApiLoading = false) }
-                _effect.send(
-                    EditorEffect.ShowError(
-                        e.toUiText(Res.string.error_failed_improve_sticker)
-                    )
+                        workspaceDraftId = draftId,
+                        imagePath = context.editorImagePath.ifBlank { it.imagePath },
+                        decorations = context.editorDecorations,
+                        generatePrompt = context.prompt,
+                        generateInputImage = context.inputImagePath
+                    ),
+                    draft,
+                    null
                 )
             }
         }
@@ -499,43 +563,20 @@ class EditorViewModel(
             return
         }
 
-        backgroundRemovalJob?.cancel()
-        backgroundRemovalJob = viewModelScope.launch {
+        viewModelScope.launch {
+            val current = _state.value
+            val draft = upsertEditorDraft(current)
+            enqueueHelper.enqueueRemoveBackground(
+                draft = draft,
+                payload = RemoveBackgroundPayload(imagePath = path)
+            )
             _state.update {
                 it.copy(
                     isBackgroundRemoverSheetOpen = true,
-                    isBackgroundRemoving = true,
-                    backgroundRemoverPreviewPath = null
+                    isBackgroundRemoving = false,
+                    backgroundRemoverPreviewPath = null,
+                    backgroundJobMessage = "Sedang diproses di background"
                 )
-            }
-
-            try {
-                val resultPath = onDeviceImageProcessor.removeBackground(path)
-                if (!isActive) return@launch
-                _state.update {
-                    it.copy(
-                        isBackgroundRemoving = false,
-                        backgroundRemoverPreviewPath = resultPath
-                    )
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                if (!isActive) return@launch
-                _state.update {
-                    it.copy(
-                        isBackgroundRemoverSheetOpen = false,
-                        isBackgroundRemoving = false,
-                        backgroundRemoverPreviewPath = null
-                    )
-                }
-                _effect.send(
-                    EditorEffect.ShowError(
-                        e.toUiText(Res.string.error_failed_apply_removal)
-                    )
-                )
-            } finally {
-                backgroundRemovalJob = null
             }
         }
     }

@@ -2,6 +2,7 @@ package presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import data.aijob.AiJobManager
 import data.auth.AuthManager
 import data.remote.StickerApiRepository
 import data.repository.StickerPackDraftSaver
@@ -9,7 +10,23 @@ import data.sync.SyncManager
 import domain.model.StickerDraftInput
 import domain.model.StickerPack
 import domain.model.SyncOperationStatus
+import domain.model.aijob.AiJobOrigin
+import domain.model.aijob.AiJobStatus
+import domain.model.aijob.AiJobType
+import domain.model.aijob.WorkspaceDraftKind
+import domain.model.aijob.WorkspaceDraftStatus
+import domain.model.aijob.GeneratePackPayload
+import domain.model.aijob.WorkspaceDraftContext
 import domain.repository.StickerRepository
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import presentation.aijob.AiJobEnqueueHelper
+import presentation.aijob.DraftResultApplier
+import presentation.aijob.WorkspaceDraftFactory
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,6 +46,8 @@ import setiker.composeapp.generated.resources.error_pack_min_stickers_whatsapp
 import setiker.composeapp.generated.resources.error_pack_name_required
 import setiker.composeapp.generated.resources.error_prompt_required
 import setiker.composeapp.generated.resources.error_publisher_required
+import setiker.composeapp.generated.resources.info_ai_job_started_background
+import setiker.composeapp.generated.resources.success_generate_pack_background
 import setiker.composeapp.generated.resources.success_pack_added_whatsapp
 
 class HomeViewModel(
@@ -36,7 +55,10 @@ class HomeViewModel(
     private val authManager: AuthManager,
     private val syncManager: SyncManager,
     private val apiRepository: StickerApiRepository,
-    private val draftSaver: StickerPackDraftSaver
+    private val draftSaver: StickerPackDraftSaver,
+    private val aiJobManager: AiJobManager,
+    private val enqueueHelper: AiJobEnqueueHelper,
+    private val draftResultApplier: DraftResultApplier
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(HomeState())
@@ -48,6 +70,157 @@ class HomeViewModel(
     init {
         observeAuthState()
         observeSyncState()
+        observeActiveAiJobs()
+        observeAiJobsBadge()
+        observeHomeProcessingPacks()
+        observeHomeGenerateJob()
+    }
+
+    private fun observeActiveAiJobs() {
+        viewModelScope.launch {
+            aiJobManager.observeActiveJobCount().collect { count ->
+                _state.update { it.copy(activeAiJobCount = count) }
+            }
+        }
+    }
+
+    private fun observeAiJobsBadge() {
+        viewModelScope.launch {
+            aiJobManager.observeDrafts().collect { drafts ->
+                val count = drafts.count { draft ->
+                    draft.status != WorkspaceDraftStatus.APPLIED &&
+                        draft.status != WorkspaceDraftStatus.CANCELLED
+                }
+                _state.update { it.copy(aiJobsBadgeCount = count) }
+            }
+        }
+    }
+
+    private fun observeHomeProcessingPacks() {
+        viewModelScope.launch {
+            combine(
+                aiJobManager.observeDrafts(),
+                aiJobManager.observeJobs()
+            ) { drafts, jobs ->
+                drafts
+                    .filter { draft ->
+                        draft.kind == WorkspaceDraftKind.GENERATE_PACK &&
+                            draft.origin == AiJobOrigin.HOME_SHEET &&
+                            (
+                                draft.status == WorkspaceDraftStatus.PROCESSING ||
+                                    draft.status == WorkspaceDraftStatus.NEEDS_ATTENTION
+                                )
+                    }
+                    .map { draft ->
+                        val job = jobs
+                            .filter { it.workspaceDraftId == draft.id && it.type == AiJobType.GENERATE_PACK }
+                            .maxByOrNull { it.updatedAt }
+                        val failed = draft.status == WorkspaceDraftStatus.NEEDS_ATTENTION ||
+                            job?.status in FAILED_JOB_STATUSES
+                        HomeProcessingPack(
+                            draftId = draft.id,
+                            name = draft.displayTitle,
+                            progressFraction = job?.progress?.fraction?.coerceIn(0f, 1f)
+                                ?: if (failed) 0f else 0.08f,
+                            progressLabel = when {
+                                failed -> job?.failureMessage ?: "Gagal membuat pack"
+                                !job?.progress?.stepLabel.isNullOrBlank() -> job.progress.stepLabel
+                                job?.status == AiJobStatus.QUEUED -> "Antrian…"
+                                else -> "Memproses di background"
+                            },
+                            isFailed = failed,
+                            failureMessage = job?.failureMessage?.takeIf { failed }
+                        )
+                    }
+            }.collect { processing ->
+                _state.update { it.copy(processingPacks = processing) }
+            }
+        }
+    }
+
+    private fun observeHomeGenerateJob() {
+        viewModelScope.launch {
+            _state
+                .map { it.homeWorkspaceDraftId }
+                .distinctUntilChanged()
+                .flatMapLatest { draftId ->
+                    if (draftId == null) return@flatMapLatest flowOf(null)
+                    combine(
+                        draftResultApplier.observeDraft(draftId),
+                        draftResultApplier.observeJobCompletion(draftId),
+                        aiJobManager.observeJobs().map { jobs ->
+                            jobs.filter { it.workspaceDraftId == draftId }.maxByOrNull { it.updatedAt }
+                        }
+                    ) { draft, completedJob, latestJob ->
+                        Triple(draft, completedJob, latestJob)
+                    }
+                }
+                .collect { payload ->
+                    if (payload == null) return@collect
+                    val (draft, completedJob, latestJob) = payload
+                    if (draft == null) return@collect
+
+                    when (latestJob?.status) {
+                        AiJobStatus.FAILED_FINAL,
+                        AiJobStatus.FAILED_RETRYABLE,
+                        AiJobStatus.CANCELLED -> {
+                            val message = latestJob.failureMessage ?: "Generate pack gagal"
+                            _state.update {
+                                it.copy(
+                                    isGeneratePackLoading = false,
+                                    homeWorkspaceDraftId = null,
+                                    backgroundJobMessage = null
+                                )
+                            }
+                            _effect.send(HomeEffect.ShowError(UiText.DynamicString(message)))
+                        }
+                        AiJobStatus.RUNNING,
+                        AiJobStatus.QUEUED,
+                        AiJobStatus.WAITING_FOR_NETWORK,
+                        AiJobStatus.CHECKPOINTED -> {
+                            val progress = latestJob.progress
+                            if (progress != null) {
+                                val percent = (progress.fraction * 100).toInt().coerceIn(0, 100)
+                                _state.update {
+                                    it.copy(
+                                        backgroundJobMessage = "${progress.stepLabel} ($percent%)"
+                                    )
+                                }
+                            }
+                        }
+                        else -> Unit
+                    }
+
+                    val packId = draftResultApplier.applyGeneratePackCompletion(
+                        _state.value,
+                        draft,
+                        completedJob
+                    )
+                    if (packId != null) {
+                        loadPacks()
+                        _state.update {
+                            it.copy(
+                                isGeneratePackLoading = false,
+                                homeWorkspaceDraftId = null,
+                                backgroundJobMessage = null
+                            )
+                        }
+                        _effect.send(
+                            HomeEffect.ShowSuccess(
+                                UiText.StringRes(Res.string.success_generate_pack_background)
+                            )
+                        )
+                    }
+                }
+        }
+    }
+
+    companion object {
+        private val FAILED_JOB_STATUSES = setOf(
+            AiJobStatus.FAILED_FINAL,
+            AiJobStatus.FAILED_RETRYABLE,
+            AiJobStatus.CANCELLED
+        )
     }
 
     private fun observeAuthState() {
@@ -140,6 +313,9 @@ class HomeViewModel(
                     _effect.send(HomeEffect.NavigateToVideoStickerPack(intent.videoPath))
                 }
             }
+            HomeIntent.NavigateToAiJobs -> {
+                viewModelScope.launch { _effect.send(HomeEffect.NavigateToAiJobs) }
+            }
         }
     }
 
@@ -199,7 +375,7 @@ class HomeViewModel(
     private fun generateStickerPack() {
         viewModelScope.launch {
             val current = _state.value
-            if (current.isGeneratePackLoading) return@launch
+            if (current.isGeneratePackLoading || current.homeWorkspaceDraftId != null) return@launch
             if (current.generatePackName.isBlank()) {
                 _effect.send(HomeEffect.ShowError(UiText.StringRes(Res.string.error_pack_name_required)))
                 return@launch
@@ -213,55 +389,43 @@ class HomeViewModel(
                 return@launch
             }
 
-            _state.update { it.copy(isGeneratePackLoading = true, error = null) }
-            try {
-                val generated = apiRepository.generateStickerPack(
+            val context = WorkspaceDraftContext(
+                prompt = current.generatePackPrompt,
+                packName = current.generatePackName,
+                publisher = current.generatePackPublisher,
+                layout = current.generatePackLayout,
+                inputImagePath = current.generatePackInputImagePath,
+                homeAutoSaveOnComplete = true
+            )
+            val draft = WorkspaceDraftFactory.create(
+                kind = WorkspaceDraftKind.GENERATE_PACK,
+                origin = AiJobOrigin.HOME_SHEET,
+                displayTitle = current.generatePackName.ifBlank { "Sticker pack" },
+                context = context,
+                originRoute = "home"
+            )
+            aiJobManager.upsertDraft(draft)
+            enqueueHelper.enqueueGeneratePack(
+                draft = draft,
+                payload = GeneratePackPayload(
                     prompt = current.generatePackPrompt,
                     layout = current.generatePackLayout,
+                    packName = current.generatePackName,
+                    publisher = current.generatePackPublisher,
                     inputImagePath = current.generatePackInputImagePath
                 )
-                val trayImagePath = generated.firstOrNull()?.localPath
-                if (trayImagePath.isNullOrBlank()) {
-                    throw IllegalStateException("No generated sticker returned")
-                }
-                val identifier = PackIdentifierSanitizer.sanitize(
-                    rawName = current.generatePackName,
-                    suffix = Random.nextInt(1000, 9999)
+            )
+            _state.update {
+                it.copy(
+                    isGeneratePackLoading = true,
+                    error = null,
+                    homeWorkspaceDraftId = draft.id,
+                    backgroundJobMessage = "Sedang diproses di background"
                 )
-                val pack = draftSaver.buildDraftPack(
-                    StickerDraftInput(
-                        identifier = identifier,
-                        name = current.generatePackName,
-                        publisher = current.generatePackPublisher,
-                        visibility = "PRIVATE",
-                        trayImagePath = trayImagePath,
-                        stickers = generated.map { file ->
-                            StickerDraftInput.StickerInput(
-                                imagePath = file.localPath,
-                                decorations = file.decorations
-                            )
-                        }
-                    )
-                )
-                repository.savePack(pack)
-                val packs = repository.getAllPacks()
-                _state.update {
-                    it.copy(
-                        packs = packs,
-                        isGeneratePackLoading = false,
-                        isGeneratePackSheetOpen = false,
-                        generatePackPrompt = "",
-                        generatePackName = "",
-                        generatePackPublisher = "",
-                        generatePackLayout = "4x4",
-                        generatePackInputImagePath = null
-                    )
-                }
-                _effect.send(HomeEffect.NavigateToPackDetail(pack.identifier))
-            } catch (e: Exception) {
-                _state.update { it.copy(isGeneratePackLoading = false, error = e.message) }
-                _effect.send(HomeEffect.ShowError(e.toUiText(Res.string.error_failed_generate_sticker_pack)))
             }
+            _effect.send(
+                HomeEffect.ShowSuccess(UiText.StringRes(Res.string.info_ai_job_started_background))
+            )
         }
     }
 }

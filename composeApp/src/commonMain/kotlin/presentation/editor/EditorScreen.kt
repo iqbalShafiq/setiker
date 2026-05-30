@@ -69,6 +69,8 @@ import domain.model.TextDecoration
 import org.jetbrains.compose.resources.stringResource
 import presentation.components.AddTextDecorationBottomSheet
 import presentation.components.AiGenerateBottomSheet
+import presentation.components.BottomSheetScrollColumn
+import presentation.components.zeroBottomSheetWindowInsets
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
 import presentation.components.AppTextField
@@ -573,15 +575,10 @@ fun EditorScreen(
             onDismissRequest = { onIntent(EditorIntent.CloseGeneratedSheet) },
             sheetState = sheetState,
             containerColor = neubrutalScreenBackground(),
-            scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
+            scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f),
+            contentWindowInsets = { zeroBottomSheetWindowInsets() }
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 8.dp)
-                    .padding(bottom = 24.dp)
-                    .verticalScroll(rememberScrollState())
-            ) {
+            BottomSheetScrollColumn {
                 Text(
                     text = stringResource(Res.string.generate_replace_sticker_title),
                     style = MaterialTheme.typography.titleLarge,

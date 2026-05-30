@@ -2,11 +2,31 @@ package presentation.createpack
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import data.aijob.AiJobManager
 import data.remote.StickerApiRepository
 import data.repository.StickerPackDraftSaver
 import domain.model.StickerDraftInput
 import domain.model.StickerPack
+import domain.model.aijob.AiJobOrigin
+import domain.model.aijob.GenerateStickersPayload
+import domain.model.aijob.GridSplitPayload
+import domain.model.aijob.ImproveStickersPayload
+import domain.model.aijob.WorkspaceDraftContext
+import domain.model.aijob.WorkspaceDraftKind
+import domain.model.aijob.AiJobStatus
+import domain.repository.AiJobRepository
 import domain.repository.StickerRepository
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
+import presentation.aijob.AiJobEnqueueHelper
+import presentation.aijob.DraftResultApplier
+import presentation.aijob.WorkspaceDraftFactory
+import presentation.aijob.toDraftSticker
+import presentation.aijob.toSnapshot
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,10 +54,15 @@ import setiker.composeapp.generated.resources.error_publisher_required
 import setiker.composeapp.generated.resources.error_sticker_limit_reached
 import setiker.composeapp.generated.resources.error_tray_icon_required
 
+@OptIn(ExperimentalUuidApi::class)
 class CreatePackViewModel(
     private val repository: StickerRepository,
     private val apiRepository: StickerApiRepository,
-    private val draftSaver: StickerPackDraftSaver
+    private val draftSaver: StickerPackDraftSaver,
+    private val aiJobManager: AiJobManager,
+    private val enqueueHelper: AiJobEnqueueHelper,
+    private val draftResultApplier: DraftResultApplier,
+    private val jobRepository: AiJobRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CreatePackState())
@@ -45,6 +70,46 @@ class CreatePackViewModel(
 
     private val _effect = Channel<CreatePackEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
+
+    init {
+        observeWorkspaceDraftResults()
+    }
+
+    private fun observeWorkspaceDraftResults() {
+        viewModelScope.launch {
+            _state
+                .map { it.workspaceDraftId }
+                .distinctUntilChanged()
+                .filterNotNull()
+                .collect { draftId ->
+                    combine(
+                        draftResultApplier.observeDraft(draftId),
+                        jobRepository.observeByDraft(draftId)
+                    ) { draft, jobs ->
+                        val active = jobs.firstOrNull {
+                            it.status in setOf(
+                                AiJobStatus.QUEUED,
+                                AiJobStatus.RUNNING,
+                                AiJobStatus.WAITING_FOR_NETWORK,
+                                AiJobStatus.CHECKPOINTED
+                            )
+                        }
+                        val completed = jobs.firstOrNull { it.status == AiJobStatus.COMPLETED }
+                        Triple(draft, active, completed)
+                    }.collect { (draft, active, completed) ->
+                        if (draft == null) return@collect
+                        _state.update { current ->
+                            val withJob = draftResultApplier.applyToCreatePack(current, draft, completed)
+                            withJob.copy(
+                                isApiLoading = false,
+                                backgroundJobMessage = active?.progress?.stepLabel
+                                    ?: if (active != null) "Sedang diproses di background" else null
+                            )
+                        }
+                    }
+                }
+        }
+    }
 
     fun onIntent(intent: CreatePackIntent) {
         when (intent) {
@@ -164,7 +229,64 @@ class CreatePackViewModel(
             is CreatePackIntent.DismissTrayGalleryCropPrompt -> {
                 _state.update { it.copy(pendingTrayGalleryPath = null) }
             }
+            is CreatePackIntent.RestoreWorkspaceDraft -> restoreWorkspaceDraft(intent.draftId)
         }
+    }
+
+    private fun restoreWorkspaceDraft(draftId: String) {
+        viewModelScope.launch {
+            val draft = aiJobManager.getDraft(draftId) ?: return@launch
+            val context = WorkspaceDraftFactory.decodeContext(draft)
+            _state.update {
+                draftResultApplier.applyToCreatePack(
+                    it.copy(
+                        workspaceDraftId = draftId,
+                        name = context.packName,
+                        publisher = context.publisher,
+                        visibility = context.visibility,
+                        trayImagePath = context.trayImagePath,
+                        stickers = context.stickers.map { sticker -> sticker.toDraftSticker() },
+                        generatePrompt = context.prompt,
+                        generateInputImage = context.inputImagePath,
+                        gridSplitSourcePath = context.gridSplitSourcePath,
+                        gridLayout = context.gridLayout ?: it.gridLayout
+                    ),
+                    draft,
+                    null
+                )
+            }
+        }
+    }
+
+    private suspend fun upsertCreatePackDraft(state: CreatePackState): domain.model.aijob.WorkspaceDraft {
+        val context = WorkspaceDraftContext(
+            prompt = state.generatePrompt,
+            inputImagePath = state.generateInputImage,
+            packName = state.name,
+            publisher = state.publisher,
+            visibility = state.visibility,
+            trayImagePath = state.trayImagePath,
+            gridLayout = state.gridLayout,
+            gridSplitSourcePath = state.gridSplitSourcePath,
+            stickers = state.stickers.map { it.toSnapshot() },
+            generatedPreview = state.generatedPreview.map { it.toSnapshot() },
+            selectedGeneratedPreview = state.selectedGeneratedPreview,
+            generatedPreviewMode = state.generatedPreviewMode.name,
+            splitPreview = state.splitPreview.map { it.toSnapshot() },
+            selectedSplitPreview = state.selectedSplitPreview
+        )
+        val draft = WorkspaceDraftFactory.create(
+            kind = WorkspaceDraftKind.CREATE_PACK_SESSION,
+            origin = AiJobOrigin.CREATE_PACK,
+            displayTitle = state.name.ifBlank { "Create pack" },
+            context = context,
+            originRoute = if (state.packId.isBlank()) "createPack" else "createPack?packId=${state.packId}",
+            packId = state.packId.takeIf { it.isNotBlank() },
+            id = state.workspaceDraftId ?: Uuid.random().toString()
+        )
+        aiJobManager.upsertDraft(draft)
+        _state.update { it.copy(workspaceDraftId = draft.id) }
+        return draft
     }
 
     private fun loadPack(packId: String) {
@@ -299,29 +421,20 @@ class CreatePackViewModel(
                 return@launch
             }
 
-            _state.update { it.copy(isApiLoading = true, error = null) }
-            try {
-                val generated = apiRepository.generateStickers(
+            val draft = upsertCreatePackDraft(currentState)
+            enqueueHelper.enqueueGenerateStickers(
+                draft = draft,
+                origin = AiJobOrigin.CREATE_PACK,
+                payload = GenerateStickersPayload(
                     prompt = currentState.generatePrompt,
                     inputImagePath = currentState.generateInputImage
-                ).map { file ->
-                    DraftSticker(imagePath = file.localPath, decorations = file.decorations)
-                }
-                _state.update {
-                    it.copy(
-                        isApiLoading = false,
-                        aiGenerateSheetOpen = false,
-                        generatedPreview = generated,
-                        selectedGeneratedPreview = generated.indices.toSet(),
-                        generatedPreviewMode = GeneratedPreviewMode.AddToPack
-                    )
-                }
-            } catch (e: Exception) {
-                _state.update { it.copy(isApiLoading = false, error = e.message) }
-                _effect.send(
-                    CreatePackEffect.ShowError(
-                        e.toUiText(Res.string.error_failed_generate_sticker)
-                    )
+                )
+            )
+            _state.update {
+                it.copy(
+                    isApiLoading = false,
+                    error = null,
+                    backgroundJobMessage = "Sedang diproses di background"
                 )
             }
         }
@@ -335,35 +448,20 @@ class CreatePackViewModel(
                 return@launch
             }
 
-            _state.update { it.copy(isApiLoading = true, error = null) }
-            try {
-                val splitImages = apiRepository.splitGridOnDevice(
+            val draft = upsertCreatePackDraft(currentState)
+            enqueueHelper.enqueueGridSplit(
+                draft = draft,
+                payload = GridSplitPayload(
                     imagePath = currentState.gridSplitSourcePath,
                     layout = currentState.gridLayout
                 )
-                val splitDrafts = splitImages.map { file ->
-                    DraftSticker(imagePath = file.localPath, decorations = file.decorations)
-                }
-                _state.update {
-                    it.copy(
-                        isApiLoading = false,
-                        gridSplitSheetPhase = GridSplitSheetPhase.Results,
-                        splitPreview = splitDrafts,
-                        selectedSplitPreview = splitDrafts.indices.toSet()
-                    )
-                }
-            } catch (e: Exception) {
-                _state.update {
-                    it.copy(
-                        isApiLoading = false,
-                        gridSplitSheetPhase = GridSplitSheetPhase.ConfirmPick,
-                        error = e.message ?: "Split failed. Please try again."
-                    )
-                }
-                _effect.send(
-                    CreatePackEffect.ShowError(
-                        e.toUiText(Res.string.error_failed_split_grid)
-                    )
+            )
+            _state.update {
+                it.copy(
+                    isApiLoading = false,
+                    error = null,
+                    backgroundJobMessage = "Sedang diproses di background",
+                    gridSplitSheetPhase = GridSplitSheetPhase.ConfirmPick
                 )
             }
         }
@@ -441,26 +539,17 @@ class CreatePackViewModel(
                 return@launch
             }
 
-            _state.update { it.copy(isApiLoading = true, error = null) }
-            try {
-                val improved = apiRepository.improve(sourceStickers.map { it.imagePath })
-                    .map { file ->
-                        DraftSticker(imagePath = file.localPath, decorations = file.decorations)
-                    }
-                _state.update {
-                    it.copy(
-                        isApiLoading = false,
-                        generatedPreview = improved,
-                        selectedGeneratedPreview = improved.indices.toSet(),
-                        generatedPreviewMode = GeneratedPreviewMode.ReplacePack
-                    )
-                }
-            } catch (e: Exception) {
-                _state.update { it.copy(isApiLoading = false, error = e.message) }
-                _effect.send(
-                    CreatePackEffect.ShowError(
-                        e.toUiText(Res.string.error_failed_improve_sticker)
-                    )
+            val draft = upsertCreatePackDraft(currentState)
+            enqueueHelper.enqueueImproveStickers(
+                draft = draft,
+                origin = AiJobOrigin.CREATE_PACK,
+                payload = ImproveStickersPayload(imagePaths = sourceStickers.map { it.imagePath })
+            )
+            _state.update {
+                it.copy(
+                    isApiLoading = false,
+                    error = null,
+                    backgroundJobMessage = "Sedang diproses di background"
                 )
             }
         }

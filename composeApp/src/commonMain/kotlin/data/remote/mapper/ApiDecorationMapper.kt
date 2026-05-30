@@ -28,6 +28,7 @@ fun ApiImage.toStickerDecorations(): List<StickerDecoration> = listOfNotNull(
 internal fun ApiTextAsset.toDecorationApiImage(): ApiImage = ApiImage(
     id = id,
     url = "",
+    textAssetDecoration = textAssetDecoration,
     textOutsideForeground = textOutsideForeground
 )
 

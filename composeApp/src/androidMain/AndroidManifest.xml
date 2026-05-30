@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Internet permission for image loading (Coil) -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     
     <!-- Storage permissions for Android 12 and below -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
@@ -22,6 +26,7 @@
 
     <application
         android:name=".StickerApplication"
+        android:largeHeap="true"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -47,6 +52,14 @@
                 <data android:scheme="http" android:host="13.251.98.162" android:pathPrefix="/api/v1/share/pack/" />
                 <data android:scheme="http" android:host="13.251.98.162" android:pathPrefix="/api/v1/share/sticker/" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="setiker" android:host="ai" android:pathPrefix="/draft" />
+                <data android:scheme="setiker" android:host="ai" android:pathPrefix="/job" />
+                <data android:scheme="setiker" android:host="ai" android:path="/jobs" />
+            </intent-filter>
         </activity>
 
         <!-- FileProvider for sharing sticker files -->
@@ -68,6 +81,12 @@
             android:exported="true"
             android:readPermission="com.whatsapp.sticker.READ" />
 
+        <!-- WorkManager foreground worker (required when using FOREGROUND_SERVICE_TYPE_DATA_SYNC) -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
 
     </application>
 </manifest>

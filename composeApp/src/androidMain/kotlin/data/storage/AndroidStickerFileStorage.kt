@@ -64,6 +64,12 @@ actual class StickerFileStorage(private val context: Context) {
             destFile.absolutePath
         }
 
+    actual suspend fun readBytesAtPath(absolutePath: String): ByteArray? =
+        withContext(Dispatchers.IO) {
+            val file = File(absolutePath)
+            if (file.exists()) file.readBytes() else null
+        }
+
     actual suspend fun loadImage(fileName: String): ByteArray? =
         withContext(Dispatchers.IO) {
             val file = File(stickersDir, fileName)

@@ -1,8 +1,8 @@
 package presentation.home
 
+import data.aijob.AiJobManager
 import data.auth.AuthManager
 import data.remote.StickerApiRepository
-import data.remote.model.GridSplitStickerFile
 import data.repository.StickerPackDraftSaver
 import data.storage.StickerFileStorage
 import data.sync.SyncManager
@@ -13,28 +13,40 @@ import domain.model.StickerPack
 import domain.model.SyncOperation
 import domain.model.SyncReport
 import domain.model.SyncStage
+import domain.model.aijob.AiJob
+import domain.model.aijob.AiJobStatus
+import domain.model.aijob.AiJobType
+import domain.model.aijob.WorkspaceDraft
+import domain.model.aijob.WorkspaceDraftStatus
 import domain.repository.StickerRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import presentation.aijob.AiJobEnqueueHelper
+import presentation.aijob.DraftResultApplier
+import presentation.aijob.ViewModelAiJobTestSupport
+import presentation.common.UiText
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.info_ai_job_started_background
+import setiker.composeapp.generated.resources.success_generate_pack_background
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -54,16 +66,8 @@ class HomeViewModelGeneratePackTest {
 
     @Test
     fun generatePackFailsWhenPromptBlank() = runTest {
-        val repository = mockk<StickerRepository>(relaxed = true)
-        val apiRepository = mockk<StickerApiRepository>(relaxed = true)
-        val saver = CapturingDraftSaver(savedPack = fakePack())
-        val viewModel = HomeViewModel(
-            repository = repository,
-            authManager = fakeAuthManager(),
-            syncManager = fakeSyncManager(),
-            apiRepository = apiRepository,
-            draftSaver = saver
-        )
+        val harness = homeHarness(packId = "unused")
+        val viewModel = homeViewModel(mockk(relaxed = true), mockk(relaxed = true), harness)
 
         viewModel.onIntent(HomeIntent.OpenGeneratePackSheet)
         viewModel.onIntent(HomeIntent.UpdateGeneratePackName("My Pack"))
@@ -73,34 +77,16 @@ class HomeViewModelGeneratePackTest {
         val effect = viewModel.effect.first()
         assertTrue(effect is HomeEffect.ShowError)
         assertFalse(viewModel.state.value.isGeneratePackLoading)
-        coVerify(exactly = 0) { apiRepository.generateStickerPack(any(), any(), any()) }
+        coVerify(exactly = 0) { harness.manager.enqueue(any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
-    fun generatePackSuccessSavesAndNavigates() = runTest {
+    fun generatePackSuccessRefreshesListWithoutNavigation() = runTest {
+        val packId = "my_pack_1234"
+        val harness = homeHarness(packId = packId)
         val repository = mockk<StickerRepository>(relaxed = true)
-        coEvery { repository.getAllPacks() } returns listOf(fakePack())
-        val apiRepository = mockk<StickerApiRepository>()
-        coEvery {
-            apiRepository.generateStickerPack(
-                prompt = any(),
-                layout = any(),
-                inputImagePath = any()
-            )
-        } returns listOf(
-            GridSplitStickerFile(localPath = "/tmp/first.png"),
-            GridSplitStickerFile(localPath = "/tmp/second.png")
-        )
-
-        val builtPack = fakePack(id = "my_pack_1234")
-        val saver = CapturingDraftSaver(savedPack = builtPack)
-        val viewModel = HomeViewModel(
-            repository = repository,
-            authManager = fakeAuthManager(),
-            syncManager = fakeSyncManager(),
-            apiRepository = apiRepository,
-            draftSaver = saver
-        )
+        coEvery { repository.getAllPacks() } returns listOf(fakePack(id = packId))
+        val viewModel = homeViewModel(repository, mockk(), harness)
 
         viewModel.onIntent(HomeIntent.OpenGeneratePackSheet)
         viewModel.onIntent(HomeIntent.UpdateGeneratePackName("My Pack"))
@@ -109,44 +95,20 @@ class HomeViewModelGeneratePackTest {
         viewModel.onIntent(HomeIntent.GenerateStickerPack)
         advanceUntilIdle()
 
-        val capturedInput = assertNotNull(saver.lastInput)
-        assertEquals("My Pack", capturedInput.name)
-        assertEquals("Me", capturedInput.publisher)
-        assertEquals("PRIVATE", capturedInput.visibility)
-        assertEquals("/tmp/first.png", capturedInput.trayImagePath)
-        assertEquals(2, capturedInput.stickers.size)
-        assertEquals("/tmp/first.png", capturedInput.stickers[0].imagePath)
-        assertEquals("/tmp/second.png", capturedInput.stickers[1].imagePath)
+        assertTrue(viewModel.state.value.isGeneratePackSheetOpen)
 
-        assertFalse(viewModel.state.value.isGeneratePackSheetOpen)
+        harness.completeJob()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.state.value.isGeneratePackSheetOpen)
         assertFalse(viewModel.state.value.isGeneratePackLoading)
-        assertEquals("", viewModel.state.value.generatePackPrompt)
-        assertNull(viewModel.state.value.generatePackInputImagePath)
-
-        coVerify(exactly = 1) { repository.savePack(builtPack) }
         coVerify(atLeast = 1) { repository.getAllPacks() }
-
-        val effect = viewModel.effect.first()
-        assertEquals(HomeEffect.NavigateToPackDetail(packId = builtPack.identifier), effect)
     }
 
     @Test
     fun closeWhileGeneratingDoesNotAllowDuplicateRequest() = runTest {
-        val repository = mockk<StickerRepository>(relaxed = true)
-        coEvery { repository.getAllPacks() } returns emptyList()
-        val gate = CompletableDeferred<Unit>()
-        val apiRepository = mockk<StickerApiRepository>()
-        coEvery { apiRepository.generateStickerPack(any(), any(), any()) } coAnswers {
-            gate.await()
-            listOf(GridSplitStickerFile(localPath = "/tmp/only.png"))
-        }
-        val viewModel = HomeViewModel(
-            repository = repository,
-            authManager = fakeAuthManager(),
-            syncManager = fakeSyncManager(),
-            apiRepository = apiRepository,
-            draftSaver = CapturingDraftSaver(fakePack("generated"))
-        )
+        val harness = homeHarness(packId = "generated", completeImmediately = false)
+        val viewModel = homeViewModel(mockk(relaxed = true), mockk(), harness)
 
         viewModel.onIntent(HomeIntent.OpenGeneratePackSheet)
         viewModel.onIntent(HomeIntent.UpdateGeneratePackName("Pack"))
@@ -156,75 +118,107 @@ class HomeViewModelGeneratePackTest {
         advanceUntilIdle()
 
         assertTrue(viewModel.state.value.isGeneratePackLoading)
+        assertTrue(viewModel.state.value.homeWorkspaceDraftId != null)
 
         viewModel.onIntent(HomeIntent.CloseGeneratePackSheet)
         viewModel.onIntent(HomeIntent.GenerateStickerPack)
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { apiRepository.generateStickerPack(any(), any(), any()) }
-        assertTrue(viewModel.state.value.isGeneratePackLoading)
-        assertFalse(viewModel.state.value.isGeneratePackSheetOpen)
+        coVerify(exactly = 1) { harness.manager.enqueue(any(), any(), any(), any(), any(), any(), any()) }
+        assertTrue(viewModel.state.value.homeWorkspaceDraftId != null)
 
-        gate.complete(Unit)
+        harness.completeJob()
         advanceUntilIdle()
-        assertFalse(viewModel.state.value.isGeneratePackLoading)
+        assertNull(viewModel.state.value.homeWorkspaceDraftId)
     }
 
     @Test
-    fun duplicateSubmitWhileLoadingIsIgnored() = runTest {
-        val repository = mockk<StickerRepository>(relaxed = true)
-        val gate = CompletableDeferred<Unit>()
-        val apiRepository = mockk<StickerApiRepository>()
-        coEvery { apiRepository.generateStickerPack(any(), any(), any()) } coAnswers {
-            gate.await()
-            listOf(GridSplitStickerFile(localPath = "/tmp/only.png"))
+    fun duplicateSubmitWhileProcessingIsIgnored() = runTest {
+        val harness = homeHarness(packId = "generated", completeImmediately = false)
+        val viewModel = homeViewModel(mockk(relaxed = true), mockk(), harness)
+
+        viewModel.onIntent(HomeIntent.OpenGeneratePackSheet)
+        viewModel.onIntent(HomeIntent.UpdateGeneratePackName("Pack"))
+        viewModel.onIntent(HomeIntent.UpdateGeneratePackPublisher("Pub"))
+        viewModel.onIntent(HomeIntent.UpdateGeneratePackPrompt("Prompt"))
+        viewModel.onIntent(HomeIntent.GenerateStickerPack)
+        viewModel.onIntent(HomeIntent.GenerateStickerPack)
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { harness.manager.enqueue(any(), any(), any(), any(), any(), any(), any()) }
+
+        harness.completeJob()
+        advanceUntilIdle()
+    }
+
+    private fun homeHarness(
+        packId: String,
+        completeImmediately: Boolean = true
+    ): HomeTestHarness {
+        val draftFlow = MutableStateFlow<WorkspaceDraft?>(null)
+        val jobFlow = MutableStateFlow<AiJob?>(null)
+        val applier = mockk<DraftResultApplier> {
+            every { observeDraft(any()) } returns draftFlow
+            every { observeJobCompletion(any()) } returns jobFlow
+            every { applyGeneratePackCompletion(any(), any(), any()) } answers {
+                val job = thirdArg<AiJob?>()
+                if (job?.status == AiJobStatus.COMPLETED && job.type == AiJobType.GENERATE_PACK) packId else null
+            }
         }
-        val viewModel = HomeViewModel(
-            repository = repository,
-            authManager = fakeAuthManager(),
-            syncManager = fakeSyncManager(),
-            apiRepository = apiRepository,
-            draftSaver = CapturingDraftSaver(fakePack("generated"))
-        )
-
-        viewModel.onIntent(HomeIntent.OpenGeneratePackSheet)
-        viewModel.onIntent(HomeIntent.UpdateGeneratePackName("Pack"))
-        viewModel.onIntent(HomeIntent.UpdateGeneratePackPublisher("Pub"))
-        viewModel.onIntent(HomeIntent.UpdateGeneratePackPrompt("Prompt"))
-        viewModel.onIntent(HomeIntent.GenerateStickerPack)
-        viewModel.onIntent(HomeIntent.GenerateStickerPack)
-        advanceUntilIdle()
-
-        coVerify(exactly = 1) { apiRepository.generateStickerPack(any(), any(), any()) }
-
-        gate.complete(Unit)
-        advanceUntilIdle()
+        val manager = ViewModelAiJobTestSupport.manager { draft ->
+            draftFlow.value = draft.copy(status = WorkspaceDraftStatus.PROCESSING)
+            if (completeImmediately) {
+                jobFlow.value = completedJob(draft.id)
+            }
+        }
+        coEvery { manager.getDraft(any()) } answers { draftFlow.value }
+        every { manager.observeDrafts() } returns draftFlow.map { listOfNotNull(it) }
+        every { manager.observeJobs() } returns jobFlow.map { listOfNotNull(it) }
+        return HomeTestHarness(
+            manager = manager,
+            enqueueHelper = ViewModelAiJobTestSupport.enqueueHelper(manager),
+            draftResultApplier = applier,
+            draftFlow = draftFlow,
+            jobFlow = jobFlow,
+            packId = packId
+        ) {
+            val draft = draftFlow.value ?: return@HomeTestHarness
+            draftFlow.value = draft.copy(status = WorkspaceDraftStatus.APPLIED)
+            jobFlow.value = completedJob(draft.id)
+        }
     }
 
-    @Test
-    fun generatePackFailureResetsLoadingAndKeepsSheetOpen() = runTest {
-        val repository = mockk<StickerRepository>(relaxed = true)
-        val apiRepository = mockk<StickerApiRepository>()
-        coEvery { apiRepository.generateStickerPack(any(), any(), any()) } throws IllegalStateException("boom")
-        val viewModel = HomeViewModel(
-            repository = repository,
-            authManager = fakeAuthManager(),
-            syncManager = fakeSyncManager(),
-            apiRepository = apiRepository,
-            draftSaver = CapturingDraftSaver(fakePack())
-        )
+    private fun completedJob(draftId: String): AiJob = mockk(relaxed = true) {
+        every { status } returns AiJobStatus.COMPLETED
+        every { type } returns AiJobType.GENERATE_PACK
+        every { workspaceDraftId } returns draftId
+    }
 
-        viewModel.onIntent(HomeIntent.OpenGeneratePackSheet)
-        viewModel.onIntent(HomeIntent.UpdateGeneratePackName("Pack"))
-        viewModel.onIntent(HomeIntent.UpdateGeneratePackPublisher("Pub"))
-        viewModel.onIntent(HomeIntent.UpdateGeneratePackPrompt("Prompt"))
-        viewModel.onIntent(HomeIntent.GenerateStickerPack)
-        advanceUntilIdle()
+    private fun homeViewModel(
+        repository: StickerRepository,
+        apiRepository: StickerApiRepository,
+        harness: HomeTestHarness
+    ) = HomeViewModel(
+        repository = repository,
+        authManager = fakeAuthManager(),
+        syncManager = fakeSyncManager(),
+        apiRepository = apiRepository,
+        draftSaver = CapturingDraftSaver(fakePack()),
+        aiJobManager = harness.manager,
+        enqueueHelper = harness.enqueueHelper,
+        draftResultApplier = harness.draftResultApplier
+    )
 
-        val effect = viewModel.effect.first()
-        assertTrue(effect is HomeEffect.ShowError)
-        assertFalse(viewModel.state.value.isGeneratePackLoading)
-        assertTrue(viewModel.state.value.isGeneratePackSheetOpen)
+    private class HomeTestHarness(
+        val manager: AiJobManager,
+        val enqueueHelper: AiJobEnqueueHelper,
+        val draftResultApplier: DraftResultApplier,
+        private val draftFlow: MutableStateFlow<WorkspaceDraft?>,
+        private val jobFlow: MutableStateFlow<AiJob?>,
+        val packId: String,
+        private val complete: () -> Unit
+    ) {
+        fun completeJob() = complete()
     }
 
     private fun fakeAuthManager(): AuthManager {

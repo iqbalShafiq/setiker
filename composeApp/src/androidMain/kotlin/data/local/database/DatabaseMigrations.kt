@@ -60,4 +60,64 @@ object DatabaseMigrations {
             db.execSQL("CREATE INDEX IF NOT EXISTS index_sync_queue_createdAt ON sync_queue(createdAt)")
         }
     }
+
+    val MIGRATION_5_6 = object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS workspace_drafts (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    kind TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    origin TEXT NOT NULL,
+                    originRoute TEXT,
+                    packId TEXT,
+                    stickerIndex INTEGER,
+                    displayTitle TEXT NOT NULL,
+                    contextJson TEXT NOT NULL,
+                    lastJobId TEXT,
+                    lastCompletedJobId TEXT,
+                    lastFailedJobId TEXT,
+                    createdAt INTEGER NOT NULL,
+                    updatedAt INTEGER NOT NULL
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_workspace_drafts_status ON workspace_drafts(status)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_workspace_drafts_updatedAt ON workspace_drafts(updatedAt)")
+
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS ai_jobs (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    workspaceDraftId TEXT NOT NULL,
+                    type TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    origin TEXT NOT NULL,
+                    payloadJson TEXT NOT NULL,
+                    resultJson TEXT,
+                    checkpointJson TEXT,
+                    progressStepKey TEXT,
+                    progressStepLabel TEXT,
+                    progressFraction REAL NOT NULL DEFAULT 0,
+                    attemptCount INTEGER NOT NULL DEFAULT 0,
+                    attemptGroupId TEXT NOT NULL,
+                    parentJobId TEXT,
+                    failureKind TEXT NOT NULL DEFAULT 'NONE',
+                    failureMessage TEXT,
+                    requiresNetwork INTEGER NOT NULL DEFAULT 0,
+                    createdAt INTEGER NOT NULL,
+                    updatedAt INTEGER NOT NULL,
+                    lastAttemptAt INTEGER,
+                    nextRetryAt INTEGER,
+                    completedAt INTEGER
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_ai_jobs_status ON ai_jobs(status)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_ai_jobs_workspaceDraftId ON ai_jobs(workspaceDraftId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_ai_jobs_attemptGroupId ON ai_jobs(attemptGroupId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_ai_jobs_createdAt ON ai_jobs(createdAt)")
+        }
+    }
 }

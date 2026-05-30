@@ -63,6 +63,8 @@ import presentation.components.SelectableStickerGrid
 import presentation.components.ReadOnlyDecorationOverlay
 import presentation.components.ScreenSectionTitle
 import presentation.components.AiGenerateBottomSheet
+import presentation.components.BottomSheetScrollColumn
+import presentation.components.zeroBottomSheetWindowInsets
 import presentation.components.rememberImagePicker
 import presentation.components.rememberStickerImagePicker
 import presentation.theme.AccentCoral
@@ -209,15 +211,10 @@ fun CreatePackScreen(
             onDismissRequest = { onIntent(CreatePackIntent.CloseGeneratedSheet) },
             sheetState = generatedSheetState,
             containerColor = neubrutalScreenBackground(),
-            scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
+            scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f),
+            contentWindowInsets = { zeroBottomSheetWindowInsets() }
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 8.dp)
-                    .padding(bottom = 24.dp)
-                    .verticalScroll(rememberScrollState())
-            ) {
+            BottomSheetScrollColumn {
                 Text(
                     text = stringResource(
                         if (state.generatedPreviewMode == GeneratedPreviewMode.ReplacePack) {
@@ -286,15 +283,10 @@ fun CreatePackScreen(
             onDismissRequest = { onIntent(CreatePackIntent.CloseGridSheet) },
             sheetState = gridSheetState,
             containerColor = neubrutalScreenBackground(),
-            scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
+            scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f),
+            contentWindowInsets = { zeroBottomSheetWindowInsets() }
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 8.dp)
-                    .padding(bottom = 24.dp)
-                    .verticalScroll(rememberScrollState())
-            ) {
+            BottomSheetScrollColumn {
                 when (state.gridSplitSheetPhase) {
                     GridSplitSheetPhase.ConfirmPick -> {
                         Text(

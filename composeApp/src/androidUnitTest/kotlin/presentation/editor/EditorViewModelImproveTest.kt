@@ -1,31 +1,31 @@
 package presentation.editor
 
 import data.remote.StickerApiRepository
-import data.remote.model.GeneratedStickerFile
 import data.storage.StickerFileStorage
 import data.util.EmojiPreferences
 import data.util.OnDeviceImageProcessor
 import domain.model.DecorationFont
+import domain.model.StickerDecoration
 import domain.model.TextDecoration
+import domain.model.aijob.DraftStickerSnapshot
 import domain.repository.StickerRepository
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
+import presentation.aijob.EditorAiDeps
+import presentation.aijob.ViewModelAiJobTestSupport
 import presentation.common.UiText
 import presentation.createpack.DraftSticker
 import setiker.composeapp.generated.resources.Res
-import setiker.composeapp.generated.resources.error_failed_improve_sticker
 import setiker.composeapp.generated.resources.error_select_image
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -65,29 +65,34 @@ class EditorViewModelImproveTest {
     }
 
     @Test
-    fun improveStickerSuccessTogglesLoadingAndUpdatesGeneratedPreviewWithDecorations() = runTest {
-        val apiRepository = mockk<StickerApiRepository>()
+    fun improveStickerSuccessAppliesGeneratedPreviewWithDecorations() = runTest {
         val decoration = TextDecoration(
             id = "api-text-1",
             text = "HELLO",
             font = DecorationFont.Sans
         )
-        coEvery { apiRepository.improve(listOf("/tmp/source.png")) } coAnswers {
-            kotlinx.coroutines.delay(1_000)
-            listOf(
-            GeneratedStickerFile(
-                localPath = "/tmp/improved.png",
-                decorations = listOf(decoration)
-            )
-            )
-        }
-        val viewModel = createViewModel(apiRepository = apiRepository)
+        val deps = ViewModelAiJobTestSupport.editorDependencies()
+        val viewModel = createViewModel(deps)
 
         viewModel.onIntent(EditorIntent.UpdateImagePath("/tmp/source.png"))
         viewModel.onIntent(EditorIntent.ImproveSticker)
-        runCurrent()
-        assertTrue(viewModel.state.value.isApiLoading)
-        advanceTimeBy(1_000)
+        advanceUntilIdle()
+        assertFalse(viewModel.state.value.isApiLoading)
+        assertEquals("Sedang diproses di background", viewModel.state.value.backgroundJobMessage)
+
+        val draftId = viewModel.state.value.workspaceDraftId!!
+        deps.jobsFlow.value = listOf(
+            ViewModelAiJobTestSupport.completeImproveJob(
+                draftId = draftId,
+                previews = listOf(
+                    DraftStickerSnapshot(
+                        imagePath = "/tmp/improved.png",
+                        decorations = listOf<StickerDecoration>(decoration)
+                    )
+                ),
+                replaceMode = false
+            )
+        )
         advanceUntilIdle()
 
         assertFalse(viewModel.state.value.isApiLoading)
@@ -96,26 +101,17 @@ class EditorViewModelImproveTest {
     }
 
     @Test
-    fun improveStickerFailureTogglesLoadingOffAndEmitsImproveError() = runTest {
-        val apiRepository = mockk<StickerApiRepository>()
-        coEvery { apiRepository.improve(listOf("/tmp/source.png")) } coAnswers {
-            kotlinx.coroutines.delay(1_000)
-            throw RuntimeException("boom")
-        }
-        val viewModel = createViewModel(apiRepository = apiRepository)
+    fun improveStickerEnqueuesBackgroundJob() = runTest {
+        val deps = ViewModelAiJobTestSupport.editorDependencies()
+        val viewModel = createViewModel(deps)
 
         viewModel.onIntent(EditorIntent.UpdateImagePath("/tmp/source.png"))
         viewModel.onIntent(EditorIntent.ImproveSticker)
-        runCurrent()
-        assertTrue(viewModel.state.value.isApiLoading)
-        advanceTimeBy(1_000)
         advanceUntilIdle()
 
-        val effect = withTimeout(1_000) { viewModel.effect.first() }
-        val error = assertIs<EditorEffect.ShowError>(effect)
-        val message = assertIs<UiText.StringRes>(error.message)
-        assertEquals(Res.string.error_failed_improve_sticker, message.resource)
         assertFalse(viewModel.state.value.isApiLoading)
+        assertEquals("Sedang diproses di background", viewModel.state.value.backgroundJobMessage)
+        coVerify(exactly = 1) { deps.manager.enqueue(any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -143,9 +139,8 @@ class EditorViewModelImproveTest {
     }
 
     private fun createViewModel(
-        apiRepository: StickerApiRepository = mockk {
-            coEvery { improve(any()) } returns emptyList()
-        }
+        deps: EditorAiDeps = ViewModelAiJobTestSupport.editorDependencies(),
+        apiRepository: StickerApiRepository = mockk(relaxed = true)
     ): EditorViewModel {
         val repository = mockk<StickerRepository>(relaxed = true)
         val emojiPreferences = mockk<EmojiPreferences>(relaxed = true)
@@ -156,7 +151,10 @@ class EditorViewModelImproveTest {
             emojiPreferences = emojiPreferences,
             fileStorage = fileStorage,
             apiRepository = apiRepository,
-            onDeviceImageProcessor = onDeviceImageProcessor
+            onDeviceImageProcessor = onDeviceImageProcessor,
+            aiJobManager = deps.manager,
+            enqueueHelper = deps.enqueueHelper,
+            draftResultApplier = deps.draftResultApplier
         )
     }
 }

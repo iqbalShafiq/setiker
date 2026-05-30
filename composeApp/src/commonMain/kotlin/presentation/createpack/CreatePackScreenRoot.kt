@@ -12,6 +12,7 @@ import presentation.common.resolveOrDefault
 @Composable
 fun CreatePackScreenRoot(
     packId: String?,
+    workspaceDraftId: String? = null,
     onBackClick: () -> Unit,
     onPackSaved: (String) -> Unit,
     croppedStickerGalleryPath: String? = null,
@@ -30,6 +31,10 @@ fun CreatePackScreenRoot(
 
     LaunchedEffect(packId) {
         packId?.let { viewModel.onIntent(CreatePackIntent.LoadPack(it)) }
+    }
+
+    LaunchedEffect(workspaceDraftId) {
+        workspaceDraftId?.let { viewModel.onIntent(CreatePackIntent.RestoreWorkspaceDraft(it)) }
     }
 
     LaunchedEffect(croppedStickerGalleryPath) {

@@ -11,6 +11,7 @@ enum class DecorationApplyScope {
 
 data class AnimatedEditorState(
     val draftId: String = "",
+    val workspaceDraftId: String? = null,
     val videoPath: String = "",
     val frames: List<DecodedFrame> = emptyList(),
     val currentFrameIndex: Int = 0,
@@ -23,6 +24,7 @@ data class AnimatedEditorState(
     val accessibilityText: String = "",
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
+    val backgroundJobMessage: String? = null,
     val saveProgress: Float = 0f,
     val saveProgressLabel: String? = null,
     val errorMessage: String? = null,

@@ -14,6 +14,8 @@ import data.video.AndroidVideoFrameCandidateExtractor
 import data.video.CandidateGridComposer
 import data.video.VideoFrameCandidateExtractor
 import data.util.EmojiPreferences
+import data.aijob.AiBackgroundScheduler
+import data.aijob.AiNotificationHelper
 import data.util.AndroidOnDeviceImageProcessor
 import data.util.OnDeviceImageProcessor
 import domain.actions.AndroidPackActions
@@ -35,11 +37,14 @@ actual fun platformModule(): Module = module {
             .addMigrations(DatabaseMigrations.MIGRATION_2_3)
             .addMigrations(DatabaseMigrations.MIGRATION_3_4)
             .addMigrations(DatabaseMigrations.MIGRATION_4_5)
+            .addMigrations(DatabaseMigrations.MIGRATION_5_6)
             .build()
     }
 
     single { get<StickerDatabase>().stickerPackDao() }
     single { get<StickerDatabase>().stickerDao() }
+    single { get<StickerDatabase>().aiJobDao() }
+    single { get<StickerDatabase>().workspaceDraftDao() }
     single<StickerFileStorage> { StickerFileStorage(androidContext()) }
     single<EmojiPreferences> { EmojiPreferences(androidContext()) }
     single<OnDeviceImageProcessor> { AndroidOnDeviceImageProcessor(androidContext()) }
@@ -48,4 +53,6 @@ actual fun platformModule(): Module = module {
     single<PackActions> { AndroidPackActions(androidContext(), get(), get()) }
     single<DataStore<Preferences>> { androidContext().dataStore }
     single { NetworkMonitor(androidContext()) }
+    single { AiBackgroundScheduler(androidContext()) }
+    single { AiNotificationHelper(androidContext()) }
 }

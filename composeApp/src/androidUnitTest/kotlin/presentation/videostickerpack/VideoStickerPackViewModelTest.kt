@@ -23,6 +23,8 @@ import domain.repository.StickerRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import presentation.aijob.VideoAiDeps
+import presentation.aijob.ViewModelAiJobTestSupport
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -35,7 +37,9 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class VideoStickerPackViewModelTest {
@@ -52,7 +56,7 @@ class VideoStickerPackViewModelTest {
     }
 
     @Test
-    fun regenerateReusesExistingCandidateGrids() = runTest {
+    fun regenerateEnqueuesSecondJobWithoutFreshCandidates() = runTest {
         val fileStorage = mockk<StickerFileStorage>()
         coEvery { fileStorage.getVideoDurationMs(any()) } returns 120_000L
         coEvery { fileStorage.extractVideoFrameToFile(any(), any(), any()) } returns "/tmp/video_preview.png"
@@ -64,45 +68,31 @@ class VideoStickerPackViewModelTest {
         coEvery { gridComposer.composeGrids(any()) } returns listOf(
             CandidateGridImage("/tmp/grid1.png", frameCount = 1)
         )
-        val apiRepository = mockk<StickerApiRepository>()
-        coEvery {
-            apiRepository.generateVideoStickerPack(any(), any(), any(), any(), any(), any(), any())
-        } returns resolvedPlan("/tmp/out.png")
-
-        val viewModel = VideoStickerPackViewModel(
+        val plan = resolvedPlan("/tmp/out.png")
+        val (viewModel, deps) = createViewModel(
             fileStorage = fileStorage,
             extractor = extractor,
             gridComposer = gridComposer,
-            apiRepository = apiRepository,
-            stickerRepository = mockk(relaxed = true),
-            draftSaver = CapturingDraftSaver(fakePack())
+            plan = plan
         )
-
         viewModel.onIntent(VideoStickerPackIntent.LoadVideo("/tmp/video.mp4"))
         advanceUntilIdle()
         viewModel.onIntent(VideoStickerPackIntent.Generate)
         advanceUntilIdle()
+        deps.emitVideoCompletion()
+        advanceUntilIdle()
         viewModel.onIntent(VideoStickerPackIntent.Regenerate)
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { extractor.extractCandidates(any(), any(), any(), any()) }
-        coVerify(exactly = 1) { gridComposer.composeGrids(any()) }
         coVerify(exactly = 2) {
-            apiRepository.generateVideoStickerPack(any(), any(), any(), any(), any(), any(), any())
+            deps.manager.enqueue(any(), any(), any(), any(), any(), any(), any())
         }
     }
 
     @Test
     fun savePackDoesNotRunBeforeGeneratedPreviewExists() = runTest {
         val repository = mockk<StickerRepository>(relaxed = true)
-        val viewModel = VideoStickerPackViewModel(
-            fileStorage = mockk<StickerFileStorage>(relaxed = true),
-            extractor = mockk<VideoFrameCandidateExtractor>(relaxed = true),
-            gridComposer = mockk<CandidateGridComposer>(relaxed = true),
-            apiRepository = mockk<StickerApiRepository>(relaxed = true),
-            stickerRepository = repository,
-            draftSaver = CapturingDraftSaver(fakePack())
-        )
+        val (viewModel, _) = createViewModel(stickerRepository = repository)
 
         viewModel.onIntent(VideoStickerPackIntent.UpdatePackName("My Pack"))
         viewModel.onIntent(VideoStickerPackIntent.UpdatePublisher("Me"))
@@ -124,24 +114,23 @@ class VideoStickerPackViewModelTest {
         )
         val gridComposer = mockk<CandidateGridComposer>()
         coEvery { gridComposer.composeGrids(any()) } returns listOf(CandidateGridImage("/tmp/grid.png", 1))
-        val apiRepository = mockk<StickerApiRepository>()
-        coEvery {
-            apiRepository.generateVideoStickerPack(any(), any(), any(), any(), any(), any(), any())
-        } returns resolvedPlan("/tmp/first.png", "/tmp/second.png")
+        val plan = resolvedPlan("/tmp/first.png", "/tmp/second.png")
         val repository = mockk<StickerRepository>(relaxed = true)
         val saver = CapturingDraftSaver(fakePack(id = "video_pack_1"))
-        val viewModel = VideoStickerPackViewModel(
+        val (viewModel, deps) = createViewModel(
             fileStorage = fileStorage,
             extractor = extractor,
             gridComposer = gridComposer,
-            apiRepository = apiRepository,
             stickerRepository = repository,
-            draftSaver = saver
+            draftSaver = saver,
+            plan = plan
         )
 
         viewModel.onIntent(VideoStickerPackIntent.LoadVideo("/tmp/video.mp4"))
         advanceUntilIdle()
         viewModel.onIntent(VideoStickerPackIntent.Generate)
+        advanceUntilIdle()
+        deps.emitVideoCompletion()
         advanceUntilIdle()
         viewModel.onIntent(VideoStickerPackIntent.UpdatePackName("Video Pack"))
         viewModel.onIntent(VideoStickerPackIntent.UpdatePublisher("Setiker"))
@@ -183,10 +172,7 @@ class VideoStickerPackViewModelTest {
         )
         coEvery { fileStorage.saveAnimatedStickerImage(any(), any(), any(), any(), any()) } returns "/tmp/anim.webp"
         coEvery { fileStorage.saveTrayImage(any(), any()) } returns "/tmp/tray.png"
-        val apiRepository = mockk<StickerApiRepository>()
-        coEvery {
-            apiRepository.generateVideoStickerPack(any(), any(), any(), any(), any(), any(), any())
-        } returns animatedResolvedPlan()
+        val plan = animatedResolvedPlan()
         val savedPacks = mutableListOf<StickerPack>()
         val repository = mockk<StickerRepository>()
         coEvery { repository.savePack(any()) } answers {
@@ -194,18 +180,20 @@ class VideoStickerPackViewModelTest {
             Unit
         }
         val saver = CapturingDraftSaver(fakePack(id = "video_pack_anim"))
-        val viewModel = VideoStickerPackViewModel(
+        val (viewModel, deps) = createViewModel(
             fileStorage = fileStorage,
             extractor = extractor,
             gridComposer = gridComposer,
-            apiRepository = apiRepository,
             stickerRepository = repository,
-            draftSaver = saver
+            draftSaver = saver,
+            plan = plan
         )
 
         viewModel.onIntent(VideoStickerPackIntent.LoadVideo("/tmp/video.mp4"))
         advanceUntilIdle()
         viewModel.onIntent(VideoStickerPackIntent.Generate)
+        advanceUntilIdle()
+        deps.emitVideoCompletion()
         advanceUntilIdle()
         viewModel.onIntent(VideoStickerPackIntent.UpdatePackName("Video Pack"))
         viewModel.onIntent(VideoStickerPackIntent.UpdatePublisher("Setiker"))
@@ -240,22 +228,19 @@ class VideoStickerPackViewModelTest {
         )
         val gridComposer = mockk<CandidateGridComposer>()
         coEvery { gridComposer.composeGrids(any()) } returns listOf(CandidateGridImage("/tmp/grid.png", 2))
-        val apiRepository = mockk<StickerApiRepository>()
-        coEvery {
-            apiRepository.generateVideoStickerPack(any(), any(), any(), any(), any(), any(), any())
-        } returns mixedResolvedPlan()
-        val viewModel = VideoStickerPackViewModel(
+        val plan = mixedResolvedPlan()
+        val (viewModel, deps) = createViewModel(
             fileStorage = fileStorage,
             extractor = extractor,
             gridComposer = gridComposer,
-            apiRepository = apiRepository,
-            stickerRepository = mockk(relaxed = true),
-            draftSaver = CapturingDraftSaver(fakePack())
+            plan = plan
         )
 
         viewModel.onIntent(VideoStickerPackIntent.LoadVideo("/tmp/video.mp4"))
         advanceUntilIdle()
         viewModel.onIntent(VideoStickerPackIntent.Generate)
+        advanceUntilIdle()
+        deps.emitVideoCompletion()
         advanceUntilIdle()
 
         val state = viewModel.state.value
@@ -280,10 +265,7 @@ class VideoStickerPackViewModelTest {
         )
         val gridComposer = mockk<CandidateGridComposer>()
         coEvery { gridComposer.composeGrids(any()) } returns listOf(CandidateGridImage("/tmp/grid.png", 2))
-        val apiRepository = mockk<StickerApiRepository>()
-        coEvery {
-            apiRepository.generateVideoStickerPack(any(), any(), any(), any(), any(), any(), any())
-        } returns mixedResolvedPlan()
+        val plan = mixedResolvedPlan()
         val savedPacks = mutableListOf<StickerPack>()
         val repository = mockk<StickerRepository>()
         coEvery { repository.savePack(any()) } answers {
@@ -291,18 +273,20 @@ class VideoStickerPackViewModelTest {
             Unit
         }
         val saver = MultiCapturingDraftSaver()
-        val viewModel = VideoStickerPackViewModel(
+        val (viewModel, deps) = createViewModel(
             fileStorage = fileStorage,
             extractor = extractor,
             gridComposer = gridComposer,
-            apiRepository = apiRepository,
             stickerRepository = repository,
-            draftSaver = saver
+            draftSaver = saver,
+            plan = plan
         )
 
         viewModel.onIntent(VideoStickerPackIntent.LoadVideo("/tmp/video.mp4"))
         advanceUntilIdle()
         viewModel.onIntent(VideoStickerPackIntent.Generate)
+        advanceUntilIdle()
+        deps.emitVideoCompletion()
         advanceUntilIdle()
         viewModel.onIntent(VideoStickerPackIntent.UpdatePackName("Video Pack"))
         viewModel.onIntent(VideoStickerPackIntent.UpdatePublisher("Setiker"))
@@ -320,6 +304,30 @@ class VideoStickerPackViewModelTest {
         assertEquals("/tmp/animated.webp", animatedSticker.imageFile)
         assertEquals("/tmp/animated.webp", animatedSticker.sourceImageFile)
         coVerify(exactly = 2) { repository.savePack(any()) }
+    }
+
+    private fun createViewModel(
+        fileStorage: StickerFileStorage = mockk(relaxed = true),
+        extractor: VideoFrameCandidateExtractor = mockk(relaxed = true),
+        gridComposer: CandidateGridComposer = mockk(relaxed = true),
+        apiRepository: StickerApiRepository = mockk(relaxed = true),
+        stickerRepository: StickerRepository = mockk(relaxed = true),
+        draftSaver: StickerPackDraftSaver = CapturingDraftSaver(fakePack()),
+        plan: ResolvedVideoStickerPackPlan = resolvedPlan("/tmp/out.png")
+    ): Pair<VideoStickerPackViewModel, VideoAiDeps> {
+        val deps = ViewModelAiJobTestSupport.videoDependencies(plan)
+        val viewModel = VideoStickerPackViewModel(
+            fileStorage = fileStorage,
+            extractor = extractor,
+            gridComposer = gridComposer,
+            apiRepository = apiRepository,
+            stickerRepository = stickerRepository,
+            draftSaver = draftSaver,
+            aiJobManager = deps.manager,
+            enqueueHelper = deps.enqueueHelper,
+            draftResultApplier = deps.draftResultApplier
+        )
+        return viewModel to deps
     }
 
     private fun fakePack(id: String = "id"): StickerPack = StickerPack(

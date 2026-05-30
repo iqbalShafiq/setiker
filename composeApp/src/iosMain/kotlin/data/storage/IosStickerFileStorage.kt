@@ -50,6 +50,17 @@ actual class StickerFileStorage {
             destPath
         }
 
+    actual suspend fun readBytesAtPath(absolutePath: String): ByteArray? =
+        withContext(Dispatchers.IO) {
+            NSData.dataWithContentsOfFile(absolutePath)?.let { data ->
+                ByteArray(data.length.toInt()).apply {
+                    usePinned { pinned ->
+                        memcpy(pinned.addressOf(0), data.bytes, data.length)
+                    }
+                }
+            }
+        }
+
     actual suspend fun loadImage(fileName: String): ByteArray? =
         withContext(Dispatchers.IO) {
             val filePath = "$stickersDir/$fileName"

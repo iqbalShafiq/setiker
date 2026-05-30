@@ -38,6 +38,7 @@ import presentation.createpack.DraftSticker
 import presentation.crop.CropScreenRoot
 import presentation.editor.EditorScreenRoot
 import presentation.explore.ExploreScreenRoot
+import presentation.aijobs.AiJobsScreenRoot
 import presentation.history.ProcessingHistoryScreenRoot
 import presentation.home.HomeScreenRoot
 import presentation.packdetail.PackDetailScreenRoot
@@ -48,6 +49,9 @@ import presentation.sharepreview.SharePreviewScreenRoot
 import presentation.videocrop.VideoCropScreenRoot
 import presentation.videostickerpack.VideoStickerPackScreenRoot
 import presentation.videotrim.VideoTrimScreenRoot
+import domain.repository.AiJobRepository
+import domain.repository.WorkspaceDraftRepository
+import presentation.aijob.WorkspaceDraftNavigation
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -67,13 +71,17 @@ private fun Screen.VideoStickerPack.toRoute(): String =
 @Composable
 fun AppNavigation(
     navController: NavHostController = rememberNavController(),
-    onAddToWhatsApp: ((String, String) -> Unit)? = null
+    onAddToWhatsApp: ((String, String) -> Unit)? = null,
+    notificationDeepLink: NotificationDeepLink? = null,
+    notificationDeepLinkVersion: Int = 0
 ) {
     val authManager: AuthManager = koinInject()
+    val workspaceDraftRepository: WorkspaceDraftRepository = koinInject()
+    val aiJobRepository: AiJobRepository = koinInject()
     val authState by authManager.authState.collectAsState()
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
-    val loginGuardRoutes = setOf("home", "profile", "sync", "history")
+    val loginGuardRoutes = setOf("home", "profile", "sync", "history", "aiJobs")
 
     LaunchedEffect(authState, currentRoute) {
         if (authState == AuthState.UNAUTHENTICATED) {
@@ -83,6 +91,25 @@ fun AppNavigation(
                 }
             }
         }
+    }
+
+    LaunchedEffect(notificationDeepLinkVersion, notificationDeepLink) {
+        val link = notificationDeepLink ?: return@LaunchedEffect
+        if (link.openAiJobsOnly) {
+            navController.navigate("aiJobs") {
+                launchSingleTop = true
+                popUpTo("home") { inclusive = false }
+            }
+            return@LaunchedEffect
+        }
+        if (link.draftId.isNullOrBlank() && link.jobId.isNullOrBlank()) return@LaunchedEffect
+        val target = WorkspaceDraftNavigation.resolveNotificationTarget(
+            draftRepository = workspaceDraftRepository,
+            jobRepository = aiJobRepository,
+            draftId = link.draftId,
+            jobId = link.jobId
+        )
+        navigateToNotificationTarget(navController, target)
     }
 
     val editorCropResult = remember { mutableStateOf<String?>(null) }
@@ -125,7 +152,18 @@ fun AppNavigation(
                 },
                 onVideoStickerPackClick = { videoPath ->
                     navController.navigate(Screen.VideoStickerPack(videoPath).toRoute())
-                }
+                },
+                onAiJobsClick = { navController.navigate("aiJobs") }
+            )
+        }
+
+        composable("aiJobs") {
+            AiJobsScreenRoot(
+                onBackClick = { navController.popBackStack() },
+                onOpenDraft = { draftId, originRoute ->
+                    navigateToWorkspaceDraft(navController, draftId, originRoute)
+                },
+                onOpenPack = { packId -> navController.navigate("packDetail/$packId") }
             )
         }
 
@@ -302,6 +340,13 @@ fun AppNavigation(
                     } else {
                         navController.navigate("login")
                     }
+                },
+                onNavigateAiJobs = {
+                    if (authState == AuthState.AUTHENTICATED) {
+                        navController.navigate("aiJobs")
+                    } else {
+                        navController.navigate("login")
+                    }
                 }
             )
         }
@@ -430,10 +475,52 @@ fun AppNavigation(
             )
         }
 
+        composable("createPack") {
+            CreatePackScreenRoot(
+                packId = null,
+                workspaceDraftId = null,
+                onBackClick = { navController.popBackStack() },
+                onPackSaved = { savedPackId ->
+                    navController.navigate("packDetail/$savedPackId") {
+                        popUpTo("home") { inclusive = false }
+                    }
+                },
+                croppedStickerGalleryPath = createStickerCropDeliveredPath,
+                croppedTrayGalleryPath = createTrayCropDeliveredPath,
+                pendingAnimatedDraft = pendingAnimatedDraftDelivered,
+                onStickerGalleryCropConsumed = { createPackStickerCrop.value = null },
+                onTrayGalleryCropConsumed = { createPackTrayCrop.value = null },
+                onAnimatedDraftConsumed = { pendingAnimatedDraft.value = null },
+                onNavigateToCropSticker = { path ->
+                    createPackStickerCrop.value = null
+                    navController.navigate(
+                        "crop/${PathEncoder.encode(path)}/${CropRecipient.CreatePackSticker}"
+                    )
+                },
+                onNavigateToCropTray = { path ->
+                    createPackTrayCrop.value = null
+                    navController.navigate(
+                        "crop/${PathEncoder.encode(path)}/${CropRecipient.CreatePackTray}"
+                    )
+                },
+                onNavigateToVideoTrim = { videoPath ->
+                    pendingAnimatedDraft.value = null
+                    navController.navigate(
+                        "videoTrim/${PathEncoder.encode(videoPath)}?packId="
+                    )
+                }
+            )
+        }
+
         composable(
-            route = "createPack?packId={packId}",
+            route = "createPack?packId={packId}&workspaceDraftId={workspaceDraftId}",
             arguments = listOf(
                 navArgument("packId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+                navArgument("workspaceDraftId") {
                     type = NavType.StringType
                     nullable = true
                     defaultValue = null
@@ -441,8 +528,10 @@ fun AppNavigation(
             )
         ) { backStackEntry ->
             val packId = backStackEntry.arguments?.getString("packId")
+            val workspaceDraftId = backStackEntry.arguments?.getString("workspaceDraftId")
             CreatePackScreenRoot(
                 packId = packId,
+                workspaceDraftId = workspaceDraftId,
                 onBackClick = { navController.popBackStack() },
                 onPackSaved = { savedPackId ->
                     navController.navigate("packDetail/$savedPackId") {
@@ -641,5 +730,32 @@ fun AppNavigation(
                 }
             )
         }
+    }
+}
+
+private fun navigateToWorkspaceDraft(
+    navController: NavHostController,
+    draftId: String,
+    originRoute: String?
+) {
+    val route = WorkspaceDraftNavigation.routeForDraft(draftId, originRoute)
+    navController.navigate(route) {
+        launchSingleTop = true
+    }
+}
+
+private fun navigateToNotificationTarget(
+    navController: NavHostController,
+    target: WorkspaceDraftNavigation.Target
+) {
+    if (target.navigateToAiJobsFirst) {
+        navController.navigate("aiJobs") {
+            launchSingleTop = true
+            popUpTo("home") { inclusive = false }
+        }
+    }
+    navController.navigate(target.route) {
+        launchSingleTop = true
+        popUpTo("home") { inclusive = false }
     }
 }

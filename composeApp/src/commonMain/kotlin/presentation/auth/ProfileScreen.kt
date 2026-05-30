@@ -98,6 +98,7 @@ fun ProfileScreenRoot(
     onNavigateHome: () -> Unit = {},
     onNavigateExplore: () -> Unit = {},
     onNavigateHistory: () -> Unit = {},
+    onNavigateAiJobs: () -> Unit = {},
     onBackClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -113,6 +114,7 @@ fun ProfileScreenRoot(
         onNavigateHome = onNavigateHome,
         onNavigateExplore = onNavigateExplore,
         onNavigateHistory = onNavigateHistory,
+        onNavigateAiJobs = onNavigateAiJobs,
         onBackClick = onBackClick,
         onSettingsClick = onSettingsClick,
         modifier = modifier
@@ -126,6 +128,7 @@ fun ProfileScreen(
     onNavigateHome: () -> Unit = {},
     onNavigateExplore: () -> Unit = {},
     onNavigateHistory: () -> Unit = {},
+    onNavigateAiJobs: () -> Unit = {},
     onBackClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -230,6 +233,13 @@ fun ProfileScreen(
                                 label = stringResource(Res.string.profile_processing_history),
                                 iconBackgroundColor = PastelBlue,
                                 onClick = onNavigateHistory
+                            )
+                            MenuDivider()
+                            ProfileMenuItem(
+                                icon = Icons.Default.Star,
+                                label = "AI jobs & drafts",
+                                iconBackgroundColor = PastelPurple,
+                                onClick = onNavigateAiJobs
                             )
                         }
                     }

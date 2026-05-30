@@ -12,6 +12,7 @@ import data.video.UnsupportedCandidateGridComposer
 import data.video.UnsupportedVideoFrameCandidateExtractor
 import data.video.VideoFrameCandidateExtractor
 import data.util.EmojiPreferences
+import data.aijob.AiBackgroundScheduler
 import data.util.IosOnDeviceImageProcessor
 import data.util.OnDeviceImageProcessor
 import data.util.createIOSDataStore
@@ -51,4 +52,5 @@ actual fun platformModule(): Module = module {
     single<PackActions> { IosPackActions() }
     single<DataStore<Preferences>> { createIOSDataStore() }
     single { NetworkMonitor() }
+    single { AiBackgroundScheduler() }
 }

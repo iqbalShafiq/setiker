@@ -10,9 +10,15 @@ import data.remote.CloudStickerRepository
 import data.remote.ExploreApiRepository
 import data.remote.SetikerApiService
 import data.remote.StickerApiRepository
+import data.aijob.AiJobManager
+import data.aijob.AiJobRunner
+import data.aijob.AnimatedWorkspaceDraftHelper
+import data.aijob.RoomAiJobRepository
+import data.aijob.RoomWorkspaceDraftRepository
 import data.repository.StickerPackDraftSaver
 import data.repository.StickerRepositoryImpl
-import data.storage.AnimatedStickerDraftStore
+import domain.repository.AiJobRepository
+import domain.repository.WorkspaceDraftRepository
 import data.sync.NetworkMonitor
 import data.sync.SyncCursorStore
 import data.sync.SyncManager
@@ -37,6 +43,7 @@ import presentation.videostickerpack.VideoStickerPackViewModel
 import presentation.videotrim.VideoTrimViewModel
 import presentation.animatededitor.AnimatedEditorViewModel
 import presentation.sync.SyncViewModel
+import presentation.aijobs.AiJobsViewModel
 import presentation.sharepreview.SharePreviewViewModel
 
 expect fun platformModule(): Module
@@ -49,7 +56,7 @@ val appModule = module {
     single { SetikerApiService(authManager = get(), authTokenRefresher = get()) }
     single { StickerApiRepository(api = get(), fileStorage = get(), onDeviceImageProcessor = get()) }
     single { StickerPackDraftSaver(fileStorage = get()) }
-    single { AnimatedStickerDraftStore() }
+    single { AnimatedWorkspaceDraftHelper(get(), get()) }
 
     // Auth
     single { AuthApiService() }
@@ -59,6 +66,28 @@ val appModule = module {
     single { ExploreApiRepository(authManager = get(), authTokenRefresher = get()) }
     // NetworkMonitor is provided by platform-specific module
     single { get<StickerDatabase>().syncOperationDao() }
+    single { get<StickerDatabase>().aiJobDao() }
+    single { get<StickerDatabase>().workspaceDraftDao() }
+    single<AiJobRepository> { RoomAiJobRepository(get()) }
+    single<WorkspaceDraftRepository> { RoomWorkspaceDraftRepository(get()) }
+    single { AiJobManager(get(), get(), get()) }
+    single { presentation.aijob.AiJobEnqueueHelper(get()) }
+    single { presentation.aijob.DraftResultApplier(get(), get()) }
+    single {
+        AiJobRunner(
+            jobRepository = get(),
+            draftRepository = get(),
+            apiRepository = get(),
+            onDeviceImageProcessor = get(),
+            fileStorage = get(),
+            extractor = get(),
+            gridComposer = get(),
+            draftSaver = get(),
+            stickerRepository = get(),
+            jobManager = get(),
+            animatedDraftHelper = get()
+        )
+    }
     single { SyncCursorStore(get()) }
     single<SyncManager> { SyncManagerImpl(get(), get(), get(), get(), get(), get(), get(), get()) }
 
@@ -80,4 +109,5 @@ val appModule = module {
     viewModelOf(::RegisterViewModel)
     viewModelOf(::ProfileViewModel)
     viewModelOf(::SyncViewModel)
+    viewModelOf(::AiJobsViewModel)
 }

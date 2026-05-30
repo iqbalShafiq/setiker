@@ -2,12 +2,11 @@ package presentation.videocrop
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import data.storage.AnimatedStickerDraftStore
+import data.aijob.AnimatedWorkspaceDraftHelper
 import data.storage.StickerFileStorage
 import domain.model.AnimatedStickerSpec
 import domain.model.CropTransform
 import domain.model.StickerPack
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -18,7 +17,6 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlin.time.Clock
 import presentation.common.UiText
 import presentation.common.toUiText
@@ -29,7 +27,7 @@ import util.decodeImageBitmapInfo
 
 class VideoCropViewModel(
     private val fileStorage: StickerFileStorage,
-    private val draftStore: AnimatedStickerDraftStore
+    private val animatedDraftHelper: AnimatedWorkspaceDraftHelper
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(VideoCropState())
@@ -98,8 +96,6 @@ class VideoCropViewModel(
                 )
             }
 
-            // Extract a small uniform set of preview frames inside the trim range so the
-            // user can play/pause to verify the crop area against actual motion.
             val frames = mutableListOf<VideoCropPreviewFrame>()
             val span = (spec.trimEndMs - spec.trimStartMs).coerceAtLeast(1L)
             val count = VideoCropState.PREVIEW_FRAME_COUNT
@@ -123,7 +119,6 @@ class VideoCropViewModel(
                 _effect.send(VideoCropEffect.ShowError(UiText.StringRes(Res.string.error_failed_extract_preview)))
                 return@launch
             }
-            // Use first frame to populate dimensions (good enough — we keep them fixed).
             val info = decodeImageBitmapInfo(frames.first().filePath)
             _state.update {
                 it.copy(
@@ -140,12 +135,6 @@ class VideoCropViewModel(
         _state.update { it.copy(isPlaying = true) }
         playJob?.cancel()
         playJob = viewModelScope.launch {
-            // Mirror the trim screen: a small uniform set of preview frames spans
-            // the trim range, so the natural playback interval is
-            // trimDuration / frameCount / speed. Using 1000/fps here made playback
-            // race through all 8 previews in well under a second regardless of the
-            // real trim length, which felt glitchy and made the speed chips look
-            // like they did nothing.
             val intervalProvider = {
                 val state = _state.value
                 val spec = state.spec
@@ -194,11 +183,6 @@ class VideoCropViewModel(
                     videoPath = current.videoPath,
                     spec = finalSpec,
                     onProgress = { current2, total ->
-                        // Forward real progress so the dialog shows actual frame counts,
-                        // not a fake animation. Hop back to the main dispatcher because
-                        // the storage callback fires on the IO/main thread depending on
-                        // the source media; updating StateFlow from any thread is safe
-                        // but Compose recomposes more reliably on the main thread.
                         val safeTotal = total.coerceAtLeast(1)
                         val pct = (current2.toFloat() / safeTotal).coerceIn(0f, 1f)
                         _state.update {
@@ -214,17 +198,14 @@ class VideoCropViewModel(
                     _effect.send(VideoCropEffect.ShowError(UiText.StringRes(Res.string.error_failed_decode_frames)))
                     return@launch
                 }
-                val draftId = withContext(Dispatchers.Default) {
-                    draftStore.put(
-                        AnimatedStickerDraftStore.Draft(
-                            videoPath = current.videoPath,
-                            frames = frames,
-                            spec = finalSpec
-                        )
-                    )
-                }
+                val draft = animatedDraftHelper.createFromDecodedFrames(
+                    videoPath = current.videoPath,
+                    spec = finalSpec,
+                    frames = frames,
+                    packId = current.packId
+                )
                 _state.update { it.copy(isApplying = false, applyProgress = 1f) }
-                _effect.send(VideoCropEffect.NavigateToAnimatedEditor(draftId))
+                _effect.send(VideoCropEffect.NavigateToAnimatedEditor(draft.id))
             } catch (e: Exception) {
                 _state.update { it.copy(isApplying = false, errorMessage = e.message) }
                 _effect.send(

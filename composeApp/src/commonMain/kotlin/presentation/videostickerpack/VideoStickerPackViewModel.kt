@@ -2,8 +2,24 @@ package presentation.videostickerpack
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import data.aijob.AiJobManager
 import data.remote.StickerApiRepository
 import data.repository.StickerPackDraftSaver
+import domain.model.aijob.AiJobOrigin
+import domain.model.aijob.AiJobStatus
+import domain.model.aijob.AiJob
+import domain.model.aijob.VideoPackPayload
+import domain.model.aijob.WorkspaceDraftContext
+import domain.model.aijob.WorkspaceDraftKind
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
+import presentation.aijob.AiJobEnqueueHelper
+import presentation.aijob.DraftResultApplier
+import presentation.aijob.WorkspaceDraftFactory
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 import data.storage.StickerFileStorage
 import data.video.CandidateGridComposer
 import data.video.VideoFrameCandidateExtractor
@@ -33,13 +49,17 @@ import presentation.common.UiText
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_failed_generate_video_sticker_pack
 
+@OptIn(ExperimentalUuidApi::class)
 class VideoStickerPackViewModel(
     private val fileStorage: StickerFileStorage,
     private val extractor: VideoFrameCandidateExtractor,
     private val gridComposer: CandidateGridComposer,
     private val apiRepository: StickerApiRepository,
     private val stickerRepository: StickerRepository,
-    private val draftSaver: StickerPackDraftSaver
+    private val draftSaver: StickerPackDraftSaver,
+    private val aiJobManager: AiJobManager,
+    private val enqueueHelper: AiJobEnqueueHelper,
+    private val draftResultApplier: DraftResultApplier
 ) : ViewModel() {
     private val _state = MutableStateFlow(VideoStickerPackState())
     val state: StateFlow<VideoStickerPackState> = _state.asStateFlow()
@@ -49,6 +69,44 @@ class VideoStickerPackViewModel(
 
     private var previewPlaybackJob: Job? = null
     private var previewExtractJob: Job? = null
+
+    init {
+        observeWorkspaceDraftResults()
+    }
+
+    private fun observeWorkspaceDraftResults() {
+        viewModelScope.launch {
+            _state
+                .map { it.workspaceDraftId }
+                .distinctUntilChanged()
+                .filterNotNull()
+                .collect { draftId ->
+                    combine(
+                        draftResultApplier.observeDraft(draftId),
+                        draftResultApplier.observeJobCompletion(draftId),
+                        aiJobManager.observeJobs().map { jobs ->
+                            jobs.filter { it.workspaceDraftId == draftId }
+                        }
+                    ) { draft, completedJob, draftJobs ->
+                        Triple(draft, completedJob, draftJobs)
+                    }.collect { (draft, completedJob, draftJobs) ->
+                        if (draft == null) return@collect
+                        val active = draftJobs.firstOrNull { it.status in ACTIVE_VIDEO_JOB_STATUSES }
+                        _state.update { current ->
+                            val next = draftResultApplier.applyToVideoPack(current, draft, completedJob)
+                            next.copy(
+                                isProcessing = active != null,
+                                processingStep = active.toProcessingStep(),
+                                processingProgress = active?.progress?.fraction
+                                    ?: if (active != null) next.processingProgress else 0f,
+                                backgroundJobMessage = active?.progress?.stepLabel
+                                    ?: active?.let { "Sedang diproses di background" }
+                            )
+                        }
+                    }
+                }
+        }
+    }
 
     fun onIntent(intent: VideoStickerPackIntent) {
         when (intent) {
@@ -269,100 +327,43 @@ class VideoStickerPackViewModel(
                     return@launch
                 }
             stopPreviewPlayback()
-
-            _state.update {
-                it.copy(
-                    isProcessing = true,
-                    processingStep = VideoStickerPackProcessingStep.FindingFrames,
-                    processingProgress = 0f,
-                    errorMessage = null
-                )
-            }
-
-            try {
-                val (candidates, grids, manifest) = if (
-                    extractFreshCandidates ||
-                    current.candidateGrids.isEmpty() ||
-                    current.candidateManifest.isEmpty()
-                ) {
-                    val extracted = extractor.extractCandidates(
-                        videoPath = current.videoPath,
-                        startMs = current.selectedStartMs,
-                        endMs = current.selectedEndMs,
-                        onProgress = { done, total ->
-                            _state.update {
-                                it.copy(processingProgress = done.toFloat() / total.coerceAtLeast(1))
-                            }
-                        }
-                    ).take(VideoStickerPackPlanner.MAX_CANDIDATES)
-                    if (extracted.isEmpty()) error("No usable frames extracted")
-                    _state.update {
-                        it.copy(
-                            candidates = extracted,
-                            processingStep = VideoStickerPackProcessingStep.BuildingGrids
-                        )
-                    }
-                    val composed = gridComposer.composeGrids(extracted.map { it.filePath })
-                    val builtManifest = VideoStickerPackPlanner.buildCandidateManifest(extracted, composed)
-                    _state.update {
-                        it.copy(
-                            candidateGrids = composed,
-                            candidateManifest = builtManifest
-                        )
-                    }
-                    Triple(extracted, composed, builtManifest)
-                } else {
-                    Triple(current.candidates, current.candidateGrids, current.candidateManifest)
-                }
-
-                _state.update {
-                    it.copy(
-                        processingStep = VideoStickerPackProcessingStep.AskingAi,
-                        processingProgress = 0f
-                    )
-                }
-                val generated = apiRepository.generateVideoStickerPack(
-                    candidateGridPaths = grids.map { it.filePath },
-                    candidateManifest = manifest,
-                    candidates = candidates,
+            val context = WorkspaceDraftContext(
+                videoPath = current.videoPath,
+                prompt = current.prompt,
+                packName = current.packName,
+                publisher = current.publisher,
+                selectedStartMs = current.selectedStartMs,
+                selectedEndMs = current.selectedEndMs,
+                sourceDurationMs = current.sourceDurationMs,
+                candidatePaths = current.candidates.map { it.filePath },
+                candidateGridPaths = current.candidateGrids.map { it.filePath },
+                candidateManifest = current.candidateManifest
+            )
+            val draft = WorkspaceDraftFactory.create(
+                kind = WorkspaceDraftKind.VIDEO_STICKER_PACK,
+                origin = AiJobOrigin.VIDEO_STICKER_PACK,
+                displayTitle = current.packName.ifBlank { "Video sticker pack" },
+                context = context,
+                originRoute = "videoStickerPack/${current.videoPath}",
+                id = current.workspaceDraftId ?: Uuid.random().toString()
+            )
+            aiJobManager.upsertDraft(draft)
+            enqueueHelper.enqueueVideoPack(
+                draft = draft,
+                payload = VideoPackPayload(
+                    videoPath = current.videoPath,
                     selectedStartMs = current.selectedStartMs,
                     selectedEndMs = current.selectedEndMs,
                     sourceDurationMs = current.sourceDurationMs,
-                    prompt = current.prompt.takeIf { it.isNotBlank() }
+                    prompt = current.prompt.takeIf { it.isNotBlank() },
+                    extractFreshCandidates = extractFreshCandidates
                 )
-                if (generated.staticStickers.isEmpty() && generated.animatedStickers.isEmpty()) {
-                    error("No generated stickers returned")
-                }
-                _state.update { it.copy(processingStep = VideoStickerPackProcessingStep.PreparingPreview) }
-
-                val selectedStaticKeys = generated.staticStickers.map { it.selectionKey() }.toSet()
-                val selectedAnimatedKeys = generated.animatedStickers.mapIndexed { index, sticker ->
-                    sticker.selectionKey(index)
-                }.toSet()
-
-                _state.update {
-                    it.copy(
-                        isProcessing = false,
-                        processingStep = null,
-                        processingProgress = 1f,
-                        generatedPlan = generated,
-                        selectedStaticStickerKeys = selectedStaticKeys,
-                        selectedAnimatedStickerKeys = selectedAnimatedKeys
-                    )
-                }
-            } catch (e: Exception) {
-                _state.update {
-                    it.copy(
-                        isProcessing = false,
-                        processingStep = null,
-                        errorMessage = e.message
-                    )
-                }
-                _effect.send(
-                    VideoStickerPackEffect.ShowError(
-                        e.message?.let(UiText::DynamicString)
-                            ?: UiText.StringRes(Res.string.error_failed_generate_video_sticker_pack)
-                    )
+            )
+            _state.update {
+                it.copy(
+                    workspaceDraftId = draft.id,
+                    errorMessage = null,
+                    backgroundJobMessage = "Sedang diproses di background"
                 )
             }
         }
@@ -514,6 +515,25 @@ class VideoStickerPackViewModel(
 
     private companion object {
         const val PREVIEW_EXTRACT_DEBOUNCE_MS = 250L
+
+        private val ACTIVE_VIDEO_JOB_STATUSES = setOf(
+            AiJobStatus.QUEUED,
+            AiJobStatus.RUNNING,
+            AiJobStatus.WAITING_FOR_NETWORK,
+            AiJobStatus.CHECKPOINTED,
+            AiJobStatus.CANCEL_REQUESTED
+        )
+    }
+}
+
+private fun AiJob?.toProcessingStep(): VideoStickerPackProcessingStep? {
+    if (this == null) return null
+    return when (progress?.stepKey) {
+        "find_frames", "extract_candidates" -> VideoStickerPackProcessingStep.FindingFrames
+        "build_grids", "compose_grids" -> VideoStickerPackProcessingStep.BuildingGrids
+        "api_video_pack", "ask_ai" -> VideoStickerPackProcessingStep.AskingAi
+        "prepare_preview" -> VideoStickerPackProcessingStep.PreparingPreview
+        else -> VideoStickerPackProcessingStep.FindingFrames
     }
 }
 

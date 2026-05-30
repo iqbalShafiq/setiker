@@ -23,4 +23,5 @@ sealed interface HomeIntent {
     data class UpdateGeneratePackInputImage(val path: String?) : HomeIntent
     data object GenerateStickerPack : HomeIntent
     data class StartVideoStickerPack(val videoPath: String) : HomeIntent
+    data object NavigateToAiJobs : HomeIntent
 }

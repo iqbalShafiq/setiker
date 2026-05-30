@@ -2,34 +2,47 @@ package presentation.animatededitor
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import data.storage.AnimatedStickerDraftStore
-import data.storage.StickerFileStorage
+import data.aijob.AiJobJson
+import data.aijob.AiJobManager
+import data.aijob.AnimatedWorkspaceDraftHelper
 import data.util.EmojiPreferences
 import domain.model.DecorationFont
-import domain.model.DecorationFontWeight
 import domain.model.EmojiDecoration
 import domain.model.ImageDecoration
 import domain.model.Sticker
 import domain.model.StickerDecoration
 import domain.model.TextDecoration
+import domain.model.aijob.AiJobStatus
+import domain.model.aijob.AiJobType
+import domain.model.aijob.AnimatedEncodePayload
+import domain.model.aijob.AnimatedEncodeResult
+import domain.model.aijob.WorkspaceDraftStatus
+import domain.repository.AiJobRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 import kotlin.time.Clock
+import presentation.aijob.AiJobEnqueueHelper
+import presentation.aijob.WorkspaceDraftFactory
 import presentation.common.UiText
 
 class AnimatedEditorViewModel(
-    private val draftStore: AnimatedStickerDraftStore,
-    private val fileStorage: StickerFileStorage,
-    private val emojiPreferences: EmojiPreferences
+    private val animatedDraftHelper: AnimatedWorkspaceDraftHelper,
+    private val emojiPreferences: EmojiPreferences,
+    private val aiJobManager: AiJobManager,
+    private val enqueueHelper: AiJobEnqueueHelper,
+    private val jobRepository: AiJobRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AnimatedEditorState())
@@ -40,6 +53,94 @@ class AnimatedEditorViewModel(
 
     private var packId: String = ""
     private var playJob: Job? = null
+    private var handledCompletedJobId: String? = null
+
+    init {
+        observeEncodeJobs()
+    }
+
+    private fun observeEncodeJobs() {
+        viewModelScope.launch {
+            _state
+                .map { it.workspaceDraftId }
+                .distinctUntilChanged()
+                .filterNotNull()
+                .collect { draftId ->
+                    jobRepository.observeByDraft(draftId).collect { jobs ->
+                        val active = jobs.firstOrNull {
+                            it.type == AiJobType.ANIMATED_ENCODE &&
+                                it.status in setOf(
+                                    AiJobStatus.QUEUED,
+                                    AiJobStatus.RUNNING,
+                                    AiJobStatus.WAITING_FOR_NETWORK,
+                                    AiJobStatus.CHECKPOINTED
+                                )
+                        }
+                        val completed = jobs.firstOrNull {
+                            it.type == AiJobType.ANIMATED_ENCODE && it.status == AiJobStatus.COMPLETED
+                        }
+                        val failed = jobs.firstOrNull {
+                            it.type == AiJobType.ANIMATED_ENCODE &&
+                                it.status in setOf(AiJobStatus.FAILED_FINAL, AiJobStatus.FAILED_RETRYABLE)
+                        }
+
+                        _state.update { current ->
+                            current.copy(
+                                isSaving = false,
+                                backgroundJobMessage = active?.let {
+                                    it.progress?.stepLabel ?: "Sedang diproses di background"
+                                },
+                                saveProgress = active?.progress?.fraction ?: current.saveProgress,
+                                saveProgressLabel = active?.progress?.stepLabel
+                            )
+                        }
+
+                        if (completed != null && completed.id != handledCompletedJobId) {
+                            handledCompletedJobId = completed.id
+                            handleEncodeCompleted(completed)
+                        } else if (failed != null) {
+                            _state.update { it.copy(isSaving = false) }
+                            _effect.send(
+                                AnimatedEditorEffect.ShowError(
+                                    UiText.DynamicString(
+                                        failed.failureMessage ?: "Failed to save animated sticker"
+                                    )
+                                )
+                            )
+                        }
+                    }
+                }
+        }
+    }
+
+    private suspend fun handleEncodeCompleted(job: domain.model.aijob.AiJob) {
+        val draft = aiJobManager.getDraft(job.workspaceDraftId) ?: return
+        val context = WorkspaceDraftFactory.decodeContext(draft)
+        val outputPath = job.resultJson?.let {
+            AiJobJson.codec.decodeFromString<AnimatedEncodeResult>(it).outputPath
+        } ?: context.animatedOutputPath
+        if (outputPath.isNullOrBlank()) return
+
+        _state.value.emojis.forEach { emoji -> emojiPreferences.addRecentEmoji(emoji) }
+
+        _state.update { it.copy(isSaving = false, saveProgress = 1f, backgroundJobMessage = null) }
+        aiJobManager.upsertDraft(
+            draft.copy(
+                status = WorkspaceDraftStatus.APPLIED,
+                updatedAt = Clock.System.now().toEpochMilliseconds()
+            )
+        )
+        _effect.send(
+            AnimatedEditorEffect.AnimatedDraftReady(
+                imagePath = outputPath,
+                sourceVideoFile = context.videoPath.orEmpty(),
+                baseDecorations = context.animatedBaseDecorations,
+                frameDecorations = context.animatedFrameDecorations
+            )
+        )
+    }
+
+    private val current get() = _state.value
 
     fun onIntent(intent: AnimatedEditorIntent) {
         when (intent) {
@@ -114,20 +215,31 @@ class AnimatedEditorViewModel(
 
     private fun loadDraft(draftId: String) {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, draftId = draftId) }
-            val draft = draftStore.get(draftId)
+            _state.update { it.copy(isLoading = true, draftId = draftId, workspaceDraftId = draftId) }
+            val draft = aiJobManager.getDraft(draftId)
             if (draft == null) {
-                _state.update { it.copy(isLoading = false, errorMessage = "Draft expired. Please pick the video again.") }
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = "Draft not found. Please pick the video again."
+                    )
+                }
+                _effect.send(AnimatedEditorEffect.NavigateBack)
+                return@launch
+            }
+            val frames = animatedDraftHelper.loadFrames(draft)
+            if (frames == null) {
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = "Frame files are missing. Please pick the video again."
+                    )
+                }
                 _effect.send(AnimatedEditorEffect.NavigateBack)
                 return@launch
             }
             _state.update {
-                it.copy(
-                    isLoading = false,
-                    videoPath = draft.videoPath,
-                    frames = draft.frames,
-                    currentFrameIndex = 0
-                )
+                animatedDraftHelper.editorStateFromDraft(draft, frames).copy(isLoading = false)
             }
         }
     }
@@ -199,7 +311,7 @@ class AnimatedEditorViewModel(
                 id = nextDecorationId(),
                 text = text.trim(),
                 font = font,
-                fontWeight = DecorationFontWeight.Regular,
+                fontWeight = domain.model.DecorationFontWeight.Regular,
                 textColorArgb = 0xFFFFFFFFL
             )
         )
@@ -294,58 +406,32 @@ class AnimatedEditorViewModel(
     }
 
     private fun saveAnimatedSticker() {
-        val current = _state.value
-        if (current.frames.isEmpty()) return
+        val snapshot = _state.value
+        if (snapshot.frames.isEmpty() || snapshot.workspaceDraftId.isNullOrBlank()) return
         viewModelScope.launch {
             stopPlayback()
             _state.update {
                 it.copy(
-                    isSaving = true,
+                    isSaving = false,
                     saveProgress = 0f,
                     saveProgressLabel = null,
-                    errorMessage = null
+                    errorMessage = null,
+                    backgroundJobMessage = "Sedang diproses di background"
                 )
             }
             try {
+                animatedDraftHelper.syncEditorState(snapshot.workspaceDraftId, snapshot)
+                val draft = aiJobManager.getDraft(snapshot.workspaceDraftId)
+                    ?: throw IllegalStateException("Draft not found")
                 val time = Clock.System.now().toEpochMilliseconds()
                 val packIdSafe = packId.ifBlank { "draft" }
                 val fileName = "anim_sticker_${packIdSafe}_${time}.webp"
-                val savedPath = fileStorage.saveAnimatedStickerImage(
-                    frames = current.frames,
-                    fileName = fileName,
-                    baseDecorations = current.baseDecorations,
-                    frameDecorations = current.frameDecorations,
-                    onProgress = { currentStep, total ->
-                        // The Android implementation reports progress over the
-                        // compose-then-encode pipeline so the bar reflects real work.
-                        val safeTotal = total.coerceAtLeast(1)
-                        val pct = (currentStep.toFloat() / safeTotal).coerceIn(0f, 1f)
-                        val composeUnits = (current.frames.size).coerceAtLeast(1)
-                        val label = if (currentStep <= composeUnits) {
-                            "Composing $currentStep / $composeUnits frames"
-                        } else {
-                            "Encoding animated WebP…"
-                        }
-                        _state.update {
-                            it.copy(saveProgress = pct, saveProgressLabel = label)
-                        }
-                    }
-                )
-
-                current.emojis.forEach { emoji -> emojiPreferences.addRecentEmoji(emoji) }
-
-                _state.update { it.copy(isSaving = false, saveProgress = 1f) }
-                draftStore.release(current.draftId)
-                _effect.send(
-                    AnimatedEditorEffect.AnimatedDraftReady(
-                        imagePath = savedPath,
-                        sourceVideoFile = current.videoPath,
-                        baseDecorations = current.baseDecorations,
-                        frameDecorations = current.frameDecorations
-                    )
+                enqueueHelper.enqueueAnimatedEncode(
+                    draft = draft,
+                    payload = AnimatedEncodePayload(outputFileName = fileName)
                 )
             } catch (e: Exception) {
-                _state.update { it.copy(isSaving = false, errorMessage = e.message) }
+                _state.update { it.copy(isSaving = false, backgroundJobMessage = null) }
                 _effect.send(
                     AnimatedEditorEffect.ShowError(
                         UiText.DynamicString(e.message ?: "Failed to save animated sticker")

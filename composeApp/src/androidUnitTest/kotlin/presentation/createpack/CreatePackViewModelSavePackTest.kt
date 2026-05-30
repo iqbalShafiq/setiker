@@ -13,6 +13,7 @@ import domain.repository.StickerRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import presentation.aijob.ViewModelAiJobTestSupport
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -59,10 +60,15 @@ class CreatePackViewModelSavePackTest {
         )
         val saver = CapturingDraftSaver(knownPack)
 
+        val aiDeps = ViewModelAiJobTestSupport.createPackDependencies()
         val viewModel = CreatePackViewModel(
             repository = repository,
             apiRepository = apiRepository,
-            draftSaver = saver
+            draftSaver = saver,
+            aiJobManager = aiDeps.manager,
+            enqueueHelper = aiDeps.enqueueHelper,
+            draftResultApplier = aiDeps.draftResultApplier,
+            jobRepository = aiDeps.jobRepository
         )
 
         viewModel.onIntent(CreatePackIntent.UpdateName("My Pack"))

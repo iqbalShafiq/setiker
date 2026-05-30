@@ -12,6 +12,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
 import android.os.Build
+import android.os.SystemClock
 import android.util.Log
 import data.remote.model.GridSplitStickerFile
 import kotlinx.coroutines.Dispatchers
@@ -37,12 +38,37 @@ class AndroidOnDeviceImageProcessor(
     private var runnerUsesNnapi = false
 
     override suspend fun removeBackground(imagePath: String): String = withContext(Dispatchers.Default) {
-        val source = decodeArgb(imagePath)
+        val startedAt = SystemClock.elapsedRealtime()
+        Log.i(TAG, "removeBackground start pathTail=${imagePath.takeLast(72)}")
         try {
-            val processed = removeBackgroundBitmap(source)
-            savePng(processed, "removed_bg")
-        } finally {
-            source.recycle()
+            val source = decodeArgb(imagePath, maxDimension = MAX_DECODE_DIMENSION)
+            try {
+                val processed = removeBackgroundBitmap(source)
+                val output = savePng(processed, "removed_bg")
+                val elapsedMs = SystemClock.elapsedRealtime() - startedAt
+                Log.i(TAG, "removeBackground done elapsedMs=$elapsedMs outputTail=${output.takeLast(72)}")
+                output
+            } finally {
+                source.recycle()
+            }
+        } catch (oom: OutOfMemoryError) {
+            Log.e(TAG, "removeBackground OOM, retrying with smaller decode", oom)
+            data.util.releaseMemoryAfterStickerStep()
+            val source = decodeArgb(imagePath, maxDimension = MAX_DECODE_DIMENSION_OOM)
+            try {
+                val working = downscaleIfNeeded(source, MAX_WORKING_DIMENSION)
+                val ownsWorking = working !== source
+                try {
+                    val processed = removeBrightBackgroundFallback(working)
+                    val squared = resizeToSquareContain(processed, OUTPUT_SIZE)
+                    if (squared !== processed) processed.recycle()
+                    savePng(squared, "removed_bg_fallback")
+                } finally {
+                    if (ownsWorking) working.recycle()
+                }
+            } finally {
+                source.recycle()
+            }
         }
     }
 
@@ -64,9 +90,12 @@ class AndroidOnDeviceImageProcessor(
         rows: Int,
         cols: Int
     ): List<String> = withContext(Dispatchers.Default) {
+        val startedAt = SystemClock.elapsedRealtime()
         val safeRows = rows.coerceAtLeast(1)
         val safeCols = cols.coerceAtLeast(1)
-        val source = decodeArgb(imagePath)
+        val cellCount = safeRows * safeCols
+        Log.i(TAG, "splitGridRawCells start layout=${safeRows}x$safeCols cells=$cellCount")
+        val source = decodeArgb(imagePath, maxDimension = MAX_GRID_DECODE_DIMENSION)
         val results = mutableListOf<String>()
 
         try {
@@ -93,25 +122,35 @@ class AndroidOnDeviceImageProcessor(
             source.recycle()
         }
 
+        val elapsedMs = SystemClock.elapsedRealtime() - startedAt
+        Log.i(TAG, "splitGridRawCells done cells=${results.size} elapsedMs=$elapsedMs")
         results
     }
 
     private suspend fun removeBackgroundBitmap(source: Bitmap): Bitmap {
-        val mask = runCatching { predictMaskWithFallback(source) }
-            .onFailure { error ->
-                Log.w(TAG, "ONNX background removal failed; using local threshold fallback", error)
+        val working = downscaleIfNeeded(source, MAX_WORKING_DIMENSION)
+        val ownsWorking = working !== source
+        try {
+            val mask = runCatching { predictMaskWithFallback(working) }
+                .onFailure { error ->
+                    Log.w(TAG, "ONNX background removal failed; using local threshold fallback", error)
+                }
+                .getOrNull()
+
+            val transparent = if (mask != null) {
+                applyMask(working, mask)
+            } else {
+                removeBrightBackgroundFallback(working)
             }
-            .getOrNull()
 
-        val transparent = if (mask != null) {
-            applyMask(source, mask)
-        } else {
-            removeBrightBackgroundFallback(source)
-        }
-
-        return resizeToSquareContain(transparent, OUTPUT_SIZE).also {
-            if (it !== transparent) {
-                transparent.recycle()
+            return resizeToSquareContain(transparent, OUTPUT_SIZE).also {
+                if (it !== transparent) {
+                    transparent.recycle()
+                }
+            }
+        } finally {
+            if (ownsWorking) {
+                working.recycle()
             }
         }
     }
@@ -146,10 +185,6 @@ class AndroidOnDeviceImageProcessor(
 
         val environment = OrtEnvironment.getEnvironment()
         runner = runCatching {
-            runnerUsesNnapi = true
-            BackgroundRemovalRunner(environment, modelFile, ExecutionProvider.NNAPI)
-        }.recoverCatching { error ->
-            Log.w(TAG, "NNAPI session init failed; falling back to CPU", error)
             runnerUsesNnapi = false
             BackgroundRemovalRunner(environment, modelFile, ExecutionProvider.CPU)
         }.onFailure { error ->
@@ -175,9 +210,32 @@ class AndroidOnDeviceImageProcessor(
         return output
     }
 
-    private fun decodeArgb(path: String): Bitmap {
-        val decoded = BitmapFactory.decodeFile(path)
+    private fun decodeArgb(path: String, maxDimension: Int): Bitmap {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(path, bounds)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+            throw IllegalArgumentException("Cannot decode image: $path")
+        }
+        var sampleSize = 1
+        while (
+            bounds.outWidth / sampleSize > maxDimension ||
+            bounds.outHeight / sampleSize > maxDimension
+        ) {
+            sampleSize *= 2
+        }
+        val options = BitmapFactory.Options().apply {
+            inSampleSize = sampleSize
+            inPreferredConfig = Bitmap.Config.ARGB_8888
+        }
+        val decoded = BitmapFactory.decodeFile(path, options)
             ?: throw IllegalArgumentException("Cannot decode image: $path")
+        if (sampleSize > 1) {
+            Log.i(
+                TAG,
+                "decodeArgb downsampled inSampleSize=$sampleSize " +
+                    "from=${bounds.outWidth}x${bounds.outHeight} pathTail=${path.takeLast(48)}"
+            )
+        }
         return if (decoded.config == Bitmap.Config.ARGB_8888) {
             decoded
         } else {
@@ -185,6 +243,16 @@ class AndroidOnDeviceImageProcessor(
             decoded.recycle()
             converted
         }
+    }
+
+    private fun downscaleIfNeeded(source: Bitmap, maxDimension: Int): Bitmap {
+        val maxSide = max(source.width, source.height)
+        if (maxSide <= maxDimension) return source
+        val scale = maxDimension.toFloat() / maxSide
+        val width = (source.width * scale).roundToInt().coerceAtLeast(1)
+        val height = (source.height * scale).roundToInt().coerceAtLeast(1)
+        Log.i(TAG, "downscaleIfNeeded ${source.width}x${source.height} -> ${width}x$height")
+        return Bitmap.createScaledBitmap(source, width, height, true)
     }
 
     private fun applyMask(source: Bitmap, mask: FloatArray): Bitmap {
@@ -348,6 +416,10 @@ class AndroidOnDeviceImageProcessor(
         private const val MODEL_FILE_NAME = "u2net.onnx"
         private const val MODEL_INPUT_SIZE = 320
         private const val OUTPUT_SIZE = 512
+        private const val MAX_WORKING_DIMENSION = 512
+        private const val MAX_DECODE_DIMENSION = 768
+        private const val MAX_DECODE_DIMENSION_OOM = 384
+        private const val MAX_GRID_DECODE_DIMENSION = 1536
     }
 
     private enum class ExecutionProvider {

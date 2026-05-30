@@ -19,10 +19,23 @@ data class HomeState(
     val generatePackPublisher: String = "",
     val generatePackLayout: String = "4x4",
     val generatePackInputImagePath: String? = null,
-    val isGeneratePackLoading: Boolean = false
+    val isGeneratePackLoading: Boolean = false,
+    val activeAiJobCount: Int = 0,
+    val aiJobsBadgeCount: Int = 0,
+    val backgroundJobMessage: String? = null,
+    val homeWorkspaceDraftId: String? = null,
+    val processingPacks: List<HomeProcessingPack> = emptyList()
 ) {
     val filteredPacks: List<StickerPack>
         get() = packs
             .filter { it.name.contains(searchQuery, ignoreCase = true) }
             .sortedWith(sortOrder.comparator)
+
+    val filteredProcessingPacks: List<HomeProcessingPack>
+        get() = processingPacks
+            .filter { it.name.contains(searchQuery, ignoreCase = true) }
+            .sortedBy { it.name.lowercase() }
+
+    val hasListContent: Boolean
+        get() = filteredPacks.isNotEmpty() || filteredProcessingPacks.isNotEmpty()
 }

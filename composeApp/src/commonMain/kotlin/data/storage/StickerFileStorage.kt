@@ -7,6 +7,7 @@ import domain.model.StickerDecoration
 expect class StickerFileStorage {
     suspend fun saveImage(sourcePath: String, fileName: String): String
     suspend fun saveBytes(bytes: ByteArray, fileName: String): String
+    suspend fun readBytesAtPath(absolutePath: String): ByteArray?
     suspend fun loadImage(fileName: String): ByteArray?
     suspend fun deleteImage(fileName: String): Boolean
     suspend fun getImagePath(fileName: String): String

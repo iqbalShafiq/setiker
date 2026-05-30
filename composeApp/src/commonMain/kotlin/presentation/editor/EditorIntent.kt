@@ -52,5 +52,6 @@ sealed interface EditorIntent {
     data object GenerateSticker : EditorIntent
     data object ImproveSticker : EditorIntent
     data class ApplyGeneratedSticker(val draft: DraftSticker) : EditorIntent
+    data class RestoreWorkspaceDraft(val draftId: String) : EditorIntent
     data object CloseGeneratedSheet : EditorIntent
 }

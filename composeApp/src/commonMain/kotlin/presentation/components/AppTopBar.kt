@@ -14,8 +14,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -42,10 +44,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.jetbrains.compose.resources.stringResource
+import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalSmallRadius
 import presentation.theme.NeubrutalSmallShadowOffset
+import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalOnSurface
@@ -216,6 +220,73 @@ fun RowScope.AppTopBarActionIcon(
         onClick = onClick,
         enabled = enabled
     )
+}
+
+/**
+ * Top-bar action with optional neubrutal counter badge (e.g. pending AI jobs / drafts).
+ */
+@Composable
+fun RowScope.AppTopBarBadgedActionIcon(
+    icon: ImageVector,
+    contentDescription: String?,
+    onClick: () -> Unit,
+    badgeCount: Int = 0,
+    enabled: Boolean = true,
+    maxDisplayCount: Int = 99
+) {
+    Box(modifier = Modifier.size(40.dp)) {
+        NeubrutalIconButton(
+            icon = icon,
+            contentDescription = contentDescription,
+            onClick = onClick,
+            enabled = enabled
+        )
+        if (badgeCount > 0) {
+            NeubrutalCounterBadge(
+                count = badgeCount,
+                maxDisplayCount = maxDisplayCount,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 6.dp, y = (-6).dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun NeubrutalCounterBadge(
+    count: Int,
+    modifier: Modifier = Modifier,
+    maxDisplayCount: Int = 99
+) {
+    val label = if (count > maxDisplayCount) "$maxDisplayCount+" else count.toString()
+    val border = neubrutalBorderColor()
+    val shadow = neubrutalShadowColor()
+    val shape = RoundedCornerShape(NeubrutalSmallRadius)
+
+    Box(
+        modifier = modifier
+            .defaultMinSize(minWidth = 20.dp, minHeight = 20.dp)
+            .neubrutalShadow(
+                offsetX = 1.dp,
+                offsetY = 1.dp,
+                cornerRadius = NeubrutalSmallRadius,
+                color = shadow
+            )
+            .clip(shape)
+            .background(AccentCoral)
+            .border(width = NeubrutalBorderWidth, color = border, shape = shape)
+            .padding(horizontal = 5.dp, vertical = 2.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = NeubrutalWhite,
+            maxLines = 1
+        )
+    }
 }
 
 // MARK: - Previews
