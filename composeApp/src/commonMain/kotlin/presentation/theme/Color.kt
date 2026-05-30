@@ -13,6 +13,9 @@ val NeubrutalWhite = Color(0xFFFFFFFF)
 val NeubrutalBg = Color(0xFFF5F5F5)
 val NeubrutalGray = Color(0xFF8B8B8B)
 
+/** Glossy top/left bevel fill in light mode. */
+val NeubrutalGlossyHighlightLight = Color(0xFFFAE9E1)
+
 // -- Accent / Primary --
 val AccentCoral = Color(0xFFFF8C69)
 val AccentCoralLight = Color(0xFFFFE5DC)

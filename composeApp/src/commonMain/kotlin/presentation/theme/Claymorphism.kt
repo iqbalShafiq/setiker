@@ -3,10 +3,12 @@ package presentation.theme
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -21,9 +23,9 @@ import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlin.math.min
 
 /* ============================================
  * Neubrutalism Design Tokens
@@ -64,6 +66,12 @@ val NeubrutalSmallShadowOffset = 2.dp
 /** Large shadow offset (dialogs). */
 val NeubrutalLargeShadowOffset = 6.dp
 
+/** Thickness of the filled top/left glossy bevel band (not a hairline stroke). */
+val NeubrutalGlossyBandWidth = 4.dp
+
+/** Inset of the glossy bevel from the outer edge (tight to top-left inside the border). */
+val NeubrutalGlossyInset = 1.dp
+
 /* ============================================
  * Hard Offset Shadow Modifier
  * ============================================ */
@@ -99,6 +107,106 @@ fun Modifier.neubrutalShadow(
         )
     }
 )
+
+/* ============================================
+ * Glossy Inner Highlight (top-left bevel)
+ * ============================================ */
+
+/**
+ * Draws a filled top/left inner bevel (L-shape) for the glossy raised look.
+ * Apply after [clip], [background], and [border], before click handlers.
+ */
+fun Modifier.neubrutalGlossyHighlight(
+    cornerRadius: Dp = NeubrutalCardRadius,
+    highlightColor: Color = NeubrutalGlossyHighlightLight,
+    bandWidth: Dp = NeubrutalGlossyBandWidth,
+    inset: Dp = NeubrutalGlossyInset
+): Modifier = drawBehind {
+    drawNeubrutalGlossyHighlight(
+        cornerRadius = cornerRadius,
+        highlightColor = highlightColor,
+        bandWidth = bandWidth,
+        inset = inset
+    )
+}
+
+/**
+ * Thick neubrutal border plus the matching glossy highlight in one chain.
+ */
+fun Modifier.neubrutalBorderWithGloss(
+    color: Color,
+    cornerRadius: Dp = NeubrutalCardRadius,
+    width: Dp = NeubrutalBorderWidth,
+    shape: Shape = RoundedCornerShape(cornerRadius),
+    highlightColor: Color = NeubrutalGlossyHighlightLight
+): Modifier = this
+    .border(width = width, color = color, shape = shape)
+    .neubrutalGlossyHighlight(
+        cornerRadius = cornerRadius,
+        highlightColor = highlightColor
+    )
+
+internal fun DrawScope.drawNeubrutalGlossyHighlight(
+    cornerRadius: Dp,
+    highlightColor: Color,
+    bandWidth: Dp,
+    inset: Dp
+) {
+    // Nudge the bevel slightly toward the top-left so it hugs the inner border edge.
+    val insetPx = (inset.toPx() - 0.5f).coerceAtLeast(0f)
+    val minSide = min(size.width, size.height)
+    val bandPx = min(bandWidth.toPx(), minSide * 0.18f).coerceIn(2.5f, minSide * 0.22f)
+    val radiusPx = min(cornerRadius.toPx(), minSide / 2f)
+    val innerRadiusPx = (radiusPx - bandPx).coerceAtLeast(0f)
+
+    val path = Path().apply {
+        if (radiusPx <= 0f) {
+            moveTo(size.width - insetPx, insetPx)
+            lineTo(insetPx, insetPx)
+            lineTo(insetPx, size.height - insetPx)
+            lineTo(insetPx + bandPx, size.height - insetPx)
+            lineTo(insetPx + bandPx, insetPx + bandPx)
+            lineTo(size.width - insetPx, insetPx + bandPx)
+            close()
+        } else {
+            // Filled L-bevel: outer contour follows the inner border, band thickness on top + left.
+            moveTo(size.width - insetPx, insetPx)
+            lineTo(insetPx + radiusPx, insetPx)
+            arcTo(
+                rect = Rect(
+                    left = insetPx,
+                    top = insetPx,
+                    right = insetPx + radiusPx * 2f,
+                    bottom = insetPx + radiusPx * 2f
+                ),
+                startAngleDegrees = 270f,
+                sweepAngleDegrees = -90f,
+                forceMoveTo = false
+            )
+            lineTo(insetPx, size.height - insetPx)
+            lineTo(insetPx + bandPx, size.height - insetPx)
+            if (innerRadiusPx > 0f) {
+                lineTo(insetPx + bandPx, insetPx + bandPx + innerRadiusPx)
+                arcTo(
+                    rect = Rect(
+                        left = insetPx + bandPx,
+                        top = insetPx + bandPx,
+                        right = insetPx + bandPx + innerRadiusPx * 2f,
+                        bottom = insetPx + bandPx + innerRadiusPx * 2f
+                    ),
+                    startAngleDegrees = 180f,
+                    sweepAngleDegrees = 90f,
+                    forceMoveTo = false
+                )
+            } else {
+                lineTo(insetPx + bandPx, insetPx + bandPx)
+            }
+            lineTo(size.width - insetPx, insetPx + bandPx)
+            close()
+        }
+    }
+    drawPath(path = path, color = highlightColor)
+}
 
 /* ============================================
  * Press Scale Animation

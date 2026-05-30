@@ -1,7 +1,6 @@
 package presentation.history
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -38,8 +37,9 @@ import presentation.components.InteractionBlockedBox
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
-import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalCardRadius
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
@@ -171,10 +171,10 @@ fun ProcessingHistoryScreen(
                                         color = neubrutalShadowColor()
                                     )
                                     .background(neubrutalCardSurface(), RoundedCornerShape(NeubrutalCardRadius))
-                                    .border(
-                                        width = NeubrutalBorderWidth,
+                                    .neubrutalBorderWithGloss(
                                         color = neubrutalBorderColor(),
-                                        shape = RoundedCornerShape(NeubrutalCardRadius)
+                                        cornerRadius = NeubrutalCardRadius,
+                                        highlightColor = neubrutalGlossyHighlightColor()
                                     )
                                     .padding(horizontal = 12.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically

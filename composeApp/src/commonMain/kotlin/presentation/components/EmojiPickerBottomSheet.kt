@@ -40,6 +40,8 @@ import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 
 private val EMOJI_CATEGORIES = listOf(
@@ -146,10 +148,11 @@ fun EmojiPickerBottomSheet(
                                 .size(40.dp)
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(surface)
-                                .border(
-                                    width = 2.dp,
+                                .neubrutalBorderWithGloss(
                                     color = border,
-                                    shape = RoundedCornerShape(10.dp)
+                                    width = 2.dp,
+                                    cornerRadius = 10.dp,
+                                    highlightColor = neubrutalGlossyHighlightColor()
                                 )
                                 .clickable { onEmojiSelected(emoji) }
                                 .padding(4.dp),

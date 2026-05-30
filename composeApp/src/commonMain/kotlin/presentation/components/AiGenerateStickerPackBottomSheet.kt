@@ -5,7 +5,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -33,8 +32,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import org.jetbrains.compose.resources.stringResource
-import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalCardRadius
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalMutedOnSurface
@@ -46,10 +46,10 @@ import setiker.composeapp.generated.resources.close
 import setiker.composeapp.generated.resources.generate_clear_image
 import setiker.composeapp.generated.resources.generate_input_image_default_hint
 import setiker.composeapp.generated.resources.generate_input_image_label
+import setiker.composeapp.generated.resources.generate_pack_sheet_title
 import setiker.composeapp.generated.resources.generate_pick_image
 import setiker.composeapp.generated.resources.generate_replace_image
 import setiker.composeapp.generated.resources.generate_sticker_pack
-import setiker.composeapp.generated.resources.generate_pack_sheet_title
 import setiker.composeapp.generated.resources.generating
 import setiker.composeapp.generated.resources.pack_layout
 import setiker.composeapp.generated.resources.pack_name_label
@@ -170,7 +170,11 @@ fun AiGenerateStickerPackBottomSheet(
                             onLongClick = if (!path.isNullOrBlank()) onClearInputImage else null
                         )
                         .background(neubrutalCardSurface())
-                        .border(NeubrutalBorderWidth, neubrutalBorderColor(), RoundedCornerShape(NeubrutalCardRadius))
+                        .neubrutalBorderWithGloss(
+                            color = neubrutalBorderColor(),
+                            cornerRadius = NeubrutalCardRadius,
+                            highlightColor = neubrutalGlossyHighlightColor()
+                        )
                         .padding(4.dp),
                     contentAlignment = Alignment.Center
                 ) {

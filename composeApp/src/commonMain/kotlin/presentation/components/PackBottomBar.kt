@@ -56,6 +56,8 @@ import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBottomAppBarSurface
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 
@@ -127,10 +129,10 @@ private fun PackBottomBarStatusText(
         modifier = modifier
             .clip(RoundedCornerShape(NeubrutalSmallRadius))
             .background(neubrutalCardSurface())
-            .border(
-                width = NeubrutalBorderWidth,
+            .neubrutalBorderWithGloss(
                 color = neubrutalBorderColor(),
-                shape = RoundedCornerShape(NeubrutalSmallRadius)
+                cornerRadius = NeubrutalSmallRadius,
+                highlightColor = neubrutalGlossyHighlightColor()
             )
             .padding(horizontal = 14.dp, vertical = 11.dp),
         style = MaterialTheme.typography.labelLarge,
@@ -177,10 +179,10 @@ fun PackBottomBarIconButton(
             )
             .clip(shape)
             .background(containerColor)
-            .border(
-                width = NeubrutalBorderWidth,
+            .neubrutalBorderWithGloss(
                 color = border,
-                shape = shape
+                cornerRadius = NeubrutalSmallRadius,
+                highlightColor = neubrutalGlossyHighlightColor()
             )
             .clickable(
                 interactionSource = interactionSource,
@@ -237,10 +239,10 @@ fun PackBottomBarIconButton(
             )
             .clip(shape)
             .background(containerColor)
-            .border(
-                width = NeubrutalBorderWidth,
+            .neubrutalBorderWithGloss(
                 color = border,
-                shape = shape
+                cornerRadius = NeubrutalSmallRadius,
+                highlightColor = neubrutalGlossyHighlightColor()
             )
             .clickable(
                 interactionSource = interactionSource,
@@ -298,10 +300,10 @@ fun PackBottomBarFab(
             )
             .clip(shape)
             .background(if (enabled || isLoading) AccentCoral else AccentCoral.copy(alpha = 0.4f))
-            .border(
-                width = NeubrutalBorderWidth,
+            .neubrutalBorderWithGloss(
                 color = border,
-                shape = shape
+                cornerRadius = NeubrutalButtonRadius,
+                highlightColor = neubrutalGlossyHighlightColor(onFilledSurface = true)
             )
             .clickable(
                 interactionSource = interactionSource,

@@ -22,6 +22,8 @@ import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 
@@ -55,10 +57,10 @@ fun NeubrutalStickerPreviewFrame(
             )
             .clip(shape)
             .background(surface)
-            .border(
-                width = NeubrutalBorderWidth,
+            .neubrutalBorderWithGloss(
                 color = border,
-                shape = shape
+                cornerRadius = cornerRadius,
+                highlightColor = neubrutalGlossyHighlightColor()
             )
             .padding(4.dp),
         contentAlignment = Alignment.Center,

@@ -31,6 +31,8 @@ import presentation.theme.NeubrutalSmallRadius
 import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalMutedOnSurface
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import androidx.compose.animation.core.Animatable
@@ -99,10 +101,11 @@ private fun NeubrutalBouncingDot(index: Int) {
             )
             .clip(CircleShape)
             .background(AccentCoral)
-            .border(
-                width = NeubrutalBorderWidth,
+            .neubrutalBorderWithGloss(
                 color = border,
-                shape = CircleShape
+                cornerRadius = NeubrutalSmallRadius,
+                shape = CircleShape,
+                highlightColor = neubrutalGlossyHighlightColor(onFilledSurface = true)
             )
     )
 }

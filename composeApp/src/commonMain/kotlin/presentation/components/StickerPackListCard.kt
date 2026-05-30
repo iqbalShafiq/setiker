@@ -37,6 +37,8 @@ import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import setiker.composeapp.generated.resources.Res
@@ -65,10 +67,10 @@ fun StickerPackListCard(
             )
             .clip(shape)
             .background(surface)
-            .border(
-                width = NeubrutalBorderWidth,
+            .neubrutalBorderWithGloss(
                 color = border,
-                shape = shape
+                cornerRadius = NeubrutalCardRadius,
+                highlightColor = neubrutalGlossyHighlightColor()
             )
             .clickable(onClick = onClick)
             .padding(16.dp),
@@ -88,10 +90,10 @@ fun StickerPackListCard(
                 )
                 .clip(thumbShape)
                 .background(surface)
-                .border(
-                    width = NeubrutalBorderWidth,
+                .neubrutalBorderWithGloss(
                     color = border,
-                    shape = thumbShape
+                    cornerRadius = NeubrutalSmallRadius,
+                    highlightColor = neubrutalGlossyHighlightColor()
                 ),
             contentScale = ContentScale.Crop
         )

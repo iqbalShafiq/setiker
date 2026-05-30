@@ -28,6 +28,8 @@ import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import presentation.theme.neubrutalSubtleOnSurface
@@ -50,10 +52,11 @@ fun StickerEmojiTagChip(
             )
             .clip(CircleShape)
             .background(neubrutalCardSurface())
-            .border(
-                width = NeubrutalBorderWidth,
+            .neubrutalBorderWithGloss(
                 color = neubrutalBorderColor(),
-                shape = CircleShape
+                cornerRadius = 50.dp,
+                shape = CircleShape,
+                highlightColor = neubrutalGlossyHighlightColor()
             )
             .padding(start = 14.dp, end = 6.dp, top = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -94,10 +97,11 @@ fun NeubrutalAddTagPill(
             )
             .clip(CircleShape)
             .background(neubrutalCardSurface())
-            .border(
-                width = NeubrutalBorderWidth,
+            .neubrutalBorderWithGloss(
                 color = neubrutalBorderColor(),
-                shape = CircleShape
+                cornerRadius = 50.dp,
+                shape = CircleShape,
+                highlightColor = neubrutalGlossyHighlightColor()
             )
             .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 6.dp),

@@ -34,6 +34,8 @@ import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 
@@ -82,7 +84,11 @@ fun ProgressDialog(
                 )
                 .clip(shape)
                 .background(neubrutalCardSurface())
-                .border(NeubrutalBorderWidth, border, shape)
+                .neubrutalBorderWithGloss(
+                    color = border,
+                    cornerRadius = NeubrutalDialogRadius,
+                    highlightColor = neubrutalGlossyHighlightColor()
+                )
                 .padding(horizontal = 20.dp, vertical = 18.dp)
         ) {
             Text(
@@ -106,7 +112,11 @@ fun ProgressDialog(
                     )
                     .clip(barShape)
                     .background(neubrutalCardSurface())
-                    .border(NeubrutalBorderWidth, border, barShape)
+                    .neubrutalBorderWithGloss(
+                        color = border,
+                        cornerRadius = NeubrutalShadowOffset,
+                        highlightColor = neubrutalGlossyHighlightColor()
+                    )
                     .padding(2.dp)
             ) {
                 LinearProgressIndicator(

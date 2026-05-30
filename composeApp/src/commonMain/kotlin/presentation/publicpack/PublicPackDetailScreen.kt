@@ -1,7 +1,6 @@
 package presentation.publicpack
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -42,8 +41,9 @@ import presentation.components.InteractionBlockedBox
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
-import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalCardRadius
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
@@ -184,10 +184,10 @@ fun PublicPackDetailScreen(
                                     )
                                     .clip(RoundedCornerShape(NeubrutalCardRadius))
                                     .background(neubrutalCardSurface())
-                                    .border(
-                                        width = NeubrutalBorderWidth,
+                                    .neubrutalBorderWithGloss(
                                         color = neubrutalBorderColor(),
-                                        shape = RoundedCornerShape(NeubrutalCardRadius)
+                                        cornerRadius = NeubrutalCardRadius,
+                                        highlightColor = neubrutalGlossyHighlightColor()
                                     )
                                     .padding(6.dp),
                                 verticalAlignment = Alignment.CenterVertically

@@ -4,7 +4,6 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -32,8 +31,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import presentation.theme.ErrorRed
-import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalButtonRadius
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.NeubrutalWhite
@@ -79,10 +79,10 @@ fun AppDangerButton(
             .background(
                 color = if (enabled) ErrorRed else ErrorRed.copy(alpha = 0.4f),
             )
-            .border(
-                width = NeubrutalBorderWidth,
+            .neubrutalBorderWithGloss(
                 color = border,
-                shape = shape
+                cornerRadius = NeubrutalButtonRadius,
+                highlightColor = neubrutalGlossyHighlightColor(onFilledSurface = true)
             )
             .clickable(
                 interactionSource = interactionSource,

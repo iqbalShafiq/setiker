@@ -37,6 +37,9 @@ import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlight
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import setiker.composeapp.generated.resources.Res
@@ -61,7 +64,11 @@ fun ApiActionSection(
             )
             .clip(shape)
             .background(neubrutalCardSurface())
-            .border(NeubrutalBorderWidth, border, shape)
+            .neubrutalBorderWithGloss(
+                color = border,
+                cornerRadius = NeubrutalCardRadius,
+                highlightColor = neubrutalGlossyHighlightColor()
+            )
             .padding(14.dp)
     ) {
         Text(
@@ -113,6 +120,10 @@ fun SelectableStickerGrid(
                                 width = if (selectedIndices.contains(index)) 3.dp else NeubrutalBorderWidth,
                                 color = if (selectedIndices.contains(index)) AccentCoral else border,
                                 shape = innerShape
+                            )
+                            .neubrutalGlossyHighlight(
+                                cornerRadius = NeubrutalSmallRadius,
+                                highlightColor = neubrutalGlossyHighlightColor()
                             )
                             .clickable { onToggle(index) }
                             .padding(2.dp),

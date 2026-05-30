@@ -39,8 +39,9 @@ import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalSubtleOnSurface
-import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalCardRadius
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.cancel
 import setiker.composeapp.generated.resources.close
@@ -140,7 +141,11 @@ fun AiGenerateBottomSheet(
                             onLongClick = if (!path.isNullOrBlank()) onClearInputImage else null
                         )
                         .background(neubrutalCardSurface())
-                        .border(NeubrutalBorderWidth, neubrutalBorderColor(), RoundedCornerShape(NeubrutalCardRadius))
+                        .neubrutalBorderWithGloss(
+                            color = neubrutalBorderColor(),
+                            cornerRadius = NeubrutalCardRadius,
+                            highlightColor = neubrutalGlossyHighlightColor()
+                        )
                         .padding(4.dp),
                     contentAlignment = Alignment.Center
                 ) {

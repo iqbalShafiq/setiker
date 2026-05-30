@@ -30,6 +30,8 @@ import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import presentation.theme.neubrutalSubtleOnSurface
@@ -60,10 +62,10 @@ fun NeubrutalSearchBar(
             )
             .clip(shape)
             .background(surface)
-            .border(
-                width = NeubrutalBorderWidth,
+            .neubrutalBorderWithGloss(
                 color = border,
-                shape = shape
+                cornerRadius = NeubrutalCardRadius,
+                highlightColor = neubrutalGlossyHighlightColor()
             )
             .padding(horizontal = 12.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically

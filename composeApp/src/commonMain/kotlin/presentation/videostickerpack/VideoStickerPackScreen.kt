@@ -2,7 +2,6 @@ package presentation.videostickerpack
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -70,6 +69,8 @@ import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalSubtleOnSurface
@@ -569,10 +570,11 @@ private fun SelectableGeneratedStickerCard(
     val borderColor = if (selected) AccentCoral else neubrutalBorderColor().copy(alpha = 0.35f)
     Box(
         modifier = modifier
-            .border(
-                width = if (selected) 3.dp else NeubrutalBorderWidth,
+            .neubrutalBorderWithGloss(
                 color = borderColor,
-                shape = RoundedCornerShape(18.dp)
+                cornerRadius = 18.dp,
+                width = if (selected) 3.dp else NeubrutalBorderWidth,
+                highlightColor = neubrutalGlossyHighlightColor()
             )
             .clickable(enabled = enabled, onClick = onClick)
             .padding(4.dp),

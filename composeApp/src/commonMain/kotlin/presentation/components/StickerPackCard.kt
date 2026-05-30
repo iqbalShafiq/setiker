@@ -30,6 +30,8 @@ import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 
@@ -56,10 +58,10 @@ fun StickerPackCard(
             )
             .clip(shape)
             .background(surface)
-            .border(
-                width = NeubrutalBorderWidth,
+            .neubrutalBorderWithGloss(
                 color = border,
-                shape = shape
+                cornerRadius = NeubrutalCardRadius,
+                highlightColor = neubrutalGlossyHighlightColor()
             )
             .clickable(onClick = onClick)
             .padding(16.dp)
@@ -72,10 +74,10 @@ fun StickerPackCard(
                 .aspectRatio(1f)
                 .clip(innerShape)
                 .background(surface)
-                .border(
-                    width = NeubrutalBorderWidth,
+                .neubrutalBorderWithGloss(
                     color = border,
-                    shape = innerShape
+                    cornerRadius = NeubrutalSmallRadius,
+                    highlightColor = neubrutalGlossyHighlightColor()
                 ),
             contentScale = ContentScale.Crop
         )

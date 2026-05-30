@@ -32,6 +32,8 @@ import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import setiker.composeapp.generated.resources.Res
@@ -61,10 +63,10 @@ fun StickerCard(
             )
             .clip(cardShape)
             .background(neubrutalCardSurface())
-            .border(
-                width = NeubrutalBorderWidth,
+            .neubrutalBorderWithGloss(
                 color = border,
-                shape = cardShape
+                cornerRadius = NeubrutalCardRadius,
+                highlightColor = neubrutalGlossyHighlightColor()
             )
             .clickable(onClick = onClick)
             .padding(4.dp)
@@ -106,10 +108,11 @@ fun StickerCard(
                     )
                     .clip(deleteShape)
                     .background(ErrorRed)
-                    .border(
-                        width = NeubrutalSmallShadowOffset,
+                    .neubrutalBorderWithGloss(
                         color = border,
-                        shape = deleteShape
+                        width = NeubrutalSmallShadowOffset,
+                        cornerRadius = 6.dp,
+                        highlightColor = neubrutalGlossyHighlightColor(onFilledSurface = true)
                     )
                     .clickable(onClick = onDeleteClick),
                 contentAlignment = Alignment.Center

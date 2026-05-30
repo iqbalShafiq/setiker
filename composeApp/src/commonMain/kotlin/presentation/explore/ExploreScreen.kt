@@ -1,7 +1,6 @@
 package presentation.explore
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -51,10 +50,11 @@ import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
 import presentation.theme.AccentCoral
-import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
@@ -197,7 +197,11 @@ fun ExploreScreen(
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(if (selected) neubrutalCardSurface() else neubrutalScreenBackground())
-                                .border(NeubrutalBorderWidth, neubrutalBorderColor(), RoundedCornerShape(12.dp))
+                                .neubrutalBorderWithGloss(
+                                    color = neubrutalBorderColor(),
+                                    cornerRadius = 12.dp,
+                                    highlightColor = neubrutalGlossyHighlightColor()
+                                )
                                 .clickable {
                                     onIntent(ExploreIntent.ChangeSort(option))
                                     showSortSheet = false
@@ -240,7 +244,11 @@ private fun PublicPackCard(
             )
             .clip(RoundedCornerShape(NeubrutalCardRadius))
             .background(neubrutalCardSurface())
-            .border(NeubrutalBorderWidth, border, RoundedCornerShape(NeubrutalCardRadius))
+            .neubrutalBorderWithGloss(
+                color = border,
+                cornerRadius = NeubrutalCardRadius,
+                highlightColor = neubrutalGlossyHighlightColor()
+            )
             .clickable(onClick = onClick)
             .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -252,7 +260,11 @@ private fun PublicPackCard(
                 .size(72.dp)
                 .clip(RoundedCornerShape(12.dp))
                 .background(neubrutalScreenBackground())
-                .border(NeubrutalBorderWidth, border, RoundedCornerShape(12.dp)),
+                .neubrutalBorderWithGloss(
+                    color = border,
+                    cornerRadius = 12.dp,
+                    highlightColor = neubrutalGlossyHighlightColor()
+                ),
             contentScale = ContentScale.Crop
         )
         Column(

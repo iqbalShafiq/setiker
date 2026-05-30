@@ -2,7 +2,6 @@ package presentation.crop
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -50,8 +49,9 @@ import presentation.components.AppSecondaryButton
 import presentation.components.AppTopBar
 import presentation.components.LoadingIndicator
 import presentation.theme.AccentCoral
-import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalCardRadius
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.NeubrutalDialogRadius
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalSmallShadowOffset
@@ -122,10 +122,10 @@ fun CropScreen(
                         )
                         .clip(RoundedCornerShape(NeubrutalDialogRadius))
                         .background(neubrutalCardSurface())
-                        .border(
-                            width = NeubrutalBorderWidth,
+                        .neubrutalBorderWithGloss(
                             color = border,
-                            shape = RoundedCornerShape(NeubrutalDialogRadius)
+                            cornerRadius = NeubrutalDialogRadius,
+                            highlightColor = neubrutalGlossyHighlightColor()
                         )
                         .padding(4.dp),
                     contentAlignment = Alignment.Center
@@ -246,10 +246,13 @@ private fun NeubrutalToolButton(
                 )
                 .clip(CircleShape)
                 .background(if (isSelected) AccentCoral else neubrutalCardSurface())
-                .border(
-                    width = NeubrutalBorderWidth,
+                .neubrutalBorderWithGloss(
                     color = border,
-                    shape = CircleShape
+                    cornerRadius = 24.dp,
+                    shape = CircleShape,
+                    highlightColor = neubrutalGlossyHighlightColor(
+                        onFilledSurface = isSelected
+                    )
                 )
                 .clickable(onClick = onClick),
             contentAlignment = Alignment.Center

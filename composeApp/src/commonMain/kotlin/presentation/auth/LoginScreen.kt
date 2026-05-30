@@ -6,7 +6,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,8 +42,9 @@ import presentation.components.AppPasswordTextField
 import presentation.components.AppPrimaryButton
 import presentation.components.AppTextField
 import presentation.theme.ErrorRed
-import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalCardRadius
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
@@ -270,10 +270,10 @@ private fun ErrorMessageBox(
             )
             .clip(RoundedCornerShape(NeubrutalCardRadius))
             .background(surfaceColor)
-            .border(
-                width = NeubrutalBorderWidth,
+            .neubrutalBorderWithGloss(
                 color = ErrorRed.copy(alpha = 0.5f),
-                shape = RoundedCornerShape(NeubrutalCardRadius)
+                cornerRadius = NeubrutalCardRadius,
+                highlightColor = neubrutalGlossyHighlightColor()
             )
             .padding(16.dp)
     ) {

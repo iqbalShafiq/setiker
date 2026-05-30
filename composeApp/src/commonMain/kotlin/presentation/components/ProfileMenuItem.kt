@@ -46,6 +46,8 @@ import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 
@@ -96,10 +98,10 @@ fun ProfileMenuItem(
                     )
                     .clip(RoundedCornerShape(NeubrutalSmallRadius))
                     .background(iconBackgroundColor)
-                    .border(
-                        width = NeubrutalBorderWidth,
+                    .neubrutalBorderWithGloss(
                         color = borderColor,
-                        shape = RoundedCornerShape(NeubrutalSmallRadius)
+                        cornerRadius = NeubrutalSmallRadius,
+                        highlightColor = neubrutalGlossyHighlightColor()
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -140,7 +142,11 @@ private fun ProfileMenuItemPreview() {
             modifier = Modifier
                 .padding(16.dp)
                 .background(NeubrutalWhite)
-                .border(NeubrutalBorderWidth, neubrutalBorderColor(), RoundedCornerShape(NeubrutalButtonRadius))
+                .neubrutalBorderWithGloss(
+                    color = neubrutalBorderColor(),
+                    cornerRadius = NeubrutalButtonRadius,
+                    highlightColor = neubrutalGlossyHighlightColor()
+                )
                 .neubrutalShadow(
                     cornerRadius = NeubrutalButtonRadius,
                     color = neubrutalShadowColor()

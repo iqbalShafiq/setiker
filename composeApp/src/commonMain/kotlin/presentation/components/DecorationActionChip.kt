@@ -25,6 +25,8 @@ import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 
@@ -48,7 +50,12 @@ fun DecorationActionChip(
             )
             .clip(CircleShape)
             .background(neubrutalCardSurface())
-            .border(NeubrutalBorderWidth, neubrutalBorderColor(), CircleShape)
+            .neubrutalBorderWithGloss(
+                color = neubrutalBorderColor(),
+                cornerRadius = 50.dp,
+                shape = CircleShape,
+                highlightColor = neubrutalGlossyHighlightColor()
+            )
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,

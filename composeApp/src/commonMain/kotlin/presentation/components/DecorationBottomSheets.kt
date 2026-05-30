@@ -42,6 +42,9 @@ import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalSmallRadius
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlight
+import presentation.theme.neubrutalGlossyHighlightColor
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.add_decoration
 import setiker.composeapp.generated.resources.add_text
@@ -233,7 +236,11 @@ fun ColorPickerBottomSheet(
                     .height(56.dp)
                     .clip(RoundedCornerShape(NeubrutalSmallRadius))
                     .background(selectedColor)
-                    .border(NeubrutalBorderWidth, neubrutalBorderColor(), RoundedCornerShape(NeubrutalSmallRadius))
+                    .neubrutalBorderWithGloss(
+                        color = neubrutalBorderColor(),
+                        cornerRadius = NeubrutalSmallRadius,
+                        highlightColor = neubrutalGlossyHighlightColor(onFilledSurface = true)
+                    )
             )
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -329,7 +336,11 @@ fun BorderStyleBottomSheet(
                     .height(56.dp)
                     .clip(RoundedCornerShape(NeubrutalSmallRadius))
                     .background(selectedColor)
-                    .border(NeubrutalBorderWidth, neubrutalBorderColor(), RoundedCornerShape(NeubrutalSmallRadius))
+                    .neubrutalBorderWithGloss(
+                        color = neubrutalBorderColor(),
+                        cornerRadius = NeubrutalSmallRadius,
+                        highlightColor = neubrutalGlossyHighlightColor(onFilledSurface = true)
+                    )
             )
             Spacer(modifier = Modifier.height(10.dp))
             ColorSliderRow(
@@ -422,6 +433,10 @@ private fun ColorSliderRow(
                 .clip(RoundedCornerShape(999.dp))
                 .background(trackBrush)
                 .border(1.dp, neubrutalBorderColor(), RoundedCornerShape(999.dp))
+                .neubrutalGlossyHighlight(
+                    cornerRadius = 999.dp,
+                    highlightColor = neubrutalGlossyHighlightColor()
+                )
         )
         Slider(
             value = value,

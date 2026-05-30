@@ -26,6 +26,8 @@ import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import setiker.composeapp.generated.resources.Res
@@ -62,10 +64,10 @@ fun AppDialog(
                 )
                 .clip(shape)
                 .background(neubrutalCardSurface())
-                .border(
-                    width = NeubrutalBorderWidth,
+                .neubrutalBorderWithGloss(
                     color = border,
-                    shape = shape
+                    cornerRadius = NeubrutalDialogRadius,
+                    highlightColor = neubrutalGlossyHighlightColor()
                 )
                 .padding(28.dp)
         ) {

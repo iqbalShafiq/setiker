@@ -80,6 +80,8 @@ import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import setiker.composeapp.generated.resources.Res
@@ -305,7 +307,11 @@ fun CreatePackScreen(
                                     .neubrutalShadow(3.dp, 3.dp, 16.dp, neubrutalShadowColor())
                                     .clip(RoundedCornerShape(NeubrutalCardRadius))
                                     .background(neubrutalCardSurface())
-                                    .border(NeubrutalBorderWidth, neubrutalBorderColor(), RoundedCornerShape(NeubrutalCardRadius))
+                                    .neubrutalBorderWithGloss(
+                                        color = neubrutalBorderColor(),
+                                        cornerRadius = NeubrutalCardRadius,
+                                        highlightColor = neubrutalGlossyHighlightColor()
+                                    )
                                     .padding(4.dp),
                                 contentScale = ContentScale.Crop
                             )
@@ -418,7 +424,11 @@ fun CreatePackScreen(
                         .aspectRatio(1f)
                         .clip(RoundedCornerShape(NeubrutalCardRadius))
                         .background(neubrutalCardSurface())
-                        .border(NeubrutalBorderWidth, neubrutalBorderColor(), RoundedCornerShape(NeubrutalCardRadius))
+                        .neubrutalBorderWithGloss(
+                                        color = neubrutalBorderColor(),
+                                        cornerRadius = NeubrutalCardRadius,
+                                        highlightColor = neubrutalGlossyHighlightColor()
+                                    )
                         .padding(4.dp)
                 ) {
                     AsyncImage(
@@ -477,7 +487,11 @@ fun CreatePackScreen(
                         .aspectRatio(1f)
                         .clip(RoundedCornerShape(NeubrutalCardRadius))
                         .background(neubrutalCardSurface())
-                        .border(NeubrutalBorderWidth, neubrutalBorderColor(), RoundedCornerShape(NeubrutalCardRadius))
+                        .neubrutalBorderWithGloss(
+                                        color = neubrutalBorderColor(),
+                                        cornerRadius = NeubrutalCardRadius,
+                                        highlightColor = neubrutalGlossyHighlightColor()
+                                    )
                         .padding(4.dp)
                 ) {
                     AsyncImage(
@@ -736,10 +750,10 @@ private fun TrayIconSelector(
                 )
                 .clip(RoundedCornerShape(NeubrutalCardRadius))
                 .background(neubrutalCardSurface())
-                .border(
-                    width = NeubrutalBorderWidth,
+                .neubrutalBorderWithGloss(
                     color = border,
-                    shape = RoundedCornerShape(NeubrutalCardRadius)
+                    cornerRadius = NeubrutalCardRadius,
+                    highlightColor = neubrutalGlossyHighlightColor()
                 )
                 .clickable(enabled = enabled, onClick = onClick),
             contentAlignment = Alignment.Center
@@ -763,10 +777,10 @@ private fun TrayIconSelector(
                 )
                 .clip(RoundedCornerShape(NeubrutalCardRadius))
                 .background(AccentCoralLight)
-                .border(
-                    width = NeubrutalBorderWidth,
+                .neubrutalBorderWithGloss(
                     color = border,
-                    shape = RoundedCornerShape(NeubrutalCardRadius)
+                    cornerRadius = NeubrutalCardRadius,
+                    highlightColor = neubrutalGlossyHighlightColor()
                 )
                 .clickable(enabled = enabled, onClick = onClick),
             contentAlignment = Alignment.Center
@@ -803,10 +817,10 @@ private fun StickerPreviewItem(
                 )
                 .clip(RoundedCornerShape(NeubrutalSmallRadius))
                 .background(neubrutalCardSurface())
-                .border(
-                    width = NeubrutalBorderWidth,
+                .neubrutalBorderWithGloss(
                     color = border,
-                    shape = RoundedCornerShape(NeubrutalSmallRadius)
+                    cornerRadius = NeubrutalSmallRadius,
+                    highlightColor = neubrutalGlossyHighlightColor()
                 )
                 .padding(2.dp)
         ) {
@@ -829,10 +843,11 @@ private fun StickerPreviewItem(
                 .size(22.dp)
                 .clip(RoundedCornerShape(6.dp))
                 .background(ErrorRed)
-                .border(
-                    width = 1.5.dp,
+                .neubrutalBorderWithGloss(
                     color = border,
-                    shape = RoundedCornerShape(6.dp)
+                    width = 1.5.dp,
+                    cornerRadius = 6.dp,
+                    highlightColor = neubrutalGlossyHighlightColor(onFilledSurface = true)
                 )
                 .clickable(enabled = enabled, onClick = onRemove),
             contentAlignment = Alignment.Center

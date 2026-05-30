@@ -1,7 +1,6 @@
 package presentation.auth
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -60,6 +59,8 @@ import presentation.theme.PastelPink
 import presentation.theme.PastelPurple
 import presentation.theme.PastelYellow
 import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
@@ -67,7 +68,6 @@ import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import presentation.theme.neubrutalSubtleOnSurface
-import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
 import setiker.composeapp.generated.resources.Res
@@ -296,7 +296,11 @@ private fun ProfileCard(
             .neubrutalShadow(offsetX = NeubrutalShadowOffset, offsetY = NeubrutalShadowOffset, cornerRadius = NeubrutalCardRadius, color = shadowColor)
             .clip(RoundedCornerShape(NeubrutalCardRadius))
             .background(cardSurface)
-            .border(width = NeubrutalBorderWidth, color = borderColor, shape = RoundedCornerShape(NeubrutalCardRadius))
+            .neubrutalBorderWithGloss(
+                color = borderColor,
+                cornerRadius = NeubrutalCardRadius,
+                highlightColor = neubrutalGlossyHighlightColor()
+            )
             .clickable(onClick = onClick)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -307,7 +311,12 @@ private fun ProfileCard(
                 .size(64.dp)
                 .clip(CircleShape)
                 .background(AccentCoralLight)
-                .border(width = NeubrutalBorderWidth, color = borderColor, shape = CircleShape),
+                .neubrutalBorderWithGloss(
+                    color = borderColor,
+                    cornerRadius = 32.dp,
+                    shape = CircleShape,
+                    highlightColor = neubrutalGlossyHighlightColor()
+                ),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -383,7 +392,11 @@ private fun StatsCard(
             .neubrutalShadow(offsetX = NeubrutalShadowOffset, offsetY = NeubrutalShadowOffset, cornerRadius = NeubrutalCardRadius, color = shadowColor)
             .clip(RoundedCornerShape(NeubrutalCardRadius))
             .background(cardSurface)
-            .border(width = NeubrutalBorderWidth, color = borderColor, shape = RoundedCornerShape(NeubrutalCardRadius))
+            .neubrutalBorderWithGloss(
+                color = borderColor,
+                cornerRadius = NeubrutalCardRadius,
+                highlightColor = neubrutalGlossyHighlightColor()
+            )
             .padding(vertical = 18.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
@@ -473,7 +486,11 @@ private fun MenuCard(
             .neubrutalShadow(offsetX = NeubrutalShadowOffset, offsetY = NeubrutalShadowOffset, cornerRadius = NeubrutalCardRadius, color = shadowColor)
             .clip(RoundedCornerShape(NeubrutalCardRadius))
             .background(cardSurface)
-            .border(width = NeubrutalBorderWidth, color = borderColor, shape = RoundedCornerShape(NeubrutalCardRadius))
+            .neubrutalBorderWithGloss(
+                color = borderColor,
+                cornerRadius = NeubrutalCardRadius,
+                highlightColor = neubrutalGlossyHighlightColor()
+            )
     ) {
         content()
     }

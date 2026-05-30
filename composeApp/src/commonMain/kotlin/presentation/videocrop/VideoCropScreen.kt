@@ -2,7 +2,6 @@ package presentation.videocrop
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -60,8 +59,9 @@ import presentation.components.MediaPreviewBottomBar
 import presentation.components.NeubrutalStickerPreviewFrame
 import presentation.components.ProgressDialog
 import presentation.theme.AccentCoral
-import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalSmallRadius
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
@@ -407,7 +407,12 @@ private fun CropToolButton(
                 .neubrutalShadow(2.dp, 2.dp, 24.dp, shadow)
                 .clip(CircleShape)
                 .background(surface)
-                .border(NeubrutalBorderWidth, border, CircleShape)
+                .neubrutalBorderWithGloss(
+                    color = border,
+                    cornerRadius = 24.dp,
+                    shape = CircleShape,
+                    highlightColor = neubrutalGlossyHighlightColor()
+                )
                 .clickable(onClick = onClick),
             contentAlignment = Alignment.Center
         ) {

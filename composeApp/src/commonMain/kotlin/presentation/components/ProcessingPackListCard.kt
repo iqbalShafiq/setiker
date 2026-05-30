@@ -25,6 +25,8 @@ import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 
@@ -49,7 +51,11 @@ fun ProcessingPackListCard(
             )
             .clip(shape)
             .background(surface)
-            .border(width = NeubrutalBorderWidth, color = border, shape = shape)
+            .neubrutalBorderWithGloss(
+                color = border,
+                cornerRadius = NeubrutalCardRadius,
+                highlightColor = neubrutalGlossyHighlightColor()
+            )
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

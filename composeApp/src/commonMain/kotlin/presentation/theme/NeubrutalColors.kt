@@ -70,3 +70,17 @@ fun neubrutalSubtleOnSurface(): Color =
 @Composable
 @ReadOnlyComposable
 fun neubrutalOnPrimary(): Color = MaterialTheme.colorScheme.onPrimary
+
+/**
+ * Fill color for the top/left glossy bevel band (solid L-shape inside the border).
+ *
+ * @param onFilledSurface true for saturated fills (primary buttons, FAB, danger buttons).
+ */
+@Composable
+@ReadOnlyComposable
+fun neubrutalGlossyHighlightColor(onFilledSurface: Boolean = false): Color =
+    if (isSystemInDarkTheme()) {
+        NeubrutalWhite.copy(alpha = if (onFilledSurface) 0.38f else 0.24f)
+    } else {
+        NeubrutalGlossyHighlightLight
+    }

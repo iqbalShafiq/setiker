@@ -34,6 +34,8 @@ import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import setiker.composeapp.generated.resources.Res
@@ -71,7 +73,11 @@ fun DraftJobListCard(
             )
             .clip(shape)
             .background(surface)
-            .border(width = NeubrutalBorderWidth, color = border, shape = shape)
+            .neubrutalBorderWithGloss(
+                color = border,
+                cornerRadius = NeubrutalCardRadius,
+                highlightColor = neubrutalGlossyHighlightColor()
+            )
             .clickable(onClick = onOpen)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)

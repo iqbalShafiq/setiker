@@ -4,7 +4,6 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -30,8 +29,9 @@ import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
-import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalDialogRadius
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.create_new_pack
 
@@ -64,10 +64,10 @@ fun ClayFab(
             )
             .clip(RoundedCornerShape(NeubrutalDialogRadius))
             .background(AccentCoral)
-            .border(
-                width = NeubrutalBorderWidth,
+            .neubrutalBorderWithGloss(
                 color = border,
-                shape = RoundedCornerShape(NeubrutalDialogRadius)
+                cornerRadius = NeubrutalDialogRadius,
+                highlightColor = neubrutalGlossyHighlightColor(onFilledSurface = true)
             )
             .clickable(
                 interactionSource = interactionSource,

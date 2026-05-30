@@ -1,7 +1,6 @@
 package presentation.packdetail
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -69,8 +68,9 @@ import presentation.components.PackBottomBarIconButton
 import presentation.components.StickerCard
 import presentation.components.SyncStatusIndicator
 import presentation.components.rememberMultipleImagePicker
-import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalCardRadius
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.neubrutalBorderColor
@@ -183,7 +183,11 @@ fun PackDetailScreen(
                         .aspectRatio(1f)
                         .clip(RoundedCornerShape(NeubrutalCardRadius))
                         .background(neubrutalCardSurface())
-                        .border(NeubrutalBorderWidth, neubrutalBorderColor(), RoundedCornerShape(NeubrutalCardRadius))
+                        .neubrutalBorderWithGloss(
+                            color = neubrutalBorderColor(),
+                            cornerRadius = NeubrutalCardRadius,
+                            highlightColor = neubrutalGlossyHighlightColor()
+                        )
                         .padding(4.dp)
                 ) {
                     AsyncImage(
@@ -376,10 +380,10 @@ private fun PackDetailContent(
                 )
                 .clip(RoundedCornerShape(NeubrutalCardRadius))
                 .background(surface)
-                .border(
-                    width = NeubrutalBorderWidth,
+                .neubrutalBorderWithGloss(
                     color = border,
-                    shape = RoundedCornerShape(NeubrutalCardRadius)
+                    cornerRadius = NeubrutalCardRadius,
+                    highlightColor = neubrutalGlossyHighlightColor()
                 )
                 .padding(20.dp)
         ) {
@@ -400,10 +404,10 @@ private fun PackDetailContent(
                         )
                         .clip(RoundedCornerShape(NeubrutalCardRadius))
                         .background(surface)
-                        .border(
-                            width = NeubrutalBorderWidth,
+                        .neubrutalBorderWithGloss(
                             color = border,
-                            shape = RoundedCornerShape(NeubrutalCardRadius)
+                            cornerRadius = NeubrutalCardRadius,
+                            highlightColor = neubrutalGlossyHighlightColor()
                         ),
                     contentScale = ContentScale.Crop
                 )
@@ -539,10 +543,10 @@ private fun CloudShareLinksSheet(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(NeubrutalCardRadius))
                         .background(neubrutalCardSurface())
-                        .border(
-                            width = NeubrutalBorderWidth,
+                        .neubrutalBorderWithGloss(
                             color = neubrutalBorderColor(),
-                            shape = RoundedCornerShape(NeubrutalCardRadius)
+                            cornerRadius = NeubrutalCardRadius,
+                            highlightColor = neubrutalGlossyHighlightColor()
                         )
                         .padding(horizontal = 12.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically

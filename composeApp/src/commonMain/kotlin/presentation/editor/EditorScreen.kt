@@ -2,7 +2,6 @@ package presentation.editor
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -94,9 +93,10 @@ import presentation.components.SelectableStickerGrid
 import presentation.components.StickerEmojiTagChip
 import presentation.components.rememberImagePicker
 import presentation.createpack.DraftSticker
-import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
@@ -655,7 +655,11 @@ fun EditorScreen(
                             .aspectRatio(1f)
                             .clip(RoundedCornerShape(NeubrutalCardRadius))
                             .background(neubrutalCardSurface())
-                            .border(NeubrutalBorderWidth, neubrutalBorderColor(), RoundedCornerShape(NeubrutalCardRadius))
+                            .neubrutalBorderWithGloss(
+                                color = neubrutalBorderColor(),
+                                cornerRadius = NeubrutalCardRadius,
+                                highlightColor = neubrutalGlossyHighlightColor()
+                            )
                             .padding(4.dp),
                         contentAlignment = Alignment.Center
                     ) {
@@ -683,7 +687,11 @@ fun EditorScreen(
                                 .aspectRatio(1f)
                                 .clip(RoundedCornerShape(NeubrutalCardRadius))
                                 .background(neubrutalCardSurface())
-                                .border(NeubrutalBorderWidth, neubrutalBorderColor(), RoundedCornerShape(NeubrutalCardRadius))
+                                .neubrutalBorderWithGloss(
+                                color = neubrutalBorderColor(),
+                                cornerRadius = NeubrutalCardRadius,
+                                highlightColor = neubrutalGlossyHighlightColor()
+                            )
                                 .padding(4.dp)
                         ) {
                             CheckerboardBackground(modifier = Modifier.fillMaxSize())

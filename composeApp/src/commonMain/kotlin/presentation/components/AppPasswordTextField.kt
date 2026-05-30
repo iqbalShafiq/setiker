@@ -42,6 +42,8 @@ import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import presentation.theme.neubrutalSubtleOnSurface
@@ -84,10 +86,10 @@ fun AppPasswordTextField(
                 )
                 .clip(shape)
                 .background(surface)
-                .border(
-                    width = NeubrutalBorderWidth,
+                .neubrutalBorderWithGloss(
                     color = if (isError) presentation.theme.ErrorRed else border,
-                    shape = shape
+                    cornerRadius = NeubrutalCardRadius,
+                    highlightColor = neubrutalGlossyHighlightColor()
                 )
                 .padding(horizontal = 16.dp, vertical = 14.dp)
         ) {

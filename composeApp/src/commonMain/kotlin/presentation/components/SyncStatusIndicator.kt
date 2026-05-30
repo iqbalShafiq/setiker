@@ -15,11 +15,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalSmallShadowOffset
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 
@@ -48,8 +51,14 @@ fun SyncStatusIndicator(
                 cornerRadius = 14.dp,
                 color = neubrutalShadowColor()
             )
-            .background(color, CircleShape)
-            .border(NeubrutalBorderWidth, Color.Black, CircleShape),
+            .clip(CircleShape)
+            .background(color)
+            .neubrutalBorderWithGloss(
+                color = Color.Black,
+                cornerRadius = 14.dp,
+                shape = CircleShape,
+                highlightColor = neubrutalGlossyHighlightColor(onFilledSurface = true)
+            ),
         contentAlignment = Alignment.Center
     ) {
         Icon(

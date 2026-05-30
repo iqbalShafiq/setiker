@@ -53,6 +53,8 @@ import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import presentation.theme.neubrutalTopAppBarSurface
@@ -103,10 +105,10 @@ fun NeubrutalIconButton(
             )
             .clip(shape)
             .background(neubrutalCardSurface())
-            .border(
-                width = NeubrutalBorderWidth,
+            .neubrutalBorderWithGloss(
                 color = border,
-                shape = shape
+                cornerRadius = NeubrutalSmallRadius,
+                highlightColor = neubrutalGlossyHighlightColor()
             )
             .clickable(
                 interactionSource = interactionSource,
@@ -275,7 +277,11 @@ fun NeubrutalCounterBadge(
             )
             .clip(shape)
             .background(AccentCoral)
-            .border(width = NeubrutalBorderWidth, color = border, shape = shape)
+            .neubrutalBorderWithGloss(
+                color = border,
+                cornerRadius = NeubrutalSmallRadius,
+                highlightColor = neubrutalGlossyHighlightColor(onFilledSurface = true)
+            )
             .padding(horizontal = 5.dp, vertical = 2.dp),
         contentAlignment = Alignment.Center
     ) {

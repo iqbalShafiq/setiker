@@ -33,6 +33,8 @@ import presentation.theme.PastelMint
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import setiker.composeapp.generated.resources.Res
@@ -65,10 +67,10 @@ fun EmptyState(
                 )
                 .clip(RoundedCornerShape(NeubrutalCardRadius))
                 .background(PastelMint)
-                .border(
-                    width = NeubrutalBorderWidth,
+                .neubrutalBorderWithGloss(
                     color = neubrutalBorderColor(),
-                    shape = RoundedCornerShape(NeubrutalCardRadius)
+                    cornerRadius = NeubrutalCardRadius,
+                    highlightColor = neubrutalGlossyHighlightColor()
                 ),
             contentAlignment = Alignment.Center
         ) {
