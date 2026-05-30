@@ -14,6 +14,12 @@ expect class StickerFileStorage {
     suspend fun imageExists(fileName: String): Boolean
     suspend fun convertToWebP(sourcePath: String, outputFileName: String): String
     suspend fun saveTrayImage(sourcePath: String, fileName: String): String
+
+    /**
+     * Same as [saveTrayImage] but returns `null` when the image cannot be compressed to a
+     * WhatsApp-valid tray (96×96 PNG, ≤50 KB) after exhaustive attempts.
+     */
+    suspend fun trySaveTrayImage(sourcePath: String, fileName: String): String?
     suspend fun saveStickerImage(sourcePath: String, fileName: String): String
     suspend fun saveStickerImageWithDecorations(
         sourcePath: String,

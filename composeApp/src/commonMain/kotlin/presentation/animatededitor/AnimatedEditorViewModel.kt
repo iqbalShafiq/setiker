@@ -85,11 +85,16 @@ class AnimatedEditorViewModel(
                         }
 
                         _state.update { current ->
+                            val hasTerminalJob = completed != null || failed != null
                             current.copy(
-                                isSaving = false,
-                                backgroundJobMessage = active?.let {
-                                    it.progress?.stepLabel ?: "Sedang diproses di background"
+                                isSaving = when {
+                                    active != null -> true
+                                    hasTerminalJob -> false
+                                    else -> current.isSaving
                                 },
+                                backgroundJobMessage = active?.let {
+                                    it.progress?.stepLabel ?: AI_JOB_FALLBACK_LABEL
+                                } ?: if (hasTerminalJob) null else current.backgroundJobMessage,
                                 saveProgress = active?.progress?.fraction ?: current.saveProgress,
                                 saveProgressLabel = active?.progress?.stepLabel
                             )
@@ -412,11 +417,11 @@ class AnimatedEditorViewModel(
             stopPlayback()
             _state.update {
                 it.copy(
-                    isSaving = false,
+                    isSaving = true,
                     saveProgress = 0f,
                     saveProgressLabel = null,
                     errorMessage = null,
-                    backgroundJobMessage = "Sedang diproses di background"
+                    backgroundJobMessage = AI_JOB_FALLBACK_LABEL
                 )
             }
             try {
@@ -453,4 +458,8 @@ class AnimatedEditorViewModel(
 
     private fun nextDecorationId(): String =
         "anim_dec_${Clock.System.now().toEpochMilliseconds()}_${Random.nextInt(1000, 9999)}"
+
+    private companion object {
+        private const val AI_JOB_FALLBACK_LABEL = "Processing..."
+    }
 }

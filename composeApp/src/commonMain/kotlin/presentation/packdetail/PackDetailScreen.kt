@@ -100,6 +100,7 @@ import setiker.composeapp.generated.resources.delete_sticker_dialog_title
 import setiker.composeapp.generated.resources.deleting
 import setiker.composeapp.generated.resources.edit_pack
 import setiker.composeapp.generated.resources.ic_whatsapp
+import setiker.composeapp.generated.resources.info_tray_icon_missing
 import setiker.composeapp.generated.resources.import_crop_sheet_message_detail
 import setiker.composeapp.generated.resources.import_crop_sheet_primary
 import setiker.composeapp.generated.resources.import_crop_sheet_title
@@ -115,6 +116,7 @@ import setiker.composeapp.generated.resources.share_pack
 import setiker.composeapp.generated.resources.sticker_preview_content_description
 import setiker.composeapp.generated.resources.stickers_title
 import setiker.composeapp.generated.resources.stickers_with_count
+import setiker.composeapp.generated.resources.tray_icon_content_description
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -391,26 +393,40 @@ private fun PackDetailContent(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                AsyncImage(
-                    model = pack.trayImageFile,
-                    contentDescription = pack.name,
-                    modifier = Modifier
-                        .size(96.dp)
-                        .neubrutalShadow(
-                            offsetX = NeubrutalSmallShadowOffset,
-                            offsetY = NeubrutalSmallShadowOffset,
-                            cornerRadius = NeubrutalCardRadius,
-                            color = shadow
+                val trayModifier = Modifier
+                    .size(96.dp)
+                    .neubrutalShadow(
+                        offsetX = NeubrutalSmallShadowOffset,
+                        offsetY = NeubrutalSmallShadowOffset,
+                        cornerRadius = NeubrutalCardRadius,
+                        color = shadow
+                    )
+                    .clip(RoundedCornerShape(NeubrutalCardRadius))
+                    .background(surface)
+                    .neubrutalBorderWithGloss(
+                        color = border,
+                        cornerRadius = NeubrutalCardRadius,
+                        highlightColor = neubrutalGlossyHighlightColor()
+                    )
+                if (pack.trayImageFile.isBlank()) {
+                    Box(
+                        modifier = trayModifier,
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = stringResource(Res.string.tray_icon_content_description),
+                            tint = neubrutalMutedOnSurface()
                         )
-                        .clip(RoundedCornerShape(NeubrutalCardRadius))
-                        .background(surface)
-                        .neubrutalBorderWithGloss(
-                            color = border,
-                            cornerRadius = NeubrutalCardRadius,
-                            highlightColor = neubrutalGlossyHighlightColor()
-                        ),
-                    contentScale = ContentScale.Crop
-                )
+                    }
+                } else {
+                    AsyncImage(
+                        model = pack.trayImageFile,
+                        contentDescription = pack.name,
+                        modifier = trayModifier,
+                        contentScale = ContentScale.Crop
+                    )
+                }
 
                 Column(
                     modifier = Modifier
@@ -428,6 +444,14 @@ private fun PackDetailContent(
                         style = MaterialTheme.typography.bodyMedium,
                         color = neubrutalMutedOnSurface()
                     )
+                    if (pack.trayImageFile.isBlank()) {
+                        Text(
+                            text = stringResource(Res.string.info_tray_icon_missing),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = neubrutalMutedOnSurface(),
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
                     Text(
                         text = stringResource(Res.string.stickers_with_count, pack.stickers.size),
                         style = MaterialTheme.typography.bodySmall,

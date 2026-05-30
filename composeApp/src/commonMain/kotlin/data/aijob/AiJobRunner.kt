@@ -143,8 +143,7 @@ class AiJobRunner(
             throw IllegalStateException("Server tidak mengembalikan gambar pack")
         }
         updateProgress(job.id, "save_pack", "Menyimpan pack", 0.85f)
-        val trayImagePath = generated.firstOrNull()?.localPath
-            ?: throw IllegalStateException("No generated sticker returned")
+        val trayImagePath = generated.firstOrNull()?.localPath.orEmpty()
         val identifier = PackIdentifierSanitizer.sanitize(
             rawName = payload.packName,
             suffix = Random.nextInt(1000, 9999)

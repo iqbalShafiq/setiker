@@ -178,7 +178,8 @@ fun EditorScreen(
     val isOperationInProgress = state.isSaving || state.isApiLoading || state.isBackgroundRemoving
     val bottomOperationLabel = when {
         state.isSaving -> stringResource(Res.string.saving)
-        state.isApiLoading || state.isBackgroundRemoving -> stringResource(Res.string.processing)
+        state.isApiLoading || state.isBackgroundRemoving ->
+            state.backgroundJobMessage ?: stringResource(Res.string.processing)
         else -> null
     }
 
@@ -308,7 +309,7 @@ fun EditorScreen(
         } else {
             val editorScrollState = rememberScrollState()
             InteractionBlockedBox(
-                blocked = state.isSaving,
+                blocked = isOperationInProgress,
                 modifier = modifier
                     .fillMaxSize()
                     .padding(top = innerPadding.calculateTopPadding())
@@ -636,6 +637,8 @@ fun EditorScreen(
                     .padding(bottom = 24.dp)
             ) {
                 if (state.isBackgroundRemoving) {
+                    val progressLabel = state.backgroundJobMessage
+                        ?: stringResource(Res.string.editor_remove_bg_progress_hint)
                     Text(
                         text = stringResource(Res.string.remove_background_title),
                         style = MaterialTheme.typography.titleLarge,
@@ -644,7 +647,7 @@ fun EditorScreen(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = stringResource(Res.string.editor_remove_bg_progress_hint),
+                        text = progressLabel,
                         style = MaterialTheme.typography.bodySmall,
                         color = neubrutalMutedOnSurface()
                     )

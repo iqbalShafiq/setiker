@@ -92,11 +92,14 @@ actual class StickerFileStorage {
             saveImage(sourcePath, outputFileName)
         }
 
-    actual suspend fun saveTrayImage(sourcePath: String, fileName: String): String =
+    actual suspend fun trySaveTrayImage(sourcePath: String, fileName: String): String? =
         withContext(Dispatchers.IO) {
-            // iOS: For now, just copy the file
-            saveImage(sourcePath, fileName)
+            runCatching { saveImage(sourcePath, fileName) }.getOrNull()
         }
+
+    actual suspend fun saveTrayImage(sourcePath: String, fileName: String): String =
+        trySaveTrayImage(sourcePath, fileName)
+            ?: throw IllegalStateException("Cannot save tray image: $sourcePath")
 
     actual suspend fun saveStickerImage(sourcePath: String, fileName: String): String =
         withContext(Dispatchers.IO) {

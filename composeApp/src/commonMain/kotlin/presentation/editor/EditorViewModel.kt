@@ -6,6 +6,8 @@ import data.aijob.AiJobManager
 import data.remote.StickerApiRepository
 import data.storage.StickerFileStorage
 import domain.model.aijob.AiJobOrigin
+import domain.model.aijob.AiJobStatus
+import domain.model.aijob.AiJobType
 import domain.model.aijob.GenerateStickersPayload
 import domain.model.aijob.ImproveStickersPayload
 import domain.model.aijob.RemoveBackgroundPayload
@@ -89,12 +91,42 @@ class EditorViewModel(
                 .collect { draftId ->
                     combine(
                         draftResultApplier.observeDraft(draftId),
-                        draftResultApplier.observeJobCompletion(draftId)
-                    ) { draft, job -> draft to job }
-                        .collect { (draft, job) ->
+                        draftResultApplier.observeJobCompletion(draftId),
+                        aiJobManager.observeJobs().map { jobs ->
+                            jobs
+                                .filter { it.workspaceDraftId == draftId }
+                                .maxByOrNull { it.updatedAt }
+                        }
+                    ) { draft, completedJob, latestJob -> Triple(draft, completedJob, latestJob) }
+                        .collect { (draft, completedJob, latestJob) ->
                             if (draft == null) return@collect
+                            val active = latestJob?.takeIf { it.status in ACTIVE_AI_JOB_STATUSES }
+                            val failed = latestJob?.takeIf { it.status in FAILED_AI_JOB_STATUSES }
                             _state.update { current ->
-                                draftResultApplier.applyToEditor(current, draft, job)
+                                val next = draftResultApplier.applyToEditor(current, draft, completedJob)
+                                val hasTerminalJob = completedJob != null || failed != null
+                                next.copy(
+                                    isApiLoading = when {
+                                        active?.type == AiJobType.GENERATE_STICKERS ||
+                                            active?.type == AiJobType.IMPROVE_STICKERS -> true
+                                        hasTerminalJob -> false
+                                        else -> next.isApiLoading
+                                    },
+                                    isBackgroundRemoving = when {
+                                        active?.type == AiJobType.REMOVE_BACKGROUND -> true
+                                        hasTerminalJob -> false
+                                        else -> next.isBackgroundRemoving
+                                    },
+                                    backgroundJobMessage = active?.progress?.stepLabel
+                                        ?: if (active != null) {
+                                            AI_JOB_FALLBACK_LABEL
+                                        } else if (hasTerminalJob) {
+                                            null
+                                        } else {
+                                            next.backgroundJobMessage
+                                        },
+                                    error = failed?.failureMessage ?: next.error
+                                )
                             }
                         }
                 }
@@ -262,8 +294,8 @@ class EditorViewModel(
             )
             _state.update {
                 it.copy(
-                    isApiLoading = false,
-                    backgroundJobMessage = "Sedang diproses di background"
+                    isApiLoading = true,
+                    backgroundJobMessage = AI_JOB_FALLBACK_LABEL
                 )
             }
         }
@@ -298,7 +330,7 @@ class EditorViewModel(
                 payload = ImproveStickersPayload(imagePaths = listOf(currentState.imagePath))
             )
             _state.update {
-                it.copy(isApiLoading = false, backgroundJobMessage = "Sedang diproses di background")
+                it.copy(isApiLoading = true, backgroundJobMessage = AI_JOB_FALLBACK_LABEL)
             }
         }
     }
@@ -573,9 +605,9 @@ class EditorViewModel(
             _state.update {
                 it.copy(
                     isBackgroundRemoverSheetOpen = true,
-                    isBackgroundRemoving = false,
+                    isBackgroundRemoving = true,
                     backgroundRemoverPreviewPath = null,
-                    backgroundJobMessage = "Sedang diproses di background"
+                    backgroundJobMessage = AI_JOB_FALLBACK_LABEL
                 )
             }
         }
@@ -729,4 +761,22 @@ class EditorViewModel(
     }
 
     private fun nextDecorationId(): String = "dec_${Clock.System.now().toEpochMilliseconds()}_${Random.nextInt(1000, 9999)}"
+
+    private companion object {
+        private const val AI_JOB_FALLBACK_LABEL = "Processing..."
+
+        private val ACTIVE_AI_JOB_STATUSES = setOf(
+            AiJobStatus.QUEUED,
+            AiJobStatus.RUNNING,
+            AiJobStatus.WAITING_FOR_NETWORK,
+            AiJobStatus.CHECKPOINTED,
+            AiJobStatus.CANCEL_REQUESTED
+        )
+
+        private val FAILED_AI_JOB_STATUSES = setOf(
+            AiJobStatus.FAILED_FINAL,
+            AiJobStatus.FAILED_RETRYABLE,
+            AiJobStatus.CANCELLED
+        )
+    }
 }

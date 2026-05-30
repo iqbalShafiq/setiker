@@ -43,7 +43,8 @@ data class CreatePackState(
     val pendingStickerGalleryPath: String? = null,
     val pendingTrayGalleryPath: String? = null,
     val workspaceDraftId: String? = null,
-    val backgroundJobMessage: String? = null
+    val backgroundJobMessage: String? = null,
+    val backgroundJobProgress: Float = 0f
 ) {
     /**
      * Pack is treated as animated whenever at least one sticker is animated. This is decided

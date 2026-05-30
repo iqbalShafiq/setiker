@@ -192,6 +192,8 @@
     <string name="error_pack_name_required">Pack name is required.</string>
     <string name="error_publisher_required">Publisher name is required.</string>
     <string name="error_tray_icon_required">Tray icon is required.</string>
+    <string name="error_tray_icon_required_whatsapp">Add a tray icon before adding this pack to WhatsApp. Use Edit pack to choose a 96×96 image (max 50 KB).</string>
+    <string name="info_tray_icon_missing">No tray icon yet — tap Edit pack to add one before sharing to WhatsApp.</string>
     <string name="error_pack_max_stickers">A pack can contain at most %1$d stickers.</string>
     <string name="error_prompt_required">Prompt is required to generate stickers.</string>
     <string name="error_no_static_stickers_to_improve">Add at least one static sticker before improving.</string>
@@ -330,7 +332,7 @@
     <string name="ai_jobs_retry">Retry</string>
     <string name="ai_jobs_cancel">Cancel</string>
     <string name="ai_jobs_delete">Delete</string>
-    <string name="success_generate_pack_background">Sticker pack ready — check your list.</string>
+    <string name="success_generate_pack_background">Sticker pack ready. Add a tray icon (Edit pack) before sharing to WhatsApp.</string>
     <string name="info_ai_job_started_background">Processing in background. You can keep using the app.</string>
     <string name="ai_jobs_status_processing">Processing in background — safe to leave the app</string>
     <string name="ai_jobs_status_ready">Ready to review</string>

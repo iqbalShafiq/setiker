@@ -127,38 +127,31 @@ actual class StickerFileStorage(private val context: Context) {
             }
         }
 
-    actual suspend fun saveTrayImage(sourcePath: String, fileName: String): String =
+    actual suspend fun trySaveTrayImage(sourcePath: String, fileName: String): String? =
         withContext(Dispatchers.IO) {
-            val bitmap = BitmapFactory.decodeFile(sourcePath)
-                ?: throw IllegalArgumentException("Cannot decode image: $sourcePath")
-
+            val bitmap = BitmapFactory.decodeFile(sourcePath) ?: return@withContext null
             try {
-                val scaledBitmap = Bitmap.createScaledBitmap(bitmap, 96, 96, true)
-
-                var quality = 100
-                var bytes: ByteArray
-                do {
-                    val stream = ByteArrayOutputStream()
-                    scaledBitmap.compress(Bitmap.CompressFormat.PNG, quality, stream)
-                    bytes = stream.toByteArray()
-                    quality -= 10
-                } while (bytes.size > 50 * 1024 && quality > 10)
-
+                val bytes = compressTrayBitmapForWhatsApp(bitmap) ?: return@withContext null
                 val destFile = File(stickersDir, fileName)
                 destFile.writeBytes(bytes)
-
-                android.util.Log.d("StickerFileStorage",
-                    "Tray icon saved: ${destFile.absolutePath}, size: ${bytes.size} bytes (${bytes.size / 1024}KB)")
-
-                if (scaledBitmap != bitmap) scaledBitmap.recycle()
-                bitmap.recycle()
-
+                android.util.Log.d(
+                    "StickerFileStorage",
+                    "Tray icon saved: ${destFile.absolutePath}, size: ${bytes.size} bytes (${bytes.size / 1024}KB)"
+                )
                 destFile.absolutePath
             } catch (e: Exception) {
+                android.util.Log.w("StickerFileStorage", "Failed to save tray icon from $sourcePath", e)
+                null
+            } finally {
                 bitmap.recycle()
-                throw e
             }
         }
+
+    actual suspend fun saveTrayImage(sourcePath: String, fileName: String): String =
+        trySaveTrayImage(sourcePath, fileName)
+            ?: throw IllegalStateException(
+                "Tray icon could not be compressed under ${TRAY_MAX_SIZE_KB}KB for WhatsApp: $sourcePath"
+            )
 
     actual suspend fun saveStickerImage(sourcePath: String, fileName: String): String =
         withContext(Dispatchers.IO) {
@@ -774,8 +767,10 @@ actual class StickerFileStorage(private val context: Context) {
         }
     }
 
-    private fun resizeAndCenterCropTo512(source: Bitmap): Bitmap {
-        val target = StickerPack.STICKER_SIZE
+    private fun resizeAndCenterCropTo512(source: Bitmap): Bitmap =
+        resizeAndCenterCropToSize(source, StickerPack.STICKER_SIZE)
+
+    private fun resizeAndCenterCropToSize(source: Bitmap, target: Int): Bitmap {
         if (source.width == target && source.height == target) return source
 
         val scale = maxOf(
@@ -791,6 +786,36 @@ actual class StickerFileStorage(private val context: Context) {
         val cropped = Bitmap.createBitmap(scaled, xOffset, yOffset, target, target)
         if (scaled != source && scaled != cropped) scaled.recycle()
         return cropped
+    }
+
+    /**
+     * Tries 96×96 down to WhatsApp's 24px minimum, lowering PNG quality each step until ≤50 KB.
+     */
+    private fun compressTrayBitmapForWhatsApp(source: Bitmap): ByteArray? {
+        val maxBytes = TRAY_MAX_SIZE_BYTES
+        val targetSizes = listOf(
+            StickerPack.TRAY_ICON_SIZE,
+            80, 72, 64, 56, 48, 40, 32, 24
+        ).distinct().sortedDescending()
+        for (targetSize in targetSizes) {
+            val cropped = resizeAndCenterCropToSize(source, targetSize)
+            val bytes = compressTrayPngLoop(cropped, maxBytes)
+            if (cropped !== source) cropped.recycle()
+            if (bytes != null) return bytes
+        }
+        return null
+    }
+
+    private fun compressTrayPngLoop(bitmap: Bitmap, maxBytes: Int): ByteArray? {
+        var quality = 100
+        while (quality >= 1) {
+            val stream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.PNG, quality, stream)
+            val bytes = stream.toByteArray()
+            if (bytes.size <= maxBytes) return bytes
+            quality -= if (quality > 20) 10 else if (quality > 5) 5 else 1
+        }
+        return null
     }
 
     /**
@@ -1027,6 +1052,9 @@ actual class StickerFileStorage(private val context: Context) {
     }
 
     companion object {
+        private const val TRAY_MAX_SIZE_KB = 50
+        private const val TRAY_MAX_SIZE_BYTES = TRAY_MAX_SIZE_KB * 1024
+
         private val QUALITY_STOPS = listOf(80f, 65f, 50f, 35f, 22f)
 
         /**

@@ -32,6 +32,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
@@ -188,7 +189,7 @@ fun CreatePackScreen(
     val bottomOperationLabel = when {
         state.isSaving && state.isEditing -> stringResource(Res.string.updating)
         state.isSaving -> stringResource(Res.string.saving)
-        state.isApiLoading -> stringResource(Res.string.processing)
+        state.isApiLoading -> state.backgroundJobMessage ?: stringResource(Res.string.processing)
         else -> null
     }
 
@@ -328,6 +329,19 @@ fun CreatePackScreen(
                                 text = state.error,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = ErrorRed
+                            )
+                        }
+                        if (state.isApiLoading) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            LinearProgressIndicator(
+                                progress = { state.backgroundJobProgress.coerceIn(0f, 1f) },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = state.backgroundJobMessage ?: stringResource(Res.string.processing),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = neubrutalMutedOnSurface()
                             )
                         }
                         Spacer(modifier = Modifier.height(20.dp))
@@ -584,7 +598,7 @@ fun CreatePackScreen(
             )
         } else {
             InteractionBlockedBox(
-                blocked = state.isSaving,
+                blocked = isOperationInProgress,
                 modifier = modifier
                     .fillMaxSize()
                     .padding(innerPadding)

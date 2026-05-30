@@ -11,8 +11,19 @@ open class StickerPackDraftSaver(
     private val nowEpochMillis: () -> Long = { Clock.System.now().toEpochMilliseconds() }
 ) {
     open suspend fun buildDraftPack(input: StickerDraftInput): StickerPack {
-        val trayFileName = "tray_${input.identifier}_${nowEpochMillis()}.png"
-        val trayPath = fileStorage.saveTrayImage(input.trayImagePath, trayFileName)
+        val trayPath = if (input.trayImagePath.isBlank()) {
+            ""
+        } else {
+            val trayFileName = "tray_${input.identifier}_${nowEpochMillis()}.png"
+            val savedTray = fileStorage.trySaveTrayImage(input.trayImagePath, trayFileName)
+            when {
+                savedTray != null -> savedTray
+                input.strictTrayCompression -> throw IllegalStateException(
+                    "Tray icon could not be compressed under 50 KB for WhatsApp"
+                )
+                else -> ""
+            }
+        }
         val packIsAnimated = input.stickers.any { it.isAnimated }
 
         val stickers = input.stickers.mapIndexed { index, draft ->

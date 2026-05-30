@@ -6,6 +6,11 @@ data class StickerDraftInput(
     val publisher: String,
     val visibility: String,
     val trayImagePath: String,
+    /**
+     * When true, [data.repository.StickerPackDraftSaver] throws if the tray cannot be
+     * compressed to WhatsApp limits instead of leaving it empty (used for manual saves).
+     */
+    val strictTrayCompression: Boolean = false,
     val stickers: List<StickerInput>
 ) {
     data class StickerInput(

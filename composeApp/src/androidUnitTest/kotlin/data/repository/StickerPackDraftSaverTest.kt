@@ -19,7 +19,7 @@ class StickerPackDraftSaverTest {
     fun savesStaticPackWithBaseAndPreviewFiles() = runTest {
         val fileStorage = mockk<StickerFileStorage>()
         val decoration = mockk<StickerDecoration>()
-        coEvery { fileStorage.saveTrayImage("/tmp/tray.png", "tray_pack_1710000000000.png") } returns "/saved/tray.webp"
+        coEvery { fileStorage.trySaveTrayImage("/tmp/tray.png", "tray_pack_1710000000000.png") } returns "/saved/tray.webp"
         coEvery { fileStorage.saveStickerImage("/tmp/a.png", "sticker_pack_0_base.webp") } returns "/saved/a_base.webp"
         coEvery {
             fileStorage.saveStickerImageWithDecorations(
@@ -65,7 +65,7 @@ class StickerPackDraftSaverTest {
     fun convertsDecoratedStaticDraftToAnimatedWebpWhenPackContainsAnimatedSticker() = runTest {
         val fileStorage = mockk<StickerFileStorage>()
         val decoration = mockk<StickerDecoration>()
-        coEvery { fileStorage.saveTrayImage("/tmp/tray.png", "tray_pack_1710000000000.png") } returns "/saved/tray.webp"
+        coEvery { fileStorage.trySaveTrayImage("/tmp/tray.png", "tray_pack_1710000000000.png") } returns "/saved/tray.webp"
         coEvery { fileStorage.saveStickerImage("/tmp/static.png", "sticker_pack_0_base.webp") } returns "/saved/static_base.webp"
         coEvery {
             fileStorage.saveStickerImageWithDecorations(
@@ -128,7 +128,7 @@ class StickerPackDraftSaverTest {
     @Test
     fun convertsPlainStaticDraftToAnimatedWebpWhenPackContainsAnimatedSticker() = runTest {
         val fileStorage = mockk<StickerFileStorage>()
-        coEvery { fileStorage.saveTrayImage("/tmp/tray.png", "tray_pack_1710000000000.png") } returns "/saved/tray.webp"
+        coEvery { fileStorage.trySaveTrayImage("/tmp/tray.png", "tray_pack_1710000000000.png") } returns "/saved/tray.webp"
         coEvery { fileStorage.saveStickerImage("/tmp/plain.png", "sticker_pack_0_base.webp") } returns "/saved/plain_base.webp"
         coEvery {
             fileStorage.encodeSingleFrameAnimatedWebP(
@@ -173,7 +173,7 @@ class StickerPackDraftSaverTest {
     fun usesUniqueTrayFileNameAcrossSequentialSaves() = runTest {
         val fileStorage = mockk<StickerFileStorage>()
         val trayNames = mutableListOf<String>()
-        coEvery { fileStorage.saveTrayImage("/tmp/tray.png", any()) } answers {
+        coEvery { fileStorage.trySaveTrayImage("/tmp/tray.png", any()) } answers {
             val trayName = secondArg<String>()
             trayNames += trayName
             "/saved/$trayName"
@@ -204,5 +204,47 @@ class StickerPackDraftSaverTest {
         assertTrue(trayNames[1].endsWith(".png"))
         assertTrue(trayNames[0] != trayNames[1])
         assertTrue(first.trayImageFile != second.trayImageFile)
+    }
+
+    @Test
+    fun leavesTrayEmptyWhenCompressionFails() = runTest {
+        val fileStorage = mockk<StickerFileStorage>()
+        coEvery { fileStorage.trySaveTrayImage("/tmp/tray.png", any()) } returns null
+        coEvery { fileStorage.saveStickerImage("/tmp/a.png", "sticker_pack_0_base.webp") } returns "/saved/a_base.webp"
+
+        val saver = StickerPackDraftSaver(fileStorage = fileStorage, nowEpochMillis = { 1710000000000L })
+        val pack = saver.buildDraftPack(
+            StickerDraftInput(
+                identifier = "pack",
+                name = "Pack",
+                publisher = "Pub",
+                visibility = "PRIVATE",
+                trayImagePath = "/tmp/tray.png",
+                stickers = listOf(StickerDraftInput.StickerInput(imagePath = "/tmp/a.png"))
+            )
+        )
+
+        assertEquals("", pack.trayImageFile)
+    }
+
+    @Test
+    fun skipsTraySaveWhenTrayPathBlank() = runTest {
+        val fileStorage = mockk<StickerFileStorage>()
+        coEvery { fileStorage.saveStickerImage("/tmp/a.png", "sticker_pack_0_base.webp") } returns "/saved/a_base.webp"
+
+        val saver = StickerPackDraftSaver(fileStorage = fileStorage, nowEpochMillis = { 1710000000000L })
+        val pack = saver.buildDraftPack(
+            StickerDraftInput(
+                identifier = "pack",
+                name = "Pack",
+                publisher = "Pub",
+                visibility = "PRIVATE",
+                trayImagePath = "",
+                stickers = listOf(StickerDraftInput.StickerInput(imagePath = "/tmp/a.png"))
+            )
+        )
+
+        assertEquals("", pack.trayImageFile)
+        coVerify(exactly = 0) { fileStorage.trySaveTrayImage(any(), any()) }
     }
 }

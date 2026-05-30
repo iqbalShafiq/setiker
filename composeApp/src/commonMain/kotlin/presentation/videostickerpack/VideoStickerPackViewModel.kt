@@ -92,15 +92,30 @@ class VideoStickerPackViewModel(
                     }.collect { (draft, completedJob, draftJobs) ->
                         if (draft == null) return@collect
                         val active = draftJobs.firstOrNull { it.status in ACTIVE_VIDEO_JOB_STATUSES }
+                        val hasTerminalJob = completedJob != null ||
+                            draftJobs.any {
+                                it.status in setOf(
+                                    AiJobStatus.FAILED_FINAL,
+                                    AiJobStatus.FAILED_RETRYABLE,
+                                    AiJobStatus.CANCELLED
+                                )
+                            }
                         _state.update { current ->
                             val next = draftResultApplier.applyToVideoPack(current, draft, completedJob)
                             next.copy(
-                                isProcessing = active != null,
-                                processingStep = active.toProcessingStep(),
+                                isProcessing = when {
+                                    active != null -> true
+                                    hasTerminalJob -> false
+                                    else -> next.isProcessing
+                                },
+                                processingStep = active.toProcessingStep()
+                                    ?: if (hasTerminalJob) null else next.processingStep,
                                 processingProgress = active?.progress?.fraction
-                                    ?: if (active != null) next.processingProgress else 0f,
+                                    ?: if (hasTerminalJob) 0f else next.processingProgress,
                                 backgroundJobMessage = active?.progress?.stepLabel
-                                    ?: active?.let { "Sedang diproses di background" }
+                                    ?: if (active != null) AI_JOB_FALLBACK_LABEL
+                                    else if (hasTerminalJob) null
+                                    else next.backgroundJobMessage
                             )
                         }
                     }
@@ -362,8 +377,11 @@ class VideoStickerPackViewModel(
             _state.update {
                 it.copy(
                     workspaceDraftId = draft.id,
+                    isProcessing = true,
+                    processingStep = VideoStickerPackProcessingStep.FindingFrames,
+                    processingProgress = 0f,
                     errorMessage = null,
-                    backgroundJobMessage = "Sedang diproses di background"
+                    backgroundJobMessage = AI_JOB_FALLBACK_LABEL
                 )
             }
         }
@@ -515,6 +533,7 @@ class VideoStickerPackViewModel(
 
     private companion object {
         const val PREVIEW_EXTRACT_DEBOUNCE_MS = 250L
+        private const val AI_JOB_FALLBACK_LABEL = "Processing..."
 
         private val ACTIVE_VIDEO_JOB_STATUSES = setOf(
             AiJobStatus.QUEUED,

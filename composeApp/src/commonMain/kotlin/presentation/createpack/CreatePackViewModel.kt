@@ -87,23 +87,36 @@ class CreatePackViewModel(
                         jobRepository.observeByDraft(draftId)
                     ) { draft, jobs ->
                         val active = jobs.firstOrNull {
-                            it.status in setOf(
-                                AiJobStatus.QUEUED,
-                                AiJobStatus.RUNNING,
-                                AiJobStatus.WAITING_FOR_NETWORK,
-                                AiJobStatus.CHECKPOINTED
-                            )
+                            it.status in ACTIVE_AI_JOB_STATUSES
+                        }
+                        val failed = jobs.firstOrNull {
+                            it.status in FAILED_AI_JOB_STATUSES
                         }
                         val completed = jobs.firstOrNull { it.status == AiJobStatus.COMPLETED }
-                        Triple(draft, active, completed)
-                    }.collect { (draft, active, completed) ->
+                        WorkspaceDraftJobState(draft, active, completed, failed)
+                    }.collect { jobState ->
+                        val draft = jobState.draft
                         if (draft == null) return@collect
                         _state.update { current ->
-                            val withJob = draftResultApplier.applyToCreatePack(current, draft, completed)
+                            val withJob = draftResultApplier.applyToCreatePack(current, draft, jobState.completed)
+                            val hasTerminalJob = jobState.completed != null || jobState.failed != null
                             withJob.copy(
-                                isApiLoading = false,
-                                backgroundJobMessage = active?.progress?.stepLabel
-                                    ?: if (active != null) "Sedang diproses di background" else null
+                                isApiLoading = when {
+                                    jobState.active != null -> true
+                                    hasTerminalJob -> false
+                                    else -> withJob.isApiLoading
+                                },
+                                backgroundJobMessage = jobState.active?.progress?.stepLabel
+                                    ?: if (jobState.active != null) {
+                                        AI_JOB_FALLBACK_LABEL
+                                    } else if (hasTerminalJob) {
+                                        null
+                                    } else {
+                                        withJob.backgroundJobMessage
+                                    },
+                                backgroundJobProgress = jobState.active?.progress?.fraction
+                                    ?: if (hasTerminalJob) 0f else withJob.backgroundJobProgress,
+                                error = jobState.failed?.failureMessage ?: withJob.error
                             )
                         }
                     }
@@ -383,6 +396,7 @@ class CreatePackViewModel(
                         publisher = currentState.publisher,
                         visibility = currentState.visibility,
                         trayImagePath = currentState.trayImagePath,
+                        strictTrayCompression = true,
                         stickers = currentState.stickers.map { draft ->
                             StickerDraftInput.StickerInput(
                                 imagePath = draft.imagePath,
@@ -432,9 +446,10 @@ class CreatePackViewModel(
             )
             _state.update {
                 it.copy(
-                    isApiLoading = false,
+                    isApiLoading = true,
                     error = null,
-                    backgroundJobMessage = "Sedang diproses di background"
+                    backgroundJobMessage = AI_JOB_FALLBACK_LABEL,
+                    backgroundJobProgress = 0f
                 )
             }
         }
@@ -458,9 +473,10 @@ class CreatePackViewModel(
             )
             _state.update {
                 it.copy(
-                    isApiLoading = false,
+                    isApiLoading = true,
                     error = null,
-                    backgroundJobMessage = "Sedang diproses di background",
+                    backgroundJobMessage = AI_JOB_FALLBACK_LABEL,
+                    backgroundJobProgress = 0f,
                     gridSplitSheetPhase = GridSplitSheetPhase.ConfirmPick
                 )
             }
@@ -547,9 +563,10 @@ class CreatePackViewModel(
             )
             _state.update {
                 it.copy(
-                    isApiLoading = false,
+                    isApiLoading = true,
                     error = null,
-                    backgroundJobMessage = "Sedang diproses di background"
+                    backgroundJobMessage = AI_JOB_FALLBACK_LABEL,
+                    backgroundJobProgress = 0f
                 )
             }
         }
@@ -572,5 +589,30 @@ class CreatePackViewModel(
                 generatedPreviewMode = GeneratedPreviewMode.AddToPack
             )
         }
+    }
+
+    private data class WorkspaceDraftJobState(
+        val draft: domain.model.aijob.WorkspaceDraft?,
+        val active: domain.model.aijob.AiJob?,
+        val completed: domain.model.aijob.AiJob?,
+        val failed: domain.model.aijob.AiJob?
+    )
+
+    private companion object {
+        private const val AI_JOB_FALLBACK_LABEL = "Processing..."
+
+        private val ACTIVE_AI_JOB_STATUSES = setOf(
+            AiJobStatus.QUEUED,
+            AiJobStatus.RUNNING,
+            AiJobStatus.WAITING_FOR_NETWORK,
+            AiJobStatus.CHECKPOINTED,
+            AiJobStatus.CANCEL_REQUESTED
+        )
+
+        private val FAILED_AI_JOB_STATUSES = setOf(
+            AiJobStatus.FAILED_FINAL,
+            AiJobStatus.FAILED_RETRYABLE,
+            AiJobStatus.CANCELLED
+        )
     }
 }

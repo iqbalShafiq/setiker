@@ -213,7 +213,7 @@ fun HomeScreen(
                         .padding(innerPadding)
                 )
             }
-            state.packs.isEmpty() -> {
+            !state.hasListContent -> {
                 EmptyState(
                     title = stringResource(Res.string.no_stickers_yet_title),
                     description = stringResource(Res.string.no_stickers_yet_desc),
@@ -238,8 +238,9 @@ fun HomeScreen(
                     )
 
                     val packsToShow = state.filteredPacks
+                    val processingPacksToShow = state.filteredProcessingPacks
 
-                    if (packsToShow.isEmpty() && state.searchQuery.isNotEmpty()) {
+                    if (packsToShow.isEmpty() && processingPacksToShow.isEmpty() && state.searchQuery.isNotEmpty()) {
                         EmptyState(
                             title = stringResource(Res.string.no_search_results_title),
                             description = stringResource(Res.string.no_search_results_desc),
@@ -254,6 +255,15 @@ fun HomeScreen(
                             ),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
+                            items(
+                                items = processingPacksToShow,
+                                key = { "processing_${it.draftId}" }
+                            ) { pack ->
+                                ProcessingPackListCard(
+                                    pack = pack,
+                                    modifier = Modifier.animateItem()
+                                )
+                            }
                             items(
                                 items = packsToShow,
                                 key = { it.identifier }

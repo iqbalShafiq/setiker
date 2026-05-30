@@ -149,7 +149,7 @@ fun AnimatedEditorScreen(
 
     val isReadyToSave = state.frames.isNotEmpty() && !state.isSaving
     val bottomOperationLabel = if (state.isSaving) {
-        state.saveProgressLabel ?: stringResource(Res.string.encoding_webp)
+        state.saveProgressLabel ?: state.backgroundJobMessage ?: stringResource(Res.string.encoding_webp)
     } else {
         null
     }
@@ -559,7 +559,7 @@ fun AnimatedEditorScreen(
 
     if (state.isSaving) {
         // Real progress: forwarded from saveAnimatedStickerImage's onProgress callback.
-        val label = state.saveProgressLabel ?: stringResource(Res.string.encoding_webp)
+        val label = state.saveProgressLabel ?: state.backgroundJobMessage ?: stringResource(Res.string.encoding_webp)
         ProgressDialog(
             title = stringResource(Res.string.encoding_progress_title),
             progress = state.saveProgress,

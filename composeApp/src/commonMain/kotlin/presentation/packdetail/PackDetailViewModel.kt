@@ -24,6 +24,7 @@ import setiker.composeapp.generated.resources.error_failed_add_stickers
 import setiker.composeapp.generated.resources.error_failed_delete_pack
 import setiker.composeapp.generated.resources.error_failed_delete_sticker
 import setiker.composeapp.generated.resources.error_pack_min_stickers_whatsapp
+import setiker.composeapp.generated.resources.error_tray_icon_required_whatsapp
 import setiker.composeapp.generated.resources.success_stickers_added
 
 class PackDetailViewModel(
@@ -105,6 +106,14 @@ class PackDetailViewModel(
                                 Res.string.error_pack_min_stickers_whatsapp,
                                 listOf(StickerPack.MIN_STICKERS)
                             )
+                        )
+                    )
+                    return@launch
+                }
+                if (pack.trayImageFile.isBlank()) {
+                    _effect.send(
+                        PackDetailEffect.ShowError(
+                            UiText.StringRes(Res.string.error_tray_icon_required_whatsapp)
                         )
                     )
                     return@launch

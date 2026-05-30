@@ -157,7 +157,11 @@ private fun VideoStickerPackBottomBar(
     }
 
     PackBottomBar(
-        actionStatusText = state.processingStep?.toUiLabel()?.takeIf { state.isProcessing },
+        actionStatusText = if (state.isProcessing) {
+            state.backgroundJobMessage ?: state.processingStep?.toUiLabel()
+        } else {
+            null
+        },
         actions = {
             PackBottomBarIconButton(
                 icon = Icons.AutoMirrored.Filled.ArrowBack,
@@ -387,7 +391,7 @@ private fun VideoProcessingSection(
         progress = { state.processingProgress.coerceIn(0f, 1f) },
         modifier = Modifier.fillMaxWidth()
     )
-    val processingLabel = state.processingStep?.toUiLabel().orEmpty()
+    val processingLabel = state.backgroundJobMessage ?: state.processingStep?.toUiLabel().orEmpty()
     if (processingLabel.isNotBlank()) {
         Text(
             text = processingLabel,

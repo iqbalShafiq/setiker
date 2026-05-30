@@ -20,6 +20,7 @@ import domain.model.aijob.WorkspaceDraftContext
 import domain.repository.StickerRepository
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -125,8 +126,7 @@ class HomeViewModel(
                             progressLabel = when {
                                 failed -> job?.failureMessage ?: "Gagal membuat pack"
                                 !job?.progress?.stepLabel.isNullOrBlank() -> job.progress.stepLabel
-                                job?.status == AiJobStatus.QUEUED -> "Antrian…"
-                                else -> "Memproses di background"
+                                else -> AI_JOB_FALLBACK_LABEL
                             },
                             isFailed = failed,
                             failureMessage = job?.failureMessage?.takeIf { failed }
@@ -138,6 +138,7 @@ class HomeViewModel(
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun observeHomeGenerateJob() {
         viewModelScope.launch {
             _state
@@ -186,6 +187,10 @@ class HomeViewModel(
                                         backgroundJobMessage = "${progress.stepLabel} ($percent%)"
                                     )
                                 }
+                            } else {
+                                _state.update {
+                                    it.copy(backgroundJobMessage = AI_JOB_FALLBACK_LABEL)
+                                }
                             }
                         }
                         else -> Unit
@@ -210,12 +215,15 @@ class HomeViewModel(
                                 UiText.StringRes(Res.string.success_generate_pack_background)
                             )
                         )
+                        _effect.send(HomeEffect.NavigateToPackDetail(packId))
                     }
                 }
         }
     }
 
     companion object {
+        private const val AI_JOB_FALLBACK_LABEL = "Processing..."
+
         private val FAILED_JOB_STATUSES = setOf(
             AiJobStatus.FAILED_FINAL,
             AiJobStatus.FAILED_RETRYABLE,
@@ -420,7 +428,7 @@ class HomeViewModel(
                     isGeneratePackLoading = true,
                     error = null,
                     homeWorkspaceDraftId = draft.id,
-                    backgroundJobMessage = "Sedang diproses di background"
+                    backgroundJobMessage = AI_JOB_FALLBACK_LABEL
                 )
             }
             _effect.send(

@@ -77,8 +77,8 @@ class EditorViewModelImproveTest {
         viewModel.onIntent(EditorIntent.UpdateImagePath("/tmp/source.png"))
         viewModel.onIntent(EditorIntent.ImproveSticker)
         advanceUntilIdle()
-        assertFalse(viewModel.state.value.isApiLoading)
-        assertEquals("Sedang diproses di background", viewModel.state.value.backgroundJobMessage)
+        assertTrue(viewModel.state.value.isApiLoading)
+        assertEquals("Processing...", viewModel.state.value.backgroundJobMessage)
 
         val draftId = viewModel.state.value.workspaceDraftId!!
         deps.jobsFlow.value = listOf(
@@ -109,8 +109,8 @@ class EditorViewModelImproveTest {
         viewModel.onIntent(EditorIntent.ImproveSticker)
         advanceUntilIdle()
 
-        assertFalse(viewModel.state.value.isApiLoading)
-        assertEquals("Sedang diproses di background", viewModel.state.value.backgroundJobMessage)
+        assertTrue(viewModel.state.value.isApiLoading)
+        assertEquals("Processing...", viewModel.state.value.backgroundJobMessage)
         coVerify(exactly = 1) { deps.manager.enqueue(any(), any(), any(), any(), any(), any(), any()) }
     }
 
