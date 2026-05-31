@@ -7,6 +7,10 @@
     <string name="generate_sticker_pack">Generate Sticker Pack</string>
     <string name="improve_sticker">Improve</string>
     <string name="improve_stickers">Improve stickers</string>
+    <string name="improve_confirm_title">Improve with AI?</string>
+    <string name="improve_confirm_message_sticker">Your sticker image will be sent to AI for enhancement. This may take a moment.</string>
+    <string name="improve_confirm_message_pack">Your static stickers will be sent to AI for enhancement. This may take a moment.</string>
+    <string name="improve_confirm_action">Improve</string>
     <string name="grid_split">Grid Split</string>
     <string name="update_pack">Update Pack</string>
     <string name="save_pack">Save Pack</string>
@@ -124,6 +128,9 @@
     <string name="edit_sticker_title">Edit Sticker</string>
     <string name="crop">Crop</string>
     <string name="remove_bg">Remove BG</string>
+    <string name="remove_bg_confirm_title">Remove background?</string>
+    <string name="remove_bg_confirm_message">Your sticker image will be sent to AI to remove the background. This may take a few seconds.</string>
+    <string name="remove_bg_confirm_action">Remove background</string>
     <string name="editor_action_hint">Tip: crop first for more precise background removal.</string>
     <string name="editor_remove_bg_progress_hint">Removing the background. This may take a few seconds.</string>
     <string name="tags_with_count">Tags (%1$d/%2$d)</string>

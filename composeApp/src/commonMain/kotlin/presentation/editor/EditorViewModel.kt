@@ -163,7 +163,11 @@ class EditorViewModel(
                     _effect.send(EditorEffect.NavigateToCrop(_state.value.imagePath))
                 }
             }
-            is EditorIntent.RemoveBackground -> removeBackground()
+            is EditorIntent.RequestRemoveBackground -> requestRemoveBackground()
+            is EditorIntent.ConfirmRemoveBackground -> removeBackground()
+            is EditorIntent.DismissRemoveBackgroundConfirm -> {
+                _state.update { it.copy(removeBackgroundConfirmVisible = false) }
+            }
             is EditorIntent.DismissBackgroundRemoverSheet -> dismissBackgroundRemoverSheet()
             is EditorIntent.ConfirmBackgroundRemoval -> confirmBackgroundRemoval()
             is EditorIntent.SetPackId -> {
@@ -251,12 +255,28 @@ class EditorViewModel(
                 _state.update { it.copy(generateInputImage = intent.path) }
             }
             is EditorIntent.GenerateSticker -> generateSticker()
-            is EditorIntent.ImproveSticker -> improveSticker()
+            is EditorIntent.RequestImproveSticker -> requestImproveSticker()
+            is EditorIntent.ConfirmImproveSticker -> improveSticker()
+            is EditorIntent.DismissImproveConfirm -> {
+                _state.update { it.copy(improveConfirmVisible = false) }
+            }
             is EditorIntent.ApplyGeneratedSticker -> applyGeneratedSticker(intent.draft)
             is EditorIntent.RestoreWorkspaceDraft -> restoreWorkspaceDraft(intent.draftId)
-            is EditorIntent.CloseGeneratedSheet -> {
+            is EditorIntent.DismissGeneratedResultsSheet -> {
+                _state.update { it.copy(generatedResultsSheetVisible = false) }
+            }
+            is EditorIntent.CancelGeneratedResults -> {
                 _state.update {
-                    it.copy(generatedPreview = emptyList())
+                    it.copy(
+                        generatedPreview = emptyList(),
+                        generatedResultsSheetVisible = false
+                    )
+                }
+            }
+            is EditorIntent.ShowGeneratedResultsSheet -> {
+                _state.update {
+                    if (it.generatedPreview.isEmpty() || it.isApiLoading) it
+                    else it.copy(generatedResultsSheetVisible = true)
                 }
             }
         }
@@ -271,7 +291,8 @@ class EditorViewModel(
             val defaultReference = it.imagePath.takeIf { path -> path.isNotBlank() }
             it.copy(
                 aiGenerateSheetOpen = true,
-                generateInputImage = defaultReference
+                generateInputImage = defaultReference,
+                improveConfirmVisible = false
             )
         }
     }
@@ -295,7 +316,10 @@ class EditorViewModel(
             _state.update {
                 it.copy(
                     isApiLoading = true,
-                    backgroundJobMessage = AI_JOB_FALLBACK_LABEL
+                    backgroundJobMessage = AI_JOB_FALLBACK_LABEL,
+                    aiGenerateSheetOpen = false,
+                    generatedResultsSheetVisible = false,
+                    generatedPreview = emptyList()
                 )
             }
         }
@@ -311,8 +335,21 @@ class EditorViewModel(
                 imagePath = draft.imagePath,
                 decorations = draft.decorations,
                 selectedDecorationId = null,
-                generatedPreview = emptyList()
+                generatedPreview = emptyList(),
+                generatedResultsSheetVisible = false
             )
+        }
+    }
+
+    private fun requestImproveSticker() {
+        if (_state.value.imagePath.isBlank()) {
+            viewModelScope.launch {
+                _effect.send(EditorEffect.ShowError(UiText.StringRes(Res.string.error_select_image)))
+            }
+            return
+        }
+        _state.update {
+            it.copy(improveConfirmVisible = true, removeBackgroundConfirmVisible = false)
         }
     }
 
@@ -323,14 +360,25 @@ class EditorViewModel(
                 _effect.send(EditorEffect.ShowError(UiText.StringRes(Res.string.error_select_image)))
                 return@launch
             }
-            val draft = upsertEditorDraft(currentState)
+            val draft = upsertEditorDraft(
+                currentState.copy(
+                    generatedPreview = emptyList(),
+                    generatedResultsSheetVisible = false
+                )
+            )
             enqueueHelper.enqueueImproveStickers(
                 draft = draft,
                 origin = AiJobOrigin.EDITOR,
                 payload = ImproveStickersPayload(imagePaths = listOf(currentState.imagePath))
             )
             _state.update {
-                it.copy(isApiLoading = true, backgroundJobMessage = AI_JOB_FALLBACK_LABEL)
+                it.copy(
+                    isApiLoading = true,
+                    backgroundJobMessage = AI_JOB_FALLBACK_LABEL,
+                    improveConfirmVisible = false,
+                    generatedResultsSheetVisible = false,
+                    generatedPreview = emptyList()
+                )
             }
         }
     }
@@ -586,6 +634,16 @@ class EditorViewModel(
         }
     }
 
+    private fun requestRemoveBackground() {
+        if (_state.value.imagePath.isBlank()) {
+            viewModelScope.launch {
+                _effect.send(EditorEffect.ShowError(UiText.StringRes(Res.string.error_select_image)))
+            }
+            return
+        }
+        _state.update { it.copy(removeBackgroundConfirmVisible = true, improveConfirmVisible = false) }
+    }
+
     private fun removeBackground() {
         val path = _state.value.imagePath
         if (path.isBlank()) {
@@ -607,7 +665,8 @@ class EditorViewModel(
                     isBackgroundRemoverSheetOpen = true,
                     isBackgroundRemoving = true,
                     backgroundRemoverPreviewPath = null,
-                    backgroundJobMessage = AI_JOB_FALLBACK_LABEL
+                    backgroundJobMessage = AI_JOB_FALLBACK_LABEL,
+                    removeBackgroundConfirmVisible = false
                 )
             }
         }

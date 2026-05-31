@@ -56,7 +56,7 @@ class CreatePackViewModelImproveTest {
             )
         )
 
-        viewModel.onIntent(CreatePackIntent.ImprovePackStickers)
+        viewModel.onIntent(CreatePackIntent.RequestImprovePackStickers)
         advanceUntilIdle()
 
         val effect = withTimeout(1_000) { viewModel.effect.first() }
@@ -76,7 +76,8 @@ class CreatePackViewModelImproveTest {
         viewModel.onIntent(CreatePackIntent.AddAnimatedDraft(DraftSticker(imagePath = "/tmp/a.webp", isAnimated = true)))
         viewModel.onIntent(CreatePackIntent.AddSticker("/tmp/static-2.png"))
 
-        viewModel.onIntent(CreatePackIntent.ImprovePackStickers)
+        viewModel.onIntent(CreatePackIntent.RequestImprovePackStickers)
+        viewModel.onIntent(CreatePackIntent.ConfirmImprovePackStickers)
         advanceUntilIdle()
         val draftId = viewModel.state.value.workspaceDraftId!!
         deps.jobsFlow.value = listOf(
@@ -96,6 +97,7 @@ class CreatePackViewModelImproveTest {
 
         coVerify(exactly = 1) { deps.manager.enqueue(any(), any(), any(), any(), any(), any(), any()) }
         assertFalse(viewModel.state.value.isApiLoading)
+        assertTrue(viewModel.state.value.generatedResultsSheetVisible)
         assertEquals(GeneratedPreviewMode.ReplacePack, viewModel.state.value.generatedPreviewMode)
         assertEquals(2, viewModel.state.value.generatedPreview.size)
         assertEquals(setOf(0, 1), viewModel.state.value.selectedGeneratedPreview)
@@ -110,7 +112,8 @@ class CreatePackViewModelImproveTest {
         viewModel.onIntent(CreatePackIntent.AddAnimatedDraft(DraftSticker(imagePath = "/tmp/a.webp", isAnimated = true)))
         viewModel.onIntent(CreatePackIntent.AddSticker("/tmp/static-2.png"))
 
-        viewModel.onIntent(CreatePackIntent.ImprovePackStickers)
+        viewModel.onIntent(CreatePackIntent.RequestImprovePackStickers)
+        viewModel.onIntent(CreatePackIntent.ConfirmImprovePackStickers)
         advanceUntilIdle()
         val draftId = viewModel.state.value.workspaceDraftId!!
         deps.jobsFlow.value = listOf(
@@ -154,7 +157,8 @@ class CreatePackViewModelImproveTest {
         val viewModel = createViewModel(deps)
         viewModel.onIntent(CreatePackIntent.AddSticker("/tmp/static.png"))
 
-        viewModel.onIntent(CreatePackIntent.ImprovePackStickers)
+        viewModel.onIntent(CreatePackIntent.RequestImprovePackStickers)
+        viewModel.onIntent(CreatePackIntent.ConfirmImprovePackStickers)
         advanceUntilIdle()
 
         coVerify(exactly = 1) { deps.manager.enqueue(any(), any(), any(), any(), any(), any(), any()) }
@@ -165,7 +169,8 @@ class CreatePackViewModelImproveTest {
         val deps = ViewModelAiJobTestSupport.createPackDependencies()
         val viewModel = createViewModel(deps)
         viewModel.onIntent(CreatePackIntent.AddSticker("/tmp/static.png"))
-        viewModel.onIntent(CreatePackIntent.ImprovePackStickers)
+        viewModel.onIntent(CreatePackIntent.RequestImprovePackStickers)
+        viewModel.onIntent(CreatePackIntent.ConfirmImprovePackStickers)
         advanceUntilIdle()
         val draftId = viewModel.state.value.workspaceDraftId!!
         deps.jobsFlow.value = listOf(
@@ -184,12 +189,37 @@ class CreatePackViewModelImproveTest {
     }
 
     @Test
+    fun dismissGeneratedResultsSheetKeepsPreviewForReopen() = runTest {
+        val deps = ViewModelAiJobTestSupport.createPackDependencies()
+        val viewModel = createViewModel(deps)
+        viewModel.onIntent(CreatePackIntent.AddSticker("/tmp/static.png"))
+        viewModel.onIntent(CreatePackIntent.RequestImprovePackStickers)
+        viewModel.onIntent(CreatePackIntent.ConfirmImprovePackStickers)
+        advanceUntilIdle()
+        val draftId = viewModel.state.value.workspaceDraftId!!
+        deps.jobsFlow.value = listOf(
+            ViewModelAiJobTestSupport.completeImproveJob(
+                draftId = draftId,
+                previews = listOf(DraftStickerSnapshot(imagePath = "/tmp/improved-1.png")),
+                replaceMode = true
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onIntent(CreatePackIntent.DismissGeneratedResultsSheet)
+
+        assertFalse(viewModel.state.value.generatedResultsSheetVisible)
+        assertEquals(1, viewModel.state.value.generatedPreview.size)
+    }
+
+    @Test
     fun replacePackWithGeneratedNoOpWhenEffectiveSelectionEmpty() = runTest {
         val deps = ViewModelAiJobTestSupport.createPackDependencies()
         val viewModel = createViewModel(deps)
         viewModel.onIntent(CreatePackIntent.AddSticker("/tmp/static-1.png"))
         viewModel.onIntent(CreatePackIntent.AddAnimatedDraft(DraftSticker(imagePath = "/tmp/a.webp", isAnimated = true)))
-        viewModel.onIntent(CreatePackIntent.ImprovePackStickers)
+        viewModel.onIntent(CreatePackIntent.RequestImprovePackStickers)
+        viewModel.onIntent(CreatePackIntent.ConfirmImprovePackStickers)
         advanceUntilIdle()
         val draftId = viewModel.state.value.workspaceDraftId!!
         deps.jobsFlow.value = listOf(

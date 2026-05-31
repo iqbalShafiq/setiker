@@ -165,7 +165,11 @@ class CreatePackViewModel(
                 _state.update { it.copy(gridSplitSourcePath = intent.path) }
             }
             is CreatePackIntent.GenerateStickers -> generateStickers()
-            is CreatePackIntent.ImprovePackStickers -> improvePackStickers()
+            is CreatePackIntent.RequestImprovePackStickers -> requestImprovePackStickers()
+            is CreatePackIntent.ConfirmImprovePackStickers -> improvePackStickers()
+            is CreatePackIntent.DismissImproveConfirm -> {
+                _state.update { it.copy(improveConfirmVisible = false) }
+            }
             is CreatePackIntent.ToggleGeneratedSelection -> {
                 _state.update {
                     if (intent.index !in it.generatedPreview.indices) return@update it
@@ -180,13 +184,29 @@ class CreatePackViewModel(
             }
             is CreatePackIntent.AddSelectedGeneratedToPack -> addSelectedGeneratedToPack()
             is CreatePackIntent.ReplacePackWithGenerated -> replacePackWithGenerated()
-            is CreatePackIntent.CloseGeneratedSheet -> {
+            is CreatePackIntent.DismissGeneratedResultsSheet -> {
+                _state.update { it.copy(generatedResultsSheetVisible = false) }
+            }
+            is CreatePackIntent.CancelGeneratedResults -> {
                 _state.update {
                     it.copy(
                         generatedPreview = emptyList(),
                         selectedGeneratedPreview = emptySet(),
-                        generatedPreviewMode = GeneratedPreviewMode.AddToPack
+                        generatedPreviewMode = GeneratedPreviewMode.AddToPack,
+                        generatedResultsSheetVisible = false
                     )
+                }
+            }
+            is CreatePackIntent.ShowGeneratedResultsSheet -> {
+                _state.update {
+                    if (it.generatedPreview.isEmpty() || it.isApiLoading) it
+                    else it.copy(generatedResultsSheetVisible = true)
+                }
+            }
+            is CreatePackIntent.ShowGridSplitResultsSheet -> {
+                _state.update {
+                    if (it.splitPreview.isEmpty() || it.isApiLoading) it
+                    else it.copy(gridSplitSheetPhase = GridSplitSheetPhase.Results)
                 }
             }
             is CreatePackIntent.RunGridSplit -> runGridSplit()
@@ -208,7 +228,7 @@ class CreatePackViewModel(
                 }
             }
             is CreatePackIntent.OpenAiGenerateSheet -> {
-                _state.update { it.copy(aiGenerateSheetOpen = true) }
+                _state.update { it.copy(aiGenerateSheetOpen = true, improveConfirmVisible = false) }
             }
             is CreatePackIntent.CloseAiGenerateSheet -> {
                 _state.update { it.copy(aiGenerateSheetOpen = false) }
@@ -216,12 +236,13 @@ class CreatePackViewModel(
             is CreatePackIntent.OpenGridConfirmSheet -> {
                 _state.update { it.copy(gridSplitSheetPhase = GridSplitSheetPhase.ConfirmPick) }
             }
-            is CreatePackIntent.CloseGridSheet -> {
+            is CreatePackIntent.DismissGridSheet -> {
+                _state.update { it.copy(gridSplitSheetPhase = GridSplitSheetPhase.Hidden) }
+            }
+            is CreatePackIntent.CancelGridSheet -> {
                 _state.update {
                     it.copy(
                         gridSplitSheetPhase = GridSplitSheetPhase.Hidden,
-                        generatedPreview = emptyList(),
-                        selectedGeneratedPreview = emptySet(),
                         splitPreview = emptyList(),
                         selectedSplitPreview = emptySet(),
                         gridSplitSourcePath = ""
@@ -449,7 +470,12 @@ class CreatePackViewModel(
                     isApiLoading = true,
                     error = null,
                     backgroundJobMessage = AI_JOB_FALLBACK_LABEL,
-                    backgroundJobProgress = 0f
+                    backgroundJobProgress = 0f,
+                    aiGenerateSheetOpen = false,
+                    generatedResultsSheetVisible = false,
+                    generatedPreview = emptyList(),
+                    selectedGeneratedPreview = emptySet(),
+                    generatedPreviewMode = GeneratedPreviewMode.AddToPack
                 )
             }
         }
@@ -477,7 +503,9 @@ class CreatePackViewModel(
                     error = null,
                     backgroundJobMessage = AI_JOB_FALLBACK_LABEL,
                     backgroundJobProgress = 0f,
-                    gridSplitSheetPhase = GridSplitSheetPhase.ConfirmPick
+                    gridSplitSheetPhase = GridSplitSheetPhase.ConfirmPick,
+                    splitPreview = emptyList(),
+                    selectedSplitPreview = emptySet()
                 )
             }
         }
@@ -530,7 +558,8 @@ class CreatePackViewModel(
                 stickers = (it.stickers + selected).take(StickerPack.MAX_STICKERS),
                 generatedPreview = emptyList(),
                 selectedGeneratedPreview = emptySet(),
-                generatedPreviewMode = GeneratedPreviewMode.AddToPack
+                generatedPreviewMode = GeneratedPreviewMode.AddToPack,
+                generatedResultsSheetVisible = false
             )
         }
         if (current.stickers.size + selected.size > StickerPack.MAX_STICKERS) {
@@ -538,6 +567,22 @@ class CreatePackViewModel(
                 _effect.send(CreatePackEffect.ShowError(UiText.StringRes(Res.string.error_partial_generate_not_added)))
             }
         }
+    }
+
+    private fun requestImprovePackStickers() {
+        val currentState = _state.value
+        val hasStatic = currentState.stickers.any { !it.isAnimated && it.imagePath.isNotBlank() }
+        if (!hasStatic) {
+            viewModelScope.launch {
+                _effect.send(
+                    CreatePackEffect.ShowError(
+                        UiText.StringRes(Res.string.error_no_static_stickers_to_improve)
+                    )
+                )
+            }
+            return
+        }
+        _state.update { it.copy(improveConfirmVisible = true) }
     }
 
     private fun improvePackStickers() {
@@ -555,7 +600,14 @@ class CreatePackViewModel(
                 return@launch
             }
 
-            val draft = upsertCreatePackDraft(currentState)
+            val draft = upsertCreatePackDraft(
+                currentState.copy(
+                    generatedPreview = emptyList(),
+                    selectedGeneratedPreview = emptySet(),
+                    generatedPreviewMode = GeneratedPreviewMode.AddToPack,
+                    generatedResultsSheetVisible = false
+                )
+            )
             enqueueHelper.enqueueImproveStickers(
                 draft = draft,
                 origin = AiJobOrigin.CREATE_PACK,
@@ -566,7 +618,12 @@ class CreatePackViewModel(
                     isApiLoading = true,
                     error = null,
                     backgroundJobMessage = AI_JOB_FALLBACK_LABEL,
-                    backgroundJobProgress = 0f
+                    backgroundJobProgress = 0f,
+                    improveConfirmVisible = false,
+                    generatedResultsSheetVisible = false,
+                    generatedPreview = emptyList(),
+                    selectedGeneratedPreview = emptySet(),
+                    generatedPreviewMode = GeneratedPreviewMode.AddToPack
                 )
             }
         }
@@ -586,7 +643,8 @@ class CreatePackViewModel(
                 stickers = (selected + animatedDrafts).take(StickerPack.MAX_STICKERS),
                 generatedPreview = emptyList(),
                 selectedGeneratedPreview = emptySet(),
-                generatedPreviewMode = GeneratedPreviewMode.AddToPack
+                generatedPreviewMode = GeneratedPreviewMode.AddToPack,
+                generatedResultsSheetVisible = false
             )
         }
     }

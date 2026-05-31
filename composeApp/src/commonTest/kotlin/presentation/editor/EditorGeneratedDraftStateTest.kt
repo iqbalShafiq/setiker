@@ -28,8 +28,8 @@ class EditorGeneratedDraftStateTest {
 
     @Test
     fun improveStickerIntentExistsForEditorAiImproveAction() {
-        val intent: EditorIntent = EditorIntent.ImproveSticker
+        val intent: EditorIntent = EditorIntent.RequestImproveSticker
 
-        assertEquals(EditorIntent.ImproveSticker, intent)
+        assertEquals(EditorIntent.RequestImproveSticker, intent)
     }
 }

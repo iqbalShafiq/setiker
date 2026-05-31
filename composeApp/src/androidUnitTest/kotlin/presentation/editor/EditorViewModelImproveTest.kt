@@ -54,7 +54,7 @@ class EditorViewModelImproveTest {
     fun improveStickerBlankImageEmitsSelectImageErrorAndDoesNotSetLoading() = runTest {
         val viewModel = createViewModel()
 
-        viewModel.onIntent(EditorIntent.ImproveSticker)
+        viewModel.onIntent(EditorIntent.RequestImproveSticker)
         advanceUntilIdle()
 
         val effect = withTimeout(1_000) { viewModel.effect.first() }
@@ -75,7 +75,8 @@ class EditorViewModelImproveTest {
         val viewModel = createViewModel(deps)
 
         viewModel.onIntent(EditorIntent.UpdateImagePath("/tmp/source.png"))
-        viewModel.onIntent(EditorIntent.ImproveSticker)
+        viewModel.onIntent(EditorIntent.RequestImproveSticker)
+        viewModel.onIntent(EditorIntent.ConfirmImproveSticker)
         advanceUntilIdle()
         assertTrue(viewModel.state.value.isApiLoading)
         assertEquals("Processing...", viewModel.state.value.backgroundJobMessage)
@@ -96,6 +97,7 @@ class EditorViewModelImproveTest {
         advanceUntilIdle()
 
         assertFalse(viewModel.state.value.isApiLoading)
+        assertTrue(viewModel.state.value.generatedResultsSheetVisible)
         assertEquals("/tmp/improved.png", viewModel.state.value.generatedPreview.single().imagePath)
         assertEquals(listOf(decoration), viewModel.state.value.generatedPreview.single().decorations)
     }
@@ -106,7 +108,8 @@ class EditorViewModelImproveTest {
         val viewModel = createViewModel(deps)
 
         viewModel.onIntent(EditorIntent.UpdateImagePath("/tmp/source.png"))
-        viewModel.onIntent(EditorIntent.ImproveSticker)
+        viewModel.onIntent(EditorIntent.RequestImproveSticker)
+        viewModel.onIntent(EditorIntent.ConfirmImproveSticker)
         advanceUntilIdle()
 
         assertTrue(viewModel.state.value.isApiLoading)

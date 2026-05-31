@@ -12,11 +12,16 @@ sealed interface CreatePackIntent {
     data class UpdateGenerateInputImage(val path: String?) : CreatePackIntent
     data class UpdateGridSplitSource(val path: String) : CreatePackIntent
     data object GenerateStickers : CreatePackIntent
-    data object ImprovePackStickers : CreatePackIntent
+    data object RequestImprovePackStickers : CreatePackIntent
+    data object ConfirmImprovePackStickers : CreatePackIntent
+    data object DismissImproveConfirm : CreatePackIntent
     data class ToggleGeneratedSelection(val index: Int) : CreatePackIntent
     data object AddSelectedGeneratedToPack : CreatePackIntent
     data object ReplacePackWithGenerated : CreatePackIntent
-    data object CloseGeneratedSheet : CreatePackIntent
+    data object DismissGeneratedResultsSheet : CreatePackIntent
+    data object CancelGeneratedResults : CreatePackIntent
+    data object ShowGeneratedResultsSheet : CreatePackIntent
+    data object ShowGridSplitResultsSheet : CreatePackIntent
     data object RunGridSplit : CreatePackIntent
     data class ToggleSplitSelection(val index: Int) : CreatePackIntent
     data object AddSelectedSplitToPack : CreatePackIntent
@@ -24,7 +29,8 @@ sealed interface CreatePackIntent {
     data object OpenAiGenerateSheet : CreatePackIntent
     data object CloseAiGenerateSheet : CreatePackIntent
     data object OpenGridConfirmSheet : CreatePackIntent
-    data object CloseGridSheet : CreatePackIntent
+    data object DismissGridSheet : CreatePackIntent
+    data object CancelGridSheet : CreatePackIntent
     data object SavePack : CreatePackIntent
     data class LoadPack(val packId: String) : CreatePackIntent
     data class StageStickerGalleryPick(val path: String) : CreatePackIntent

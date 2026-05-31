@@ -11,7 +11,9 @@ sealed interface EditorIntent {
     data class UpdateAccessibilityText(val text: String) : EditorIntent
     data object SaveSticker : EditorIntent
     data object NavigateToCrop : EditorIntent
-    data object RemoveBackground : EditorIntent
+    data object RequestRemoveBackground : EditorIntent
+    data object ConfirmRemoveBackground : EditorIntent
+    data object DismissRemoveBackgroundConfirm : EditorIntent
     data object DismissBackgroundRemoverSheet : EditorIntent
     data object ConfirmBackgroundRemoval : EditorIntent
     data class SetPackId(val packId: String, val stickerIndex: Int? = null) : EditorIntent
@@ -50,8 +52,12 @@ sealed interface EditorIntent {
     data class UpdateGeneratePrompt(val prompt: String) : EditorIntent
     data class UpdateGenerateInputImage(val path: String?) : EditorIntent
     data object GenerateSticker : EditorIntent
-    data object ImproveSticker : EditorIntent
+    data object RequestImproveSticker : EditorIntent
+    data object ConfirmImproveSticker : EditorIntent
+    data object DismissImproveConfirm : EditorIntent
     data class ApplyGeneratedSticker(val draft: DraftSticker) : EditorIntent
     data class RestoreWorkspaceDraft(val draftId: String) : EditorIntent
-    data object CloseGeneratedSheet : EditorIntent
+    data object DismissGeneratedResultsSheet : EditorIntent
+    data object CancelGeneratedResults : EditorIntent
+    data object ShowGeneratedResultsSheet : EditorIntent
 }

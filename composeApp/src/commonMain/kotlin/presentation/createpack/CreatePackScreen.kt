@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Movie
@@ -63,7 +64,9 @@ import presentation.components.PackBottomBarIconButton
 import presentation.components.SelectableStickerGrid
 import presentation.components.ReadOnlyDecorationOverlay
 import presentation.components.ScreenSectionTitle
+import presentation.aijob.AiResultSheetVisibility
 import presentation.components.AiGenerateBottomSheet
+import presentation.components.ImproveConfirmDialog
 import presentation.components.BottomSheetScrollColumn
 import presentation.components.zeroBottomSheetWindowInsets
 import presentation.components.rememberImagePicker
@@ -117,6 +120,7 @@ import setiker.composeapp.generated.resources.prompt_label
 import setiker.composeapp.generated.resources.prompt_placeholder
 import setiker.composeapp.generated.resources.publisher_label
 import setiker.composeapp.generated.resources.publisher_placeholder
+import setiker.composeapp.generated.resources.improve_confirm_message_pack
 import setiker.composeapp.generated.resources.improve_stickers
 import setiker.composeapp.generated.resources.remove_sticker
 import setiker.composeapp.generated.resources.replace_stickers
@@ -209,9 +213,23 @@ fun CreatePackScreen(
         )
     }
 
-    if (state.generatedPreview.isNotEmpty()) {
+    if (state.improveConfirmVisible) {
+        ImproveConfirmDialog(
+            message = stringResource(Res.string.improve_confirm_message_pack),
+            onConfirm = { onIntent(CreatePackIntent.ConfirmImprovePackStickers) },
+            onDismiss = { onIntent(CreatePackIntent.DismissImproveConfirm) }
+        )
+    }
+
+    if (
+        AiResultSheetVisibility.shouldShowGeneratedResultsSheet(
+            hasPreview = state.generatedPreview.isNotEmpty(),
+            sheetVisible = state.generatedResultsSheetVisible,
+            isAiJobInProgress = state.isApiLoading
+        )
+    ) {
         ModalBottomSheet(
-            onDismissRequest = { onIntent(CreatePackIntent.CloseGeneratedSheet) },
+            onDismissRequest = { onIntent(CreatePackIntent.DismissGeneratedResultsSheet) },
             sheetState = generatedSheetState,
             containerColor = neubrutalScreenBackground(),
             scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f),
@@ -275,7 +293,7 @@ fun CreatePackScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 AppSecondaryButton(
                     text = stringResource(Res.string.cancel),
-                    onClick = { onIntent(CreatePackIntent.CloseGeneratedSheet) }
+                    onClick = { onIntent(CreatePackIntent.CancelGeneratedResults) }
                 )
             }
         }
@@ -283,7 +301,7 @@ fun CreatePackScreen(
 
     if (state.gridSplitSheetPhase != GridSplitSheetPhase.Hidden) {
         ModalBottomSheet(
-            onDismissRequest = { onIntent(CreatePackIntent.CloseGridSheet) },
+            onDismissRequest = { onIntent(CreatePackIntent.DismissGridSheet) },
             sheetState = gridSheetState,
             containerColor = neubrutalScreenBackground(),
             scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f),
@@ -353,7 +371,7 @@ fun CreatePackScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                         AppSecondaryButton(
                             text = stringResource(Res.string.cancel),
-                            onClick = { onIntent(CreatePackIntent.CloseGridSheet) }
+                            onClick = { onIntent(CreatePackIntent.CancelGridSheet) }
                         )
                     }
 
@@ -397,7 +415,7 @@ fun CreatePackScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                         AppSecondaryButton(
                             text = stringResource(Res.string.cancel),
-                            onClick = { onIntent(CreatePackIntent.CloseGridSheet) }
+                            onClick = { onIntent(CreatePackIntent.CancelGridSheet) }
                         )
                     }
 
@@ -552,19 +570,31 @@ fun CreatePackScreen(
                     PackBottomBarIconButton(
                         icon = Icons.Filled.AutoAwesome,
                         contentDescription = stringResource(Res.string.generate_ai),
-                        onClick = { onIntent(CreatePackIntent.OpenAiGenerateSheet) },
+                        onClick = {
+                            if (state.generatedPreview.isNotEmpty() && !isOperationInProgress) {
+                                onIntent(CreatePackIntent.ShowGeneratedResultsSheet)
+                            } else {
+                                onIntent(CreatePackIntent.OpenAiGenerateSheet)
+                            }
+                        },
                         enabled = !isOperationInProgress
                     )
                     PackBottomBarIconButton(
-                        icon = Icons.Filled.AutoAwesome,
+                        icon = Icons.Filled.AutoFixHigh,
                         contentDescription = stringResource(Res.string.improve_stickers),
-                        onClick = { onIntent(CreatePackIntent.ImprovePackStickers) },
+                        onClick = { onIntent(CreatePackIntent.RequestImprovePackStickers) },
                         enabled = canImprovePack
                     )
                     PackBottomBarIconButton(
                         icon = Icons.Filled.ViewModule,
                         contentDescription = stringResource(Res.string.grid_split),
-                        onClick = { gridSourcePicker.launch() },
+                        onClick = {
+                            if (state.splitPreview.isNotEmpty() && !isOperationInProgress) {
+                                onIntent(CreatePackIntent.ShowGridSplitResultsSheet)
+                            } else {
+                                gridSourcePicker.launch()
+                            }
+                        },
                         enabled = !isOperationInProgress
                     )
                     PackBottomBarIconButton(

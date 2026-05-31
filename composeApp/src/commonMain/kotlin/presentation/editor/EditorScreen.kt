@@ -67,7 +67,10 @@ import domain.model.Sticker
 import domain.model.TextDecoration
 import org.jetbrains.compose.resources.stringResource
 import presentation.components.AddTextDecorationBottomSheet
+import presentation.aijob.AiResultSheetVisibility
 import presentation.components.AiGenerateBottomSheet
+import presentation.components.ImproveConfirmDialog
+import presentation.components.RemoveBackgroundConfirmDialog
 import presentation.components.BottomSheetScrollColumn
 import presentation.components.zeroBottomSheetWindowInsets
 import presentation.components.AppPrimaryButton
@@ -129,6 +132,7 @@ import setiker.composeapp.generated.resources.generate_ai
 import setiker.composeapp.generated.resources.generate_pick_result
 import setiker.composeapp.generated.resources.generate_replace_sticker_subtitle
 import setiker.composeapp.generated.resources.generate_replace_sticker_title
+import setiker.composeapp.generated.resources.improve_confirm_message_sticker
 import setiker.composeapp.generated.resources.improve_sticker
 import setiker.composeapp.generated.resources.remove_background_title
 import setiker.composeapp.generated.resources.remove_bg
@@ -212,19 +216,25 @@ fun EditorScreen(
                             PackBottomBarIconButton(
                                 icon = Icons.Filled.LayersClear,
                                 contentDescription = stringResource(Res.string.remove_bg),
-                                onClick = { onIntent(EditorIntent.RemoveBackground) },
+                                onClick = { onIntent(EditorIntent.RequestRemoveBackground) },
                                 enabled = state.imagePath.isNotBlank() && !isOperationInProgress
                             )
                             PackBottomBarIconButton(
                                 icon = Icons.Filled.AutoAwesome,
                                 contentDescription = stringResource(Res.string.generate_ai),
-                                onClick = { onIntent(EditorIntent.OpenAiGenerateSheet) },
+                                onClick = {
+                                    if (state.generatedPreview.isNotEmpty() && !isOperationInProgress) {
+                                        onIntent(EditorIntent.ShowGeneratedResultsSheet)
+                                    } else {
+                                        onIntent(EditorIntent.OpenAiGenerateSheet)
+                                    }
+                                },
                                 enabled = !isOperationInProgress
                             )
                             PackBottomBarIconButton(
                                 icon = Icons.Filled.AutoFixHigh,
                                 contentDescription = stringResource(Res.string.improve_sticker),
-                                onClick = { onIntent(EditorIntent.ImproveSticker) },
+                                onClick = { onIntent(EditorIntent.RequestImproveSticker) },
                                 enabled = state.imagePath.isNotBlank() && !isOperationInProgress
                             )
                         }
@@ -555,6 +565,21 @@ fun EditorScreen(
         )
     }
 
+    if (state.removeBackgroundConfirmVisible) {
+        RemoveBackgroundConfirmDialog(
+            onConfirm = { onIntent(EditorIntent.ConfirmRemoveBackground) },
+            onDismiss = { onIntent(EditorIntent.DismissRemoveBackgroundConfirm) }
+        )
+    }
+
+    if (state.improveConfirmVisible) {
+        ImproveConfirmDialog(
+            message = stringResource(Res.string.improve_confirm_message_sticker),
+            onConfirm = { onIntent(EditorIntent.ConfirmImproveSticker) },
+            onDismiss = { onIntent(EditorIntent.DismissImproveConfirm) }
+        )
+    }
+
     if (state.aiGenerateSheetOpen) {
         AiGenerateBottomSheet(
             prompt = state.generatePrompt,
@@ -570,10 +595,16 @@ fun EditorScreen(
         )
     }
 
-    if (state.generatedPreview.isNotEmpty()) {
+    if (
+        AiResultSheetVisibility.shouldShowGeneratedResultsSheet(
+            hasPreview = state.generatedPreview.isNotEmpty(),
+            sheetVisible = state.generatedResultsSheetVisible,
+            isAiJobInProgress = state.isApiLoading
+        )
+    ) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(
-            onDismissRequest = { onIntent(EditorIntent.CloseGeneratedSheet) },
+            onDismissRequest = { onIntent(EditorIntent.DismissGeneratedResultsSheet) },
             sheetState = sheetState,
             containerColor = neubrutalScreenBackground(),
             scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f),
@@ -615,7 +646,7 @@ fun EditorScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 AppSecondaryButton(
                     text = stringResource(Res.string.cancel),
-                    onClick = { onIntent(EditorIntent.CloseGeneratedSheet) },
+                    onClick = { onIntent(EditorIntent.CancelGeneratedResults) },
                     enabled = !isOperationInProgress
                 )
             }

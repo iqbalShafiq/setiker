@@ -29,6 +29,9 @@ data class CreatePackState(
     val generatedPreview: List<DraftSticker> = emptyList(),
     val selectedGeneratedPreview: Set<Int> = emptySet(),
     val generatedPreviewMode: GeneratedPreviewMode = GeneratedPreviewMode.AddToPack,
+    /** When false, generated previews are kept but the results bottom sheet is hidden. */
+    val generatedResultsSheetVisible: Boolean = false,
+    val improveConfirmVisible: Boolean = false,
     val gridSplitSourcePath: String = "",
     val splitPreview: List<DraftSticker> = emptyList(),
     val selectedSplitPreview: Set<Int> = emptySet(),

@@ -58,7 +58,8 @@ class DraftResultApplier(
                 next = next.copy(
                     generatedPreview = result.previews.map { it.toDraftSticker() },
                     selectedGeneratedPreview = result.previews.indices.toSet(),
-                    generatedPreviewMode = GeneratedPreviewMode.AddToPack
+                    generatedPreviewMode = GeneratedPreviewMode.AddToPack,
+                    generatedResultsSheetVisible = true
                 )
             }
             AiJobType.IMPROVE_STICKERS -> {
@@ -72,7 +73,8 @@ class DraftResultApplier(
                         GeneratedPreviewMode.ReplacePack
                     } else {
                         GeneratedPreviewMode.AddToPack
-                    }
+                    },
+                    generatedResultsSheetVisible = true
                 )
             }
             AiJobType.GRID_SPLIT -> {
@@ -106,7 +108,8 @@ class DraftResultApplier(
                     }
                 } ?: return next
                 next = next.copy(
-                    generatedPreview = result.previews.map { it.toDraftSticker() }
+                    generatedPreview = result.previews.map { it.toDraftSticker() },
+                    generatedResultsSheetVisible = true
                 )
             }
             AiJobType.REMOVE_BACKGROUND -> {
@@ -181,6 +184,30 @@ class DraftResultApplier(
             generatePrompt = context.prompt,
             generateInputImage = context.inputImagePath,
             gridSplitSourcePath = context.gridSplitSourcePath,
-            gridLayout = context.gridLayout ?: gridLayout
+            gridLayout = context.gridLayout ?: gridLayout,
+            generatedPreview = context.generatedPreview.map { it.toDraftSticker() }
+                .ifEmpty { generatedPreview },
+            selectedGeneratedPreview = if (context.generatedPreview.isNotEmpty()) {
+                context.selectedGeneratedPreview
+            } else {
+                selectedGeneratedPreview
+            },
+            generatedPreviewMode = if (context.generatedPreview.isNotEmpty()) {
+                context.generatedPreviewMode.toGeneratedPreviewMode()
+            } else {
+                generatedPreviewMode
+            },
+            splitPreview = context.splitPreview.map { it.toDraftSticker() }.ifEmpty { splitPreview },
+            selectedSplitPreview = if (context.splitPreview.isNotEmpty()) {
+                context.selectedSplitPreview
+            } else {
+                selectedSplitPreview
+            }
         )
+
+    private fun String.toGeneratedPreviewMode(): GeneratedPreviewMode =
+        when (this) {
+            "ReplaceInPack", "ReplacePack" -> GeneratedPreviewMode.ReplacePack
+            else -> GeneratedPreviewMode.AddToPack
+        }
 }
