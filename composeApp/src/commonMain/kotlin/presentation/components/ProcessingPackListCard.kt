@@ -2,6 +2,7 @@ package presentation.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,7 +34,8 @@ import presentation.theme.neubrutalShadowColor
 @Composable
 fun ProcessingPackListCard(
     pack: HomeProcessingPack,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
     val border = neubrutalBorderColor()
     val surface = neubrutalCardSurface()
@@ -56,6 +58,7 @@ fun ProcessingPackListCard(
                 cornerRadius = NeubrutalCardRadius,
                 highlightColor = neubrutalGlossyHighlightColor()
             )
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

@@ -46,6 +46,8 @@
     <string name="ai_quota_resets">Reset pada %1$s</string>
     <string name="profile_ai_quota_section">Kuota AI</string>
     <string name="settings_change_password">Ubah kata sandi</string>
+    <string name="settings_username">Nama pengguna</string>
+    <string name="settings_save_password_confirm_message">Simpan perubahan kata sandi?</string>
     <string name="settings_password_changed">Kata sandi diperbarui</string>
     <string name="settings_password_mismatch">Kata sandi baru tidak cocok</string>
     <string name="home_try_sample_pack_cta">Coba paket contoh</string>

@@ -321,6 +321,8 @@
     <string name="settings_current_password">Current password</string>
     <string name="settings_new_password">New password</string>
     <string name="settings_confirm_password">Confirm new password</string>
+    <string name="settings_username">Username</string>
+    <string name="settings_save_password_confirm_message">Save your password changes?</string>
     <string name="settings_password_changed">Password updated</string>
     <string name="settings_password_mismatch">New passwords do not match</string>
     <string name="home_try_sample_pack_cta">Try sample pack</string>

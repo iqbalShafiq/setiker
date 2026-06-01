@@ -25,6 +25,8 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.MaterialTheme
 
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 
 import androidx.compose.material3.Text
 
@@ -35,7 +37,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.padding
 
 import androidx.compose.ui.text.font.FontWeight
 
@@ -52,7 +53,6 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
 import presentation.components.AppIllustration
-import presentation.components.AiQuotaSummary
 import presentation.components.AppTopBar
 
 import presentation.components.DraftJobListCard
@@ -64,7 +64,6 @@ import presentation.components.LoadingIndicator
 import presentation.components.PackBottomBar
 
 import presentation.components.PackBottomBarFab
-
 import presentation.components.PackBottomBarIconButton
 
 import presentation.theme.neubrutalMutedOnSurface
@@ -76,11 +75,9 @@ import presentation.theme.neubrutalScreenBackground
 import setiker.composeapp.generated.resources.Res
 
 import setiker.composeapp.generated.resources.ai_jobs_empty_desc
-import setiker.composeapp.generated.resources.history_refresh
+import setiker.composeapp.generated.resources.back_content_description
 
 import setiker.composeapp.generated.resources.ai_jobs_empty_title
-
-import setiker.composeapp.generated.resources.back_content_description
 
 import setiker.composeapp.generated.resources.ai_jobs_running_status
 
@@ -127,7 +124,7 @@ fun AiJobsScreenRoot(
 
     val state by viewModel.state.collectAsState()
 
-    val snackbarHostState = androidx.compose.runtime.remember { androidx.compose.material3.SnackbarHostState() }
+    val snackbarHostState = androidx.compose.runtime.remember { SnackbarHostState() }
 
     androidx.compose.runtime.LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -140,16 +137,12 @@ fun AiJobsScreenRoot(
         }
     }
 
-    androidx.compose.material3.Scaffold(
-        snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) }
-    ) { padding ->
-        AiJobsScreen(
-            state = state,
-            onIntent = viewModel::onIntent,
-            onBackClick = onBackClick,
-            modifier = Modifier.padding(padding)
-        )
-    }
+    AiJobsScreen(
+        state = state,
+        onIntent = viewModel::onIntent,
+        onBackClick = onBackClick,
+        snackbarHostState = snackbarHostState
+    )
 }
 
 
@@ -163,6 +156,7 @@ fun AiJobsScreen(
     onIntent: (AiJobsIntent) -> Unit,
 
     onBackClick: () -> Unit,
+    snackbarHostState: SnackbarHostState,
 
     modifier: Modifier = Modifier
 
@@ -174,7 +168,9 @@ fun AiJobsScreen(
 
         topBar = {
 
-            AppTopBar(title = stringResource(Res.string.ai_jobs_title))
+            AppTopBar(
+                title = stringResource(Res.string.ai_jobs_title)
+            )
 
         },
 
@@ -193,17 +189,11 @@ fun AiJobsScreen(
                 },
 
                 actions = {
-
                     PackBottomBarIconButton(
-
                         icon = Icons.AutoMirrored.Filled.ArrowBack,
-
                         contentDescription = stringResource(Res.string.back_content_description),
-
                         onClick = onBackClick
-
                     )
-
                 },
 
                 floatingActionButton = {
@@ -227,6 +217,7 @@ fun AiJobsScreen(
             )
 
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
 
         containerColor = neubrutalScreenBackground(),
 
@@ -263,15 +254,6 @@ fun AiJobsScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
 
             ) {
-                item(key = "ai_quota_banner") {
-                    AiQuotaSummary(
-                        usage = state.aiUsage,
-                        isLoading = state.isLoadingAiUsage,
-                        hasError = state.aiUsageLoadFailed,
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-                    )
-                }
-
                 grouped.forEach { section ->
 
                     item(key = "header_${section.titleKey}") {
@@ -609,4 +591,3 @@ private fun groupDrafts(
     }
 
 }
-

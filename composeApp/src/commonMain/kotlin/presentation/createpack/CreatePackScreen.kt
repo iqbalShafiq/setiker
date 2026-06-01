@@ -55,7 +55,6 @@ import org.jetbrains.compose.resources.stringResource
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
 import presentation.components.AppIllustration
-import presentation.components.AppIllustrationImage
 import presentation.components.AppTextField
 import presentation.components.AppTopBar
 import presentation.components.InteractionBlockedBox
@@ -629,13 +628,6 @@ fun CreatePackScreen(
                         .padding(horizontal = 20.dp, vertical = 16.dp)
                         .verticalScroll(rememberScrollState())
                 ) {
-                AppIllustrationImage(
-                    illustration = if (state.isEditing) AppIllustration.EditorTools else AppIllustration.EmptyPack,
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .padding(bottom = 18.dp)
-                )
-
                 AppTextField(
                     value = state.name,
                     onValueChange = { onIntent(CreatePackIntent.UpdateName(it)) },

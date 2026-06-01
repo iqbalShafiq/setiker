@@ -16,8 +16,10 @@ data class SettingsState(
     val currentPassword: String = "",
     val newPassword: String = "",
     val confirmPassword: String = "",
+    val username: String = "",
     val isChangingPassword: Boolean = false,
-    val changePasswordError: UiText? = null
+    val changePasswordError: UiText? = null,
+    val showSavePasswordConfirm: Boolean = false
 )
 
 sealed interface SettingsIntent {
@@ -36,6 +38,8 @@ sealed interface SettingsIntent {
     data class UpdateNewPassword(val value: String) : SettingsIntent
     data class UpdateConfirmPassword(val value: String) : SettingsIntent
     data object SubmitChangePassword : SettingsIntent
+    data object ShowSavePasswordConfirm : SettingsIntent
+    data object DismissSavePasswordConfirm : SettingsIntent
 }
 
 sealed interface SettingsEffect {

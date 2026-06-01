@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Feedback
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -95,8 +97,13 @@ import setiker.composeapp.generated.resources.profile_guest_login_prompt
 import setiker.composeapp.generated.resources.profile_processing_history
 import setiker.composeapp.generated.resources.send_feedback
 import setiker.composeapp.generated.resources.settings
+import setiker.composeapp.generated.resources.settings_legal_section
+import setiker.composeapp.generated.resources.settings_privacy
+import setiker.composeapp.generated.resources.settings_retention
+import setiker.composeapp.generated.resources.settings_terms
 import setiker.composeapp.generated.resources.stickers_label
 import setiker.composeapp.generated.resources.support_section
+import util.rememberUrlLauncher
 
 @Composable
 fun ProfileScreenRoot(
@@ -111,6 +118,7 @@ fun ProfileScreenRoot(
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.state.collectAsState()
+    val openUrl = rememberUrlLauncher()
 
     ProfileScreen(
         state = state,
@@ -122,6 +130,13 @@ fun ProfileScreenRoot(
         onNavigateExplore = onNavigateExplore,
         onNavigateHistory = onNavigateHistory,
         onNavigateAiJobs = onNavigateAiJobs,
+        onOpenPrivacy = { state.legalSummary?.privacyUrl?.let(openUrl) },
+        onOpenTerms = { state.legalSummary?.termsUrl?.let(openUrl) },
+        onOpenRetention = {
+            state.legalSummary?.let { summary ->
+                openUrl(summary.retentionUrl ?: summary.privacyUrl)
+            }
+        },
         onBackClick = onBackClick,
         onSettingsClick = onSettingsClick,
         modifier = modifier
@@ -136,6 +151,9 @@ fun ProfileScreen(
     onNavigateExplore: () -> Unit = {},
     onNavigateHistory: () -> Unit = {},
     onNavigateAiJobs: () -> Unit = {},
+    onOpenPrivacy: () -> Unit = {},
+    onOpenTerms: () -> Unit = {},
+    onOpenRetention: () -> Unit = {},
     onBackClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -258,6 +276,35 @@ fun ProfileScreen(
                                 label = stringResource(Res.string.profile_ai_jobs_menu),
                                 iconBackgroundColor = PastelPurple,
                                 onClick = onNavigateAiJobs
+                            )
+                        }
+                    }
+                }
+
+                item {
+                    Column {
+                        SectionTitle(text = stringResource(Res.string.settings_legal_section))
+                        Spacer(modifier = Modifier.height(8.dp))
+                        MenuCard(borderColor = borderColor, shadowColor = shadowColor, cardSurface = cardSurface) {
+                            ProfileMenuItem(
+                                icon = Icons.Default.Description,
+                                label = stringResource(Res.string.settings_privacy),
+                                iconBackgroundColor = PastelMint,
+                                onClick = onOpenPrivacy
+                            )
+                            MenuDivider()
+                            ProfileMenuItem(
+                                icon = Icons.Default.Info,
+                                label = stringResource(Res.string.settings_terms),
+                                iconBackgroundColor = PastelYellow,
+                                onClick = onOpenTerms
+                            )
+                            MenuDivider()
+                            ProfileMenuItem(
+                                icon = Icons.Default.Storage,
+                                label = stringResource(Res.string.settings_retention),
+                                iconBackgroundColor = PastelBlue,
+                                onClick = onOpenRetention
                             )
                         }
                     }

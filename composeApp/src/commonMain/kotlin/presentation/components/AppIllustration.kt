@@ -7,12 +7,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
-import presentation.theme.NeubrutalCardRadius
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.illustration_auth_cloud
 import setiker.composeapp.generated.resources.illustration_auth_cloud_dark
@@ -88,10 +86,10 @@ fun AppIllustrationImage(
         painter = painterResource(resource),
         contentDescription = contentDescription,
         contentScale = ContentScale.Fit,
-        modifier = modifier
+        modifier = Modifier
             .widthIn(max = 360.dp)
             .fillMaxWidth()
             .aspectRatio(4f / 3f)
-            .clip(androidx.compose.foundation.shape.RoundedCornerShape(NeubrutalCardRadius))
+            .then(modifier)
     )
 }

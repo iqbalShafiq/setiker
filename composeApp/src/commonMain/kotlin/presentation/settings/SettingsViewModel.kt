@@ -72,6 +72,8 @@ class SettingsViewModel(
             is SettingsIntent.UpdateNewPassword -> _state.update { it.copy(newPassword = intent.value) }
             is SettingsIntent.UpdateConfirmPassword -> _state.update { it.copy(confirmPassword = intent.value) }
             SettingsIntent.SubmitChangePassword -> changePassword()
+            SettingsIntent.ShowSavePasswordConfirm -> _state.update { it.copy(showSavePasswordConfirm = true) }
+            SettingsIntent.DismissSavePasswordConfirm -> _state.update { it.copy(showSavePasswordConfirm = false) }
         }
     }
 
@@ -89,7 +91,7 @@ class SettingsViewModel(
                 _effect.send(SettingsEffect.ShowMessage(UiText.StringRes(Res.string.error_auth_not_authenticated)))
                 return@launch
             }
-            _state.update { it.copy(isChangingPassword = true, changePasswordError = null) }
+            _state.update { it.copy(isChangingPassword = true, changePasswordError = null, showSavePasswordConfirm = false) }
             runCatching {
                 authApiService.changePassword(
                     token,
@@ -102,10 +104,10 @@ class SettingsViewModel(
                 _state.update {
                     it.copy(
                         isChangingPassword = false,
-                        showChangePassword = false,
                         currentPassword = "",
                         newPassword = "",
-                        confirmPassword = ""
+                        confirmPassword = "",
+                        showSavePasswordConfirm = false
                     )
                 }
                 _effect.send(SettingsEffect.ShowMessage(UiText.StringRes(Res.string.settings_password_changed)))
@@ -121,7 +123,15 @@ class SettingsViewModel(
 
     private fun load() {
         viewModelScope.launch {
-            _state.update { it.copy(isLoadingLegal = true, isLoadingUsage = true, usageError = false) }
+            val user = authManager.getUser()
+            _state.update {
+                it.copy(
+                    username = user?.username.orEmpty(),
+                    isLoadingLegal = true,
+                    isLoadingUsage = true,
+                    usageError = false
+                )
+            }
             runCatching { legalApiRepository.getSummary() }
                 .onSuccess { summary ->
                     _state.update { it.copy(isLoadingLegal = false, legalSummary = summary) }

@@ -3,7 +3,9 @@ package presentation.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import data.auth.AuthManager
+import data.remote.LegalApiRepository
 import domain.model.AiUsage
+import domain.model.LegalSummary
 import domain.model.User
 import domain.repository.AiQuotaRepository
 import domain.repository.StickerRepository
@@ -20,13 +22,15 @@ data class ProfileState(
     val downloadsCount: Int = 0,
     val aiUsage: AiUsage? = null,
     val isLoadingAiUsage: Boolean = false,
-    val aiUsageLoadFailed: Boolean = false
+    val aiUsageLoadFailed: Boolean = false,
+    val legalSummary: LegalSummary? = null
 )
 
 class ProfileViewModel(
     private val authManager: AuthManager,
     private val stickerRepository: StickerRepository,
-    private val aiQuotaRepository: AiQuotaRepository
+    private val aiQuotaRepository: AiQuotaRepository,
+    private val legalApiRepository: LegalApiRepository
 ) : ViewModel() {
     
     private val _state = MutableStateFlow(ProfileState())
@@ -44,6 +48,7 @@ class ProfileViewModel(
             } else {
                 null
             }
+            val legalSummary = runCatching { legalApiRepository.getSummary() }.getOrNull()
             _state.value = ProfileState(
                 user = user,
                 isLoading = false,
@@ -52,7 +57,8 @@ class ProfileViewModel(
                 downloadsCount = 0,
                 aiUsage = usage,
                 isLoadingAiUsage = false,
-                aiUsageLoadFailed = user != null && usage == null
+                aiUsageLoadFailed = user != null && usage == null,
+                legalSummary = legalSummary
             )
         }
     }

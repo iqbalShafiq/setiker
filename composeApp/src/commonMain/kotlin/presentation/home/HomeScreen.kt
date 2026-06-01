@@ -299,6 +299,7 @@ fun HomeScreen(
                             ) { pack ->
                                 ProcessingPackListCard(
                                     pack = pack,
+                                    onClick = { onIntent(HomeIntent.NavigateToAiJobs) },
                                     modifier = Modifier.animateItem()
                                 )
                             }
