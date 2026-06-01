@@ -3,12 +3,12 @@ package presentation.components
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import domain.model.AiQuotaOperation
 import domain.model.AiUsage
@@ -16,18 +16,11 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
+import presentation.theme.neubrutalMutedOnSurface
 import setiker.composeapp.generated.resources.Res
-import setiker.composeapp.generated.resources.ai_quota_action_cost
 import setiker.composeapp.generated.resources.ai_quota_loading
-import setiker.composeapp.generated.resources.ai_quota_points_summary
-import setiker.composeapp.generated.resources.ai_quota_resets
 import setiker.composeapp.generated.resources.ai_quota_unavailable
-import setiker.composeapp.generated.resources.ai_quota_usage_breakdown
-import setiker.composeapp.generated.resources.settings_ai_usage_cost_generate
-import setiker.composeapp.generated.resources.settings_ai_usage_cost_grid
-import setiker.composeapp.generated.resources.settings_ai_usage_cost_improve
-import setiker.composeapp.generated.resources.settings_ai_usage_cost_remove_bg
-import setiker.composeapp.generated.resources.settings_ai_usage_cost_video
+import kotlin.math.roundToInt
 
 @Composable
 fun AiQuotaSummary(
@@ -49,7 +42,7 @@ fun AiQuotaSummary(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
-                Text(stringResource(Res.string.ai_quota_loading))
+                AiQuotaLine(text = stringResource(Res.string.ai_quota_loading))
             }
             hasError -> {
                 if (showIllustration) {
@@ -59,76 +52,34 @@ fun AiQuotaSummary(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
-                Text(stringResource(Res.string.ai_quota_unavailable))
+                AiQuotaLine(text = stringResource(Res.string.ai_quota_unavailable))
             }
             usage != null -> {
-                Text(
-                    text = stringResource(
-                        Res.string.ai_quota_points_summary,
-                        usage.pointsRemaining,
-                        usage.pointLimit
-                    ),
-                    style = MaterialTheme.typography.titleMedium
-                )
-                usage.resetsAt?.let { resetsAt ->
-                    Text(
-                        text = stringResource(Res.string.ai_quota_resets, formatQuotaResetTime(resetsAt)),
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-                Text(
-                    text = stringResource(
-                        Res.string.ai_quota_usage_breakdown,
-                        usage.pointsUsed,
-                        usage.pointsOutstanding
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-                highlightOperation?.let { operation ->
-                    val cost = usage.costFor(operation)
-                    if (cost > 0) {
-                        Text(
-                            text = stringResource(Res.string.ai_quota_action_cost, cost),
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
-                    }
-                }
-                if (showOperationCosts) {
-                    val costs = usage.operationCosts
-                    Text(
-                        text = stringResource(Res.string.settings_ai_usage_cost_generate, costs.generate),
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                    Text(
-                        text = stringResource(Res.string.settings_ai_usage_cost_grid, costs.gridSplit),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        text = stringResource(
-                            Res.string.settings_ai_usage_cost_remove_bg,
-                            costs.backgroundRemove
-                        ),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        text = stringResource(
-                            Res.string.settings_ai_usage_cost_video,
-                            costs.videoStickerPack
-                        ),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        text = stringResource(Res.string.settings_ai_usage_cost_improve, costs.improve),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
+                AiQuotaLine(text = usage.compactQuotaText())
             }
         }
     }
+}
+
+@Composable
+private fun AiQuotaLine(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = neubrutalMutedOnSurface(),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
+    )
+}
+
+private fun AiUsage.compactQuotaText(): String {
+    val percentage = if (pointLimit > 0) {
+        ((pointsRemaining.toFloat() / pointLimit.toFloat()) * 100f).roundToInt().coerceIn(0, 100)
+    } else {
+        0
+    }
+    val resetText = resetsAt?.let { " • Resets at ${formatQuotaResetTime(it)}" }.orEmpty()
+    return "$percentage% usages left$resetText"
 }
 
 private fun formatQuotaResetTime(value: String): String {

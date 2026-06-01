@@ -98,6 +98,15 @@ fun AiGenerateStickerPackBottomSheet(
                 fontWeight = FontWeight.Bold,
                 color = neubrutalOnSurface()
             )
+            if (aiUsage != null || isLoadingQuota || quotaLoadFailed) {
+                Spacer(modifier = Modifier.height(4.dp))
+                AiQuotaSummary(
+                    usage = aiUsage,
+                    isLoading = isLoadingQuota,
+                    hasError = quotaLoadFailed,
+                    highlightOperation = AiQuotaOperation.GENERATE
+                )
+            }
             Spacer(modifier = Modifier.height(16.dp))
 
             AppTextField(
@@ -209,15 +218,6 @@ fun AiGenerateStickerPackBottomSheet(
                 )
             }
 
-            if (aiUsage != null || isLoadingQuota || quotaLoadFailed) {
-                Spacer(modifier = Modifier.height(12.dp))
-                AiQuotaSummary(
-                    usage = aiUsage,
-                    isLoading = isLoadingQuota,
-                    hasError = quotaLoadFailed,
-                    highlightOperation = AiQuotaOperation.GENERATE
-                )
-            }
             Spacer(modifier = Modifier.height(20.dp))
             AppPrimaryButton(
                 text = stringResource(if (isGenerating) Res.string.generating else Res.string.generate_sticker_pack),
@@ -233,4 +233,3 @@ fun AiGenerateStickerPackBottomSheet(
         }
     }
 }
-
