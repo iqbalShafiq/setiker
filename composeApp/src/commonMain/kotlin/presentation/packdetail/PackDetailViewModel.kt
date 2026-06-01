@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
+import presentation.common.preferredShareText
 import presentation.common.UiText
 import presentation.common.toUiText
 import setiker.composeapp.generated.resources.Res
@@ -25,6 +26,7 @@ import setiker.composeapp.generated.resources.error_failed_delete_pack
 import setiker.composeapp.generated.resources.error_failed_delete_sticker
 import setiker.composeapp.generated.resources.error_pack_min_stickers_whatsapp
 import setiker.composeapp.generated.resources.error_tray_icon_required_whatsapp
+import setiker.composeapp.generated.resources.pack_duplicate_success
 import setiker.composeapp.generated.resources.success_stickers_added
 
 class PackDetailViewModel(
@@ -73,6 +75,21 @@ class PackDetailViewModel(
             PackDetailIntent.RefreshCloudShareLinks -> refreshCloudShareLinks()
             PackDetailIntent.CreateCloudShareLink -> createCloudShareLink()
             is PackDetailIntent.RevokeCloudShareLink -> revokeCloudShareLink(intent.linkId)
+            PackDetailIntent.DuplicatePack -> duplicatePack()
+        }
+    }
+
+    private fun duplicatePack() {
+        val packId = _state.value.pack?.identifier ?: return
+        viewModelScope.launch {
+            runCatching { repository.duplicatePack(packId) }
+                .onSuccess { newPackId ->
+                    _effect.send(PackDetailEffect.ShowSuccess(UiText.StringRes(Res.string.pack_duplicate_success)))
+                    _effect.send(PackDetailEffect.NavigateToDuplicatedPack(newPackId))
+                }
+                .onFailure { error ->
+                    _effect.send(PackDetailEffect.ShowError(error.toUiText(Res.string.error_failed_add_pack)))
+                }
         }
     }
 
@@ -161,7 +178,7 @@ class PackDetailViewModel(
             runCatching {
                 exploreApiRepository.createPackLink(cloudId, CreateStickerPackLinkRequest())
             }.onSuccess { link ->
-                val shareUrl = link.shareUrl ?: "${cloudId}:${link.token}"
+                val shareUrl = link.preferredShareText()
                 _state.update {
                     it.copy(
                         cloudShareLinksLoading = false,

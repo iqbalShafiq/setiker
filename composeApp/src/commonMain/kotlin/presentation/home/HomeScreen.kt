@@ -44,7 +44,9 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 import presentation.components.AppTopBar
 import presentation.components.AppTopBarBadgedActionIcon
 import presentation.components.AiGenerateStickerPackBottomSheet
+import presentation.components.AppIllustration
 import presentation.components.EmptyState
+import presentation.components.OfflineBanner
 import presentation.components.HomeBottomBar
 import presentation.components.LoadingIndicator
 import presentation.components.NeubrutalIconButton
@@ -65,7 +67,10 @@ import setiker.composeapp.generated.resources.no_stickers_yet_desc
 import setiker.composeapp.generated.resources.no_stickers_yet_title
 import setiker.composeapp.generated.resources.search
 import setiker.composeapp.generated.resources.search_packs_placeholder
+import setiker.composeapp.generated.resources.error_load_packs_failed
+import setiker.composeapp.generated.resources.home_try_sample_pack
 import setiker.composeapp.generated.resources.home_ai_jobs_cd
+import setiker.composeapp.generated.resources.retry
 import setiker.composeapp.generated.resources.sort_content_description
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -75,6 +80,7 @@ fun HomeScreen(
     onIntent: (HomeIntent) -> Unit,
     onPackClick: (String) -> Unit,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    showOfflineBanner: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val generateInputImagePicker = rememberImagePicker { path ->
@@ -205,21 +211,52 @@ fun HomeScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
+        if (showOfflineBanner) {
+            OfflineBanner(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .padding(horizontal = 20.dp, vertical = 8.dp)
+            )
+        }
         when {
             state.isLoading -> {
                 LoadingIndicator(
                     modifier = modifier
                         .fillMaxSize()
-                        .padding(innerPadding)
+                        .padding(innerPadding),
+                    illustration = AppIllustration.LoadingState
+                )
+            }
+            state.loadFailed -> {
+                EmptyState(
+                    title = stringResource(Res.string.error_load_packs_failed),
+                    description = stringResource(Res.string.no_stickers_yet_desc),
+                    illustration = AppIllustration.ErrorState,
+                    modifier = modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                    action = {
+                        presentation.components.AppPrimaryButton(
+                            text = stringResource(Res.string.retry),
+                            onClick = { onIntent(HomeIntent.RetryLoadPacks) }
+                        )
+                    }
                 )
             }
             !state.hasListContent -> {
                 EmptyState(
                     title = stringResource(Res.string.no_stickers_yet_title),
                     description = stringResource(Res.string.no_stickers_yet_desc),
+                    illustration = AppIllustration.EmptyPack,
                     modifier = modifier
                         .fillMaxSize()
-                        .padding(innerPadding)
+                        .padding(innerPadding),
+                    action = {
+                        presentation.components.AppPrimaryButton(
+                            text = stringResource(Res.string.home_try_sample_pack),
+                            onClick = { onIntent(HomeIntent.CreateNewPack) }
+                        )
+                    }
                 )
             }
             else -> {
@@ -244,6 +281,7 @@ fun HomeScreen(
                         EmptyState(
                             title = stringResource(Res.string.no_search_results_title),
                             description = stringResource(Res.string.no_search_results_desc),
+                            illustration = AppIllustration.SearchEmpty,
                             modifier = Modifier.fillMaxSize()
                         )
                     } else {
@@ -303,7 +341,10 @@ fun HomeScreen(
                 onClearInputImage = { onIntent(HomeIntent.UpdateGeneratePackInputImage(null)) },
                 isGenerating = state.isGeneratePackLoading,
                 onGenerate = { onIntent(HomeIntent.GenerateStickerPack) },
-                onDismiss = { onIntent(HomeIntent.CloseGeneratePackSheet) }
+                onDismiss = { onIntent(HomeIntent.CloseGeneratePackSheet) },
+                aiUsage = state.aiUsage,
+                isLoadingQuota = state.isLoadingAiUsage,
+                quotaLoadFailed = state.aiUsageLoadFailed
             )
         }
     }

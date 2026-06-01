@@ -30,7 +30,8 @@ class AuthTokenRefresher(
         // The API rotates refresh tokens on every refresh and returns the new one as a cookie.
         // Persist it immediately so process restarts do not keep an already-invalidated token.
         val rotatedRefreshToken = authApiService.getRefreshToken() ?: storedRefreshToken.orEmpty()
-        authManager.saveTokens(accessToken, rotatedRefreshToken, expiresIn = 3600)
+        val expiresIn = (response.data.expiresIn ?: 3600).toLong()
+        authManager.saveTokens(accessToken, rotatedRefreshToken, expiresIn = expiresIn)
         accessToken
     }
 }

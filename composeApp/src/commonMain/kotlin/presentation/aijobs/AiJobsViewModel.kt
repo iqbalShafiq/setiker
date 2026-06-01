@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import data.aijob.AiJobManager
 import domain.model.aijob.WorkspaceDraftStatus
 import domain.repository.AiJobRepository
+import domain.repository.AiQuotaRepository
 import domain.repository.WorkspaceDraftRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,11 +15,16 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.time.Clock
+import presentation.common.UiText
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.ai_jobs_retry_failed
 
 class AiJobsViewModel(
     private val draftRepository: WorkspaceDraftRepository,
     private val jobRepository: AiJobRepository,
-    private val aiJobManager: AiJobManager
+    private val aiJobManager: AiJobManager,
+    private val aiQuotaRepository: AiQuotaRepository
 ) : ViewModel() {
     private val _state = MutableStateFlow(AiJobsState())
     val state: StateFlow<AiJobsState> = _state.asStateFlow()
@@ -28,6 +34,21 @@ class AiJobsViewModel(
 
     init {
         observeData()
+        refreshAiUsage()
+    }
+
+    private fun refreshAiUsage() {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoadingAiUsage = true, aiUsageLoadFailed = false) }
+            val usage = aiQuotaRepository.getUsage(forceRefresh = true)
+            _state.update {
+                it.copy(
+                    aiUsage = usage,
+                    isLoadingAiUsage = false,
+                    aiUsageLoadFailed = usage == null
+                )
+            }
+        }
     }
 
     private fun observeData() {
@@ -63,14 +84,26 @@ class AiJobsViewModel(
                 aiJobManager.deleteDraft(intent.draftId)
             }
             is AiJobsIntent.OpenDraft -> openDraft(intent.draftId)
+            AiJobsIntent.ClearCompleted -> clearCompleted()
         }
+    }
+
+    private fun clearCompleted() {
+        viewModelScope.launch {
+            val cutoff = Clock.System.now().toEpochMilliseconds() - COMPLETED_RETENTION_MS
+            jobRepository.deleteCompletedBefore(cutoff)
+        }
+    }
+
+    companion object {
+        private const val COMPLETED_RETENTION_MS = 0L
     }
 
     private fun retryDraft(draftId: String) {
         viewModelScope.launch {
             val job = aiJobManager.retryDraft(draftId)
             if (job == null) {
-                _effect.send(AiJobsEffect.ShowMessage("Unable to retry this draft"))
+                _effect.send(AiJobsEffect.ShowMessage(UiText.StringRes(Res.string.ai_jobs_retry_failed)))
             }
         }
     }

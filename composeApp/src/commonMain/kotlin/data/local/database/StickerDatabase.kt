@@ -16,7 +16,7 @@ import data.local.entity.WorkspaceDraftEntity
         AiJobEntity::class,
         WorkspaceDraftEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 abstract class StickerDatabase : RoomDatabase() {

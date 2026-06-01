@@ -21,6 +21,7 @@ fun PackDetailScreenRoot(
     croppedStickerImportPath: String? = null,
     onStickerImportCropConsumed: () -> Unit = {},
     onNavigateToCropForStickerImport: (String) -> Unit = {},
+    onNavigateToPack: (String) -> Unit = {},
     viewModel: PackDetailViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -58,6 +59,7 @@ fun PackDetailScreenRoot(
                 is PackDetailEffect.ShareText -> {
                     snackbarHostState.showSnackbar(effect.text)
                 }
+                is PackDetailEffect.NavigateToDuplicatedPack -> onNavigateToPack(effect.packId)
             }
         }
     }

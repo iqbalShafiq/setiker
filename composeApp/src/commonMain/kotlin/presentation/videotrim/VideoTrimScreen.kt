@@ -38,6 +38,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import data.remote.readFileBytes
 import org.jetbrains.compose.resources.stringResource
+import presentation.common.resolveLocal
+import presentation.components.AppIllustration
 import presentation.components.AppTopBar
 import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
@@ -106,7 +108,8 @@ fun VideoTrimScreen(
             LoadingIndicator(
                 modifier = modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
+                    .padding(innerPadding),
+                illustration = AppIllustration.VideoTools
             )
         } else {
             InteractionBlockedBox(
@@ -237,9 +240,9 @@ fun VideoTrimScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                if (!state.errorMessage.isNullOrBlank()) {
+                state.error?.let { error ->
                     Text(
-                        text = state.errorMessage,
+                        text = error.resolveLocal(),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall
                     )

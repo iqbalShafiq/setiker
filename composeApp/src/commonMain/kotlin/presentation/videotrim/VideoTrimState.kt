@@ -2,6 +2,7 @@ package presentation.videotrim
 
 import domain.model.AnimatedStickerSpec
 import domain.model.StickerPack
+import presentation.common.UiText
 
 /**
  * One pre-extracted thumbnail used to drive both the static preview and the
@@ -25,7 +26,7 @@ data class VideoTrimState(
     val isPlaying: Boolean = false,
     val isLoading: Boolean = false,
     val isExtracting: Boolean = false,
-    val errorMessage: String? = null
+    val error: UiText? = null
 ) {
     val maxAllowedTrimMs: Long get() = StickerPack.MAX_ANIMATION_DURATION_MS
     val effectiveTrimMs: Long get() = (trimEndMs - trimStartMs).coerceAtLeast(0L)

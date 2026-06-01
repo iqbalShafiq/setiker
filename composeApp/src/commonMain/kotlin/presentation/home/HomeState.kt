@@ -1,11 +1,13 @@
 package presentation.home
 
+import domain.model.AiUsage
 import domain.model.SortOrder
 import domain.model.StickerPack
 import domain.model.User
 
 data class HomeState(
     val isLoading: Boolean = false,
+    val loadFailed: Boolean = false,
     val packs: List<StickerPack> = emptyList(),
     val searchQuery: String = "",
     val sortOrder: SortOrder = SortOrder.NAME_ASC,
@@ -20,6 +22,9 @@ data class HomeState(
     val generatePackLayout: String = "4x4",
     val generatePackInputImagePath: String? = null,
     val isGeneratePackLoading: Boolean = false,
+    val aiUsage: AiUsage? = null,
+    val isLoadingAiUsage: Boolean = false,
+    val aiUsageLoadFailed: Boolean = false,
     val activeAiJobCount: Int = 0,
     val aiJobsBadgeCount: Int = 0,
     val backgroundJobMessage: String? = null,

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import data.aijob.AiJobManager
 import data.remote.StickerApiRepository
 import data.repository.StickerPackDraftSaver
+import domain.model.AiQuotaOperation
 import domain.model.StickerDraftInput
 import domain.model.StickerPack
 import domain.model.aijob.AiJobOrigin
@@ -15,6 +16,7 @@ import domain.model.aijob.WorkspaceDraftContext
 import domain.model.aijob.WorkspaceDraftKind
 import domain.model.aijob.AiJobStatus
 import domain.repository.AiJobRepository
+import domain.repository.AiQuotaRepository
 import domain.repository.StickerRepository
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -34,6 +36,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import presentation.common.AiQuotaGate
 import presentation.common.PackIdentifierSanitizer
 import presentation.common.UiText
 import presentation.common.toUiText
@@ -62,7 +65,8 @@ class CreatePackViewModel(
     private val aiJobManager: AiJobManager,
     private val enqueueHelper: AiJobEnqueueHelper,
     private val draftResultApplier: DraftResultApplier,
-    private val jobRepository: AiJobRepository
+    private val jobRepository: AiJobRepository,
+    private val aiQuotaRepository: AiQuotaRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CreatePackState())
@@ -73,6 +77,20 @@ class CreatePackViewModel(
 
     init {
         observeWorkspaceDraftResults()
+    }
+
+    private fun refreshAiUsage() {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoadingAiUsage = true, aiUsageLoadFailed = false) }
+            val usage = aiQuotaRepository.getUsage(forceRefresh = true)
+            _state.update {
+                it.copy(
+                    aiUsage = usage,
+                    isLoadingAiUsage = false,
+                    aiUsageLoadFailed = usage == null
+                )
+            }
+        }
     }
 
     private fun observeWorkspaceDraftResults() {
@@ -116,7 +134,6 @@ class CreatePackViewModel(
                                     },
                                 backgroundJobProgress = jobState.active?.progress?.fraction
                                     ?: if (hasTerminalJob) 0f else withJob.backgroundJobProgress,
-                                error = jobState.failed?.failureMessage ?: withJob.error
                             )
                         }
                     }
@@ -229,6 +246,7 @@ class CreatePackViewModel(
             }
             is CreatePackIntent.OpenAiGenerateSheet -> {
                 _state.update { it.copy(aiGenerateSheetOpen = true, improveConfirmVisible = false) }
+                refreshAiUsage()
             }
             is CreatePackIntent.CloseAiGenerateSheet -> {
                 _state.update { it.copy(aiGenerateSheetOpen = false) }
@@ -368,7 +386,12 @@ class CreatePackViewModel(
                     )
                 }
             } catch (e: Exception) {
-                _state.update { it.copy(isLoading = false, error = e.message) }
+                _state.update { it.copy(isLoading = false) }
+                _effect.send(
+                    CreatePackEffect.ShowError(
+                        e.toUiText(setiker.composeapp.generated.resources.Res.string.error_failed_save_pack)
+                    )
+                )
             }
         }
     }
@@ -455,6 +478,14 @@ class CreatePackViewModel(
                 _effect.send(CreatePackEffect.ShowError(UiText.StringRes(Res.string.error_sticker_limit_reached)))
                 return@launch
             }
+            AiQuotaGate.checkCanStart(
+                aiQuotaRepository,
+                AiQuotaOperation.GENERATE,
+                forceRefresh = true
+            )?.let { message ->
+                _effect.send(CreatePackEffect.ShowError(message))
+                return@launch
+            }
 
             val draft = upsertCreatePackDraft(currentState)
             enqueueHelper.enqueueGenerateStickers(
@@ -486,6 +517,14 @@ class CreatePackViewModel(
             val currentState = _state.value
             if (currentState.gridSplitSourcePath.isBlank()) {
                 _effect.send(CreatePackEffect.ShowError(UiText.StringRes(Res.string.error_grid_image_required)))
+                return@launch
+            }
+            AiQuotaGate.checkCanStart(
+                aiQuotaRepository,
+                AiQuotaOperation.GRID_SPLIT,
+                forceRefresh = true
+            )?.let { message ->
+                _effect.send(CreatePackEffect.ShowError(message))
                 return@launch
             }
 
@@ -597,6 +636,14 @@ class CreatePackViewModel(
                         UiText.StringRes(Res.string.error_no_static_stickers_to_improve)
                     )
                 )
+                return@launch
+            }
+            AiQuotaGate.checkCanStart(
+                aiQuotaRepository,
+                AiQuotaOperation.IMPROVE,
+                forceRefresh = true
+            )?.let { message ->
+                _effect.send(CreatePackEffect.ShowError(message))
                 return@launch
             }
 

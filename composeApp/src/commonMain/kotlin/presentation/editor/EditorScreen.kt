@@ -24,6 +24,8 @@ import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.BorderColor
 import androidx.compose.material.icons.filled.Crop
+import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FontDownload
 import androidx.compose.material.icons.filled.FormatColorText
@@ -75,8 +77,11 @@ import presentation.components.BottomSheetScrollColumn
 import presentation.components.zeroBottomSheetWindowInsets
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
+import presentation.components.AppIllustration
+import presentation.components.AppIllustrationImage
 import presentation.components.AppTextField
 import presentation.components.AppTopBar
+import presentation.components.AppTopBarActionIcon
 import presentation.components.CheckerboardBackground
 import presentation.components.ColorPickerBottomSheet
 import presentation.components.DecorationActionChip
@@ -115,6 +120,8 @@ import setiker.composeapp.generated.resources.add_emoji
 import setiker.composeapp.generated.resources.add_image
 import setiker.composeapp.generated.resources.add_text
 import setiker.composeapp.generated.resources.back
+import setiker.composeapp.generated.resources.editor_redo
+import setiker.composeapp.generated.resources.editor_undo
 import setiker.composeapp.generated.resources.cancel
 import setiker.composeapp.generated.resources.change_color
 import setiker.composeapp.generated.resources.change_border_color
@@ -192,7 +199,21 @@ fun EditorScreen(
         topBar = {
             AppTopBar(
                 title = stringResource(Res.string.edit_sticker_title),
-                onBackClick = null
+                onBackClick = null,
+                actions = {
+                    AppTopBarActionIcon(
+                        icon = Icons.AutoMirrored.Filled.Undo,
+                        contentDescription = stringResource(Res.string.editor_undo),
+                        onClick = { onIntent(EditorIntent.Undo) },
+                        enabled = state.canUndo && !isOperationInProgress
+                    )
+                    AppTopBarActionIcon(
+                        icon = Icons.AutoMirrored.Filled.Redo,
+                        contentDescription = stringResource(Res.string.editor_redo),
+                        onClick = { onIntent(EditorIntent.Redo) },
+                        enabled = state.canRedo && !isOperationInProgress
+                    )
+                }
             )
         },
         bottomBar = {
@@ -314,7 +335,8 @@ fun EditorScreen(
             LoadingIndicator(
                 modifier = modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
+                    .padding(innerPadding),
+                illustration = AppIllustration.LoadingState
             )
         } else {
             val editorScrollState = rememberScrollState()
@@ -363,11 +385,18 @@ fun EditorScreen(
                             }
                         }
                     } else {
-                        Text(
-                            text = stringResource(Res.string.select_image),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = neubrutalSubtleOnSurface()
-                        )
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            AppIllustrationImage(
+                                illustration = AppIllustration.EditorTools,
+                                modifier = Modifier.fillMaxWidth(0.82f)
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = stringResource(Res.string.select_image),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = neubrutalSubtleOnSurface()
+                            )
+                        }
                     }
                 }
 
@@ -591,7 +620,10 @@ fun EditorScreen(
             hasContextualDefault = true,
             isGenerating = state.isApiLoading,
             onGenerate = { onIntent(EditorIntent.GenerateSticker) },
-            onDismiss = { onIntent(EditorIntent.CloseAiGenerateSheet) }
+            onDismiss = { onIntent(EditorIntent.CloseAiGenerateSheet) },
+            aiUsage = state.aiUsage,
+            isLoadingQuota = state.isLoadingAiUsage,
+            quotaLoadFailed = state.aiUsageLoadFailed
         )
     }
 
@@ -697,7 +729,7 @@ fun EditorScreen(
                             .padding(4.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        LoadingIndicator()
+                        LoadingIndicator(illustration = AppIllustration.LoadingState)
                     }
                 } else {
                     val previewPath = state.backgroundRemoverPreviewPath

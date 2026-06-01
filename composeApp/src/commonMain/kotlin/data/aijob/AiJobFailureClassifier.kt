@@ -1,10 +1,16 @@
 package data.aijob
 
+import domain.error.AppErrorCode
+import domain.error.AppException
 import domain.model.aijob.AiJobFailureKind
 
 object AiJobFailureClassifier {
     fun classify(throwable: Throwable): Pair<AiJobFailureKind, Boolean> {
         val root = throwable.cause ?: throwable
+        val appException = throwable as? AppException ?: root as? AppException
+        if (appException?.code == AppErrorCode.AiQuotaExceeded) {
+            return AiJobFailureKind.VALIDATION to false
+        }
         val className = root::class.simpleName.orEmpty()
         val message = (root.message ?: throwable.message).orEmpty().lowercase()
         return when {
@@ -32,6 +38,10 @@ object AiJobFailureClassifier {
                 message.contains("400") ||
                 message.contains("validation") ||
                 message.contains("required") -> AiJobFailureKind.VALIDATION to false
+
+            message.contains("quota") ||
+                message.contains("ai_daily_quota") ||
+                message.contains("daily limit") -> AiJobFailureKind.VALIDATION to false
 
             message.contains("429") ||
                 message.contains("500") ||

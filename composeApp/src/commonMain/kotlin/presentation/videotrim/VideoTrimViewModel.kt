@@ -17,6 +17,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
 import presentation.common.UiText
+import presentation.common.toUiText
 
 class VideoTrimViewModel(
     private val fileStorage: StickerFileStorage
@@ -71,7 +72,7 @@ class VideoTrimViewModel(
 
     private fun loadVideo(videoPath: String) {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, videoPath = videoPath, errorMessage = null) }
+            _state.update { it.copy(isLoading = true, videoPath = videoPath, error = null) }
             val totalMs = fileStorage.getVideoDurationMs(videoPath)
                 .takeIf { it > 0 } ?: StickerPack.MAX_ANIMATION_DURATION_MS
             val cappedEnd = totalMs.coerceAtMost(StickerPack.MAX_ANIMATION_DURATION_MS)
@@ -207,10 +208,10 @@ class VideoTrimViewModel(
         val spec = current.toSpec()
         val validation = AnimatedStickerValidator.validateSpec(spec)
         if (validation is AnimatedStickerValidator.Result.Failure) {
+            val errorText = validation.reason.toUiText()
+            _state.update { it.copy(error = errorText) }
             viewModelScope.launch {
-                _effect.send(
-                    VideoTrimEffect.ShowError(UiText.DynamicString("Invalid animation spec: ${validation.reason}"))
-                )
+                _effect.send(VideoTrimEffect.ShowError(errorText))
             }
             return
         }

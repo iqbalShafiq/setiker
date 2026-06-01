@@ -7,4 +7,5 @@ sealed interface AiJobsIntent {
     data class DeleteDraft(val draftId: String) : AiJobsIntent
     data class OpenDraft(val draftId: String) : AiJobsIntent
     data object NavigateBack : AiJobsIntent
+    data object ClearCompleted : AiJobsIntent
 }

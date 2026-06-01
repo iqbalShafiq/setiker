@@ -4,6 +4,7 @@ import domain.model.SortOrder
 
 sealed interface HomeIntent {
     data object LoadPacks : HomeIntent
+    data object RetryLoadPacks : HomeIntent
     data class DeletePack(val packId: String) : HomeIntent
     data class AddToWhatsApp(val packId: String) : HomeIntent
     data object CreateNewPack : HomeIntent

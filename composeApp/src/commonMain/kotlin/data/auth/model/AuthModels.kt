@@ -22,6 +22,16 @@ data class ChangePasswordRequest(
     val newPassword: String
 )
 
+@Serializable
+data class RefreshTokenRequest(
+    val refreshToken: String
+)
+
+@Serializable
+data class DeleteAccountRequest(
+    val currentPassword: String? = null
+)
+
 /**
  * Actual API response structure (from real implementation):
  * Login/Register:
@@ -56,7 +66,8 @@ data class AuthResponse(
 @Serializable
 data class AuthDataDto(
     val user: UserDto? = null,
-    val accessToken: String? = null
+    val accessToken: String? = null,
+    val expiresIn: Int? = null
 )
 
 @Serializable

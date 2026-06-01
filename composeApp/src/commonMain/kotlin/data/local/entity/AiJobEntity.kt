@@ -31,6 +31,7 @@ data class AiJobEntity(
     val failureKind: String = "NONE",
     val failureMessage: String? = null,
     val requiresNetwork: Boolean = false,
+    val quotaReservationId: String? = null,
     val createdAt: Long,
     val updatedAt: Long,
     val lastAttemptAt: Long? = null,

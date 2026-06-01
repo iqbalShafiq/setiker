@@ -34,11 +34,13 @@ class StickerApiRepository(
 
     suspend fun generateStickers(
         prompt: String,
-        inputImagePath: String? = null
+        inputImagePath: String? = null,
+        reservationId: String? = null
     ): List<GeneratedStickerFile> {
         val images = api.generate(
             prompt = prompt,
-            inputImagePath = inputImagePath
+            inputImagePath = inputImagePath,
+            reservationId = reservationId
         )
         return downloadGeneratedStickerFiles(images, operationTag = "generate")
     }
@@ -59,12 +61,14 @@ class StickerApiRepository(
     suspend fun fetchGeneratePackGridPath(
         prompt: String,
         layout: String,
-        inputImagePath: String? = null
+        inputImagePath: String? = null,
+        reservationId: String? = null
     ): String? {
         val images = api.generateStickerPack(
             prompt = prompt,
             layout = layout,
-            inputImagePath = inputImagePath
+            inputImagePath = inputImagePath,
+            reservationId = reservationId
         )
         return images.firstOrNull()?.let { downloadAndPersist(it) }
     }
@@ -76,7 +80,8 @@ class StickerApiRepository(
         selectedStartMs: Long,
         selectedEndMs: Long,
         sourceDurationMs: Long,
-        prompt: String? = null
+        prompt: String? = null,
+        reservationId: String? = null
     ): ResolvedVideoStickerPackPlan {
         val plan = api.generateVideoStickerPack(
             candidateGridPaths = candidateGridPaths,
@@ -84,7 +89,8 @@ class StickerApiRepository(
             selectedStartMs = selectedStartMs,
             selectedEndMs = selectedEndMs,
             sourceDurationMs = sourceDurationMs,
-            prompt = prompt
+            prompt = prompt,
+            reservationId = reservationId
         ).toDomain()
         val candidatesById = candidateManifest.associate { manifestItem ->
             val candidate = candidates.getOrNull(manifestItem.frameIndex)
@@ -119,8 +125,11 @@ class StickerApiRepository(
         )
     }
 
-    suspend fun improve(imagePaths: List<String>): List<GeneratedStickerFile> {
-        val images = api.improve(imagePaths)
+    suspend fun improve(
+        imagePaths: List<String>,
+        reservationId: String? = null
+    ): List<GeneratedStickerFile> {
+        val images = api.improve(imagePaths, reservationId = reservationId)
         if (imagePaths.size <= 1) {
             return downloadGeneratedStickerFiles(images, operationTag = "improve")
         }

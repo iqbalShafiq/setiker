@@ -35,6 +35,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.padding
 
 import androidx.compose.ui.text.font.FontWeight
 
@@ -49,7 +50,9 @@ import domain.model.aijob.WorkspaceDraftStatus
 import org.jetbrains.compose.resources.stringResource
 
 import org.koin.compose.viewmodel.koinViewModel
-
+import presentation.common.resolveOrDefault
+import presentation.components.AppIllustration
+import presentation.components.AiQuotaSummary
 import presentation.components.AppTopBar
 
 import presentation.components.DraftJobListCard
@@ -103,6 +106,7 @@ import setiker.composeapp.generated.resources.ai_jobs_status_ready
 
 import setiker.composeapp.generated.resources.ai_jobs_status_saved
 
+import setiker.composeapp.generated.resources.ai_jobs_clear_completed
 import setiker.composeapp.generated.resources.ai_jobs_title
 
 
@@ -123,36 +127,29 @@ fun AiJobsScreenRoot(
 
     val state by viewModel.state.collectAsState()
 
+    val snackbarHostState = androidx.compose.runtime.remember { androidx.compose.material3.SnackbarHostState() }
+
     androidx.compose.runtime.LaunchedEffect(Unit) {
-
         viewModel.effect.collect { effect ->
-
             when (effect) {
-
                 AiJobsEffect.NavigateBack -> onBackClick()
-
                 is AiJobsEffect.NavigateToDraft -> onOpenDraft(effect.draftId, effect.originRoute)
-
                 is AiJobsEffect.NavigateToPack -> onOpenPack(effect.packId)
-
-                is AiJobsEffect.ShowMessage -> Unit
-
+                is AiJobsEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
             }
-
         }
-
     }
 
-    AiJobsScreen(
-
-        state = state,
-
-        onIntent = viewModel::onIntent,
-
-        onBackClick = onBackClick
-
-    )
-
+    androidx.compose.material3.Scaffold(
+        snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) }
+    ) { padding ->
+        AiJobsScreen(
+            state = state,
+            onIntent = viewModel::onIntent,
+            onBackClick = onBackClick,
+            modifier = Modifier.padding(padding)
+        )
+    }
 }
 
 
@@ -215,9 +212,9 @@ fun AiJobsScreen(
 
                         icon = Icons.Default.Refresh,
 
-                        contentDescription = stringResource(Res.string.history_refresh),
+                        contentDescription = stringResource(Res.string.ai_jobs_clear_completed),
 
-                        onClick = { onIntent(AiJobsIntent.Load) },
+                        onClick = { onIntent(AiJobsIntent.ClearCompleted) },
 
                         enabled = true,
 
@@ -241,7 +238,8 @@ fun AiJobsScreen(
 
             state.isLoading -> LoadingIndicator(
 
-                modifier = Modifier.fillMaxSize().padding(padding)
+                modifier = Modifier.fillMaxSize().padding(padding),
+                illustration = AppIllustration.LoadingState
 
             )
 
@@ -250,6 +248,7 @@ fun AiJobsScreen(
                 title = stringResource(Res.string.ai_jobs_empty_title),
 
                 description = stringResource(Res.string.ai_jobs_empty_desc),
+                illustration = AppIllustration.AiJobs,
 
                 modifier = Modifier.fillMaxSize().padding(padding)
 
@@ -264,6 +263,14 @@ fun AiJobsScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
 
             ) {
+                item(key = "ai_quota_banner") {
+                    AiQuotaSummary(
+                        usage = state.aiUsage,
+                        isLoading = state.isLoadingAiUsage,
+                        hasError = state.aiUsageLoadFailed,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                    )
+                }
 
                 grouped.forEach { section ->
 
@@ -602,5 +609,4 @@ private fun groupDrafts(
     }
 
 }
-
 

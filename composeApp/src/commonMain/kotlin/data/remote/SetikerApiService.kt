@@ -37,6 +37,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import data.auth.AuthManager
 import data.auth.AuthTokenRefresher
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.header
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.HttpStatusCode
@@ -46,9 +47,25 @@ class SetikerApiService(
     private val authTokenRefresher: AuthTokenRefresher? = null,
     private val baseUrl: String = ApiConfig.baseUrl
 ) {
+    companion object {
+        const val AI_RESERVATION_HEADER = "X-AI-Reservation-Id"
+    }
+
     private val json = Json {
         ignoreUnknownKeys = true
         isLenient = true
+    }
+
+    private fun HttpRequestBuilder.applyAiReservation(reservationId: String?) {
+        reservationId?.takeIf { it.isNotBlank() }?.let { header(AI_RESERVATION_HEADER, it) }
+    }
+
+    private fun mapApiFailure(bodyText: String, defaultCode: AppErrorCode): ApiException {
+        val parsed = ApiErrorParser.parse(bodyText)
+        return ApiException(
+            code = parsed?.code ?: defaultCode,
+            message = parsed?.message
+        )
     }
 
     private val client = HttpClient {
@@ -128,11 +145,13 @@ class SetikerApiService(
 
     suspend fun generate(
         prompt: String,
-        inputImagePath: String? = null
+        inputImagePath: String? = null,
+        reservationId: String? = null
     ): List<ApiImage> {
         val response = withAuthRetry { authHeader ->
             client.post("/api/v1/generate") {
                 authHeader?.let { header(HttpHeaders.Authorization, it) }
+                applyAiReservation(reservationId)
                 setBody(
                     MultiPartFormDataContent(
                         formData {
@@ -151,11 +170,13 @@ class SetikerApiService(
     suspend fun generateStickerPack(
         prompt: String,
         layout: String,
-        inputImagePath: String? = null
+        inputImagePath: String? = null,
+        reservationId: String? = null
     ): List<ApiImage> {
         val response = withAuthRetry { authHeader ->
             client.post("/api/v1/generate/sticker-pack") {
                 authHeader?.let { header(HttpHeaders.Authorization, it) }
+                applyAiReservation(reservationId)
                 setBody(
                     MultiPartFormDataContent(
                         formData {
@@ -178,7 +199,8 @@ class SetikerApiService(
         selectedStartMs: Long,
         selectedEndMs: Long,
         sourceDurationMs: Long,
-        prompt: String? = null
+        prompt: String? = null,
+        reservationId: String? = null
     ) = generateVideoStickerPack(
         candidateGridPaths = candidateGridPaths,
         candidateManifest = candidateManifest,
@@ -187,7 +209,8 @@ class SetikerApiService(
         sourceDurationMs = sourceDurationMs,
         prompt = prompt,
         maxStaticStickers = null,
-        maxAnimatedStickers = null
+        maxAnimatedStickers = null,
+        reservationId = reservationId
     )
 
     suspend fun generateVideoStickerPack(
@@ -198,11 +221,13 @@ class SetikerApiService(
         sourceDurationMs: Long,
         prompt: String? = null,
         maxStaticStickers: Int? = null,
-        maxAnimatedStickers: Int? = null
+        maxAnimatedStickers: Int? = null,
+        reservationId: String? = null
     ): data.remote.model.ApiVideoStickerPackPlan {
         val response = withAuthRetry { authHeader ->
             client.post("/api/v1/generate/video-sticker-pack") {
                 authHeader?.let { header(HttpHeaders.Authorization, it) }
+                applyAiReservation(reservationId)
                 setBody(
                     MultiPartFormDataContent(
                         formData {
@@ -231,22 +256,20 @@ class SetikerApiService(
         }
         val bodyText = response.bodyAsText()
         if (!response.status.isSuccess()) {
-            throw ApiException(
-                code = AppErrorCode.GenerateRequestFailed,
-                message = runCatching { json.decodeFromString<ApiErrorEnvelope>(bodyText) }
-                    .getOrNull()
-                    ?.error
-                    ?.message
-            )
+            throw mapApiFailure(bodyText, AppErrorCode.GenerateRequestFailed)
         }
         return json.decodeFromString<ApiSuccessEnvelope<VideoStickerPackPlanData>>(bodyText).data?.plan
             ?: throw ApiException(code = AppErrorCode.InvalidGenerateResponse)
     }
 
-    suspend fun improve(imagePaths: List<String>): List<ApiImage> {
+    suspend fun improve(
+        imagePaths: List<String>,
+        reservationId: String? = null
+    ): List<ApiImage> {
         val response = withAuthRetry { authHeader ->
             client.post("/api/v1/generate/improvement") {
                 authHeader?.let { header(HttpHeaders.Authorization, it) }
+                applyAiReservation(reservationId)
                 setBody(
                     MultiPartFormDataContent(
                         formData {
@@ -268,13 +291,7 @@ class SetikerApiService(
     private suspend fun parseGenerateImages(response: HttpResponse): List<ApiImage> {
         val bodyText = response.bodyAsText()
         if (!response.status.isSuccess()) {
-            throw ApiException(
-                code = AppErrorCode.GenerateRequestFailed,
-                message = runCatching { json.decodeFromString<ApiErrorEnvelope>(bodyText) }
-                    .getOrNull()
-                    ?.error
-                    ?.message
-            )
+            throw mapApiFailure(bodyText, AppErrorCode.GenerateRequestFailed)
         }
         val parsed = json.decodeFromString<ApiSuccessEnvelope<GenerateData>>(bodyText)
         return parsed.data?.images

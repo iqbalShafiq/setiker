@@ -5,15 +5,18 @@ import data.auth.model.ChangePasswordRequest
 import data.auth.model.LoginRequest
 import data.auth.model.RegisterRequest
 import data.auth.model.UserProfileResponse
+import data.auth.model.DeleteAccountRequest
+import data.auth.model.RefreshTokenRequest
 import data.remote.ApiConfig
+import data.remote.ApiErrorParser
 import data.remote.ApiException
-import data.remote.model.ApiErrorEnvelope
 import domain.error.AppErrorCode
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.cookies.CookiesStorage
 import io.ktor.client.plugins.cookies.HttpCookies
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -46,12 +49,12 @@ class AuthApiService(
 
     fun clearRefreshToken() { cookieStorage.clear() }
 
-    private fun extractErrorMessage(bodyText: String): String {
-        return runCatching { json.decodeFromString<ApiErrorEnvelope>(bodyText) }
-            .getOrNull()
-            ?.error
-            ?.message
-            ?: bodyText
+    private fun throwApiError(bodyText: String, fallback: AppErrorCode): Nothing {
+        val parsed = ApiErrorParser.parse(bodyText)
+        throw ApiException(
+            code = parsed?.code ?: fallback,
+            message = parsed?.message ?: bodyText
+        )
     }
 
     suspend fun register(request: RegisterRequest): AuthResponse {
@@ -61,10 +64,7 @@ class AuthApiService(
         }
         val bodyText = response.bodyAsText()
         if (!response.status.isSuccess()) {
-            throw ApiException(
-                code = AppErrorCode.AuthRegisterFailed,
-                message = extractErrorMessage(bodyText)
-            )
+            throwApiError(bodyText, AppErrorCode.AuthRegisterFailed)
         }
         return json.decodeFromString(bodyText)
     }
@@ -76,10 +76,7 @@ class AuthApiService(
         }
         val bodyText = response.bodyAsText()
         if (!response.status.isSuccess()) {
-            throw ApiException(
-                code = AppErrorCode.AuthLoginFailed,
-                message = extractErrorMessage(bodyText)
-            )
+            throwApiError(bodyText, AppErrorCode.AuthLoginFailed)
         }
         return json.decodeFromString(bodyText)
     }
@@ -88,10 +85,15 @@ class AuthApiService(
         if (cookieStorage.refreshToken.isNullOrBlank() && !storedRefreshToken.isNullOrBlank()) {
             cookieStorage.setRefreshToken(storedRefreshToken)
         }
-        val response = client.post("$baseUrl/api/v1/auth/refresh")
+        val response = client.post("$baseUrl/api/v1/auth/refresh") {
+            contentType(ContentType.Application.Json)
+            storedRefreshToken?.takeIf { it.isNotBlank() }?.let { token ->
+                setBody(RefreshTokenRequest(refreshToken = token))
+            }
+        }
         val bodyText = response.bodyAsText()
         if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.AuthRefreshFailed, message = "Token refresh failed")
+            throwApiError(bodyText, AppErrorCode.AuthRefreshFailed)
         }
         return json.decodeFromString(bodyText)
     }
@@ -118,7 +120,22 @@ class AuthApiService(
             setBody(request)
         }
         if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.AuthChangePasswordFailed, message = "Password change failed")
+            val bodyText = response.bodyAsText()
+            throwApiError(bodyText, AppErrorCode.AuthChangePasswordFailed)
+        }
+    }
+
+    suspend fun deleteAccount(token: String, currentPassword: String? = null) {
+        val response = client.delete("$baseUrl/api/v1/auth/me") {
+            contentType(ContentType.Application.Json)
+            header(HttpHeaders.Authorization, "Bearer $token")
+            if (!currentPassword.isNullOrBlank()) {
+                setBody(DeleteAccountRequest(currentPassword = currentPassword))
+            }
+        }
+        if (!response.status.isSuccess()) {
+            val bodyText = response.bodyAsText()
+            throwApiError(bodyText, AppErrorCode.CloudDeleteFailed)
         }
     }
 }

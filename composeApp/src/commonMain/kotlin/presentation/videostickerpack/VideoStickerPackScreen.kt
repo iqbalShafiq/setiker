@@ -50,12 +50,16 @@ import data.remote.readFileBytes
 import domain.model.ResolvedVideoAnimatedSticker
 import domain.model.ResolvedVideoStickerPackPlan
 import domain.model.Sticker
+import domain.model.AiQuotaOperation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.stringResource
+import presentation.components.AppIllustration
+import presentation.components.AppIllustrationImage
 import presentation.components.AppTextField
 import presentation.components.AppTopBar
+import presentation.components.AiQuotaSummary
 import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
 import presentation.components.NeubrutalStickerPreviewFrame
@@ -226,12 +230,27 @@ private fun VideoStickerPackContent(
             style = MaterialTheme.typography.bodySmall,
             color = neubrutalSubtleOnSurface()
         )
+        if (state.aiUsage != null || state.isLoadingAiUsage || state.aiUsageLoadFailed) {
+            AiQuotaSummary(
+                usage = state.aiUsage,
+                isLoading = state.isLoadingAiUsage,
+                hasError = state.aiUsageLoadFailed,
+                highlightOperation = AiQuotaOperation.VIDEO_STICKER_PACK
+            )
+        }
 
         if (state.sourceDurationMs > 0L) {
             VideoPreviewSection(
                 state = state,
                 onIntent = onIntent,
                 enabled = contentEnabled
+            )
+        } else {
+            AppIllustrationImage(
+                illustration = AppIllustration.VideoTools,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(vertical = 8.dp)
             )
         }
 

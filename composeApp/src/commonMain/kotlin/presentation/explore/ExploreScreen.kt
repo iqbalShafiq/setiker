@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
@@ -43,6 +44,7 @@ import coil3.compose.AsyncImage
 import data.remote.ExploreSort
 import data.remote.model.CloudStickerPack
 import org.jetbrains.compose.resources.stringResource
+import presentation.components.AppIllustration
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
 import presentation.components.AppTopBar
@@ -62,7 +64,9 @@ import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.error_load_explore_failed
 import setiker.composeapp.generated.resources.explore_back
+import setiker.composeapp.generated.resources.retry
 import setiker.composeapp.generated.resources.explore_creator_unknown
 import setiker.composeapp.generated.resources.explore_history
 import setiker.composeapp.generated.resources.explore_sort
@@ -124,22 +128,46 @@ fun ExploreScreen(
             state.isLoading -> LoadingIndicator(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
+                    .padding(innerPadding),
+                illustration = AppIllustration.LoadingState
             )
+            state.loadFailed -> {
+                EmptyState(
+                    title = stringResource(Res.string.error_load_explore_failed),
+                    description = stringResource(Res.string.no_search_results_desc),
+                    illustration = AppIllustration.ErrorState,
+                    modifier = modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                    action = {
+                        presentation.components.AppPrimaryButton(
+                            text = stringResource(Res.string.retry),
+                            onClick = { onIntent(ExploreIntent.Refresh) }
+                        )
+                    }
+                )
+            }
             state.filteredPacks.isEmpty() -> {
                 EmptyState(
                     title = stringResource(Res.string.no_search_results_title),
-                    description = state.error ?: stringResource(Res.string.no_search_results_desc),
+                    description = stringResource(Res.string.no_search_results_desc),
+                    illustration = AppIllustration.SearchEmpty,
                     modifier = modifier
                         .fillMaxSize()
                         .padding(innerPadding)
                 )
             }
             else -> {
-                LazyColumn(
+                PullToRefreshBox(
+                    isRefreshing = state.isRefreshing,
+                    onRefresh = { onIntent(ExploreIntent.Refresh) },
                     modifier = modifier
                         .fillMaxSize()
                         .padding(innerPadding)
+                ) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
                         .padding(horizontal = 20.dp),
                     contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -169,6 +197,7 @@ fun ExploreScreen(
                             }
                         }
                     }
+                }
                 }
             }
         }

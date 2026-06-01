@@ -58,6 +58,8 @@ import setiker.composeapp.generated.resources.generate_tip
 import setiker.composeapp.generated.resources.generating
 import setiker.composeapp.generated.resources.prompt_label
 import setiker.composeapp.generated.resources.prompt_placeholder
+import domain.model.AiQuotaOperation
+import domain.model.AiUsage
 
 /**
  * Shared bottom sheet for hitting `/api/v1/generate`. Used by:
@@ -86,8 +88,13 @@ fun AiGenerateBottomSheet(
     hasContextualDefault: Boolean,
     isGenerating: Boolean,
     onGenerate: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    aiUsage: AiUsage? = null,
+    isLoadingQuota: Boolean = false,
+    quotaLoadFailed: Boolean = false,
+    quotaOperation: AiQuotaOperation = AiQuotaOperation.GENERATE
 ) {
+    val canAffordQuota = aiUsage == null || aiUsage.pointsRemaining >= aiUsage.costFor(quotaOperation)
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -194,10 +201,19 @@ fun AiGenerateBottomSheet(
                 style = MaterialTheme.typography.bodySmall,
                 color = neubrutalMutedOnSurface()
             )
+            if (aiUsage != null || isLoadingQuota || quotaLoadFailed) {
+                Spacer(modifier = Modifier.height(12.dp))
+                AiQuotaSummary(
+                    usage = aiUsage,
+                    isLoading = isLoadingQuota,
+                    hasError = quotaLoadFailed,
+                    highlightOperation = quotaOperation
+                )
+            }
             Spacer(modifier = Modifier.height(20.dp))
             AppPrimaryButton(
                 text = stringResource(if (isGenerating) Res.string.generating else Res.string.generate),
-                enabled = !isGenerating && prompt.isNotBlank(),
+                enabled = !isGenerating && prompt.isNotBlank() && canAffordQuota,
                 onClick = onGenerate
             )
             Spacer(modifier = Modifier.height(8.dp))

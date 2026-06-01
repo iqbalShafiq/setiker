@@ -84,6 +84,7 @@ data class AiJob(
     val failureKind: AiJobFailureKind = AiJobFailureKind.NONE,
     val failureMessage: String? = null,
     val requiresNetwork: Boolean = false,
+    val quotaReservationId: String? = null,
     val createdAt: Long,
     val updatedAt: Long,
     val lastAttemptAt: Long? = null,

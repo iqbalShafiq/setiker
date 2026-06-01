@@ -11,6 +11,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import presentation.common.UiText
+import presentation.common.toUiText
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.error_auth_register_failed
+import setiker.composeapp.generated.resources.register_password_mismatch
 
 data class RegisterState(
     val name: String = "",
@@ -19,7 +24,10 @@ data class RegisterState(
     val password: String = "",
     val confirmPassword: String = "",
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: UiText? = null,
+    val isEmailValid: Boolean = true,
+    val isPasswordValid: Boolean = true,
+    val isUsernameValid: Boolean = true
 )
 
 sealed class RegisterIntent {
@@ -49,11 +57,11 @@ class RegisterViewModel(
     
     fun onIntent(intent: RegisterIntent) {
         when (intent) {
-            is RegisterIntent.UpdateName -> _state.update { it.copy(name = intent.name) }
-            is RegisterIntent.UpdateUsername -> _state.update { it.copy(username = intent.username) }
-            is RegisterIntent.UpdateEmail -> _state.update { it.copy(email = intent.email) }
-            is RegisterIntent.UpdatePassword -> _state.update { it.copy(password = intent.password) }
-            is RegisterIntent.UpdateConfirmPassword -> _state.update { it.copy(confirmPassword = intent.confirmPassword) }
+            is RegisterIntent.UpdateName -> _state.update { it.copy(name = intent.name, error = null) }
+            is RegisterIntent.UpdateUsername -> _state.update { it.copy(username = intent.username, error = null, isUsernameValid = true) }
+            is RegisterIntent.UpdateEmail -> _state.update { it.copy(email = intent.email, error = null, isEmailValid = true) }
+            is RegisterIntent.UpdatePassword -> _state.update { it.copy(password = intent.password, error = null, isPasswordValid = true) }
+            is RegisterIntent.UpdateConfirmPassword -> _state.update { it.copy(confirmPassword = intent.confirmPassword, error = null) }
             is RegisterIntent.Submit -> register()
             is RegisterIntent.NavigateToLogin -> _effect.value = RegisterEffect.NavigateToLogin
         }
@@ -61,35 +69,56 @@ class RegisterViewModel(
     
     private fun register() {
         val s = _state.value
-        if (s.password != s.confirmPassword) {
-            _state.update { it.copy(error = "Passwords don't match") }
+        val isEmailValid = s.email.contains("@")
+        val isPasswordValid = s.password.length >= 6
+        val isUsernameValid = s.username.isNotBlank()
+        if (!isEmailValid || !isPasswordValid || !isUsernameValid) {
+            _state.update {
+                it.copy(
+                    isEmailValid = isEmailValid,
+                    isPasswordValid = isPasswordValid,
+                    isUsernameValid = isUsernameValid
+                )
+            }
             return
         }
-        
+        if (s.password != s.confirmPassword) {
+            _state.update { it.copy(error = UiText.StringRes(Res.string.register_password_mismatch)) }
+            return
+        }
+
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
             try {
-                 val response = authApiService.register(
-                     RegisterRequest(
-                         email = s.email,
-                         username = s.username,
-                         password = s.password,
-                         displayName = s.name.takeIf { it.isNotBlank() }
-                     )
-                 )
-                 val data = response.data
-                 val user = data?.user
-                 val accessToken = data?.accessToken
-                 val refreshToken = authApiService.getRefreshToken()
-                 if (accessToken != null && user != null) {
-                     authManager.saveTokens(accessToken, refreshToken ?: "", 3600)
-                     authManager.saveUser(user.toDomainModel())
-                     _effect.value = RegisterEffect.NavigateToHome
-                 } else {
-                     _state.update { it.copy(isLoading = false, error = "Registration failed") }
-                 }
+                val response = authApiService.register(
+                    RegisterRequest(
+                        email = s.email,
+                        username = s.username,
+                        password = s.password,
+                        displayName = s.name.takeIf { it.isNotBlank() }
+                    )
+                )
+                val data = response.data
+                val user = data?.user
+                val accessToken = data?.accessToken
+                val refreshToken = authApiService.getRefreshToken()
+                if (accessToken != null && user != null) {
+                    val expiresIn = (data.expiresIn ?: 3600).toLong()
+                    authManager.saveTokens(accessToken, refreshToken ?: "", expiresIn)
+                    authManager.saveUser(user.toDomainModel())
+                    _effect.value = RegisterEffect.NavigateToHome
+                } else {
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            error = UiText.StringRes(Res.string.error_auth_register_failed)
+                        )
+                    }
+                }
             } catch (e: Exception) {
-                _state.update { it.copy(isLoading = false, error = e.message ?: "Registration failed") }
+                _state.update {
+                    it.copy(isLoading = false, error = e.toUiText(Res.string.error_auth_register_failed))
+                }
             }
         }
     }

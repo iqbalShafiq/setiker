@@ -6,8 +6,13 @@ import data.auth.AuthManagerImpl
 import data.auth.AuthTokenRefresher
 import data.local.database.StickerDatabase
 import data.local.database.SyncOperationDao
+import data.preferences.UserPreferencesRepository
+import data.remote.AiUsageApiRepository
+import data.repository.AiQuotaRepositoryImpl
+import domain.repository.AiQuotaRepository
 import data.remote.CloudStickerRepository
 import data.remote.ExploreApiRepository
+import data.remote.LegalApiRepository
 import data.remote.SetikerApiService
 import data.remote.StickerApiRepository
 import data.aijob.AiJobManager
@@ -44,6 +49,8 @@ import presentation.videotrim.VideoTrimViewModel
 import presentation.animatededitor.AnimatedEditorViewModel
 import presentation.sync.SyncViewModel
 import presentation.aijobs.AiJobsViewModel
+import presentation.onboarding.OnboardingViewModel
+import presentation.settings.SettingsViewModel
 import presentation.sharepreview.SharePreviewViewModel
 
 expect fun platformModule(): Module
@@ -64,13 +71,17 @@ val appModule = module {
     single { AuthTokenRefresher(authManager = get(), authApiService = get()) }
     single { CloudStickerRepository(authManager = get(), authTokenRefresher = get()) }
     single { ExploreApiRepository(authManager = get(), authTokenRefresher = get()) }
+    single { LegalApiRepository(authManager = get(), authTokenRefresher = get()) }
+    single { AiUsageApiRepository(authManager = get(), authTokenRefresher = get()) }
+    single<AiQuotaRepository> { AiQuotaRepositoryImpl(get()) }
+    single { UserPreferencesRepository(get()) }
     // NetworkMonitor is provided by platform-specific module
     single { get<StickerDatabase>().syncOperationDao() }
     single { get<StickerDatabase>().aiJobDao() }
     single { get<StickerDatabase>().workspaceDraftDao() }
     single<AiJobRepository> { RoomAiJobRepository(get()) }
     single<WorkspaceDraftRepository> { RoomWorkspaceDraftRepository(get()) }
-    single { AiJobManager(get(), get(), get()) }
+    single { AiJobManager(get(), get(), get(), get()) }
     single { presentation.aijob.AiJobEnqueueHelper(get()) }
     single { presentation.aijob.DraftResultApplier(get(), get()) }
     single {
@@ -85,7 +96,8 @@ val appModule = module {
             draftSaver = get(),
             stickerRepository = get(),
             jobManager = get(),
-            animatedDraftHelper = get()
+            animatedDraftHelper = get(),
+            quotaRepository = get()
         )
     }
     single { SyncCursorStore(get()) }
@@ -108,6 +120,8 @@ val appModule = module {
     viewModelOf(::LoginViewModel)
     viewModelOf(::RegisterViewModel)
     viewModelOf(::ProfileViewModel)
+    viewModelOf(::SettingsViewModel)
+    viewModelOf(::OnboardingViewModel)
     viewModelOf(::SyncViewModel)
     viewModelOf(::AiJobsViewModel)
 }

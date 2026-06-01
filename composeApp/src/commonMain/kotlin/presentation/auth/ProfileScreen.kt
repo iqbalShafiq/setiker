@@ -47,6 +47,10 @@ import domain.model.User
 import domain.model.UserRole
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import presentation.components.AiQuotaSummary
+import presentation.components.AppIllustration
+import presentation.components.EmptyState
+import presentation.components.LoadingIndicator
 import presentation.components.AppTopBar
 import presentation.components.ProfileMenuItem
 import presentation.components.ProfileBottomBar
@@ -72,17 +76,20 @@ import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.about_app
+import setiker.composeapp.generated.resources.profile_ai_quota_section
 import setiker.composeapp.generated.resources.account_section
 import setiker.composeapp.generated.resources.downloaded_packs
 import setiker.composeapp.generated.resources.downloads_label
 import setiker.composeapp.generated.resources.following
 import setiker.composeapp.generated.resources.help_center
 import setiker.composeapp.generated.resources.liked_stickers
+import setiker.composeapp.generated.resources.login_welcome_subtitle
 import setiker.composeapp.generated.resources.logout
 import setiker.composeapp.generated.resources.my_profile_title
 import setiker.composeapp.generated.resources.my_stickers_title
 import setiker.composeapp.generated.resources.packs_label
 import setiker.composeapp.generated.resources.premium_badge
+import setiker.composeapp.generated.resources.profile_ai_jobs_menu
 import setiker.composeapp.generated.resources.profile_explore_packs
 import setiker.composeapp.generated.resources.profile_guest_login_prompt
 import setiker.composeapp.generated.resources.profile_processing_history
@@ -154,27 +161,21 @@ fun ProfileScreen(
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         if (state.isLoading) {
-            Box(
+            LoadingIndicator(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(color = AccentCoral)
-            }
+                illustration = AppIllustration.AuthCloud
+            )
         } else if (state.user == null) {
-            Box(
+            EmptyState(
+                title = stringResource(Res.string.profile_guest_login_prompt),
+                description = stringResource(Res.string.login_welcome_subtitle),
+                illustration = AppIllustration.AuthCloud,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = stringResource(Res.string.profile_guest_login_prompt),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = neubrutalMutedOnSurface()
-                )
-            }
+                    .padding(innerPadding)
+            )
         } else {
             LazyColumn(
                 modifier = modifier
@@ -208,6 +209,23 @@ fun ProfileScreen(
                     )
                 }
 
+                item {
+                    Column {
+                        Text(
+                            text = stringResource(Res.string.profile_ai_quota_section),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = neubrutalOnSurface(),
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        AiQuotaSummary(
+                            usage = state.aiUsage,
+                            isLoading = state.isLoadingAiUsage,
+                            hasError = state.aiUsageLoadFailed
+                        )
+                    }
+                }
+
                 // Account Section
                 item {
                     Column {
@@ -237,7 +255,7 @@ fun ProfileScreen(
                             MenuDivider()
                             ProfileMenuItem(
                                 icon = Icons.Default.Star,
-                                label = "AI jobs & drafts",
+                                label = stringResource(Res.string.profile_ai_jobs_menu),
                                 iconBackgroundColor = PastelPurple,
                                 onClick = onNavigateAiJobs
                             )

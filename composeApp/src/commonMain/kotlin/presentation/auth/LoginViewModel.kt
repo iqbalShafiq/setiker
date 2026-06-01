@@ -11,6 +11,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import presentation.common.UiText
+import presentation.common.toUiText
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.error_auth_login_failed
 
 class LoginViewModel(
     private val authApiService: AuthApiService,
@@ -54,14 +58,17 @@ class LoginViewModel(
                  if (accessToken != null && user != null) {
                      // Server sends refreshToken via HTTP-only cookie.
                      // We extract it from cookie storage and save it.
-                     authManager.saveTokens(accessToken, refreshToken ?: "", 3600)
+                     val expiresIn = (data.expiresIn ?: 3600).toLong()
+                     authManager.saveTokens(accessToken, refreshToken ?: "", expiresIn)
                      authManager.saveUser(user.toDomainModel())
                      _effect.value = LoginEffect.NavigateToHome
                  } else {
-                     _state.update { it.copy(isLoading = false, error = "Login failed") }
+                     _state.update {
+                         it.copy(isLoading = false, error = UiText.StringRes(Res.string.error_auth_login_failed))
+                     }
                  }
             } catch (e: Exception) {
-                _state.update { it.copy(isLoading = false, error = e.message ?: "Login failed") }
+                _state.update { it.copy(isLoading = false, error = e.toUiText(Res.string.error_auth_login_failed)) }
             }
         }
     }

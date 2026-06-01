@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import presentation.components.AppIllustration
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
 import presentation.components.AppTopBar
@@ -114,11 +115,13 @@ fun ProcessingHistoryScreen(
             state.isLoading -> LoadingIndicator(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
+                    .padding(innerPadding),
+                illustration = AppIllustration.LoadingState
             )
             state.items.isEmpty() -> EmptyState(
                 title = stringResource(Res.string.history_none_title),
                 description = state.error ?: stringResource(Res.string.history_none_desc),
+                illustration = if (state.error != null) AppIllustration.ErrorState else AppIllustration.SuccessSync,
                 modifier = modifier
                     .fillMaxSize()
                     .padding(innerPadding)

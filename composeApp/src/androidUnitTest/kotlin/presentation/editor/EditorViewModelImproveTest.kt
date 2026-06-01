@@ -9,6 +9,7 @@ import domain.model.StickerDecoration
 import domain.model.TextDecoration
 import domain.model.aijob.DraftStickerSnapshot
 import domain.repository.StickerRepository
+import domain.repository.AiQuotaRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -157,7 +158,8 @@ class EditorViewModelImproveTest {
             onDeviceImageProcessor = onDeviceImageProcessor,
             aiJobManager = deps.manager,
             enqueueHelper = deps.enqueueHelper,
-            draftResultApplier = deps.draftResultApplier
+            draftResultApplier = deps.draftResultApplier,
+            aiQuotaRepository = mockk<AiQuotaRepository>(relaxed = true)
         )
     }
 }

@@ -25,6 +25,8 @@ import androidx.navigation.navArgument
 import domain.model.AnimatedStickerSpec
 import domain.model.AuthState
 import data.auth.AuthManager
+import data.preferences.UserPreferencesRepository
+import data.sync.NetworkMonitor
 import presentation.animatededitor.AnimatedEditorEffect
 import presentation.animatededitor.AnimatedEditorScreenRoot
 import presentation.auth.LoginScreenRoot
@@ -45,6 +47,8 @@ import presentation.packdetail.PackDetailScreenRoot
 import presentation.publicpack.PublicPackDetailScreenRoot
 import presentation.sync.SyncScreenRoot
 import presentation.sync.SyncViewModel
+import presentation.onboarding.OnboardingScreenRoot
+import presentation.settings.SettingsScreenRoot
 import presentation.sharepreview.SharePreviewScreenRoot
 import presentation.videocrop.VideoCropScreenRoot
 import presentation.videostickerpack.VideoStickerPackScreenRoot
@@ -76,12 +80,28 @@ fun AppNavigation(
     notificationDeepLinkVersion: Int = 0
 ) {
     val authManager: AuthManager = koinInject()
+    val userPreferencesRepository: UserPreferencesRepository = koinInject()
+    val networkMonitor: NetworkMonitor = koinInject()
+    val onboardingCompleted by userPreferencesRepository.hasCompletedOnboarding.collectAsState(initial = true)
+    val isOnline by networkMonitor.isOnline.collectAsState()
     val workspaceDraftRepository: WorkspaceDraftRepository = koinInject()
     val aiJobRepository: AiJobRepository = koinInject()
     val authState by authManager.authState.collectAsState()
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
     val loginGuardRoutes = setOf("home", "profile", "sync", "history", "aiJobs")
+
+    LaunchedEffect(Unit) {
+        networkMonitor.startMonitoring()
+    }
+
+    LaunchedEffect(onboardingCompleted, currentRoute) {
+        if (!onboardingCompleted && currentRoute == "home") {
+            navController.navigate("onboarding") {
+                launchSingleTop = true
+            }
+        }
+    }
 
     LaunchedEffect(authState, currentRoute) {
         if (authState == AuthState.UNAUTHENTICATED) {
@@ -130,6 +150,32 @@ fun AppNavigation(
         navController = navController,
         startDestination = "home"
     ) {
+        composable("onboarding") {
+            OnboardingScreenRoot(
+                onFinished = {
+                    navController.navigate("home") {
+                        popUpTo("onboarding") { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable("settings") {
+            SettingsScreenRoot(
+                onBack = { navController.popBackStack() },
+                onAccountDeleted = {
+                    navController.navigate("login") {
+                        popUpTo("home") { inclusive = true }
+                    }
+                },
+                onShowOnboarding = {
+                    navController.navigate("onboarding") {
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+
         composable("home") {
             HomeScreenRoot(
                 onPackClick = { packId ->
@@ -153,7 +199,8 @@ fun AppNavigation(
                 onVideoStickerPackClick = { videoPath ->
                     navController.navigate(Screen.VideoStickerPack(videoPath).toRoute())
                 },
-                onAiJobsClick = { navController.navigate("aiJobs") }
+                onAiJobsClick = { navController.navigate("aiJobs") },
+                showOfflineBanner = !isOnline
             )
         }
 
@@ -325,7 +372,7 @@ fun AppNavigation(
                     }
                 },
                 onBackClick = { navController.navigateUp() },
-                onSettingsClick = {},
+                onSettingsClick = { navController.navigate("settings") },
                 onNavigateHome = {
                     navController.navigate("home") {
                         popUpTo("home") { inclusive = true }
@@ -471,6 +518,11 @@ fun AppNavigation(
                     navController.navigate(
                         "crop/${PathEncoder.encode(path)}/${CropRecipient.PackDetailImport}"
                     )
+                },
+                onNavigateToPack = { newPackId ->
+                    navController.navigate("packDetail/$newPackId") {
+                        launchSingleTop = true
+                    }
                 }
             )
         }

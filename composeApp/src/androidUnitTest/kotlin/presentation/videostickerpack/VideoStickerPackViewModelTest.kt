@@ -20,6 +20,7 @@ import domain.model.VideoAnimatedTimelineFrame
 import domain.model.VideoStaticStickerPlan
 import domain.model.VideoStickerPackPlan
 import domain.repository.StickerRepository
+import domain.repository.AiQuotaRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -325,7 +326,8 @@ class VideoStickerPackViewModelTest {
             draftSaver = draftSaver,
             aiJobManager = deps.manager,
             enqueueHelper = deps.enqueueHelper,
-            draftResultApplier = deps.draftResultApplier
+            draftResultApplier = deps.draftResultApplier,
+            aiQuotaRepository = mockk<AiQuotaRepository>(relaxed = true)
         )
         return viewModel to deps
     }

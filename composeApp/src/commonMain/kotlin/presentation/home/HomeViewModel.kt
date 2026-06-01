@@ -7,7 +7,12 @@ import data.auth.AuthManager
 import data.remote.StickerApiRepository
 import data.repository.StickerPackDraftSaver
 import data.sync.SyncManager
+import data.remote.ApiException
+import domain.error.AppErrorCode
+import domain.model.AiQuotaOperation
 import domain.model.StickerDraftInput
+import domain.repository.AiQuotaRepository
+import presentation.common.AiQuotaGate
 import domain.model.StickerPack
 import domain.model.SyncOperationStatus
 import domain.model.aijob.AiJobOrigin
@@ -42,9 +47,11 @@ import kotlin.random.Random
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_failed_add_pack
 import setiker.composeapp.generated.resources.error_failed_delete_pack
+import setiker.composeapp.generated.resources.error_load_packs_failed
 import setiker.composeapp.generated.resources.error_failed_generate_sticker_pack
 import setiker.composeapp.generated.resources.error_pack_min_stickers_whatsapp
 import setiker.composeapp.generated.resources.error_pack_name_required
+import setiker.composeapp.generated.resources.error_ai_quota_exceeded
 import setiker.composeapp.generated.resources.error_prompt_required
 import setiker.composeapp.generated.resources.error_publisher_required
 import setiker.composeapp.generated.resources.info_ai_job_started_background
@@ -59,7 +66,8 @@ class HomeViewModel(
     private val draftSaver: StickerPackDraftSaver,
     private val aiJobManager: AiJobManager,
     private val enqueueHelper: AiJobEnqueueHelper,
-    private val draftResultApplier: DraftResultApplier
+    private val draftResultApplier: DraftResultApplier,
+    private val aiQuotaRepository: AiQuotaRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(HomeState())
@@ -255,7 +263,7 @@ class HomeViewModel(
 
     fun onIntent(intent: HomeIntent) {
         when (intent) {
-            is HomeIntent.LoadPacks -> loadPacks()
+            is HomeIntent.LoadPacks, HomeIntent.RetryLoadPacks -> loadPacks()
             is HomeIntent.DeletePack -> deletePack(intent.packId)
             is HomeIntent.AddToWhatsApp -> addToWhatsApp(intent.packId)
             is HomeIntent.CreateNewPack -> {
@@ -296,6 +304,7 @@ class HomeViewModel(
             }
             is HomeIntent.OpenGeneratePackSheet -> {
                 _state.update { it.copy(isGeneratePackSheetOpen = true) }
+                refreshAiUsage()
             }
             is HomeIntent.CloseGeneratePackSheet -> {
                 _state.update { it.copy(isGeneratePackSheetOpen = false) }
@@ -329,12 +338,13 @@ class HomeViewModel(
 
     private fun loadPacks() {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            _state.update { it.copy(isLoading = true, loadFailed = false, error = null) }
             try {
                 val packs = repository.getAllPacks()
-                _state.update { it.copy(isLoading = false, packs = packs) }
+                _state.update { it.copy(isLoading = false, loadFailed = false, packs = packs) }
             } catch (e: Exception) {
-                _state.update { it.copy(isLoading = false, error = e.message) }
+                _state.update { it.copy(isLoading = false, loadFailed = true) }
+                _effect.send(HomeEffect.ShowError(e.toUiText(Res.string.error_load_packs_failed)))
             }
         }
     }
@@ -380,6 +390,20 @@ class HomeViewModel(
         }
     }
 
+    private fun refreshAiUsage() {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoadingAiUsage = true, aiUsageLoadFailed = false) }
+            val usage = aiQuotaRepository.getUsage(forceRefresh = true)
+            _state.update {
+                it.copy(
+                    aiUsage = usage,
+                    isLoadingAiUsage = false,
+                    aiUsageLoadFailed = usage == null
+                )
+            }
+        }
+    }
+
     private fun generateStickerPack() {
         viewModelScope.launch {
             val current = _state.value
@@ -412,17 +436,35 @@ class HomeViewModel(
                 context = context,
                 originRoute = "home"
             )
+            AiQuotaGate.checkCanStart(
+                aiQuotaRepository,
+                AiQuotaOperation.GENERATE,
+                forceRefresh = true
+            )?.let { message ->
+                _effect.send(HomeEffect.ShowError(message))
+                return@launch
+            }
             aiJobManager.upsertDraft(draft)
-            enqueueHelper.enqueueGeneratePack(
-                draft = draft,
-                payload = GeneratePackPayload(
-                    prompt = current.generatePackPrompt,
-                    layout = current.generatePackLayout,
-                    packName = current.generatePackName,
-                    publisher = current.generatePackPublisher,
-                    inputImagePath = current.generatePackInputImagePath
+            try {
+                enqueueHelper.enqueueGeneratePack(
+                    draft = draft,
+                    payload = GeneratePackPayload(
+                        prompt = current.generatePackPrompt,
+                        layout = current.generatePackLayout,
+                        packName = current.generatePackName,
+                        publisher = current.generatePackPublisher,
+                        inputImagePath = current.generatePackInputImagePath
+                    )
                 )
-            )
+            } catch (e: ApiException) {
+                if (e.code == AppErrorCode.AiQuotaExceeded) {
+                    _effect.send(HomeEffect.ShowError(UiText.StringRes(Res.string.error_ai_quota_exceeded)))
+                } else {
+                    _effect.send(HomeEffect.ShowError(e.toUiText(Res.string.error_failed_generate_sticker_pack)))
+                }
+                return@launch
+            }
+            refreshAiUsage()
             _state.update {
                 it.copy(
                     isGeneratePackLoading = true,

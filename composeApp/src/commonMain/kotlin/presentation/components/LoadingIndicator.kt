@@ -40,13 +40,21 @@ import androidx.compose.animation.core.Animatable
 @Composable
 fun LoadingIndicator(
     modifier: Modifier = Modifier,
-    label: String? = null
+    label: String? = null,
+    illustration: AppIllustration? = null
 ) {
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            if (illustration != null) {
+                AppIllustrationImage(
+                    illustration = illustration,
+                    modifier = Modifier.height(180.dp)
+                )
+                Spacer(modifier = Modifier.height(18.dp))
+            }
             Row(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically

@@ -1,8 +1,19 @@
-# WhatsApp Sticker Maker - Design Reference
+# Setiker - Design Reference
 
-## Design System Overview
+The production UI uses a **neubrutal** design system implemented in Compose Multiplatform.
 
-### Color Palette
+## Source of truth (code)
+
+- Theme tokens: `composeApp/src/commonMain/kotlin/presentation/theme/Theme.kt`
+- Colors: `presentation/theme/NeubrutalColors.kt`
+- Clay accents: `presentation/theme/Claymorphism.kt`
+- Shared components: `presentation/components/` (`AppTopBar`, `EmptyState`, `PackBottomBar`, `NeubrutalSearchBar`, sheets, dialogs)
+
+Prefer reusing these primitives over one-off screen styling.
+
+## Legacy notes (historical)
+
+### Color Palette (older Material3 mock)
 - **Primary:** #25D366 (WhatsApp Green)
 - **Secondary:** #128C7E (WhatsApp Dark Green)
 - **Surface:** #F0F2F5 (Light Gray)

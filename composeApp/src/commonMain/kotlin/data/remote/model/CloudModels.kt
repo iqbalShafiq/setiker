@@ -122,5 +122,7 @@ data class CloudStickerPackShareLink(
     val isActive: Boolean = true,
     val expiresAt: String? = null,
     val createdAt: String,
-    val shareUrl: String? = null
+    val shareUrl: String? = null,
+    val deepLinkUrl: String? = null,
+    val webFallbackUrl: String? = null
 )

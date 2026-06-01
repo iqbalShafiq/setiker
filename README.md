@@ -4,13 +4,20 @@ A Kotlin Multiplatform app for Android and iOS to create and manage WhatsApp sti
 
 ## Features
 
-- Create and manage sticker packs
-- Add/edit/delete stickers
-- Crop images to 512x512 pixel stickers
-- Remove backgrounds from images
+- Create and manage sticker packs (local-first, optional cloud sync when signed in)
+- Crop, decorate, and remove backgrounds; animated sticker packs from video
+- AI generation, improvement, grid split, and background jobs via `stiker-api`
+- Explore public packs, share links (`shareUrl`, `deepLinkUrl`, `webFallbackUrl`)
+- Auth (login/register), profile, settings (legal links, AI daily usage, account deletion)
+- Onboarding for first-run users
 - Export sticker packs to WhatsApp
-- Material3 Design System
-- Support for both Android and iOS
+- Neubrutal Compose UI (Android + iOS)
+
+### iOS limitations
+
+- WhatsApp pack export and some on-device processing paths differ from Android
+- Unsupported operations show localized messaging instead of failing silently
+- Configure API base URL in `ApiConfig.ios.kt` for your environment
 
 ## Tech Stack
 
@@ -37,6 +44,16 @@ setiker/
 └── docs/
     ├── design/                     # Design references
     └── plans/                      # Implementation plans
+```
+
+## API dependency
+
+The app expects a compatible **stiker-api** backend (auth subcodes, refresh body, `/api/v1/ai/usage`, `/api/v1/legal/*`, share URL fields). Point `ApiConfig` at your server.
+
+## Verification
+
+```bash
+./gradlew :composeApp:testDebugUnitTest :composeApp:lint
 ```
 
 ## Getting Started

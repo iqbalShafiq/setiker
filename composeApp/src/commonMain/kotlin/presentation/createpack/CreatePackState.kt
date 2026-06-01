@@ -1,5 +1,7 @@
 package presentation.createpack
 
+import domain.model.AiUsage
+
 enum class GridSplitSheetPhase {
     Hidden,
     ConfirmPick,
@@ -47,7 +49,10 @@ data class CreatePackState(
     val pendingTrayGalleryPath: String? = null,
     val workspaceDraftId: String? = null,
     val backgroundJobMessage: String? = null,
-    val backgroundJobProgress: Float = 0f
+    val backgroundJobProgress: Float = 0f,
+    val aiUsage: AiUsage? = null,
+    val isLoadingAiUsage: Boolean = false,
+    val aiUsageLoadFailed: Boolean = false
 ) {
     /**
      * Pack is treated as animated whenever at least one sticker is animated. This is decided

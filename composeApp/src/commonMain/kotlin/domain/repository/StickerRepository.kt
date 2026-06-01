@@ -17,6 +17,7 @@ interface StickerRepository {
     suspend fun getPack(identifier: String): StickerPack
     suspend fun savePack(pack: StickerPack)
     suspend fun deletePack(identifier: String)
+    suspend fun duplicatePack(identifier: String): String
     suspend fun addStickerToPack(packId: String, sticker: Sticker)
     suspend fun updateStickerInPack(packId: String, index: Int, sticker: Sticker)
     suspend fun removeStickerFromPack(packId: String, index: Int)

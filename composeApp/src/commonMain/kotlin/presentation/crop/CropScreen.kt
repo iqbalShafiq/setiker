@@ -44,6 +44,8 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
 import org.jetbrains.compose.resources.stringResource
+import presentation.components.AppIllustration
+import presentation.components.AppIllustrationImage
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
 import presentation.components.AppTopBar
@@ -99,7 +101,8 @@ fun CropScreen(
             LoadingIndicator(
                 modifier = modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
+                    .padding(innerPadding),
+                illustration = AppIllustration.LoadingState
             )
         } else {
             val border = neubrutalBorderColor()
@@ -145,11 +148,18 @@ fun CropScreen(
                             }
                         )
                     } else {
-                        Text(
-                            text = stringResource(Res.string.no_image_selected),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = neubrutalSubtleOnSurface()
-                        )
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            AppIllustrationImage(
+                                illustration = AppIllustration.EditorTools,
+                                modifier = Modifier.fillMaxWidth(0.82f)
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = stringResource(Res.string.no_image_selected),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = neubrutalSubtleOnSurface()
+                            )
+                        }
                     }
                 }
 

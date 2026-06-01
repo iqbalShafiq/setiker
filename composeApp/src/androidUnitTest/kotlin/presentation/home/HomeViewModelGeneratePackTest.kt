@@ -18,6 +18,10 @@ import domain.model.aijob.AiJobStatus
 import domain.model.aijob.AiJobType
 import domain.model.aijob.WorkspaceDraft
 import domain.model.aijob.WorkspaceDraftStatus
+import domain.model.AiQuotaOperation
+import domain.model.AiQuotaReservation
+import domain.model.AiUsage
+import domain.repository.AiQuotaRepository
 import domain.repository.StickerRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -206,8 +210,21 @@ class HomeViewModelGeneratePackTest {
         draftSaver = CapturingDraftSaver(fakePack()),
         aiJobManager = harness.manager,
         enqueueHelper = harness.enqueueHelper,
-        draftResultApplier = harness.draftResultApplier
+        draftResultApplier = harness.draftResultApplier,
+        aiQuotaRepository = fakeAiQuotaRepository()
     )
+
+    private fun fakeAiQuotaRepository(): AiQuotaRepository = object : AiQuotaRepository {
+        override suspend fun getUsage(forceRefresh: Boolean): AiUsage? = AiUsage(
+            pointLimit = 100,
+            pointsRemaining = 100
+        )
+        override suspend fun reserve(operation: AiQuotaOperation): AiQuotaReservation =
+            AiQuotaReservation("test-reservation", operation, 1, 99)
+        override suspend fun finalizeCommitted(reservationId: String) = Unit
+        override suspend fun finalizeReleased(reservationId: String) = Unit
+        override fun invalidateCache() = Unit
+    }
 
     private class HomeTestHarness(
         val manager: AiJobManager,

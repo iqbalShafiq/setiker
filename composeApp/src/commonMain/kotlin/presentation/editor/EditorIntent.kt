@@ -60,4 +60,6 @@ sealed interface EditorIntent {
     data object DismissGeneratedResultsSheet : EditorIntent
     data object CancelGeneratedResults : EditorIntent
     data object ShowGeneratedResultsSheet : EditorIntent
+    data object Undo : EditorIntent
+    data object Redo : EditorIntent
 }

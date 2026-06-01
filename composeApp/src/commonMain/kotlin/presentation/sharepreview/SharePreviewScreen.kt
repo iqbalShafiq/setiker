@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import presentation.components.AppIllustration
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
 import presentation.components.AppTopBar
@@ -79,11 +80,13 @@ fun SharePreviewScreen(
             state.isLoading -> LoadingIndicator(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
+                    .padding(innerPadding),
+                illustration = AppIllustration.LoadingState
             )
             state.error != null -> EmptyState(
                 title = stringResource(Res.string.share_preview_unavailable_title),
                 description = state.error,
+                illustration = AppIllustration.ErrorState,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)

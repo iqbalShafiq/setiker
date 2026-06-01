@@ -12,6 +12,9 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import presentation.common.UiText
+import presentation.common.toUiText
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.error_load_explore_failed
 
 class ExploreViewModel(
     private val exploreApiRepository: ExploreApiRepository
@@ -25,7 +28,8 @@ class ExploreViewModel(
 
     fun onIntent(intent: ExploreIntent) {
         when (intent) {
-            ExploreIntent.LoadInitial -> loadInitial()
+            ExploreIntent.LoadInitial -> loadInitial(refreshing = false)
+            ExploreIntent.Refresh -> loadInitial(refreshing = true)
             ExploreIntent.LoadMore -> loadMore()
             is ExploreIntent.ChangeSort -> changeSort(intent.sort)
             is ExploreIntent.SearchChanged -> _state.update { it.copy(searchQuery = intent.query) }
@@ -41,16 +45,26 @@ class ExploreViewModel(
         }
     }
 
-    private fun loadInitial() {
+    private fun loadInitial(refreshing: Boolean = false) {
         viewModelScope.launch {
             val current = _state.value
-            _state.update { it.copy(isLoading = true, error = null, page = 1) }
+            _state.update {
+                it.copy(
+                    isLoading = !refreshing,
+                    isRefreshing = refreshing,
+                    loadFailed = false,
+                    error = null,
+                    page = 1
+                )
+            }
             runCatching {
                 exploreApiRepository.getPublicPacks(page = 1, limit = current.limit, sort = current.sort)
             }.onSuccess { result ->
                 _state.update {
                     it.copy(
                         isLoading = false,
+                        isRefreshing = false,
+                        loadFailed = false,
                         error = null,
                         packs = result.data,
                         page = result.page,
@@ -58,8 +72,15 @@ class ExploreViewModel(
                     )
                 }
             }.onFailure { error ->
-                _state.update { it.copy(isLoading = false, error = error.message ?: "Failed to load packs") }
-                _effect.send(ExploreEffect.ShowError(UiText.DynamicString(error.message ?: "Failed to load packs")))
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        isRefreshing = false,
+                        loadFailed = true,
+                        error = null
+                    )
+                }
+                _effect.send(ExploreEffect.ShowError(error.toUiText(Res.string.error_load_explore_failed)))
             }
         }
     }

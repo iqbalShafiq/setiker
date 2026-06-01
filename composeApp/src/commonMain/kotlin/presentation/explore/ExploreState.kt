@@ -5,8 +5,10 @@ import data.remote.model.CloudStickerPack
 
 data class ExploreState(
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val isLoadingMore: Boolean = false,
     val isImporting: Boolean = false,
+    val loadFailed: Boolean = false,
     val error: String? = null,
     val packs: List<CloudStickerPack> = emptyList(),
     val searchQuery: String = "",

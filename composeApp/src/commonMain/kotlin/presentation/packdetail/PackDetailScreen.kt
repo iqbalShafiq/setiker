@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Share
@@ -55,6 +56,8 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import presentation.common.rememberShareTextAction
+import presentation.components.AppIllustration
+import presentation.components.AppIllustrationImage
 import presentation.components.AppDialog
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
@@ -93,6 +96,7 @@ import setiker.composeapp.generated.resources.cloud_links_share
 import setiker.composeapp.generated.resources.cloud_links_title
 import setiker.composeapp.generated.resources.delete
 import setiker.composeapp.generated.resources.delete_pack
+import setiker.composeapp.generated.resources.pack_duplicate
 import setiker.composeapp.generated.resources.delete_pack_dialog_message
 import setiker.composeapp.generated.resources.delete_pack_dialog_title
 import setiker.composeapp.generated.resources.delete_sticker_dialog_message
@@ -268,6 +272,12 @@ fun PackDetailScreen(
                         enabled = !state.isLoading && !isOperationInProgress
                     )
                     PackBottomBarIconButton(
+                        icon = Icons.Default.ContentCopy,
+                        contentDescription = stringResource(Res.string.pack_duplicate),
+                        onClick = { onIntent(PackDetailIntent.DuplicatePack) },
+                        enabled = !state.isLoading && !isOperationInProgress && state.pack != null
+                    )
+                    PackBottomBarIconButton(
                         icon = Icons.Default.Delete,
                         contentDescription = stringResource(Res.string.delete_pack),
                         onClick = { showDeleteDialog = true },
@@ -293,13 +303,15 @@ fun PackDetailScreen(
                     modifier = modifier
                         .fillMaxSize()
                         .padding(innerPadding),
-                    label = stringResource(Res.string.loading_pack)
+                    label = stringResource(Res.string.loading_pack),
+                    illustration = AppIllustration.LoadingState
                 )
             }
             state.pack == null -> {
                 EmptyState(
                     title = stringResource(Res.string.pack_not_found_title),
                     description = stringResource(Res.string.pack_not_found_desc),
+                    illustration = AppIllustration.ErrorState,
                     modifier = modifier
                         .fillMaxSize()
                         .padding(innerPadding)
@@ -487,6 +499,7 @@ private fun PackDetailContent(
             EmptyState(
                 title = stringResource(Res.string.no_stickers_title),
                 description = stringResource(Res.string.no_stickers_desc),
+                illustration = AppIllustration.EmptyPack,
                 modifier = Modifier.fillMaxWidth()
             )
         } else {
@@ -549,10 +562,18 @@ private fun CloudShareLinksSheet(
         )
         Spacer(modifier = Modifier.height(12.dp))
         if (isLoading) {
-            LoadingIndicator(label = "Loading links")
+            LoadingIndicator(
+                label = "Loading links",
+                illustration = AppIllustration.LoadingState
+            )
             return
         }
         if (links.isEmpty()) {
+            AppIllustrationImage(
+                illustration = AppIllustration.SuccessSync,
+                modifier = Modifier.height(140.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = stringResource(Res.string.cloud_links_empty),
                 style = MaterialTheme.typography.bodyMedium,

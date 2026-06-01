@@ -54,6 +54,8 @@ import coil3.compose.AsyncImage
 import org.jetbrains.compose.resources.stringResource
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
+import presentation.components.AppIllustration
+import presentation.components.AppIllustrationImage
 import presentation.components.AppTextField
 import presentation.components.AppTopBar
 import presentation.components.InteractionBlockedBox
@@ -209,7 +211,10 @@ fun CreatePackScreen(
             hasContextualDefault = false,
             isGenerating = state.isApiLoading,
             onGenerate = { onIntent(CreatePackIntent.GenerateStickers) },
-            onDismiss = { onIntent(CreatePackIntent.CloseAiGenerateSheet) }
+            onDismiss = { onIntent(CreatePackIntent.CloseAiGenerateSheet) },
+            aiUsage = state.aiUsage,
+            isLoadingQuota = state.isLoadingAiUsage,
+            quotaLoadFailed = state.aiUsageLoadFailed
         )
     }
 
@@ -341,14 +346,6 @@ fun CreatePackScreen(
                             style = MaterialTheme.typography.bodyMedium,
                             color = neubrutalOnSurface()
                         )
-                        if (!state.error.isNullOrBlank()) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = state.error,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = ErrorRed
-                            )
-                        }
                         if (state.isApiLoading) {
                             Spacer(modifier = Modifier.height(12.dp))
                             LinearProgressIndicator(
@@ -392,14 +389,6 @@ fun CreatePackScreen(
                             style = MaterialTheme.typography.labelMedium,
                             color = neubrutalMutedOnSurface()
                         )
-                        if (!state.error.isNullOrBlank()) {
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = state.error,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = ErrorRed
-                            )
-                        }
                         Spacer(modifier = Modifier.height(8.dp))
                         SelectableStickerGrid(
                             stickers = state.splitPreview,
@@ -624,7 +613,8 @@ fun CreatePackScreen(
             LoadingIndicator(
                 modifier = modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
+                    .padding(innerPadding),
+                illustration = AppIllustration.LoadingState
             )
         } else {
             InteractionBlockedBox(
@@ -639,6 +629,13 @@ fun CreatePackScreen(
                         .padding(horizontal = 20.dp, vertical = 16.dp)
                         .verticalScroll(rememberScrollState())
                 ) {
+                AppIllustrationImage(
+                    illustration = if (state.isEditing) AppIllustration.EditorTools else AppIllustration.EmptyPack,
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(bottom = 18.dp)
+                )
+
                 AppTextField(
                     value = state.name,
                     onValueChange = { onIntent(CreatePackIntent.UpdateName(it)) },

@@ -20,6 +20,7 @@ data class ApiErrorEnvelope(
 @Serializable
 data class ApiErrorPayload(
     val code: String? = null,
+    val subcode: String? = null,
     val message: String? = null,
     val details: List<String> = emptyList()
 )

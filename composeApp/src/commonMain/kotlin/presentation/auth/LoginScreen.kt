@@ -53,7 +53,25 @@ import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import presentation.theme.neubrutalSubtleOnSurface
+import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import presentation.common.UiText
+import presentation.common.resolveLocal
+import presentation.components.AppIllustration
+import presentation.components.AppIllustrationImage
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.login_email_invalid
+import setiker.composeapp.generated.resources.login_email_label
+import setiker.composeapp.generated.resources.login_email_placeholder
+import setiker.composeapp.generated.resources.login_no_account
+import setiker.composeapp.generated.resources.login_password_invalid
+import setiker.composeapp.generated.resources.login_password_label
+import setiker.composeapp.generated.resources.login_password_placeholder
+import setiker.composeapp.generated.resources.login_register_cta
+import setiker.composeapp.generated.resources.login_signing_in
+import setiker.composeapp.generated.resources.login_submit
+import setiker.composeapp.generated.resources.login_welcome_subtitle
+import setiker.composeapp.generated.resources.login_welcome_title
 
 @Composable
 fun LoginScreenRoot(
@@ -99,13 +117,18 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            AppIllustrationImage(
+                illustration = AppIllustration.AuthCloud,
+                modifier = Modifier.padding(top = 24.dp, bottom = 20.dp)
+            )
+
             // Header
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(bottom = 40.dp)
+                modifier = Modifier.padding(bottom = 28.dp)
             ) {
                 Text(
-                    text = "Welcome Back",
+                    text = stringResource(Res.string.login_welcome_title),
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.ExtraBold,
                     color = neubrutalOnSurface(),
@@ -115,7 +138,7 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Sign in to continue creating awesome stickers",
+                    text = stringResource(Res.string.login_welcome_subtitle),
                     style = MaterialTheme.typography.bodyLarge,
                     color = neubrutalSubtleOnSurface(),
                     textAlign = TextAlign.Center,
@@ -131,11 +154,11 @@ fun LoginScreen(
                 AppTextField(
                     value = state.email,
                     onValueChange = { onIntent(LoginIntent.UpdateEmail(it)) },
-                    label = "Email",
-                    placeholder = "your@email.com",
+                    label = stringResource(Res.string.login_email_label),
+                    placeholder = stringResource(Res.string.login_email_placeholder),
                     isError = !state.isEmailValid,
                     supportingText = if (!state.isEmailValid) {
-                        { Text("Please enter a valid email address", color = MaterialTheme.colorScheme.error) }
+                        { Text(stringResource(Res.string.login_email_invalid), color = MaterialTheme.colorScheme.error) }
                     } else null,
                     keyboardType = KeyboardType.Email,
                     imeAction = ImeAction.Next,
@@ -145,11 +168,11 @@ fun LoginScreen(
                 AppPasswordTextField(
                     value = state.password,
                     onValueChange = { onIntent(LoginIntent.UpdatePassword(it)) },
-                    label = "Password",
-                    placeholder = "Min 6 characters",
+                    label = stringResource(Res.string.login_password_label),
+                    placeholder = stringResource(Res.string.login_password_placeholder),
                     isError = !state.isPasswordValid,
                     supportingText = if (!state.isPasswordValid) {
-                        { Text("Password must be at least 6 characters", color = MaterialTheme.colorScheme.error) }
+                        { Text(stringResource(Res.string.login_password_invalid), color = MaterialTheme.colorScheme.error) }
                     } else null,
                     imeAction = ImeAction.Done,
                     modifier = Modifier.fillMaxWidth()
@@ -165,7 +188,7 @@ fun LoginScreen(
                 exit = shrinkVertically() + fadeOut()
             ) {
                 ErrorMessageBox(
-                    message = state.error ?: "",
+                    message = state.error?.resolveLocal().orEmpty(),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp)
@@ -175,7 +198,7 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             AppPrimaryButton(
-                text = if (state.isLoading) "Signing in..." else "Sign In",
+                text = stringResource(if (state.isLoading) Res.string.login_signing_in else Res.string.login_submit),
                 onClick = { onIntent(LoginIntent.Submit) },
                 enabled = !state.isLoading,
                 modifier = Modifier.fillMaxWidth()
@@ -188,12 +211,12 @@ fun LoginScreen(
                 modifier = Modifier.padding(bottom = 16.dp)
             ) {
                 Text(
-                    text = "Don't have an account? ",
+                    text = stringResource(Res.string.login_no_account) + " ",
                     style = MaterialTheme.typography.bodyMedium,
                     color = neubrutalSubtleOnSurface()
                 )
                 Text(
-                    text = "Register",
+                    text = stringResource(Res.string.login_register_cta),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary
@@ -244,7 +267,7 @@ private fun LoginScreenErrorPreview() {
                 password = "short",
                 isEmailValid = false,
                 isPasswordValid = false,
-                error = "Invalid credentials"
+                error = UiText.DynamicString("Invalid credentials")
             ),
             onIntent = {}
         )

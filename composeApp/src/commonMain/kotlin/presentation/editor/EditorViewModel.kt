@@ -25,6 +25,7 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 import data.util.EmojiPreferences
 import data.util.OnDeviceImageProcessor
+import domain.model.AiQuotaOperation
 import domain.model.DecorationFont
 import domain.model.DecorationFontWeight
 import domain.model.EmojiDecoration
@@ -33,6 +34,7 @@ import domain.model.Sticker
 import domain.model.StickerDecoration
 import domain.model.TextDecoration
 import domain.repository.StickerRepository
+import domain.repository.AiQuotaRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
@@ -45,6 +47,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 import kotlin.time.Clock
+import presentation.common.AiQuotaGate
 import presentation.common.UiText
 import presentation.common.toUiText
 import setiker.composeapp.generated.resources.Res
@@ -65,7 +68,8 @@ class EditorViewModel(
     private val onDeviceImageProcessor: OnDeviceImageProcessor,
     private val aiJobManager: AiJobManager,
     private val enqueueHelper: AiJobEnqueueHelper,
-    private val draftResultApplier: DraftResultApplier
+    private val draftResultApplier: DraftResultApplier,
+    private val aiQuotaRepository: AiQuotaRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(EditorState())
@@ -77,6 +81,14 @@ class EditorViewModel(
     private var packId: String = ""
     private var stickerIndex: Int? = null
     private var backgroundRemovalJob: Job? = null
+    private val undoStack = ArrayDeque<EditorHistoryEntry>()
+    private val redoStack = ArrayDeque<EditorHistoryEntry>()
+
+    private data class EditorHistoryEntry(
+        val decorations: List<StickerDecoration>,
+        val imagePath: String,
+        val selectedDecorationId: String?
+    )
 
     init {
         observeWorkspaceDraftResults()
@@ -136,6 +148,7 @@ class EditorViewModel(
     fun onIntent(intent: EditorIntent) {
         when (intent) {
             is EditorIntent.UpdateImagePath -> {
+                recordHistory()
                 _state.update {
                     it.copy(
                         imagePath = intent.path,
@@ -144,6 +157,8 @@ class EditorViewModel(
                     )
                 }
             }
+            EditorIntent.Undo -> undo()
+            EditorIntent.Redo -> redo()
             is EditorIntent.AddEmoji -> {
                 if (_state.value.emojis.size < Sticker.MAX_EMOJIS) {
                     _state.update { it.copy(emojis = it.emojis + intent.emoji) }
@@ -201,6 +216,7 @@ class EditorViewModel(
                 _state.update { it.copy(selectedDecorationId = intent.id) }
             }
             is EditorIntent.RemoveDecoration -> {
+                recordHistory()
                 _state.update {
                     it.copy(
                         decorations = it.decorations.filterNot { decoration -> decoration.id == intent.id },
@@ -295,6 +311,21 @@ class EditorViewModel(
                 improveConfirmVisible = false
             )
         }
+        refreshAiUsage()
+    }
+
+    private fun refreshAiUsage() {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoadingAiUsage = true, aiUsageLoadFailed = false) }
+            val usage = aiQuotaRepository.getUsage(forceRefresh = true)
+            _state.update {
+                it.copy(
+                    aiUsage = usage,
+                    isLoadingAiUsage = false,
+                    aiUsageLoadFailed = usage == null
+                )
+            }
+        }
     }
 
     private fun generateSticker() {
@@ -302,6 +333,14 @@ class EditorViewModel(
             val currentState = _state.value
             if (currentState.generatePrompt.isBlank()) {
                 _effect.send(EditorEffect.ShowError(UiText.StringRes(Res.string.error_prompt_required)))
+                return@launch
+            }
+            AiQuotaGate.checkCanStart(
+                aiQuotaRepository,
+                AiQuotaOperation.GENERATE,
+                forceRefresh = true
+            )?.let { message ->
+                _effect.send(EditorEffect.ShowError(message))
                 return@launch
             }
             val draft = upsertEditorDraft(currentState)
@@ -358,6 +397,14 @@ class EditorViewModel(
             val currentState = _state.value
             if (currentState.imagePath.isBlank()) {
                 _effect.send(EditorEffect.ShowError(UiText.StringRes(Res.string.error_select_image)))
+                return@launch
+            }
+            AiQuotaGate.checkCanStart(
+                aiQuotaRepository,
+                AiQuotaOperation.IMPROVE,
+                forceRefresh = true
+            )?.let { message ->
+                _effect.send(EditorEffect.ShowError(message))
                 return@launch
             }
             val draft = upsertEditorDraft(
@@ -428,6 +475,7 @@ class EditorViewModel(
 
     fun addImageDecoration(path: String) {
         if (path.isBlank()) return
+        recordHistory()
         _state.update {
             val decoration = ImageDecoration(
                 id = nextDecorationId(),
@@ -444,6 +492,7 @@ class EditorViewModel(
 
     private fun addTextDecoration(text: String, font: DecorationFont) {
         if (text.isBlank()) return
+        recordHistory()
         _state.update {
             val decoration = TextDecoration(
                 id = nextDecorationId(),
@@ -464,6 +513,7 @@ class EditorViewModel(
 
     private fun addEmojiDecoration(emoji: String) {
         if (emoji.isBlank()) return
+        recordHistory()
         _state.update {
             val decoration = EmojiDecoration(
                 id = nextDecorationId(),
@@ -620,6 +670,7 @@ class EditorViewModel(
         centerY: Float,
         scale: Float
     ) {
+        recordHistory()
         _state.update { current ->
             current.copy(
                 decorations = current.decorations.map { decoration ->
@@ -655,6 +706,14 @@ class EditorViewModel(
 
         viewModelScope.launch {
             val current = _state.value
+            AiQuotaGate.checkCanStart(
+                aiQuotaRepository,
+                AiQuotaOperation.BACKGROUND_REMOVE,
+                forceRefresh = true
+            )?.let { message ->
+                _effect.send(EditorEffect.ShowError(message))
+                return@launch
+            }
             val draft = upsertEditorDraft(current)
             enqueueHelper.enqueueRemoveBackground(
                 draft = draft,
@@ -821,7 +880,50 @@ class EditorViewModel(
 
     private fun nextDecorationId(): String = "dec_${Clock.System.now().toEpochMilliseconds()}_${Random.nextInt(1000, 9999)}"
 
+    private fun currentHistoryEntry(): EditorHistoryEntry {
+        val snapshot = _state.value
+        return EditorHistoryEntry(
+            decorations = snapshot.decorations,
+            imagePath = snapshot.imagePath,
+            selectedDecorationId = snapshot.selectedDecorationId
+        )
+    }
+
+    private fun recordHistory() {
+        undoStack.addLast(currentHistoryEntry())
+        while (undoStack.size > MAX_UNDO_STEPS) {
+            undoStack.removeFirst()
+        }
+        redoStack.clear()
+        _state.update { it.copy(canUndo = undoStack.isNotEmpty(), canRedo = false) }
+    }
+
+    private fun restoreHistory(entry: EditorHistoryEntry) {
+        _state.update {
+            it.copy(
+                decorations = entry.decorations,
+                imagePath = entry.imagePath,
+                selectedDecorationId = entry.selectedDecorationId
+            )
+        }
+    }
+
+    private fun undo() {
+        val previous = undoStack.removeLastOrNull() ?: return
+        redoStack.addLast(currentHistoryEntry())
+        restoreHistory(previous)
+        _state.update { it.copy(canUndo = undoStack.isNotEmpty(), canRedo = redoStack.isNotEmpty()) }
+    }
+
+    private fun redo() {
+        val next = redoStack.removeLastOrNull() ?: return
+        undoStack.addLast(currentHistoryEntry())
+        restoreHistory(next)
+        _state.update { it.copy(canUndo = undoStack.isNotEmpty(), canRedo = redoStack.isNotEmpty()) }
+    }
+
     private companion object {
+        private const val MAX_UNDO_STEPS = 20
         private const val AI_JOB_FALLBACK_LABEL = "Processing..."
 
         private val ACTIVE_AI_JOB_STATUSES = setOf(

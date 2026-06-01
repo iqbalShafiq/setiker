@@ -1,6 +1,7 @@
 package presentation.videostickerpack
 
 import domain.model.CandidateGridImage
+import domain.model.AiUsage
 import domain.model.ResolvedVideoStickerPackPlan
 import domain.model.VideoFrameCandidate
 import domain.model.VideoStickerCandidateManifestItem
@@ -34,7 +35,10 @@ data class VideoStickerPackState(
     val selectedAnimatedStickerKeys: Set<String> = emptySet(),
     val errorMessage: String? = null,
     val workspaceDraftId: String? = null,
-    val backgroundJobMessage: String? = null
+    val backgroundJobMessage: String? = null,
+    val aiUsage: AiUsage? = null,
+    val isLoadingAiUsage: Boolean = false,
+    val aiUsageLoadFailed: Boolean = false
 ) {
     val selectedDurationMs: Long
         get() = selectedEndMs - selectedStartMs

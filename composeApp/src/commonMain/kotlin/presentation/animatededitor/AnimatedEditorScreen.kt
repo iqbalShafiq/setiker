@@ -55,6 +55,8 @@ import domain.model.ImageDecoration
 import domain.model.Sticker
 import domain.model.TextDecoration
 import org.jetbrains.compose.resources.stringResource
+import presentation.common.resolveLocal
+import presentation.components.AppIllustration
 import presentation.components.AddTextDecorationBottomSheet
 import presentation.components.AppTextField
 import presentation.components.AppTopBar
@@ -284,7 +286,10 @@ fun AnimatedEditorScreen(
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         if (state.isLoading) {
-            LoadingIndicator(modifier = modifier.fillMaxSize().padding(innerPadding))
+            LoadingIndicator(
+                modifier = modifier.fillMaxSize().padding(innerPadding),
+                illustration = AppIllustration.VideoTools
+            )
         } else {
             InteractionBlockedBox(
                 blocked = state.isSaving,
@@ -448,9 +453,9 @@ fun AnimatedEditorScreen(
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
-                    if (!state.errorMessage.isNullOrBlank()) {
+                    state.error?.let { error ->
                         Text(
-                            text = state.errorMessage,
+                            text = error.resolveLocal(),
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall
                         )

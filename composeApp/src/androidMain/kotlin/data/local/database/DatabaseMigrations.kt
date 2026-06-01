@@ -120,4 +120,10 @@ object DatabaseMigrations {
             db.execSQL("CREATE INDEX IF NOT EXISTS index_ai_jobs_createdAt ON ai_jobs(createdAt)")
         }
     }
+
+    val MIGRATION_6_7 = object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE ai_jobs ADD COLUMN quotaReservationId TEXT")
+        }
+    }
 }

@@ -19,6 +19,7 @@ fun HomeScreenRoot(
     onLoginClick: () -> Unit,
     onVideoStickerPackClick: (String) -> Unit,
     onAiJobsClick: () -> Unit = {},
+    showOfflineBanner: Boolean = false,
     viewModel: HomeViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -49,6 +50,7 @@ fun HomeScreenRoot(
         state = state,
         onIntent = viewModel::onIntent,
         onPackClick = onPackClick,
-        snackbarHostState = snackbarHostState
+        snackbarHostState = snackbarHostState,
+        showOfflineBanner = showOfflineBanner
     )
 }

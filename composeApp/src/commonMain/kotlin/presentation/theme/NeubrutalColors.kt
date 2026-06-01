@@ -80,7 +80,11 @@ fun neubrutalOnPrimary(): Color = MaterialTheme.colorScheme.onPrimary
 @ReadOnlyComposable
 fun neubrutalGlossyHighlightColor(onFilledSurface: Boolean = false): Color =
     if (isSystemInDarkTheme()) {
-        NeubrutalWhite.copy(alpha = if (onFilledSurface) 0.58f else 0.42f)
+        if (onFilledSurface) {
+            NeubrutalGlossyHighlightDarkFilled.copy(alpha = 0.88f)
+        } else {
+            NeubrutalGlossyHighlightDark.copy(alpha = 0.74f)
+        }
     } else {
         NeubrutalGlossyHighlightLight
     }

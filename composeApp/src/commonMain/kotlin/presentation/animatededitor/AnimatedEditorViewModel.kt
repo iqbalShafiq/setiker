@@ -36,6 +36,12 @@ import kotlin.time.Clock
 import presentation.aijob.AiJobEnqueueHelper
 import presentation.aijob.WorkspaceDraftFactory
 import presentation.common.UiText
+import presentation.common.animatedFailureMessageToUiText
+import presentation.common.toAnimatedUiText
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.animated_error_draft_not_found
+import setiker.composeapp.generated.resources.animated_error_frames_missing
+import setiker.composeapp.generated.resources.animated_error_save_failed
 
 class AnimatedEditorViewModel(
     private val animatedDraftHelper: AnimatedWorkspaceDraftHelper,
@@ -107,9 +113,8 @@ class AnimatedEditorViewModel(
                             _state.update { it.copy(isSaving = false) }
                             _effect.send(
                                 AnimatedEditorEffect.ShowError(
-                                    UiText.DynamicString(
-                                        failed.failureMessage ?: "Failed to save animated sticker"
-                                    )
+                                    animatedFailureMessageToUiText(failed.failureMessage)
+                                        ?: UiText.StringRes(Res.string.animated_error_save_failed)
                                 )
                             )
                         }
@@ -226,7 +231,7 @@ class AnimatedEditorViewModel(
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = "Draft not found. Please pick the video again."
+                        error = UiText.StringRes(Res.string.animated_error_draft_not_found)
                     )
                 }
                 _effect.send(AnimatedEditorEffect.NavigateBack)
@@ -237,7 +242,7 @@ class AnimatedEditorViewModel(
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = "Frame files are missing. Please pick the video again."
+                        error = UiText.StringRes(Res.string.animated_error_frames_missing)
                     )
                 }
                 _effect.send(AnimatedEditorEffect.NavigateBack)
@@ -420,7 +425,7 @@ class AnimatedEditorViewModel(
                     isSaving = true,
                     saveProgress = 0f,
                     saveProgressLabel = null,
-                    errorMessage = null,
+                    error = null,
                     backgroundJobMessage = AI_JOB_FALLBACK_LABEL
                 )
             }
@@ -438,9 +443,7 @@ class AnimatedEditorViewModel(
             } catch (e: Exception) {
                 _state.update { it.copy(isSaving = false, backgroundJobMessage = null) }
                 _effect.send(
-                    AnimatedEditorEffect.ShowError(
-                        UiText.DynamicString(e.message ?: "Failed to save animated sticker")
-                    )
+                    AnimatedEditorEffect.ShowError(e.toAnimatedUiText(Res.string.animated_error_save_failed))
                 )
             }
         }

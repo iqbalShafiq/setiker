@@ -303,6 +303,35 @@ class StickerRepositoryImpl(
             it.status == SyncOperationStatus.PENDING
         } ?: 0
     }
+
+    override suspend fun duplicatePack(identifier: String): String = withContext(Dispatchers.Default) {
+        val source = getPack(identifier)
+        val newId = Uuid.random().toString()
+        val trayPath = fileStorage.saveTrayImage(
+            source.trayImageFile,
+            "tray_${newId}_${Clock.System.now().toEpochMilliseconds()}.webp"
+        )
+        val copiedStickers = source.stickers.mapIndexed { index, sticker ->
+            val imagePath = fileStorage.saveStickerImage(
+                sticker.imageFile,
+                "sticker_${newId}_$index.webp"
+            )
+            sticker.copy(
+                imageFile = imagePath,
+                sourceImageFile = sticker.sourceImageFile?.let { sourcePath ->
+                    fileStorage.saveImage(sourcePath, "src_${newId}_$index.webp")
+                }
+            )
+        }
+        val duplicate = source.copy(
+            identifier = newId,
+            name = "${source.name} (copy)",
+            stickers = copiedStickers,
+            trayImageFile = trayPath
+        )
+        savePack(duplicate)
+        newId
+    }
 }
 
 internal data class PackSaveSyncTarget(

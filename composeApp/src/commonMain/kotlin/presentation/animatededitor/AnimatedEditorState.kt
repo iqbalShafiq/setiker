@@ -3,6 +3,7 @@ package presentation.animatededitor
 import domain.model.DecodedFrame
 import domain.model.Sticker
 import domain.model.StickerDecoration
+import presentation.common.UiText
 
 enum class DecorationApplyScope {
     AllFrames,
@@ -27,7 +28,7 @@ data class AnimatedEditorState(
     val backgroundJobMessage: String? = null,
     val saveProgress: Float = 0f,
     val saveProgressLabel: String? = null,
-    val errorMessage: String? = null,
+    val error: UiText? = null,
     val showEmojiPicker: Boolean = false,
     val showTextDecorationSheet: Boolean = false,
     val showDecorationEmojiPicker: Boolean = false,

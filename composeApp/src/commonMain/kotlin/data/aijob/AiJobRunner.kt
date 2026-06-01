@@ -35,8 +35,10 @@ import domain.model.aijob.WorkspaceDraftContext
 import domain.model.aijob.WorkspaceDraftStatus
 import domain.model.aijob.toStored
 import domain.repository.AiJobRepository
+import domain.repository.AiQuotaRepository
 import domain.repository.StickerRepository
 import domain.repository.WorkspaceDraftRepository
+import presentation.common.settlesQuotaOnApi
 import domain.util.VideoStickerPackPlanner
 import data.util.OnDeviceImageProcessor
 import kotlin.time.Clock
@@ -49,6 +51,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import presentation.aijob.toSnapshot
 import presentation.common.PackIdentifierSanitizer
+import presentation.common.toQuotaOperation
 import presentation.videostickerpack.selectionKey
 import kotlin.random.Random
 
@@ -63,25 +66,44 @@ class AiJobRunner(
     private val draftSaver: StickerPackDraftSaver,
     private val stickerRepository: StickerRepository,
     private val jobManager: AiJobManager,
-    private val animatedDraftHelper: AnimatedWorkspaceDraftHelper
+    private val animatedDraftHelper: AnimatedWorkspaceDraftHelper,
+    private val quotaRepository: AiQuotaRepository
 ) {
     suspend fun runClaimedJob(job: AiJob): Boolean {
         if (isCancelled(job.id)) return false
+        var activeJob = job
         return try {
-            when (job.type) {
-                AiJobType.GENERATE_STICKERS -> runGenerateStickers(job)
-                AiJobType.GENERATE_PACK -> runGeneratePack(job)
-                AiJobType.IMPROVE_STICKERS -> runImproveStickers(job)
-                AiJobType.GRID_SPLIT -> runGridSplit(job)
-                AiJobType.REMOVE_BACKGROUND -> runRemoveBackground(job)
-                AiJobType.VIDEO_PACK -> runVideoPack(job)
-                AiJobType.ANIMATED_ENCODE -> runAnimatedEncode(job)
+            activeJob = reserveQuotaForRun(job)
+            when (activeJob.type) {
+                AiJobType.GENERATE_STICKERS -> runGenerateStickers(activeJob)
+                AiJobType.GENERATE_PACK -> runGeneratePack(activeJob)
+                AiJobType.IMPROVE_STICKERS -> runImproveStickers(activeJob)
+                AiJobType.GRID_SPLIT -> runGridSplit(activeJob)
+                AiJobType.REMOVE_BACKGROUND -> runRemoveBackground(activeJob)
+                AiJobType.VIDEO_PACK -> runVideoPack(activeJob)
+                AiJobType.ANIMATED_ENCODE -> runAnimatedEncode(activeJob)
             }
             true
         } catch (throwable: Throwable) {
-            handleFailure(job, throwable)
+            handleFailure(activeJob, throwable)
             false
         }
+    }
+
+    private suspend fun reserveQuotaForRun(job: AiJob): AiJob {
+        val operation = job.type.toQuotaOperation() ?: return job
+        job.quotaReservationId?.let { reservationId ->
+            runCatching { quotaRepository.finalizeReleased(reservationId) }
+        }
+        val reservation = quotaRepository.reserve(operation)
+        quotaRepository.invalidateCache()
+        val now = Clock.System.now().toEpochMilliseconds()
+        val updated = job.copy(
+            quotaReservationId = reservation.reservationId,
+            updatedAt = now
+        )
+        jobRepository.update(updated)
+        return updated
     }
 
     private suspend fun runGenerateStickers(job: AiJob) {
@@ -90,7 +112,11 @@ class AiJobRunner(
         if (!payload.inputImagePath.isNullOrBlank() && !SourcePathValidator.exists(payload.inputImagePath)) {
             throw IllegalStateException("Input image file not found")
         }
-        val generated = apiRepository.generateStickers(payload.prompt, payload.inputImagePath)
+        val generated = apiRepository.generateStickers(
+            prompt = payload.prompt,
+            inputImagePath = payload.inputImagePath,
+            reservationId = job.quotaReservationId
+        )
         val result = GenerateStickersResult(
             previews = generated.map { file ->
                 presentation.createpack.DraftSticker(
@@ -132,7 +158,8 @@ class AiJobRunner(
                 apiRepository.fetchGeneratePackGridPath(
                     prompt = payload.prompt,
                     layout = payload.layout,
-                    inputImagePath = payload.inputImagePath
+                    inputImagePath = payload.inputImagePath,
+                    reservationId = job.quotaReservationId
                 )
             } finally {
                 waiter.cancel()
@@ -182,7 +209,10 @@ class AiJobRunner(
         payload.imagePaths.forEach { path ->
             if (!SourcePathValidator.exists(path)) throw IllegalStateException("Sticker file not found: $path")
         }
-        val improved = apiRepository.improve(payload.imagePaths)
+        val improved = apiRepository.improve(
+            imagePaths = payload.imagePaths,
+            reservationId = job.quotaReservationId
+        )
         val result = ImproveStickersResult(
             previews = improved.map { file ->
                 presentation.createpack.DraftSticker(
@@ -314,7 +344,8 @@ class AiJobRunner(
             selectedStartMs = payload.selectedStartMs,
             selectedEndMs = payload.selectedEndMs,
             sourceDurationMs = payload.sourceDurationMs,
-            prompt = payload.prompt
+            prompt = payload.prompt,
+            reservationId = job.quotaReservationId
         )
         val stored = generated.toStored()
         val planJson = AiJobJson.codec.encodeToString(stored)
@@ -456,6 +487,7 @@ class AiJobRunner(
             lastFailedJobId = job.id
         )
         draftRepository.updateStatus(job.workspaceDraftId, WorkspaceDraftStatus.NEEDS_ATTENTION)
+        settleQuotaOnFailure(job)
         if (status == AiJobStatus.FAILED_RETRYABLE) {
             val nextRetryAt = jobManager.computeNextRetryAt(job.attemptCount)
             jobRepository.update(
@@ -482,6 +514,21 @@ class AiJobRunner(
             id = job.workspaceDraftId,
             lastCompletedJobId = job.id
         )
+        settleQuotaOnSuccess(job)
+    }
+
+    private suspend fun settleQuotaOnSuccess(job: AiJob) {
+        val reservationId = job.quotaReservationId ?: return
+        if (!job.type.settlesQuotaOnApi()) {
+            runCatching { quotaRepository.finalizeCommitted(reservationId) }
+        }
+        quotaRepository.invalidateCache()
+    }
+
+    private suspend fun settleQuotaOnFailure(job: AiJob) {
+        val reservationId = job.quotaReservationId ?: return
+        runCatching { quotaRepository.finalizeReleased(reservationId) }
+        quotaRepository.invalidateCache()
     }
 
     private suspend fun saveCheckpoint(job: AiJob, checkpoint: VideoPackCheckpoint) {

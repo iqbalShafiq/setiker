@@ -34,6 +34,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import presentation.components.AppIllustration
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
 import presentation.components.AppTopBar
@@ -123,11 +124,13 @@ fun PublicPackDetailScreen(
             state.isLoading -> LoadingIndicator(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
+                    .padding(innerPadding),
+                illustration = AppIllustration.LoadingState
             )
             state.pack == null -> EmptyState(
                 title = stringResource(Res.string.explore_pack_not_found_title),
                 description = state.error ?: stringResource(Res.string.explore_pack_not_found_desc),
+                illustration = AppIllustration.ErrorState,
                 modifier = modifier
                     .fillMaxSize()
                     .padding(innerPadding)

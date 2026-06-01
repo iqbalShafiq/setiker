@@ -8,6 +8,7 @@ import domain.model.aijob.AiJobType
 import domain.model.aijob.WorkspaceDraft
 import domain.model.aijob.WorkspaceDraftStatus
 import domain.repository.AiJobRepository
+import domain.repository.AiQuotaRepository
 import domain.repository.WorkspaceDraftRepository
 import kotlin.random.Random
 import kotlin.time.Clock
@@ -19,7 +20,8 @@ import kotlinx.coroutines.flow.Flow
 class AiJobManager(
     private val jobRepository: AiJobRepository,
     private val draftRepository: WorkspaceDraftRepository,
-    private val scheduler: AiBackgroundScheduler
+    private val scheduler: AiBackgroundScheduler,
+    private val quotaRepository: AiQuotaRepository
 ) {
     companion object {
         const val MAX_AUTO_RETRY_ATTEMPTS = 5
@@ -76,6 +78,7 @@ class AiJobManager(
             attemptGroupId = groupId,
             parentJobId = parentJobId,
             requiresNetwork = requiresNetwork,
+            quotaReservationId = null,
             createdAt = now,
             updatedAt = now
         )
@@ -105,6 +108,9 @@ class AiJobManager(
 
     suspend fun cancelJob(jobId: String) {
         val job = jobRepository.getById(jobId) ?: return
+        job.quotaReservationId?.let { reservationId ->
+            runCatching { quotaRepository.finalizeReleased(reservationId) }
+        }
         jobRepository.updateStatus(
             id = jobId,
             status = AiJobStatus.CANCEL_REQUESTED,
@@ -133,6 +139,9 @@ class AiJobManager(
         jobRepository.requeueActiveRunningJobs(now)
         val interrupted = jobRepository.resetStaleRunningJobs(now)
         interrupted.forEach { job ->
+            job.quotaReservationId?.let { reservationId ->
+                runCatching { quotaRepository.finalizeReleased(reservationId) }
+            }
             draftRepository.updateStatus(job.workspaceDraftId, WorkspaceDraftStatus.NEEDS_ATTENTION)
             draftRepository.updateJobLinks(
                 id = job.workspaceDraftId,

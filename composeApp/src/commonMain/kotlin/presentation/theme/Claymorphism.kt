@@ -19,7 +19,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -155,22 +155,36 @@ internal fun DrawScope.drawNeubrutalGlossyHighlight(
     // Nudge the bevel slightly toward the top-left so it hugs the inner border edge.
     val insetPx = (inset.toPx() - 0.5f).coerceAtLeast(0f)
     val minSide = min(size.width, size.height)
-    val bandPx = min(bandWidth.toPx(), minSide * 0.18f).coerceIn(2.5f, minSide * 0.22f)
+    if (minSide <= 0f || size.width <= insetPx * 2f || size.height <= insetPx * 2f) return
+
+    val maxBandPx = minSide * 0.22f
+    val minBandPx = 2.5f
+    val preferredBandPx = min(bandWidth.toPx(), minSide * 0.18f)
+    val bandPx = if (maxBandPx < minBandPx) {
+        maxBandPx
+    } else {
+        preferredBandPx.coerceIn(minBandPx, maxBandPx)
+    }
+    if (bandPx <= 0f) return
+
     val radiusPx = min(cornerRadius.toPx(), minSide / 2f)
     val innerRadiusPx = (radiusPx - bandPx).coerceAtLeast(0f)
+    val right = size.width - insetPx
+    val bottom = size.height - insetPx
+    val fillAlpha = (highlightColor.alpha * 0.82f).coerceAtMost(1f)
+    val sheenAlpha = (highlightColor.alpha * 1.12f).coerceAtMost(1f)
 
-    val path = Path().apply {
+    val bevelPath = Path().apply {
         if (radiusPx <= 0f) {
-            moveTo(size.width - insetPx, insetPx)
+            moveTo(right, insetPx)
             lineTo(insetPx, insetPx)
-            lineTo(insetPx, size.height - insetPx)
-            lineTo(insetPx + bandPx, size.height - insetPx)
+            lineTo(insetPx, bottom)
+            lineTo(insetPx + bandPx, bottom)
             lineTo(insetPx + bandPx, insetPx + bandPx)
-            lineTo(size.width - insetPx, insetPx + bandPx)
+            lineTo(right, insetPx + bandPx)
             close()
         } else {
-            // Filled L-bevel: outer contour follows the inner border, band thickness on top + left.
-            moveTo(size.width - insetPx, insetPx)
+            moveTo(right, insetPx)
             lineTo(insetPx + radiusPx, insetPx)
             arcTo(
                 rect = Rect(
@@ -183,8 +197,8 @@ internal fun DrawScope.drawNeubrutalGlossyHighlight(
                 sweepAngleDegrees = -90f,
                 forceMoveTo = false
             )
-            lineTo(insetPx, size.height - insetPx)
-            lineTo(insetPx + bandPx, size.height - insetPx)
+            lineTo(insetPx, bottom)
+            lineTo(insetPx + bandPx, bottom)
             if (innerRadiusPx > 0f) {
                 lineTo(insetPx + bandPx, insetPx + bandPx + innerRadiusPx)
                 arcTo(
@@ -201,11 +215,56 @@ internal fun DrawScope.drawNeubrutalGlossyHighlight(
             } else {
                 lineTo(insetPx + bandPx, insetPx + bandPx)
             }
-            lineTo(size.width - insetPx, insetPx + bandPx)
+            lineTo(right, insetPx + bandPx)
             close()
         }
     }
-    drawPath(path = path, color = highlightColor)
+
+    // Keep the filled bevel continuous; the gradient is only sheen, not the
+    // base fill, so the right side no longer looks erased.
+    drawPath(
+        path = bevelPath,
+        color = highlightColor.copy(alpha = fillAlpha)
+    )
+
+    val topSheenBrush = Brush.verticalGradient(
+        colors = listOf(
+            highlightColor.copy(alpha = sheenAlpha),
+            highlightColor.copy(alpha = fillAlpha * 0.52f)
+        ),
+        startY = insetPx,
+        endY = insetPx + bandPx
+    )
+    drawPath(
+        path = bevelPath,
+        brush = topSheenBrush,
+    )
+
+    val leftSheenBrush = Brush.horizontalGradient(
+        colors = listOf(
+            highlightColor.copy(alpha = fillAlpha * 0.54f),
+            highlightColor.copy(alpha = 0f)
+        ),
+        startX = insetPx,
+        endX = insetPx + bandPx
+    )
+    drawPath(
+        path = bevelPath,
+        brush = leftSheenBrush,
+    )
+
+    val rimAlpha = (highlightColor.alpha * 0.9f).coerceAtMost(1f)
+    val rimWidth = (bandPx * 0.32f).coerceAtLeast(1.25f)
+    val rimPath = Path().apply {
+        moveTo(right, insetPx + bandPx)
+        lineTo(insetPx + bandPx, insetPx + bandPx)
+        lineTo(insetPx + bandPx, bottom)
+    }
+    drawPath(
+        path = rimPath,
+        color = highlightColor.copy(alpha = rimAlpha),
+        style = androidx.compose.ui.graphics.drawscope.Stroke(width = rimWidth)
+    )
 }
 
 /* ============================================

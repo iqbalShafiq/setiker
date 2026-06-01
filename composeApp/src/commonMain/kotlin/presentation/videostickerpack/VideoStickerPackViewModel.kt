@@ -24,6 +24,7 @@ import data.storage.StickerFileStorage
 import data.video.CandidateGridComposer
 import data.video.VideoFrameCandidateExtractor
 import domain.model.AnimatedStickerSpec
+import domain.model.AiQuotaOperation
 import domain.model.DecodedFrame
 import domain.model.ResolvedVideoAnimatedSticker
 import domain.model.ResolvedVideoStaticSticker
@@ -31,6 +32,7 @@ import domain.model.Sticker
 import domain.model.StickerDraftInput
 import domain.model.StickerPack
 import domain.repository.StickerRepository
+import domain.repository.AiQuotaRepository
 import domain.util.VideoStickerPackPlanner
 import kotlin.random.Random
 import kotlin.time.Clock
@@ -45,6 +47,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import presentation.common.PackIdentifierSanitizer
+import presentation.common.AiQuotaGate
 import presentation.common.UiText
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_failed_generate_video_sticker_pack
@@ -59,7 +62,8 @@ class VideoStickerPackViewModel(
     private val draftSaver: StickerPackDraftSaver,
     private val aiJobManager: AiJobManager,
     private val enqueueHelper: AiJobEnqueueHelper,
-    private val draftResultApplier: DraftResultApplier
+    private val draftResultApplier: DraftResultApplier,
+    private val aiQuotaRepository: AiQuotaRepository
 ) : ViewModel() {
     private val _state = MutableStateFlow(VideoStickerPackState())
     val state: StateFlow<VideoStickerPackState> = _state.asStateFlow()
@@ -72,6 +76,21 @@ class VideoStickerPackViewModel(
 
     init {
         observeWorkspaceDraftResults()
+        refreshAiUsage()
+    }
+
+    private fun refreshAiUsage() {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoadingAiUsage = true, aiUsageLoadFailed = false) }
+            val usage = aiQuotaRepository.getUsage(forceRefresh = true)
+            _state.update {
+                it.copy(
+                    aiUsage = usage,
+                    isLoadingAiUsage = false,
+                    aiUsageLoadFailed = usage == null
+                )
+            }
+        }
     }
 
     private fun observeWorkspaceDraftResults() {
@@ -342,6 +361,14 @@ class VideoStickerPackViewModel(
                     return@launch
                 }
             stopPreviewPlayback()
+            AiQuotaGate.checkCanStart(
+                aiQuotaRepository,
+                AiQuotaOperation.VIDEO_STICKER_PACK,
+                forceRefresh = true
+            )?.let { message ->
+                _effect.send(VideoStickerPackEffect.ShowError(message))
+                return@launch
+            }
             val context = WorkspaceDraftContext(
                 videoPath = current.videoPath,
                 prompt = current.prompt,

@@ -1,6 +1,7 @@
 package presentation.editor
 
 import domain.model.StickerDecoration
+import domain.model.AiUsage
 import presentation.createpack.DraftSticker
 
 data class EditorState(
@@ -37,5 +38,10 @@ data class EditorState(
     val improveConfirmVisible: Boolean = false,
     val removeBackgroundConfirmVisible: Boolean = false,
     val workspaceDraftId: String? = null,
-    val backgroundJobMessage: String? = null
+    val backgroundJobMessage: String? = null,
+    val aiUsage: AiUsage? = null,
+    val isLoadingAiUsage: Boolean = false,
+    val aiUsageLoadFailed: Boolean = false,
+    val canUndo: Boolean = false,
+    val canRedo: Boolean = false
 )

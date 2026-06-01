@@ -10,6 +10,7 @@ import domain.model.StickerDraftInput
 import domain.model.StickerPack
 import domain.model.TextDecoration
 import domain.repository.StickerRepository
+import domain.repository.AiQuotaRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -68,7 +69,8 @@ class CreatePackViewModelSavePackTest {
             aiJobManager = aiDeps.manager,
             enqueueHelper = aiDeps.enqueueHelper,
             draftResultApplier = aiDeps.draftResultApplier,
-            jobRepository = aiDeps.jobRepository
+            jobRepository = aiDeps.jobRepository,
+            aiQuotaRepository = mockk<AiQuotaRepository>(relaxed = true)
         )
 
         viewModel.onIntent(CreatePackIntent.UpdateName("My Pack"))

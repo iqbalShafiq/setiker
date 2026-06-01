@@ -1,42 +1,22 @@
 package presentation.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.jetbrains.compose.resources.stringResource
-import presentation.theme.NeubrutalBorderWidth
-import presentation.theme.NeubrutalCardRadius
-import presentation.theme.NeubrutalDark
-import presentation.theme.NeubrutalShadowOffset
-import presentation.theme.PastelMint
-import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
-import presentation.theme.neubrutalBorderWithGloss
-import presentation.theme.neubrutalGlossyHighlightColor
-import presentation.theme.neubrutalShadow
-import presentation.theme.neubrutalShadowColor
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.create_pack_title
 import setiker.composeapp.generated.resources.no_stickers_yet_desc
@@ -47,6 +27,7 @@ fun EmptyState(
     title: String,
     description: String,
     modifier: Modifier = Modifier,
+    illustration: AppIllustration = AppIllustration.EmptyPack,
     action: @Composable (() -> Unit)? = null
 ) {
     Column(
@@ -56,32 +37,11 @@ fun EmptyState(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Box(
+        AppIllustrationImage(
+            illustration = illustration,
             modifier = Modifier
-                .size(88.dp)
-                .neubrutalShadow(
-                    offsetX = NeubrutalShadowOffset,
-                    offsetY = NeubrutalShadowOffset,
-                    cornerRadius = NeubrutalCardRadius,
-                    color = neubrutalShadowColor()
-                )
-                .clip(RoundedCornerShape(NeubrutalCardRadius))
-                .background(PastelMint)
-                .neubrutalBorderWithGloss(
-                    color = neubrutalBorderColor(),
-                    cornerRadius = NeubrutalCardRadius,
-                    highlightColor = neubrutalGlossyHighlightColor()
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            // PastelMint stays bright in both themes; keep contrast with NeubrutalDark.
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = null,
-                modifier = Modifier.size(40.dp),
-                tint = NeubrutalDark
-            )
-        }
+                .padding(horizontal = 6.dp)
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
 

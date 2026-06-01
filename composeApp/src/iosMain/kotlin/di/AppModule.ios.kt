@@ -39,6 +39,7 @@ actual fun platformModule(): Module = module {
         )
             .setDriver(BundledSQLiteDriver())
             .setQueryCoroutineContext(Dispatchers.IO)
+            .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
     }
 

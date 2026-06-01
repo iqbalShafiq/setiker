@@ -45,7 +45,10 @@ import domain.model.SyncReport
 import domain.model.SyncResult
 import domain.model.SyncStage
 import presentation.components.AppTopBar
+import presentation.components.AppIllustration
+import presentation.components.EmptyState
 import presentation.components.InteractionBlockedBox
+import presentation.components.LoadingIndicator
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
@@ -148,18 +151,16 @@ fun SyncScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             if (state.isLoading) {
-                Box(
+                LoadingIndicator(
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
+                    illustration = AppIllustration.LoadingState
+                )
             } else if (state.operations.isEmpty()) {
-                Text(
-                    text = "No local changes. Cloud sync will run automatically when you are online.",
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp)
+                EmptyState(
+                    title = "All synced",
+                    description = "No local changes. Cloud sync will run automatically when you are online.",
+                    illustration = AppIllustration.SuccessSync,
+                    modifier = Modifier.fillMaxSize()
                 )
             } else {
                 LazyColumn(
