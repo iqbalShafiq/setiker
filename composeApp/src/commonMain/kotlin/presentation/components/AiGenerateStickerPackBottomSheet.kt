@@ -1,7 +1,6 @@
 package presentation.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,12 +30,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import domain.model.AiQuotaOperation
+import domain.model.AiUsage
 import org.jetbrains.compose.resources.stringResource
 import presentation.theme.NeubrutalCardRadius
-import presentation.theme.neubrutalBorderWithGloss
-import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
@@ -58,8 +59,6 @@ import setiker.composeapp.generated.resources.prompt_label
 import setiker.composeapp.generated.resources.prompt_placeholder
 import setiker.composeapp.generated.resources.publisher_label
 import setiker.composeapp.generated.resources.publisher_placeholder
-import domain.model.AiQuotaOperation
-import domain.model.AiUsage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
