@@ -1,7 +1,6 @@
 package presentation.history
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,7 +18,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -33,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import presentation.components.AppIllustration
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
+import presentation.components.NeubrutalSelectableChip
 import presentation.components.AppTopBar
 import presentation.components.InteractionBlockedBox
 import presentation.components.PackBottomBar
@@ -118,14 +117,6 @@ fun ProcessingHistoryScreen(
                     .padding(innerPadding),
                 illustration = AppIllustration.LoadingState
             )
-            state.items.isEmpty() -> EmptyState(
-                title = stringResource(Res.string.history_none_title),
-                description = state.error ?: stringResource(Res.string.history_none_desc),
-                illustration = if (state.error != null) AppIllustration.ErrorState else AppIllustration.SuccessSync,
-                modifier = modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            )
             else -> {
                 InteractionBlockedBox(
                     blocked = state.isClearing,
@@ -137,69 +128,77 @@ fun ProcessingHistoryScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(horizontal = 20.dp)
+                            .padding(top = 12.dp)
                     ) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         listOf(null, "generate", "grid-split", "background-remove").forEach { filter ->
-                            FilterChip(
+                            NeubrutalSelectableChip(
+                                label = when (filter) {
+                                    null -> stringResource(Res.string.history_filter_all)
+                                    "generate" -> stringResource(Res.string.history_filter_generate)
+                                    "grid-split" -> stringResource(Res.string.history_filter_grid)
+                                    else -> stringResource(Res.string.history_filter_background)
+                                },
                                 selected = state.typeFilter == filter,
-                                onClick = { onIntent(ProcessingHistoryIntent.ChangeFilter(filter)) },
-                                label = {
-                                    Text(
-                                        when (filter) {
-                                            null -> stringResource(Res.string.history_filter_all)
-                                            "generate" -> stringResource(Res.string.history_filter_generate)
-                                            "grid-split" -> stringResource(Res.string.history_filter_grid)
-                                            else -> stringResource(Res.string.history_filter_background)
-                                        }
-                                    )
-                                }
+                                onClick = { onIntent(ProcessingHistoryIntent.ChangeFilter(filter)) }
                             )
                         }
                     }
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(top = 12.dp),
-                        contentPadding = PaddingValues(bottom = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        items(state.items, key = { it.id }) { item ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .neubrutalShadow(
-                                        offsetX = NeubrutalSmallShadowOffset,
-                                        offsetY = NeubrutalSmallShadowOffset,
-                                        cornerRadius = NeubrutalCardRadius,
-                                        color = neubrutalShadowColor()
-                                    )
-                                    .background(neubrutalCardSurface(), RoundedCornerShape(NeubrutalCardRadius))
-                                    .neubrutalBorderWithGloss(
-                                        color = neubrutalBorderColor(),
-                                        cornerRadius = NeubrutalCardRadius,
-                                        highlightColor = neubrutalGlossyHighlightColor()
-                                    )
-                                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = item.type,
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = neubrutalOnSurface()
-                                    )
-                                    Text(
-                                        text = stringResource(Res.string.history_outputs, item.outputFiles.size),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = neubrutalMutedOnSurface()
+                    if (state.items.isEmpty()) {
+                        EmptyState(
+                            title = stringResource(Res.string.history_none_title),
+                            description = state.error ?: stringResource(Res.string.history_none_desc),
+                            illustration = if (state.error != null) AppIllustration.ErrorState else AppIllustration.SuccessSync,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(top = 12.dp)
+                        )
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(top = 12.dp),
+                            contentPadding = PaddingValues(bottom = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            items(state.items, key = { it.id }) { item ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .neubrutalShadow(
+                                            offsetX = NeubrutalSmallShadowOffset,
+                                            offsetY = NeubrutalSmallShadowOffset,
+                                            cornerRadius = NeubrutalCardRadius,
+                                            color = neubrutalShadowColor()
+                                        )
+                                        .background(neubrutalCardSurface(), RoundedCornerShape(NeubrutalCardRadius))
+                                        .neubrutalBorderWithGloss(
+                                            color = neubrutalBorderColor(),
+                                            cornerRadius = NeubrutalCardRadius,
+                                            highlightColor = neubrutalGlossyHighlightColor()
+                                        )
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = item.type,
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = neubrutalOnSurface()
+                                        )
+                                        Text(
+                                            text = stringResource(Res.string.history_outputs, item.outputFiles.size),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = neubrutalMutedOnSurface()
+                                        )
+                                    }
+                                    PackBottomBarIconButton(
+                                        icon = Icons.Default.Delete,
+                                        contentDescription = "Delete",
+                                        onClick = { onIntent(ProcessingHistoryIntent.DeleteItem(item.id)) }
                                     )
                                 }
-                                PackBottomBarIconButton(
-                                    icon = Icons.Default.Delete,
-                                    contentDescription = "Delete",
-                                    onClick = { onIntent(ProcessingHistoryIntent.DeleteItem(item.id)) }
-                                )
                             }
                         }
                     }
