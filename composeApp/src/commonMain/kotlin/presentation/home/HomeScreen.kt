@@ -1,11 +1,21 @@
 package presentation.home
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,12 +25,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Workspaces
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -37,42 +41,43 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import domain.model.Sticker
 import domain.model.StickerPack
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
-import presentation.components.AppTopBar
-import presentation.components.AppTopBarBadgedActionIcon
 import presentation.components.AiGenerateStickerPackBottomSheet
 import presentation.components.AppIllustration
+import presentation.components.AppTopBar
+import presentation.components.AppTopBarBadgedActionIcon
 import presentation.components.EmptyState
-import presentation.components.OfflineBanner
 import presentation.components.HomeBottomBar
 import presentation.components.LoadingIndicator
 import presentation.components.NeubrutalIconButton
-import presentation.components.SortBottomSheet
+import presentation.components.OfflineBanner
 import presentation.components.ProcessingPackListCard
+import presentation.components.SortBottomSheet
 import presentation.components.StickerPackListCard
 import presentation.components.rememberImagePicker
 import presentation.components.rememberVideoPicker
+import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalScreenBackground
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.cancel_search
+import setiker.composeapp.generated.resources.error_load_packs_failed
+import setiker.composeapp.generated.resources.home_ai_jobs_cd
 import setiker.composeapp.generated.resources.home_hint
+import setiker.composeapp.generated.resources.home_try_sample_pack
 import setiker.composeapp.generated.resources.my_stickers_title
 import setiker.composeapp.generated.resources.no_search_results_desc
 import setiker.composeapp.generated.resources.no_search_results_title
 import setiker.composeapp.generated.resources.no_stickers_yet_desc
 import setiker.composeapp.generated.resources.no_stickers_yet_title
+import setiker.composeapp.generated.resources.retry
 import setiker.composeapp.generated.resources.search
 import setiker.composeapp.generated.resources.search_packs_placeholder
-import setiker.composeapp.generated.resources.error_load_packs_failed
-import setiker.composeapp.generated.resources.home_try_sample_pack
-import setiker.composeapp.generated.resources.home_ai_jobs_cd
-import setiker.composeapp.generated.resources.retry
 import setiker.composeapp.generated.resources.sort_content_description
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -255,11 +260,12 @@ fun HomeScreen(
                 )
             }
             else -> {
-                androidx.compose.foundation.layout.Column(
+                Column(
                     modifier = modifier
                         .fillMaxSize()
                         .padding(innerPadding)
-                        .padding(horizontal = 20.dp, vertical = 12.dp)
+                        .padding(horizontal = 20.dp)
+                        .padding(top = 12.dp)
                 ) {
                     if (showOfflineBanner) {
                         OfflineBanner(
