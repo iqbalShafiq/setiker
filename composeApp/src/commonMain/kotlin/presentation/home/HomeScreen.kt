@@ -2,8 +2,10 @@ package presentation.home
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -211,13 +213,6 @@ fun HomeScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
-        if (showOfflineBanner) {
-            OfflineBanner(
-                modifier = Modifier
-                    .padding(innerPadding)
-                    .padding(horizontal = 20.dp, vertical = 8.dp)
-            )
-        }
         when {
             state.isLoading -> {
                 LoadingIndicator(
@@ -264,14 +259,24 @@ fun HomeScreen(
                     modifier = modifier
                         .fillMaxSize()
                         .padding(innerPadding)
-                        .padding(horizontal = 20.dp)
+                        .padding(horizontal = 20.dp, vertical = 12.dp)
                 ) {
+                    if (showOfflineBanner) {
+                        OfflineBanner(
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+
                     Text(
                         text = stringResource(Res.string.home_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = neubrutalMutedOnSurface(),
                         fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(top = 16.dp, bottom = 12.dp)
+                        modifier = Modifier.padding(
+                            top = 0.dp,
+                            bottom = 12.dp
+                        )
                     )
 
                     val packsToShow = state.filteredPacks
