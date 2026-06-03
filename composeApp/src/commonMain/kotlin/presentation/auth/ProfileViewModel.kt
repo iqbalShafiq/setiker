@@ -3,6 +3,7 @@ package presentation.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import data.auth.AuthManager
+import data.remote.ExploreApiRepository
 import data.remote.LegalApiRepository
 import domain.model.AiUsage
 import domain.model.LegalSummary
@@ -23,14 +24,16 @@ data class ProfileState(
     val aiUsage: AiUsage? = null,
     val isLoadingAiUsage: Boolean = false,
     val aiUsageLoadFailed: Boolean = false,
-    val legalSummary: LegalSummary? = null
+    val legalSummary: LegalSummary? = null,
+    val notificationUnreadCount: Int = 0
 )
 
 class ProfileViewModel(
     private val authManager: AuthManager,
     private val stickerRepository: StickerRepository,
     private val aiQuotaRepository: AiQuotaRepository,
-    private val legalApiRepository: LegalApiRepository
+    private val legalApiRepository: LegalApiRepository,
+    private val exploreApiRepository: ExploreApiRepository
 ) : ViewModel() {
     
     private val _state = MutableStateFlow(ProfileState())
@@ -49,6 +52,13 @@ class ProfileViewModel(
                 null
             }
             val legalSummary = runCatching { legalApiRepository.getSummary() }.getOrNull()
+            val unread = if (user != null) {
+                runCatching {
+                    exploreApiRepository.getNotifications(page = 1, limit = 1, unreadOnly = true).second
+                }.getOrDefault(0)
+            } else {
+                0
+            }
             _state.value = ProfileState(
                 user = user,
                 isLoading = false,
@@ -58,7 +68,8 @@ class ProfileViewModel(
                 aiUsage = usage,
                 isLoadingAiUsage = false,
                 aiUsageLoadFailed = user != null && usage == null,
-                legalSummary = legalSummary
+                legalSummary = legalSummary,
+                notificationUnreadCount = unread
             )
         }
     }

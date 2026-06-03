@@ -70,7 +70,8 @@ class CreatePackViewModelSavePackTest {
             enqueueHelper = aiDeps.enqueueHelper,
             draftResultApplier = aiDeps.draftResultApplier,
             jobRepository = aiDeps.jobRepository,
-            aiQuotaRepository = mockk<AiQuotaRepository>(relaxed = true)
+            aiQuotaRepository = mockk<AiQuotaRepository>(relaxed = true),
+            authManager = mockk(relaxed = true)
         )
 
         viewModel.onIntent(CreatePackIntent.UpdateName("My Pack"))

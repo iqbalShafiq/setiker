@@ -56,6 +56,9 @@ fun AiQuotaSummary(
             }
             usage != null -> {
                 AiQuotaLine(text = usage.compactQuotaText())
+                if (showOperationCosts) {
+                    AiQuotaLine(text = usage.operationCostsLine(highlightOperation))
+                }
             }
         }
     }
@@ -80,6 +83,32 @@ private fun AiUsage.compactQuotaText(): String {
     }
     val resetText = resetsAt?.let { " • Resets at ${formatQuotaResetTime(it)}" }.orEmpty()
     return "$percentage% usages left$resetText"
+}
+
+private fun AiUsage.operationCostsLine(highlight: AiQuotaOperation?): String {
+    val items = listOf(
+        labelFor(AiQuotaOperation.GENERATE, operationCosts.generate, highlight),
+        labelFor(AiQuotaOperation.GRID_SPLIT, operationCosts.gridSplit, highlight),
+        labelFor(AiQuotaOperation.BACKGROUND_REMOVE, operationCosts.backgroundRemove, highlight),
+        labelFor(AiQuotaOperation.VIDEO_STICKER_PACK, operationCosts.videoStickerPack, highlight),
+        labelFor(AiQuotaOperation.IMPROVE, operationCosts.improve, highlight),
+        labelFor(AiQuotaOperation.PACK_IMPORT, operationCosts.packImport, highlight),
+    ).filter { it.second > 0 }
+    return items.joinToString(" · ") { (label, cost, isHighlight) ->
+        if (isHighlight) "$label (−$cost)*" else "$label (−$cost)"
+    }
+}
+
+private fun labelFor(operation: AiQuotaOperation, cost: Int, highlight: AiQuotaOperation?): Triple<String, Int, Boolean> {
+    val label = when (operation) {
+        AiQuotaOperation.GENERATE -> "Generate"
+        AiQuotaOperation.GRID_SPLIT -> "Grid"
+        AiQuotaOperation.BACKGROUND_REMOVE -> "BG"
+        AiQuotaOperation.VIDEO_STICKER_PACK -> "Video"
+        AiQuotaOperation.IMPROVE -> "Improve"
+        AiQuotaOperation.PACK_IMPORT -> "Import"
+    }
+    return Triple(label, cost, operation == highlight)
 }
 
 private fun formatQuotaResetTime(value: String): String {

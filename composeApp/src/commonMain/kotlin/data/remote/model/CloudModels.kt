@@ -39,6 +39,9 @@ data class CloudStickerPack(
     val saved: Boolean? = null,
     val downloaded: Boolean? = null,
     val following: Boolean? = null,
+    @kotlinx.serialization.SerialName("isLiked") val isLiked: Boolean? = null,
+    @kotlinx.serialization.SerialName("isSaved") val isSaved: Boolean? = null,
+    @kotlinx.serialization.SerialName("isFollowingOwner") val isFollowingOwner: Boolean? = null,
 )
 
 @Serializable

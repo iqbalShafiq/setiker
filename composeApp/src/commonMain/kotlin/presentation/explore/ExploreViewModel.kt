@@ -2,9 +2,13 @@ package presentation.explore
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import data.auth.AuthManager
 import data.remote.ExploreApiRepository
+import data.remote.ExploreFeed
 import data.remote.ExploreSort
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,7 +21,8 @@ import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_load_explore_failed
 
 class ExploreViewModel(
-    private val exploreApiRepository: ExploreApiRepository
+    private val exploreApiRepository: ExploreApiRepository,
+    private val authManager: AuthManager
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ExploreState())
@@ -26,15 +31,24 @@ class ExploreViewModel(
     private val _effect = Channel<ExploreEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
 
+    private var searchJob: Job? = null
+
     fun onIntent(intent: ExploreIntent) {
         when (intent) {
-            ExploreIntent.LoadInitial -> loadInitial(refreshing = false)
+            ExploreIntent.LoadInitial -> {
+                loadFeatured()
+                loadInitial(refreshing = false)
+            }
             ExploreIntent.Refresh -> loadInitial(refreshing = true)
             ExploreIntent.LoadMore -> loadMore()
             is ExploreIntent.ChangeSort -> changeSort(intent.sort)
-            is ExploreIntent.SearchChanged -> _state.update { it.copy(searchQuery = intent.query) }
+            is ExploreIntent.ChangeFeed -> changeFeed(intent.feed)
+            is ExploreIntent.SearchChanged -> onSearchChanged(intent.query)
             is ExploreIntent.OpenPack -> {
                 viewModelScope.launch { _effect.send(ExploreEffect.NavigateToPublicPack(intent.packId)) }
+            }
+            is ExploreIntent.OpenCreator -> {
+                viewModelScope.launch { _effect.send(ExploreEffect.NavigateToCreator(intent.userId)) }
             }
             ExploreIntent.NavigateBack -> {
                 viewModelScope.launch { _effect.send(ExploreEffect.NavigateBack) }
@@ -42,30 +56,76 @@ class ExploreViewModel(
             ExploreIntent.NavigateHistory -> {
                 viewModelScope.launch { _effect.send(ExploreEffect.NavigateHistory) }
             }
+            ExploreIntent.NavigateLogin -> {
+                viewModelScope.launch { _effect.send(ExploreEffect.NavigateLogin) }
+            }
+        }
+    }
+
+    private fun onSearchChanged(query: String) {
+        _state.update { it.copy(searchQuery = query) }
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            delay(300)
+            loadInitial(refreshing = false)
+        }
+    }
+
+    private fun changeFeed(feed: ExploreFeed) {
+        if (_state.value.feed == feed) return
+        viewModelScope.launch {
+            if (feed != ExploreFeed.DISCOVER && !authManager.isAuthenticated()) {
+                _state.update { it.copy(feed = feed, requiresLogin = true, packs = emptyList()) }
+                _effect.send(ExploreEffect.NavigateLogin)
+                return@launch
+            }
+            _state.update {
+                it.copy(feed = feed, requiresLogin = false, packs = emptyList(), page = 1, totalPages = 1)
+            }
+            loadInitial()
+        }
+    }
+
+    private fun loadFeatured() {
+        viewModelScope.launch {
+            runCatching { exploreApiRepository.getFeaturedToday() }
+                .onSuccess { featured ->
+                    _state.update { it.copy(featuredPack = featured?.pack) }
+                }
         }
     }
 
     private fun loadInitial(refreshing: Boolean = false) {
         viewModelScope.launch {
             val current = _state.value
+            if (current.feed != ExploreFeed.DISCOVER && !authManager.isAuthenticated()) {
+                _state.update { it.copy(requiresLogin = true, isLoading = false, isRefreshing = false) }
+                return@launch
+            }
             _state.update {
                 it.copy(
                     isLoading = !refreshing,
                     isRefreshing = refreshing,
                     loadFailed = false,
                     error = null,
-                    page = 1
+                    page = 1,
+                    requiresLogin = false
                 )
             }
             runCatching {
-                exploreApiRepository.getPublicPacks(page = 1, limit = current.limit, sort = current.sort)
+                exploreApiRepository.getPublicPacks(
+                    page = 1,
+                    limit = current.limit,
+                    sort = current.sort,
+                    q = current.searchQuery.takeIf { it.isNotBlank() },
+                    feed = current.feed
+                )
             }.onSuccess { result ->
                 _state.update {
                     it.copy(
                         isLoading = false,
                         isRefreshing = false,
                         loadFailed = false,
-                        error = null,
                         packs = result.data,
                         page = result.page,
                         totalPages = result.totalPages
@@ -73,12 +133,7 @@ class ExploreViewModel(
                 }
             }.onFailure { error ->
                 _state.update {
-                    it.copy(
-                        isLoading = false,
-                        isRefreshing = false,
-                        loadFailed = true,
-                        error = null
-                    )
+                    it.copy(isLoading = false, isRefreshing = false, loadFailed = true)
                 }
                 _effect.send(ExploreEffect.ShowError(error.toUiText(Res.string.error_load_explore_failed)))
             }
@@ -92,7 +147,13 @@ class ExploreViewModel(
             _state.update { it.copy(isLoadingMore = true) }
             val nextPage = current.page + 1
             runCatching {
-                exploreApiRepository.getPublicPacks(page = nextPage, limit = current.limit, sort = current.sort)
+                exploreApiRepository.getPublicPacks(
+                    page = nextPage,
+                    limit = current.limit,
+                    sort = current.sort,
+                    q = current.searchQuery.takeIf { it.isNotBlank() },
+                    feed = current.feed
+                )
             }.onSuccess { result ->
                 _state.update {
                     it.copy(
@@ -104,7 +165,7 @@ class ExploreViewModel(
                 }
             }.onFailure { error ->
                 _state.update { it.copy(isLoadingMore = false) }
-                _effect.send(ExploreEffect.ShowError(UiText.DynamicString(error.message ?: "Failed to load more packs")))
+                _effect.send(ExploreEffect.ShowError(UiText.DynamicString(error.message ?: "Failed to load more")))
             }
         }
     }

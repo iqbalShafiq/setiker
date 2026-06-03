@@ -38,4 +38,7 @@ sealed interface CreatePackIntent {
     data class StageTrayGalleryPick(val path: String) : CreatePackIntent
     data object DismissTrayGalleryCropPrompt : CreatePackIntent
     data class RestoreWorkspaceDraft(val draftId: String) : CreatePackIntent
+    data object PublishToExplore : CreatePackIntent
+    data object OpenPresetPicker : CreatePackIntent
+    data object DismissPresetPicker : CreatePackIntent
 }

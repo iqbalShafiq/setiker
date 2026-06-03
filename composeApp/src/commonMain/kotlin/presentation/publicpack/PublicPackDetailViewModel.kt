@@ -8,7 +8,10 @@ import data.remote.ExploreApiRepository
 import data.storage.StickerFileStorage
 import domain.model.Sticker
 import domain.model.StickerPack
+import domain.model.AiQuotaOperation
+import domain.repository.AiQuotaRepository
 import domain.repository.StickerRepository
+import presentation.common.AiQuotaGate
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +27,8 @@ class PublicPackDetailViewModel(
     private val cloudStickerRepository: CloudStickerRepository,
     private val stickerFileStorage: StickerFileStorage,
     private val stickerRepository: StickerRepository,
-    private val authManager: AuthManager
+    private val authManager: AuthManager,
+    private val aiQuotaRepository: AiQuotaRepository
 ) : ViewModel() {
     private val _state = MutableStateFlow(PublicPackDetailState())
     val state: StateFlow<PublicPackDetailState> = _state.asStateFlow()
@@ -40,7 +44,11 @@ class PublicPackDetailViewModel(
             PublicPackDetailIntent.ToggleLike -> toggleLike()
             PublicPackDetailIntent.ToggleSave -> toggleSave()
             PublicPackDetailIntent.ToggleFollowCreator -> toggleFollow()
-            PublicPackDetailIntent.ImportPack -> importPack()
+            PublicPackDetailIntent.ImportPack -> prepareImport()
+            PublicPackDetailIntent.ConfirmImport -> importPack()
+            PublicPackDetailIntent.DismissImportDialog -> {
+                _state.update { it.copy(showImportDialog = false) }
+            }
             PublicPackDetailIntent.NavigateBack -> viewModelScope.launch { _effect.send(PublicPackDetailEffect.NavigateBack) }
         }
     }
@@ -57,9 +65,9 @@ class PublicPackDetailViewModel(
                     it.copy(
                         isLoading = false,
                         pack = pack,
-                        isLiked = pack.liked ?: false,
-                        isSaved = pack.saved ?: false,
-                        isFollowingCreator = pack.following ?: false
+                        isLiked = pack.isLiked ?: pack.liked ?: false,
+                        isSaved = pack.isSaved ?: pack.saved ?: false,
+                        isFollowingCreator = pack.isFollowingOwner ?: pack.following ?: false
                     )
                 }
             }.onFailure { error ->
@@ -152,12 +160,31 @@ class PublicPackDetailViewModel(
         }
     }
 
+    private fun prepareImport() = requireAuth {
+        viewModelScope.launch {
+            val gateError = AiQuotaGate.checkCanStart(aiQuotaRepository, AiQuotaOperation.PACK_IMPORT, forceRefresh = true)
+            if (gateError != null) {
+                _effect.send(PublicPackDetailEffect.ShowMessage(gateError))
+                return@launch
+            }
+            val usage = aiQuotaRepository.getUsage(forceRefresh = false)
+            val cost = usage?.costFor(AiQuotaOperation.PACK_IMPORT) ?: 0
+            _state.update {
+                it.copy(
+                    showImportDialog = true,
+                    importPointCost = cost,
+                    pointsRemaining = usage?.pointsRemaining ?: 0
+                )
+            }
+        }
+    }
+
     private fun importPack() = requireAuth {
         val pack = _state.value.pack ?: return@requireAuth
-        _state.update { it.copy(isActionLoading = true) }
+        _state.update { it.copy(isActionLoading = true, showImportDialog = false) }
         runCatching {
-            val imported = exploreApiRepository.importPublicPack(pack.id)
-            val localPack = buildLocalPack(imported)
+            val result = exploreApiRepository.importPublicPack(pack.id)
+            val localPack = buildLocalPack(result.pack)
             stickerRepository.savePack(localPack)
             exploreApiRepository.trackDownload(pack.id)
             localPack.identifier

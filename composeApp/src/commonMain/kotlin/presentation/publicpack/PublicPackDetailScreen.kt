@@ -20,7 +20,9 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -211,5 +213,27 @@ fun PublicPackDetailScreen(
                 }
             }
         }
+    }
+
+    if (state.showImportDialog) {
+        AlertDialog(
+            onDismissRequest = { onIntent(PublicPackDetailIntent.DismissImportDialog) },
+            title = { Text("Import pack") },
+            text = {
+                Text(
+                    "Import costs ${state.importPointCost} points. You have ${state.pointsRemaining} points remaining today."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { onIntent(PublicPackDetailIntent.ConfirmImport) }) {
+                    Text("Import")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { onIntent(PublicPackDetailIntent.DismissImportDialog) }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }

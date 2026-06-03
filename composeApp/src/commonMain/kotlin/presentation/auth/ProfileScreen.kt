@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Help
@@ -113,6 +114,7 @@ fun ProfileScreenRoot(
     onNavigateExplore: () -> Unit = {},
     onNavigateHistory: () -> Unit = {},
     onNavigateAiJobs: () -> Unit = {},
+    onNavigateNotifications: () -> Unit = {},
     onBackClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -130,6 +132,7 @@ fun ProfileScreenRoot(
         onNavigateExplore = onNavigateExplore,
         onNavigateHistory = onNavigateHistory,
         onNavigateAiJobs = onNavigateAiJobs,
+        onNavigateNotifications = onNavigateNotifications,
         onOpenPrivacy = { state.legalSummary?.privacyUrl?.let(openUrl) },
         onOpenTerms = { state.legalSummary?.termsUrl?.let(openUrl) },
         onOpenRetention = {
@@ -151,6 +154,7 @@ fun ProfileScreen(
     onNavigateExplore: () -> Unit = {},
     onNavigateHistory: () -> Unit = {},
     onNavigateAiJobs: () -> Unit = {},
+    onNavigateNotifications: () -> Unit = {},
     onOpenPrivacy: () -> Unit = {},
     onOpenTerms: () -> Unit = {},
     onOpenRetention: () -> Unit = {},
@@ -239,7 +243,8 @@ fun ProfileScreen(
                         AiQuotaSummary(
                             usage = state.aiUsage,
                             isLoading = state.isLoadingAiUsage,
-                            hasError = state.aiUsageLoadFailed
+                            hasError = state.aiUsageLoadFailed,
+                            showOperationCosts = true
                         )
                     }
                 }
@@ -276,6 +281,17 @@ fun ProfileScreen(
                                 label = stringResource(Res.string.profile_ai_jobs_menu),
                                 iconBackgroundColor = PastelPurple,
                                 onClick = onNavigateAiJobs
+                            )
+                            MenuDivider()
+                            ProfileMenuItem(
+                                icon = Icons.Default.Notifications,
+                                label = if (state.notificationUnreadCount > 0) {
+                                    "Notifications (${state.notificationUnreadCount})"
+                                } else {
+                                    "Notifications"
+                                },
+                                iconBackgroundColor = PastelYellow,
+                                onClick = onNavigateNotifications
                             )
                         }
                     }

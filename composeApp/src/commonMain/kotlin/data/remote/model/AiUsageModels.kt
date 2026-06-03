@@ -8,7 +8,8 @@ data class AiUsageCountsDto(
     val gridSplit: Int = 0,
     val backgroundRemove: Int = 0,
     val videoStickerPack: Int = 0,
-    val improve: Int = 0
+    val improve: Int = 0,
+    val packImport: Int = 0
 )
 
 @Serializable

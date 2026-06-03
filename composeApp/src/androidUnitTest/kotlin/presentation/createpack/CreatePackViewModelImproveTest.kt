@@ -257,7 +257,8 @@ class CreatePackViewModelImproveTest {
             enqueueHelper = deps.enqueueHelper,
             draftResultApplier = deps.draftResultApplier,
             jobRepository = deps.jobRepository,
-            aiQuotaRepository = mockk<AiQuotaRepository>(relaxed = true)
+            aiQuotaRepository = mockk<AiQuotaRepository>(relaxed = true),
+            authManager = mockk(relaxed = true)
         )
     }
 }

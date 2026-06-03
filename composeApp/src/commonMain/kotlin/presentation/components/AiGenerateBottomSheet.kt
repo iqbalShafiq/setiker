@@ -92,7 +92,8 @@ fun AiGenerateBottomSheet(
     aiUsage: AiUsage? = null,
     isLoadingQuota: Boolean = false,
     quotaLoadFailed: Boolean = false,
-    quotaOperation: AiQuotaOperation = AiQuotaOperation.GENERATE
+    quotaOperation: AiQuotaOperation = AiQuotaOperation.GENERATE,
+    onOpenPresets: (() -> Unit)? = null
 ) {
     val canAffordQuota = aiUsage == null || aiUsage.pointsRemaining >= aiUsage.costFor(quotaOperation)
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -210,9 +211,22 @@ fun AiGenerateBottomSheet(
                 style = MaterialTheme.typography.bodySmall,
                 color = neubrutalMutedOnSurface()
             )
-            Spacer(modifier = Modifier.height(20.dp))
+            if (onOpenPresets != null) {
+                AppSecondaryButton(
+                    text = "Prompt presets",
+                    onClick = onOpenPresets
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            val generateLabel = if (isGenerating) {
+                stringResource(Res.string.generating)
+            } else {
+                val cost = aiUsage?.costFor(quotaOperation) ?: 0
+                if (cost > 0) "${stringResource(Res.string.generate)} (−$cost)" else stringResource(Res.string.generate)
+            }
             AppPrimaryButton(
-                text = stringResource(if (isGenerating) Res.string.generating else Res.string.generate),
+                text = generateLabel,
                 enabled = !isGenerating && prompt.isNotBlank() && canAffordQuota,
                 onClick = onGenerate
             )

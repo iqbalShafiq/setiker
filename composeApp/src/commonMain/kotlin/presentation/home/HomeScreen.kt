@@ -45,6 +45,7 @@ import domain.model.StickerPack
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import presentation.components.AiGenerateStickerPackBottomSheet
+import presentation.components.PromptPresetPickerSheet
 import presentation.components.AppIllustration
 import presentation.components.AppTopBar
 import presentation.components.AppTopBarBadgedActionIcon
@@ -334,6 +335,15 @@ fun HomeScreen(
             )
         }
 
+        var presetPickerVisible by remember { mutableStateOf(false) }
+        PromptPresetPickerSheet(
+            visible = presetPickerVisible,
+            onDismiss = { presetPickerVisible = false },
+            onPresetSelected = { preset ->
+                onIntent(HomeIntent.UpdateGeneratePackPrompt(preset.prompt))
+            }
+        )
+
         if (state.isGeneratePackSheetOpen) {
             AiGenerateStickerPackBottomSheet(
                 packName = state.generatePackName,
@@ -352,7 +362,8 @@ fun HomeScreen(
                 onDismiss = { onIntent(HomeIntent.CloseGeneratePackSheet) },
                 aiUsage = state.aiUsage,
                 isLoadingQuota = state.isLoadingAiUsage,
-                quotaLoadFailed = state.aiUsageLoadFailed
+                quotaLoadFailed = state.aiUsageLoadFailed,
+                onOpenPresets = { presetPickerVisible = true }
             )
         }
     }

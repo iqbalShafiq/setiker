@@ -2,18 +2,23 @@ package presentation.history
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import data.local.dao.ProcessingHistoryCacheDao
+import data.local.entity.ProcessingHistoryCacheEntity
 import data.remote.ExploreApiRepository
+import data.remote.model.ProcessingHistoryItem
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import presentation.common.UiText
 
 class ProcessingHistoryViewModel(
-    private val exploreApiRepository: ExploreApiRepository
+    private val exploreApiRepository: ExploreApiRepository,
+    private val historyCacheDao: ProcessingHistoryCacheDao? = null
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProcessingHistoryState())
     val state: StateFlow<ProcessingHistoryState> = _state.asStateFlow()
@@ -40,10 +45,16 @@ class ProcessingHistoryViewModel(
             runCatching {
                 exploreApiRepository.getProcessingHistory(_state.value.typeFilter)
             }.onSuccess { items ->
+                cacheItems(items)
                 _state.update { it.copy(isLoading = false, items = items) }
             }.onFailure { error ->
-                _state.update { it.copy(isLoading = false, error = error.message ?: "Failed to load history") }
-                _effect.send(ProcessingHistoryEffect.ShowMessage(UiText.DynamicString(error.message ?: "Failed to load history")))
+                val cached = loadCachedItems()
+                if (cached.isNotEmpty()) {
+                    _state.update { it.copy(isLoading = false, items = cached) }
+                } else {
+                    _state.update { it.copy(isLoading = false, error = error.message ?: "Failed to load history") }
+                    _effect.send(ProcessingHistoryEffect.ShowMessage(UiText.DynamicString(error.message ?: "Failed to load history")))
+                }
             }
         }
     }
@@ -71,6 +82,43 @@ class ProcessingHistoryViewModel(
                 _state.update { it.copy(isClearing = false) }
                 _effect.send(ProcessingHistoryEffect.ShowMessage(UiText.DynamicString(error.message ?: "Failed to clear history")))
             }
+        }
+    }
+
+    private suspend fun cacheItems(items: List<ProcessingHistoryItem>) {
+        val dao = historyCacheDao ?: return
+        val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+        dao.replaceAll(
+            items.map { item ->
+                ProcessingHistoryCacheEntity(
+                    id = item.id,
+                    type = item.type,
+                    outputCount = item.outputFiles.size,
+                    previewUrl = item.outputFiles.firstOrNull()?.url,
+                    createdAt = now,
+                    syncedAt = now
+                )
+            }
+        )
+    }
+
+    private suspend fun loadCachedItems(): List<ProcessingHistoryItem> {
+        val dao = historyCacheDao ?: return emptyList()
+        val type = _state.value.typeFilter
+        val entities = if (type == null) {
+            dao.observeAll()
+        } else {
+            dao.observeByType(type)
+        }
+        return entities.first().map { entity ->
+            ProcessingHistoryItem(
+                id = entity.id,
+                userId = "",
+                type = entity.type,
+                outputFiles = emptyList(),
+                expiresAt = "",
+                createdAt = entity.createdAt.toString()
+            )
         }
     }
 }

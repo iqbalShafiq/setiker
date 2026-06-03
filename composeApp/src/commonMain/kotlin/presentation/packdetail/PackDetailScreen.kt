@@ -23,7 +23,10 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -217,6 +220,43 @@ fun PackDetailScreen(
         }
     }
 
+    state.visibilityDialog?.let { dialog ->
+        val isPublic = state.pack?.visibility.equals("PUBLIC", ignoreCase = true)
+        AppDialog(
+            title = if (dialog == VisibilityDialog.MakePublic) "Make public?" else "Unpublish?",
+            message = if (dialog == VisibilityDialog.MakePublic) {
+                "This pack will appear on Explore for everyone."
+            } else {
+                "This pack will be hidden from Explore."
+            },
+            confirmText = if (dialog == VisibilityDialog.MakePublic) "Publish" else "Unpublish",
+            onConfirm = { onIntent(PackDetailIntent.ConfirmVisibilityChange) },
+            onDismiss = { onIntent(PackDetailIntent.DismissVisibilityDialog) }
+        )
+    }
+
+    if (state.collaboratorsSheetOpen) {
+        ModalBottomSheet(
+            onDismissRequest = { onIntent(PackDetailIntent.DismissCollaboratorsSheet) },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = neubrutalScreenBackground()
+        ) {
+            PackCollaboratorsSheet(
+                searchQuery = state.collaboratorSearchQuery,
+                onSearchQueryChange = { onIntent(PackDetailIntent.CollaboratorSearchChanged(it)) },
+                searchResults = state.collaboratorSearchResults,
+                collaborators = state.collaborators,
+                isLoading = state.collaboratorsLoading,
+                invitePermission = state.collaboratorInvitePermission,
+                onInvitePermissionChange = { onIntent(PackDetailIntent.CollaboratorPermissionChanged(it)) },
+                onInvite = { onIntent(PackDetailIntent.InviteCollaborator(it)) },
+                onRemove = { onIntent(PackDetailIntent.RemoveCollaborator(it)) },
+                onRefresh = { onIntent(PackDetailIntent.RefreshCollaborators) },
+                modifier = Modifier.padding(bottom = 24.dp)
+            )
+        }
+    }
+
     if (state.cloudShareSheetOpen) {
         ModalBottomSheet(
             onDismissRequest = { onIntent(PackDetailIntent.DismissCloudShareSheet) },
@@ -270,6 +310,22 @@ fun PackDetailScreen(
                         contentDescription = stringResource(Res.string.share_pack),
                         onClick = { onIntent(PackDetailIntent.OpenCloudShareSheet) },
                         enabled = !state.isLoading && !isOperationInProgress
+                    )
+                    PackBottomBarIconButton(
+                        icon = Icons.Default.Group,
+                        contentDescription = "Collaborators",
+                        onClick = { onIntent(PackDetailIntent.OpenCollaboratorsSheet) },
+                        enabled = !state.isLoading && !isOperationInProgress && state.pack?.cloudId != null
+                    )
+                    val isPublicPack = state.pack?.visibility.equals("PUBLIC", ignoreCase = true)
+                    PackBottomBarIconButton(
+                        icon = if (isPublicPack) Icons.Default.VisibilityOff else Icons.Default.Public,
+                        contentDescription = if (isPublicPack) "Unpublish" else "Make public",
+                        onClick = {
+                            if (isPublicPack) onIntent(PackDetailIntent.RequestUnpublish)
+                            else onIntent(PackDetailIntent.RequestMakePublic)
+                        },
+                        enabled = !state.isLoading && !isOperationInProgress && state.pack != null && !state.isUpdatingVisibility
                     )
                     PackBottomBarIconButton(
                         icon = Icons.Default.ContentCopy,

@@ -4,6 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import data.remote.ExploreApiRepository
 import data.remote.model.CreateStickerPackLinkRequest
+import data.remote.model.SharePackWithUserRequest
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import data.storage.StickerFileStorage
 import domain.model.Sticker
 import domain.model.StickerPack
@@ -76,6 +79,129 @@ class PackDetailViewModel(
             PackDetailIntent.CreateCloudShareLink -> createCloudShareLink()
             is PackDetailIntent.RevokeCloudShareLink -> revokeCloudShareLink(intent.linkId)
             PackDetailIntent.DuplicatePack -> duplicatePack()
+            PackDetailIntent.OpenCollaboratorsSheet -> {
+                _state.update { it.copy(collaboratorsSheetOpen = true) }
+                refreshCollaborators()
+            }
+            PackDetailIntent.DismissCollaboratorsSheet -> {
+                _state.update { it.copy(collaboratorsSheetOpen = false) }
+            }
+            PackDetailIntent.RefreshCollaborators -> refreshCollaborators()
+            is PackDetailIntent.CollaboratorSearchChanged -> onCollaboratorSearch(intent.query)
+            is PackDetailIntent.InviteCollaborator -> inviteCollaborator(intent.userId)
+            is PackDetailIntent.RemoveCollaborator -> removeCollaborator(intent.userId)
+            is PackDetailIntent.CollaboratorPermissionChanged -> {
+                _state.update { it.copy(collaboratorInvitePermission = intent.permission) }
+            }
+            PackDetailIntent.RequestMakePublic -> {
+                _state.update { it.copy(visibilityDialog = VisibilityDialog.MakePublic) }
+            }
+            PackDetailIntent.RequestUnpublish -> {
+                _state.update { it.copy(visibilityDialog = VisibilityDialog.Unpublish) }
+            }
+            PackDetailIntent.ConfirmVisibilityChange -> confirmVisibilityChange()
+            PackDetailIntent.DismissVisibilityDialog -> {
+                _state.update { it.copy(visibilityDialog = null) }
+            }
+        }
+    }
+
+    private var collaboratorSearchJob: Job? = null
+
+    private fun onCollaboratorSearch(query: String) {
+        _state.update { it.copy(collaboratorSearchQuery = query) }
+        collaboratorSearchJob?.cancel()
+        if (query.trim().length < 2) {
+            _state.update { it.copy(collaboratorSearchResults = emptyList()) }
+            return
+        }
+        collaboratorSearchJob = viewModelScope.launch {
+            delay(300)
+            runCatching { exploreApiRepository.searchUsers(query) }
+                .onSuccess { results ->
+                    _state.update { it.copy(collaboratorSearchResults = results) }
+                }
+        }
+    }
+
+    private fun refreshCollaborators() {
+        val cloudId = _state.value.pack?.cloudId ?: return
+        viewModelScope.launch {
+            _state.update { it.copy(collaboratorsLoading = true) }
+            runCatching { exploreApiRepository.listPackCollaborators(cloudId) }
+                .onSuccess { list ->
+                    _state.update { it.copy(collaboratorsLoading = false, collaborators = list) }
+                }
+                .onFailure {
+                    _state.update { it.copy(collaboratorsLoading = false) }
+                }
+        }
+    }
+
+    private fun inviteCollaborator(userId: String) {
+        val cloudId = _state.value.pack?.cloudId ?: return
+        val permission = _state.value.collaboratorInvitePermission
+        viewModelScope.launch {
+            runCatching {
+                exploreApiRepository.sharePackWithUser(
+                    cloudId,
+                    SharePackWithUserRequest(userId = userId, permission = permission)
+                )
+            }.onSuccess {
+                refreshCollaborators()
+                _state.update { it.copy(collaboratorSearchResults = emptyList(), collaboratorSearchQuery = "") }
+            }.onFailure { error ->
+                _effect.send(PackDetailEffect.ShowError(error.toUiText(Res.string.error_failed_add_pack)))
+            }
+        }
+    }
+
+    private fun removeCollaborator(userId: String) {
+        val cloudId = _state.value.pack?.cloudId ?: return
+        viewModelScope.launch {
+            runCatching { exploreApiRepository.removePackCollaborator(cloudId, userId) }
+                .onSuccess { refreshCollaborators() }
+                .onFailure { error ->
+                    _effect.send(PackDetailEffect.ShowError(error.toUiText(Res.string.error_failed_delete_pack)))
+                }
+        }
+    }
+
+    private fun confirmVisibilityChange() {
+        val dialog = _state.value.visibilityDialog ?: return
+        val pack = _state.value.pack ?: return
+        val makePublic = dialog == VisibilityDialog.MakePublic
+        if (makePublic && pack.stickers.size < StickerPack.MIN_STICKERS) {
+            viewModelScope.launch {
+                _effect.send(
+                    PackDetailEffect.ShowError(
+                        UiText.StringRes(Res.string.error_pack_min_stickers_whatsapp)
+                    )
+                )
+            }
+            return
+        }
+        viewModelScope.launch {
+            _state.update { it.copy(isUpdatingVisibility = true, visibilityDialog = null) }
+            runCatching {
+                val updated = pack.copy(visibility = if (makePublic) "PUBLIC" else "PRIVATE")
+                repository.savePack(updated)
+                repository.syncPack(pack.identifier)
+                repository.getPack(pack.identifier)
+            }.onSuccess { synced ->
+                _state.update { it.copy(isUpdatingVisibility = false, pack = synced) }
+                _effect.send(
+                    PackDetailEffect.ShowSuccess(
+                        UiText.DynamicString(if (makePublic) "Pack is now public on Explore" else "Pack removed from Explore")
+                    )
+                )
+                if (makePublic && !synced.cloudId.isNullOrBlank()) {
+                    _effect.send(PackDetailEffect.NavigateToPublicPack(synced.cloudId!!))
+                }
+            }.onFailure { error ->
+                _state.update { it.copy(isUpdatingVisibility = false) }
+                _effect.send(PackDetailEffect.ShowError(error.toUiText(Res.string.error_failed_add_pack)))
+            }
         }
     }
 

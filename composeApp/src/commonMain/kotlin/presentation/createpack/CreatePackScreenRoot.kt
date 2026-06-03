@@ -24,6 +24,7 @@ fun CreatePackScreenRoot(
     onNavigateToCropSticker: (String) -> Unit = {},
     onNavigateToCropTray: (String) -> Unit = {},
     onNavigateToVideoTrim: (String) -> Unit = {},
+    onNavigateToPublicPack: (String) -> Unit = {},
     viewModel: CreatePackViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -62,6 +63,8 @@ fun CreatePackScreenRoot(
         viewModel.effect.collect { effect ->
             when (effect) {
                 is CreatePackEffect.PackSaved -> onPackSaved(effect.packId)
+                is CreatePackEffect.NavigateToPublicPack -> onNavigateToPublicPack(effect.cloudPackId)
+                is CreatePackEffect.ShowSuccess -> snackbarHostState.showSnackbar(effect.message)
                 is CreatePackEffect.NavigateBack -> onBackClick()
                 is CreatePackEffect.ShowError -> {
                     snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
@@ -77,6 +80,7 @@ fun CreatePackScreenRoot(
         onNavigateToCropSticker = onNavigateToCropSticker,
         onNavigateToCropTray = onNavigateToCropTray,
         onNavigateToVideoTrim = onNavigateToVideoTrim,
+        onPreviewPublicPack = onNavigateToPublicPack,
         snackbarHostState = snackbarHostState
     )
 }

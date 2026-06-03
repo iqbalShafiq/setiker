@@ -1,6 +1,7 @@
 package presentation.createpack
 
 import domain.model.AiUsage
+import domain.model.StickerPack
 
 enum class GridSplitSheetPhase {
     Hidden,
@@ -52,8 +53,17 @@ data class CreatePackState(
     val backgroundJobProgress: Float = 0f,
     val aiUsage: AiUsage? = null,
     val isLoadingAiUsage: Boolean = false,
-    val aiUsageLoadFailed: Boolean = false
+    val aiUsageLoadFailed: Boolean = false,
+    val cloudId: String? = null,
+    val isPublishing: Boolean = false,
+    val presetPickerVisible: Boolean = false
 ) {
+    val canPublishToExplore: Boolean
+        get() = name.isNotBlank() &&
+            publisher.isNotBlank() &&
+            trayImagePath.isNotBlank() &&
+            stickers.size >= StickerPack.MIN_STICKERS
+
     /**
      * Pack is treated as animated whenever at least one sticker is animated. This is decided
      * implicitly — there is no separate Static/Animated pack mode toggle anymore. Static

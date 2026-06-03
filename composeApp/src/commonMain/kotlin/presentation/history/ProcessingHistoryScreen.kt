@@ -131,13 +131,25 @@ fun ProcessingHistoryScreen(
                             .padding(top = 12.dp)
                     ) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf(null, "generate", "grid-split", "background-remove").forEach { filter ->
+                        listOf(
+                            null,
+                            "generate",
+                            "grid-split",
+                            "background-remove",
+                            "improve",
+                            "video-sticker-pack",
+                            "sticker-pack"
+                        ).forEach { filter ->
                             NeubrutalSelectableChip(
                                 label = when (filter) {
                                     null -> stringResource(Res.string.history_filter_all)
                                     "generate" -> stringResource(Res.string.history_filter_generate)
                                     "grid-split" -> stringResource(Res.string.history_filter_grid)
-                                    else -> stringResource(Res.string.history_filter_background)
+                                    "background-remove" -> stringResource(Res.string.history_filter_background)
+                                    "improve" -> "Improve"
+                                    "video-sticker-pack" -> "Video"
+                                    "sticker-pack" -> "Pack"
+                                    else -> filter ?: "All"
                                 },
                                 selected = state.typeFilter == filter,
                                 onClick = { onIntent(ProcessingHistoryIntent.ChangeFilter(filter)) }

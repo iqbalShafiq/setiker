@@ -35,7 +35,9 @@ import org.koin.dsl.module
 import presentation.auth.LoginViewModel
 import presentation.auth.ProfileViewModel
 import presentation.auth.RegisterViewModel
+import presentation.creator.CreatorProfileViewModel
 import presentation.explore.ExploreViewModel
+import presentation.notifications.NotificationsViewModel
 import presentation.history.ProcessingHistoryViewModel
 import presentation.home.HomeViewModel
 import presentation.packdetail.PackDetailViewModel
@@ -107,6 +109,8 @@ val appModule = module {
     viewModelOf(::HomeViewModel)
     viewModelOf(::PackDetailViewModel)
     viewModelOf(::ExploreViewModel)
+    viewModelOf(::CreatorProfileViewModel)
+    viewModelOf(::NotificationsViewModel)
     viewModelOf(::PublicPackDetailViewModel)
     viewModelOf(::ProcessingHistoryViewModel)
     viewModelOf(::SharePreviewViewModel)

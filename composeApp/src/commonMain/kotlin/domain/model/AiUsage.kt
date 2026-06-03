@@ -5,7 +5,8 @@ data class AiUsageCounts(
     val gridSplit: Int = 0,
     val backgroundRemove: Int = 0,
     val videoStickerPack: Int = 0,
-    val improve: Int = 0
+    val improve: Int = 0,
+    val packImport: Int = 0
 )
 
 data class AiUsage(
@@ -26,6 +27,7 @@ data class AiUsage(
         AiQuotaOperation.BACKGROUND_REMOVE -> operationCosts.backgroundRemove
         AiQuotaOperation.VIDEO_STICKER_PACK -> operationCosts.videoStickerPack
         AiQuotaOperation.IMPROVE -> operationCosts.improve
+        AiQuotaOperation.PACK_IMPORT -> operationCosts.packImport
     }
 }
 
@@ -34,7 +36,8 @@ enum class AiQuotaOperation {
     GRID_SPLIT,
     BACKGROUND_REMOVE,
     VIDEO_STICKER_PACK,
-    IMPROVE
+    IMPROVE,
+    PACK_IMPORT
 }
 
 data class AiQuotaReservation(

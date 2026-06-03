@@ -22,6 +22,7 @@ fun PackDetailScreenRoot(
     onStickerImportCropConsumed: () -> Unit = {},
     onNavigateToCropForStickerImport: (String) -> Unit = {},
     onNavigateToPack: (String) -> Unit = {},
+    onNavigateToPublicPack: (String) -> Unit = {},
     viewModel: PackDetailViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -60,6 +61,7 @@ fun PackDetailScreenRoot(
                     snackbarHostState.showSnackbar(effect.text)
                 }
                 is PackDetailEffect.NavigateToDuplicatedPack -> onNavigateToPack(effect.packId)
+                is PackDetailEffect.NavigateToPublicPack -> onNavigateToPublicPack(effect.cloudPackId)
             }
         }
     }

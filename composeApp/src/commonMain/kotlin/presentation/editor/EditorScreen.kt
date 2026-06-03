@@ -71,6 +71,7 @@ import org.jetbrains.compose.resources.stringResource
 import presentation.components.AddTextDecorationBottomSheet
 import presentation.aijob.AiResultSheetVisibility
 import presentation.components.AiGenerateBottomSheet
+import presentation.components.PromptPresetPickerSheet
 import presentation.components.ImproveConfirmDialog
 import presentation.components.RemoveBackgroundConfirmDialog
 import presentation.components.BottomSheetScrollColumn
@@ -609,6 +610,15 @@ fun EditorScreen(
         )
     }
 
+    var presetPickerVisible by remember { mutableStateOf(false) }
+    PromptPresetPickerSheet(
+        visible = presetPickerVisible,
+        onDismiss = { presetPickerVisible = false },
+        onPresetSelected = { preset ->
+            onIntent(EditorIntent.UpdateGeneratePrompt(preset.prompt))
+        }
+    )
+
     if (state.aiGenerateSheetOpen) {
         AiGenerateBottomSheet(
             prompt = state.generatePrompt,
@@ -623,7 +633,8 @@ fun EditorScreen(
             onDismiss = { onIntent(EditorIntent.CloseAiGenerateSheet) },
             aiUsage = state.aiUsage,
             isLoadingQuota = state.isLoadingAiUsage,
-            quotaLoadFailed = state.aiUsageLoadFailed
+            quotaLoadFailed = state.aiUsageLoadFailed,
+            onOpenPresets = { presetPickerVisible = true }
         )
     }
 

@@ -6,5 +6,7 @@ sealed interface PublicPackDetailIntent {
     data object ToggleSave : PublicPackDetailIntent
     data object ToggleFollowCreator : PublicPackDetailIntent
     data object ImportPack : PublicPackDetailIntent
+    data object ConfirmImport : PublicPackDetailIntent
+    data object DismissImportDialog : PublicPackDetailIntent
     data object NavigateBack : PublicPackDetailIntent
 }

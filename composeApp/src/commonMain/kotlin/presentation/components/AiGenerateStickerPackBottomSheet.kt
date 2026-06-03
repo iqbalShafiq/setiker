@@ -79,7 +79,8 @@ fun AiGenerateStickerPackBottomSheet(
     onDismiss: () -> Unit,
     aiUsage: AiUsage? = null,
     isLoadingQuota: Boolean = false,
-    quotaLoadFailed: Boolean = false
+    quotaLoadFailed: Boolean = false,
+    onOpenPresets: (() -> Unit)? = null
 ) {
     val canAffordQuota = aiUsage == null || aiUsage.pointsRemaining >= aiUsage.costFor(AiQuotaOperation.GENERATE)
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -217,9 +218,26 @@ fun AiGenerateStickerPackBottomSheet(
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            if (onOpenPresets != null) {
+                AppSecondaryButton(
+                    text = "Prompt presets",
+                    onClick = onOpenPresets
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            val packGenerateLabel = if (isGenerating) {
+                stringResource(Res.string.generating)
+            } else {
+                val cost = aiUsage?.costFor(AiQuotaOperation.GENERATE) ?: 0
+                if (cost > 0) {
+                    "${stringResource(Res.string.generate_sticker_pack)} (−$cost)"
+                } else {
+                    stringResource(Res.string.generate_sticker_pack)
+                }
+            }
             AppPrimaryButton(
-                text = stringResource(if (isGenerating) Res.string.generating else Res.string.generate_sticker_pack),
+                text = packGenerateLabel,
                 enabled = !isGenerating && packName.isNotBlank() && publisher.isNotBlank() &&
                     prompt.isNotBlank() && canAffordQuota,
                 onClick = onGenerate

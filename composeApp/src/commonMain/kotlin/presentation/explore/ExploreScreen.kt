@@ -41,6 +41,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import data.remote.ExploreFeed
 import data.remote.ExploreSort
 import data.remote.model.CloudStickerPack
 import org.jetbrains.compose.resources.stringResource
@@ -48,6 +49,8 @@ import presentation.components.AppIllustration
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
 import presentation.components.AppTopBar
+import presentation.components.NeubrutalSearchBar
+import presentation.components.NeubrutalSelectableChip
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
@@ -147,7 +150,7 @@ fun ExploreScreen(
                     }
                 )
             }
-            state.filteredPacks.isEmpty() -> {
+            state.packs.isEmpty() -> {
                 EmptyState(
                     title = stringResource(Res.string.no_search_results_title),
                     description = stringResource(Res.string.no_search_results_desc),
@@ -172,10 +175,54 @@ fun ExploreScreen(
                     contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(state.filteredPacks, key = { it.id }) { pack ->
+                    item("search") {
+                        NeubrutalSearchBar(
+                            query = state.searchQuery,
+                            onQueryChange = { onIntent(ExploreIntent.SearchChanged(it)) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    item("feed_tabs") {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            NeubrutalSelectableChip(
+                                label = "Discover",
+                                selected = state.feed == ExploreFeed.DISCOVER,
+                                onClick = { onIntent(ExploreIntent.ChangeFeed(ExploreFeed.DISCOVER)) }
+                            )
+                            NeubrutalSelectableChip(
+                                label = "Saved",
+                                selected = state.feed == ExploreFeed.SAVED,
+                                onClick = { onIntent(ExploreIntent.ChangeFeed(ExploreFeed.SAVED)) }
+                            )
+                            NeubrutalSelectableChip(
+                                label = "Following",
+                                selected = state.feed == ExploreFeed.FOLLOWING,
+                                onClick = { onIntent(ExploreIntent.ChangeFeed(ExploreFeed.FOLLOWING)) }
+                            )
+                        }
+                    }
+                    state.featuredPack?.let { featured ->
+                        item("featured") {
+                            PublicPackCard(
+                                pack = featured,
+                                badge = "Sticker of the day",
+                                onClick = { onIntent(ExploreIntent.OpenPack(featured.id)) },
+                                onCreatorClick = featured.owner?.id?.let { ownerId ->
+                                    { onIntent(ExploreIntent.OpenCreator(ownerId)) }
+                                }
+                            )
+                        }
+                    }
+                    items(state.packs, key = { it.id }) { pack ->
                         PublicPackCard(
                             pack = pack,
-                            onClick = { onIntent(ExploreIntent.OpenPack(pack.id)) }
+                            onClick = { onIntent(ExploreIntent.OpenPack(pack.id)) },
+                            onCreatorClick = pack.owner?.id?.let { ownerId ->
+                                { onIntent(ExploreIntent.OpenCreator(ownerId)) }
+                            }
                         )
                     }
                     item("pagination_loader") {
@@ -255,6 +302,8 @@ fun ExploreScreen(
 private fun PublicPackCard(
     pack: CloudStickerPack,
     onClick: () -> Unit,
+    badge: String? = null,
+    onCreatorClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val firstSticker = pack.stickers.firstOrNull()?.sticker?.url
@@ -301,6 +350,14 @@ private fun PublicPackCard(
                 .padding(start = 12.dp)
                 .weight(1f)
         ) {
+            if (badge != null) {
+                Text(
+                    text = badge,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = AccentCoral
+                )
+            }
             Text(
                 text = pack.name,
                 style = MaterialTheme.typography.titleMedium,
@@ -310,7 +367,8 @@ private fun PublicPackCard(
             Text(
                 text = creator,
                 style = MaterialTheme.typography.bodySmall,
-                color = neubrutalMutedOnSurface()
+                color = neubrutalMutedOnSurface(),
+                modifier = if (onCreatorClick != null) Modifier.clickable(onClick = onCreatorClick) else Modifier
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(

@@ -39,7 +39,10 @@ import presentation.createpack.CreatePackScreenRoot
 import presentation.createpack.DraftSticker
 import presentation.crop.CropScreenRoot
 import presentation.editor.EditorScreenRoot
+import presentation.creator.CreatorProfileScreenRoot
 import presentation.explore.ExploreScreenRoot
+import presentation.notifications.NotificationsScreen
+import presentation.notifications.NotificationsViewModel
 import presentation.aijobs.AiJobsScreenRoot
 import presentation.history.ProcessingHistoryScreenRoot
 import presentation.home.HomeScreenRoot
@@ -394,6 +397,13 @@ fun AppNavigation(
                     } else {
                         navController.navigate("login")
                     }
+                },
+                onNavigateNotifications = {
+                    if (authState == AuthState.AUTHENTICATED) {
+                        navController.navigate("notifications")
+                    } else {
+                        navController.navigate("login")
+                    }
                 }
             )
         }
@@ -402,10 +412,34 @@ fun AppNavigation(
             ExploreScreenRoot(
                 onBackClick = { navController.popBackStack() },
                 onPackClick = { packId -> navController.navigate("publicPack/$packId") },
+                onCreatorClick = { userId -> navController.navigate("creator/$userId") },
                 onHistoryClick = {
                     if (authState == AuthState.AUTHENTICATED) navController.navigate("history")
                     else navController.navigate("login")
-                }
+                },
+                onLoginClick = { navController.navigate("login") }
+            )
+        }
+
+        composable(
+            route = "creator/{userId}",
+            arguments = listOf(navArgument("userId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId") ?: return@composable
+            CreatorProfileScreenRoot(
+                userId = userId,
+                onBackClick = { navController.popBackStack() },
+                onPackClick = { packId -> navController.navigate("publicPack/$packId") }
+            )
+        }
+
+        composable("notifications") {
+            val viewModel: NotificationsViewModel = koinViewModel()
+            val state by viewModel.state.collectAsState()
+            NotificationsScreen(
+                state = state,
+                onBackClick = { navController.popBackStack() },
+                onItemClick = { viewModel.markRead(it) }
             )
         }
 
@@ -523,6 +557,9 @@ fun AppNavigation(
                     navController.navigate("packDetail/$newPackId") {
                         launchSingleTop = true
                     }
+                },
+                onNavigateToPublicPack = { cloudId ->
+                    navController.navigate("publicPack/$cloudId")
                 }
             )
         }
@@ -560,6 +597,9 @@ fun AppNavigation(
                     navController.navigate(
                         "videoTrim/${PathEncoder.encode(videoPath)}?packId="
                     )
+                },
+                onNavigateToPublicPack = { cloudId ->
+                    navController.navigate("publicPack/$cloudId")
                 }
             )
         }
@@ -614,6 +654,9 @@ fun AppNavigation(
                     navController.navigate(
                         "videoTrim/${PathEncoder.encode(videoPath)}?packId=${PathEncoder.encode(effectivePackId)}"
                     )
+                },
+                onNavigateToPublicPack = { cloudId ->
+                    navController.navigate("publicPack/$cloudId")
                 }
             )
         }

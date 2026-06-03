@@ -13,7 +13,9 @@ import presentation.common.resolveOrDefault
 fun ExploreScreenRoot(
     onBackClick: () -> Unit,
     onPackClick: (String) -> Unit,
+    onCreatorClick: (String) -> Unit,
     onHistoryClick: () -> Unit,
+    onLoginClick: () -> Unit,
     viewModel: ExploreViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -25,6 +27,8 @@ fun ExploreScreenRoot(
                 ExploreEffect.NavigateBack -> onBackClick()
                 ExploreEffect.NavigateHistory -> onHistoryClick()
                 is ExploreEffect.NavigateToPublicPack -> onPackClick(effect.packId)
+                is ExploreEffect.NavigateToCreator -> onCreatorClick(effect.userId)
+                ExploreEffect.NavigateLogin -> onLoginClick()
                 is ExploreEffect.ShowError -> snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
             }
         }

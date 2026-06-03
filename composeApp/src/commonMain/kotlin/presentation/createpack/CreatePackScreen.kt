@@ -66,7 +66,9 @@ import presentation.components.SelectableStickerGrid
 import presentation.components.ReadOnlyDecorationOverlay
 import presentation.components.ScreenSectionTitle
 import presentation.aijob.AiResultSheetVisibility
+import domain.model.StickerPack
 import presentation.components.AiGenerateBottomSheet
+import presentation.components.PromptPresetPickerSheet
 import presentation.components.ImproveConfirmDialog
 import presentation.components.BottomSheetScrollColumn
 import presentation.components.zeroBottomSheetWindowInsets
@@ -151,6 +153,7 @@ fun CreatePackScreen(
     onNavigateToCropSticker: (String) -> Unit,
     onNavigateToCropTray: (String) -> Unit,
     onNavigateToVideoTrim: (String) -> Unit = {},
+    onPreviewPublicPack: (String) -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     modifier: Modifier = Modifier
 ) {
@@ -197,6 +200,14 @@ fun CreatePackScreen(
         state.isApiLoading -> state.backgroundJobMessage ?: stringResource(Res.string.processing)
         else -> null
     }
+
+    PromptPresetPickerSheet(
+        visible = state.presetPickerVisible,
+        onDismiss = { onIntent(CreatePackIntent.DismissPresetPicker) },
+        onPresetSelected = { preset ->
+            onIntent(CreatePackIntent.UpdateGeneratePrompt(preset.prompt))
+        }
+    )
 
     if (state.aiGenerateSheetOpen) {
         AiGenerateBottomSheet(
@@ -649,27 +660,45 @@ fun CreatePackScreen(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Text(
-                    text = stringResource(Res.string.visibility_label),
+                    text = "Publish to Explore",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = neubrutalOnSurface()
                 )
-                Spacer(modifier = Modifier.height(10.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    FilterChip(
-                        selected = state.visibility.equals("PRIVATE", ignoreCase = true),
-                        onClick = { onIntent(CreatePackIntent.UpdateVisibility("PRIVATE")) },
-                        label = { Text(stringResource(Res.string.visibility_private)) },
-                        enabled = !isOperationInProgress
-                    )
-                    FilterChip(
-                        selected = state.visibility.equals("PUBLIC", ignoreCase = true),
-                        onClick = { onIntent(CreatePackIntent.UpdateVisibility("PUBLIC")) },
-                        label = { Text(stringResource(Res.string.visibility_public)) },
-                        enabled = !isOperationInProgress
+                Spacer(modifier = Modifier.height(8.dp))
+                PublishChecklistRow(
+                    met = state.stickers.size >= StickerPack.MIN_STICKERS,
+                    label = "At least ${StickerPack.MIN_STICKERS} stickers"
+                )
+                PublishChecklistRow(
+                    met = state.trayImagePath.isNotBlank(),
+                    label = "Tray icon set"
+                )
+                PublishChecklistRow(
+                    met = state.name.isNotBlank() && state.publisher.isNotBlank(),
+                    label = "Name and publisher filled"
+                )
+                PublishChecklistRow(
+                    met = state.cloudId != null,
+                    label = "Synced to cloud (save + sync)"
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                AppSecondaryButton(
+                    text = "Prompt presets",
+                    onClick = { onIntent(CreatePackIntent.OpenPresetPicker) },
+                    enabled = !isOperationInProgress
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                AppPrimaryButton(
+                    text = if (state.isPublishing) "Publishing…" else "Publish to Explore",
+                    enabled = state.canPublishToExplore && !isOperationInProgress && !state.isPublishing,
+                    onClick = { onIntent(CreatePackIntent.PublishToExplore) }
+                )
+                state.cloudId?.let { cloudId ->
+                    Spacer(modifier = Modifier.height(8.dp))
+                    AppSecondaryButton(
+                        text = "Preview public page",
+                        onClick = { onPreviewPublicPack(cloudId) }
                     )
                 }
 
@@ -912,6 +941,25 @@ private fun CreatePackScreenPreview() {
             onNavigateToCropSticker = {},
             onNavigateToCropTray = {}
         )
+    }
+}
+
+@Composable
+private fun PublishChecklistRow(met: Boolean, label: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = if (met) Icons.Filled.Check else Icons.Filled.Close,
+            contentDescription = null,
+            tint = if (met) AccentCoral else ErrorRed,
+            modifier = Modifier.size(18.dp)
+        )
+        Text(text = label, style = MaterialTheme.typography.bodyMedium, color = neubrutalOnSurface())
     }
 }
 

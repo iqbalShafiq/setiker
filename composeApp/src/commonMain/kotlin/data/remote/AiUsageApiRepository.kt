@@ -157,5 +157,6 @@ private fun AiUsageCountsDto.toDomain(): AiUsageCounts = AiUsageCounts(
     gridSplit = gridSplit,
     backgroundRemove = backgroundRemove,
     videoStickerPack = videoStickerPack,
-    improve = improve
+    improve = improve,
+    packImport = packImport
 )

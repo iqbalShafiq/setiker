@@ -2,12 +2,14 @@ package presentation.createpack
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import data.auth.AuthManager
 import data.aijob.AiJobManager
 import data.remote.StickerApiRepository
 import data.repository.StickerPackDraftSaver
 import domain.model.AiQuotaOperation
 import domain.model.StickerDraftInput
 import domain.model.StickerPack
+import domain.model.SyncResult
 import domain.model.aijob.AiJobOrigin
 import domain.model.aijob.GenerateStickersPayload
 import domain.model.aijob.GridSplitPayload
@@ -66,7 +68,8 @@ class CreatePackViewModel(
     private val enqueueHelper: AiJobEnqueueHelper,
     private val draftResultApplier: DraftResultApplier,
     private val jobRepository: AiJobRepository,
-    private val aiQuotaRepository: AiQuotaRepository
+    private val aiQuotaRepository: AiQuotaRepository,
+    private val authManager: AuthManager
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CreatePackState())
@@ -282,6 +285,90 @@ class CreatePackViewModel(
                 _state.update { it.copy(pendingTrayGalleryPath = null) }
             }
             is CreatePackIntent.RestoreWorkspaceDraft -> restoreWorkspaceDraft(intent.draftId)
+            CreatePackIntent.PublishToExplore -> publishToExplore()
+            CreatePackIntent.OpenPresetPicker -> {
+                _state.update { it.copy(presetPickerVisible = true) }
+            }
+            CreatePackIntent.DismissPresetPicker -> {
+                _state.update { it.copy(presetPickerVisible = false) }
+            }
+        }
+    }
+
+    private fun publishToExplore() {
+        viewModelScope.launch {
+            val current = _state.value
+            if (current.isPublishing || current.isSaving || current.isApiLoading) return@launch
+            if (!authManager.isAuthenticated()) {
+                _effect.send(CreatePackEffect.ShowError(UiText.DynamicString("Sign in to publish to Explore")))
+                return@launch
+            }
+            if (!current.canPublishToExplore) {
+                _effect.send(
+                    CreatePackEffect.ShowError(
+                        UiText.DynamicString("Add at least ${StickerPack.MIN_STICKERS} stickers, tray icon, name, and publisher")
+                    )
+                )
+                return@launch
+            }
+            _state.update { it.copy(isPublishing = true, visibility = "PUBLIC") }
+            try {
+                val identifier = if (current.isEditing && current.packId.isNotBlank()) {
+                    current.packId
+                } else {
+                    PackIdentifierSanitizer.sanitize(current.name, Random.nextInt(1000, 9999))
+                }
+                val pack = draftSaver.buildDraftPack(
+                    StickerDraftInput(
+                        identifier = identifier,
+                        name = current.name,
+                        publisher = current.publisher,
+                        visibility = "PUBLIC",
+                        trayImagePath = current.trayImagePath,
+                        strictTrayCompression = true,
+                        stickers = current.stickers.map { draft ->
+                            StickerDraftInput.StickerInput(
+                                imagePath = draft.imagePath,
+                                decorations = draft.decorations,
+                                isAnimated = draft.isAnimated,
+                                sourceVideoFile = draft.sourceVideoFile,
+                                frameDecorations = draft.frameDecorations
+                            )
+                        }
+                    )
+                )
+                repository.savePack(pack)
+                val syncReport = repository.syncPack(identifier)
+                val synced = repository.getPack(identifier)
+                _state.update {
+                    it.copy(
+                        isPublishing = false,
+                        visibility = "PUBLIC",
+                        cloudId = synced.cloudId,
+                        packId = identifier,
+                        isEditing = true
+                    )
+                }
+                val cloudId = synced.cloudId
+                if (cloudId.isNullOrBlank()) {
+                    val syncError = (syncReport.result as? SyncResult.Failed)?.error
+                    _effect.send(
+                        CreatePackEffect.ShowError(
+                            UiText.DynamicString(syncError ?: "Pack saved but cloud sync failed. Try Sync and publish again.")
+                        )
+                    )
+                } else {
+                    _effect.send(CreatePackEffect.ShowSuccess("Published to Explore"))
+                    _effect.send(CreatePackEffect.NavigateToPublicPack(cloudId))
+                }
+            } catch (e: Exception) {
+                _state.update { it.copy(isPublishing = false) }
+                _effect.send(
+                    CreatePackEffect.ShowError(
+                        e.toUiText(Res.string.error_failed_save_pack)
+                    )
+                )
+            }
         }
     }
 
@@ -381,6 +468,7 @@ class CreatePackViewModel(
                         stickers = mergedStickers,
                         isEditing = true,
                         packId = pack.identifier,
+                        cloudId = pack.cloudId,
                         pendingStickerGalleryPath = null,
                         pendingTrayGalleryPath = null
                     )

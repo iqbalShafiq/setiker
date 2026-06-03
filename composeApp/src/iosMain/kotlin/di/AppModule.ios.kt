@@ -45,6 +45,7 @@ actual fun platformModule(): Module = module {
 
     single { get<StickerDatabase>().stickerPackDao() }
     single { get<StickerDatabase>().stickerDao() }
+    single { get<StickerDatabase>().processingHistoryCacheDao() }
     single<StickerFileStorage> { StickerFileStorage() }
     single<EmojiPreferences> { EmojiPreferences() }
     single<OnDeviceImageProcessor> { IosOnDeviceImageProcessor() }

@@ -1,7 +1,9 @@
 package presentation.packdetail
 
-import domain.model.StickerPack
 import data.remote.model.CloudStickerPackShareLink
+import data.remote.model.PackCollaborator
+import data.remote.model.UserSearchResult
+import domain.model.StickerPack
 
 data class PackDetailState(
     // Default to true so the first composition shows the loading indicator
@@ -18,5 +20,18 @@ data class PackDetailState(
     val stickerImportBatchTotal: Int = 0,
     val cloudShareSheetOpen: Boolean = false,
     val cloudShareLinksLoading: Boolean = false,
-    val cloudShareLinks: List<CloudStickerPackShareLink> = emptyList()
+    val cloudShareLinks: List<CloudStickerPackShareLink> = emptyList(),
+    val collaboratorsSheetOpen: Boolean = false,
+    val collaboratorsLoading: Boolean = false,
+    val collaborators: List<PackCollaborator> = emptyList(),
+    val collaboratorSearchQuery: String = "",
+    val collaboratorSearchResults: List<UserSearchResult> = emptyList(),
+    val collaboratorInvitePermission: String = "view",
+    val visibilityDialog: VisibilityDialog? = null,
+    val isUpdatingVisibility: Boolean = false
 )
+
+enum class VisibilityDialog {
+    MakePublic,
+    Unpublish
+}

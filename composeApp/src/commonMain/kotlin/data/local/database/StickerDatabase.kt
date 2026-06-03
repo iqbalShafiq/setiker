@@ -5,7 +5,9 @@ import androidx.room.RoomDatabase
 import data.local.entity.AiJobEntity
 import data.local.entity.PendingSyncOperationEntity
 import data.local.entity.StickerEntity
+import data.local.dao.ProcessingHistoryCacheDao
 import data.local.entity.StickerPackEntity
+import data.local.entity.ProcessingHistoryCacheEntity
 import data.local.entity.WorkspaceDraftEntity
 
 @Database(
@@ -14,9 +16,10 @@ import data.local.entity.WorkspaceDraftEntity
         StickerEntity::class,
         PendingSyncOperationEntity::class,
         AiJobEntity::class,
-        WorkspaceDraftEntity::class
+        WorkspaceDraftEntity::class,
+        ProcessingHistoryCacheEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 abstract class StickerDatabase : RoomDatabase() {
@@ -25,6 +28,7 @@ abstract class StickerDatabase : RoomDatabase() {
     abstract fun syncOperationDao(): SyncOperationDao
     abstract fun aiJobDao(): AiJobDao
     abstract fun workspaceDraftDao(): WorkspaceDraftDao
+    abstract fun processingHistoryCacheDao(): ProcessingHistoryCacheDao
 
     companion object {
         const val DATABASE_NAME = "sticker_database.db"

@@ -28,4 +28,5 @@ fun AiQuotaOperation.apiName(): String = when (this) {
     AiQuotaOperation.BACKGROUND_REMOVE -> "backgroundRemove"
     AiQuotaOperation.VIDEO_STICKER_PACK -> "videoStickerPack"
     AiQuotaOperation.IMPROVE -> "improve"
+    AiQuotaOperation.PACK_IMPORT -> "packImport"
 }

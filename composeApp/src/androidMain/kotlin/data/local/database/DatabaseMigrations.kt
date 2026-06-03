@@ -126,4 +126,21 @@ object DatabaseMigrations {
             db.execSQL("ALTER TABLE ai_jobs ADD COLUMN quotaReservationId TEXT")
         }
     }
+
+    val MIGRATION_7_8 = object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS processing_history_cache (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    type TEXT NOT NULL,
+                    outputCount INTEGER NOT NULL,
+                    previewUrl TEXT,
+                    createdAt INTEGER NOT NULL,
+                    syncedAt INTEGER NOT NULL
+                )
+                """.trimIndent()
+            )
+        }
+    }
 }

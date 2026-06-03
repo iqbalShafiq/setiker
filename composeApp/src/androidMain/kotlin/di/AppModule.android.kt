@@ -39,6 +39,7 @@ actual fun platformModule(): Module = module {
             .addMigrations(DatabaseMigrations.MIGRATION_4_5)
             .addMigrations(DatabaseMigrations.MIGRATION_5_6)
             .addMigrations(DatabaseMigrations.MIGRATION_6_7)
+            .addMigrations(DatabaseMigrations.MIGRATION_7_8)
             .build()
     }
 
@@ -46,6 +47,7 @@ actual fun platformModule(): Module = module {
     single { get<StickerDatabase>().stickerDao() }
     single { get<StickerDatabase>().aiJobDao() }
     single { get<StickerDatabase>().workspaceDraftDao() }
+    single { get<StickerDatabase>().processingHistoryCacheDao() }
     single<StickerFileStorage> { StickerFileStorage(androidContext()) }
     single<EmojiPreferences> { EmojiPreferences(androidContext()) }
     single<OnDeviceImageProcessor> { AndroidOnDeviceImageProcessor(androidContext()) }

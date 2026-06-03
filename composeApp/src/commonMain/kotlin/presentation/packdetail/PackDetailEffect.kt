@@ -12,4 +12,5 @@ sealed interface PackDetailEffect {
     data class LaunchAddToWhatsApp(val packId: String, val packName: String) : PackDetailEffect
     data class ShareText(val text: String) : PackDetailEffect
     data class NavigateToDuplicatedPack(val packId: String) : PackDetailEffect
+    data class NavigateToPublicPack(val cloudPackId: String) : PackDetailEffect
 }
