@@ -40,6 +40,8 @@ class ProfileViewModel(
     val state: StateFlow<ProfileState> = _state.asStateFlow()
     
     init { loadUser() }
+
+    fun refresh() = loadUser()
     
     private fun loadUser() {
         viewModelScope.launch {

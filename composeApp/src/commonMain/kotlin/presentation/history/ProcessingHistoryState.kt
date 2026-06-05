@@ -6,6 +6,7 @@ data class ProcessingHistoryState(
     val isLoading: Boolean = true,
     val isClearing: Boolean = false,
     val error: String? = null,
+    val isShowingCachedData: Boolean = false,
     val typeFilter: String? = null,
     val items: List<ProcessingHistoryItem> = emptyList()
 )

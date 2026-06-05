@@ -18,7 +18,8 @@ data class ExploreState(
     val sort: ExploreSort = ExploreSort.RECENT,
     val feed: ExploreFeed = ExploreFeed.DISCOVER,
     val featuredPack: CloudStickerPack? = null,
-    val requiresLogin: Boolean = false
+    val requiresLogin: Boolean = false,
+    val isAuthenticated: Boolean = false
 ) {
     val canLoadMore: Boolean
         get() = page < totalPages && !isLoadingMore && !requiresLogin

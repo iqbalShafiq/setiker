@@ -62,11 +62,18 @@ import setiker.composeapp.generated.resources.explore_pack_not_found_desc
 import setiker.composeapp.generated.resources.explore_pack_not_found_title
 import setiker.composeapp.generated.resources.processing
 import setiker.composeapp.generated.resources.public_pack_by
+import setiker.composeapp.generated.resources.public_pack_import_body
+import setiker.composeapp.generated.resources.public_pack_import_cancel
+import setiker.composeapp.generated.resources.public_pack_import_confirm
+import setiker.composeapp.generated.resources.public_pack_import_owner_credit
+import setiker.composeapp.generated.resources.public_pack_import_title
+import setiker.composeapp.generated.resources.retry
 import setiker.composeapp.generated.resources.social_counts
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PublicPackDetailScreen(
+    packId: String,
     state: PublicPackDetailState,
     onIntent: (PublicPackDetailIntent) -> Unit,
     snackbarHostState: SnackbarHostState,
@@ -135,7 +142,17 @@ fun PublicPackDetailScreen(
                 illustration = AppIllustration.ErrorState,
                 modifier = modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
+                    .padding(innerPadding),
+                action = if (state.loadFailed) {
+                    {
+                        presentation.components.AppPrimaryButton(
+                            text = stringResource(Res.string.retry),
+                            onClick = { onIntent(PublicPackDetailIntent.Load(packId)) }
+                        )
+                    }
+                } else {
+                    null
+                }
             )
             else -> {
                 val pack = state.pack
@@ -218,20 +235,36 @@ fun PublicPackDetailScreen(
     if (state.showImportDialog) {
         AlertDialog(
             onDismissRequest = { onIntent(PublicPackDetailIntent.DismissImportDialog) },
-            title = { Text("Import pack") },
+            title = { Text(stringResource(Res.string.public_pack_import_title)) },
             text = {
-                Text(
-                    "Import costs ${state.importPointCost} points. You have ${state.pointsRemaining} points remaining today."
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        stringResource(
+                            Res.string.public_pack_import_body,
+                            state.importPointCost,
+                            state.pointsRemaining
+                        )
+                    )
+                    if (state.importOwnerCredit > 0) {
+                        Text(
+                            stringResource(
+                                Res.string.public_pack_import_owner_credit,
+                                state.importOwnerCredit
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = neubrutalMutedOnSurface()
+                        )
+                    }
+                }
             },
             confirmButton = {
                 TextButton(onClick = { onIntent(PublicPackDetailIntent.ConfirmImport) }) {
-                    Text("Import")
+                    Text(stringResource(Res.string.public_pack_import_confirm))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { onIntent(PublicPackDetailIntent.DismissImportDialog) }) {
-                    Text("Cancel")
+                    Text(stringResource(Res.string.public_pack_import_cancel))
                 }
             }
         )

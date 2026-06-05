@@ -4,6 +4,7 @@ import data.remote.model.CloudStickerPack
 
 data class PublicPackDetailState(
     val isLoading: Boolean = true,
+    val loadFailed: Boolean = false,
     val isActionLoading: Boolean = false,
     val error: String? = null,
     val pack: CloudStickerPack? = null,
@@ -12,5 +13,6 @@ data class PublicPackDetailState(
     val isFollowingCreator: Boolean = false,
     val showImportDialog: Boolean = false,
     val importPointCost: Int = 0,
-    val pointsRemaining: Int = 0
+    val pointsRemaining: Int = 0,
+    val importOwnerCredit: Int = 0
 )

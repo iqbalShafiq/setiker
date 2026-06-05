@@ -57,13 +57,14 @@ class PublicPackDetailViewModel(
         if (_state.value.pack?.id == packId && !_state.value.isLoading) return
         currentPackId = packId
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            _state.update { it.copy(isLoading = true, loadFailed = false, error = null) }
             runCatching {
                 exploreApiRepository.getPublicPackDetail(packId)
             }.onSuccess { pack ->
                 _state.update {
                     it.copy(
                         isLoading = false,
+                        loadFailed = false,
                         pack = pack,
                         isLiked = pack.isLiked ?: pack.liked ?: false,
                         isSaved = pack.isSaved ?: pack.saved ?: false,
@@ -71,7 +72,13 @@ class PublicPackDetailViewModel(
                     )
                 }
             }.onFailure { error ->
-                _state.update { it.copy(isLoading = false, error = error.message ?: "Failed to load pack") }
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        loadFailed = true,
+                        error = error.message ?: "Failed to load pack"
+                    )
+                }
             }
         }
     }
@@ -173,7 +180,8 @@ class PublicPackDetailViewModel(
                 it.copy(
                     showImportDialog = true,
                     importPointCost = cost,
-                    pointsRemaining = usage?.pointsRemaining ?: 0
+                    pointsRemaining = usage?.pointsRemaining ?: 0,
+                    importOwnerCredit = cost
                 )
             }
         }
@@ -187,9 +195,9 @@ class PublicPackDetailViewModel(
             val localPack = buildLocalPack(result.pack)
             stickerRepository.savePack(localPack)
             exploreApiRepository.trackDownload(pack.id)
-            localPack.identifier
-        }.onSuccess { localPackId ->
-            _state.update { it.copy(isActionLoading = false) }
+            Triple(localPack.identifier, result.ownerCredited, Unit)
+        }.onSuccess { (localPackId, ownerCredited, _) ->
+            _state.update { it.copy(isActionLoading = false, importOwnerCredit = ownerCredited) }
             _effect.send(PublicPackDetailEffect.NavigateToLocalPack(localPackId))
         }.onFailure { error ->
             _state.update { it.copy(isActionLoading = false) }

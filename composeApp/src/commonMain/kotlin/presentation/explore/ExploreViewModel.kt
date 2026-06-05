@@ -6,6 +6,7 @@ import data.auth.AuthManager
 import data.remote.ExploreApiRepository
 import data.remote.ExploreFeed
 import data.remote.ExploreSort
+import data.remote.model.CloudStickerPack
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -50,6 +51,8 @@ class ExploreViewModel(
             is ExploreIntent.OpenCreator -> {
                 viewModelScope.launch { _effect.send(ExploreEffect.NavigateToCreator(intent.userId)) }
             }
+            is ExploreIntent.ToggleLike -> toggleLike(intent.packId)
+            is ExploreIntent.ToggleSave -> toggleSave(intent.packId)
             ExploreIntent.NavigateBack -> {
                 viewModelScope.launch { _effect.send(ExploreEffect.NavigateBack) }
             }
@@ -61,6 +64,9 @@ class ExploreViewModel(
             }
         }
     }
+
+    private fun requiresAuth(feed: ExploreFeed): Boolean =
+        feed != ExploreFeed.DISCOVER
 
     private fun onSearchChanged(query: String) {
         _state.update { it.copy(searchQuery = query) }
@@ -74,13 +80,31 @@ class ExploreViewModel(
     private fun changeFeed(feed: ExploreFeed) {
         if (_state.value.feed == feed) return
         viewModelScope.launch {
-            if (feed != ExploreFeed.DISCOVER && !authManager.isAuthenticated()) {
-                _state.update { it.copy(feed = feed, requiresLogin = true, packs = emptyList()) }
-                _effect.send(ExploreEffect.NavigateLogin)
+            if (requiresAuth(feed) && !authManager.isAuthenticated()) {
+                _state.update {
+                    it.copy(
+                        feed = feed,
+                        requiresLogin = true,
+                        packs = emptyList(),
+                        isLoading = false,
+                        loadFailed = false
+                    )
+                }
                 return@launch
             }
             _state.update {
-                it.copy(feed = feed, requiresLogin = false, packs = emptyList(), page = 1, totalPages = 1)
+                it.copy(
+                    feed = feed,
+                    requiresLogin = false,
+                    packs = emptyList(),
+                    page = 1,
+                    totalPages = 1
+                )
+            }
+            if (feed == ExploreFeed.DISCOVER) {
+                loadFeatured()
+            } else {
+                _state.update { it.copy(featuredPack = null) }
             }
             loadInitial()
         }
@@ -98,8 +122,15 @@ class ExploreViewModel(
     private fun loadInitial(refreshing: Boolean = false) {
         viewModelScope.launch {
             val current = _state.value
-            if (current.feed != ExploreFeed.DISCOVER && !authManager.isAuthenticated()) {
-                _state.update { it.copy(requiresLogin = true, isLoading = false, isRefreshing = false) }
+            if (requiresAuth(current.feed) && !authManager.isAuthenticated()) {
+                _state.update {
+                    it.copy(
+                        requiresLogin = true,
+                        isLoading = false,
+                        isRefreshing = false,
+                        packs = emptyList()
+                    )
+                }
                 return@launch
             }
             _state.update {
@@ -109,7 +140,8 @@ class ExploreViewModel(
                     loadFailed = false,
                     error = null,
                     page = 1,
-                    requiresLogin = false
+                    requiresLogin = false,
+                    isAuthenticated = authManager.isAuthenticated()
                 )
             }
             runCatching {
@@ -175,4 +207,61 @@ class ExploreViewModel(
         _state.update { it.copy(sort = sort, packs = emptyList(), page = 1, totalPages = 1) }
         loadInitial()
     }
+
+    private fun toggleLike(packId: String) {
+        viewModelScope.launch {
+            if (!authManager.isAuthenticated()) {
+                _effect.send(ExploreEffect.NavigateLogin)
+                return@launch
+            }
+            val pack = _state.value.packs.find { it.id == packId } ?: return@launch
+            val liked = pack.isLiked ?: pack.liked ?: false
+            runCatching {
+                if (liked) exploreApiRepository.unlikePack(packId)
+                else exploreApiRepository.likePack(packId)
+            }.onSuccess { social ->
+                _state.update { current ->
+                    current.copy(packs = current.packs.map { item ->
+                        if (item.id == packId) item.withSocial(social) else item
+                    })
+                }
+            }.onFailure { error ->
+                _effect.send(ExploreEffect.ShowError(UiText.DynamicString(error.message ?: "Like failed")))
+            }
+        }
+    }
+
+    private fun toggleSave(packId: String) {
+        viewModelScope.launch {
+            if (!authManager.isAuthenticated()) {
+                _effect.send(ExploreEffect.NavigateLogin)
+                return@launch
+            }
+            val pack = _state.value.packs.find { it.id == packId } ?: return@launch
+            val saved = pack.isSaved ?: pack.saved ?: false
+            runCatching {
+                if (saved) exploreApiRepository.unsavePack(packId)
+                else exploreApiRepository.savePack(packId)
+            }.onSuccess { social ->
+                _state.update { current ->
+                    current.copy(packs = current.packs.map { item ->
+                        if (item.id == packId) item.withSocial(social) else item
+                    })
+                }
+            }.onFailure { error ->
+                _effect.send(ExploreEffect.ShowError(UiText.DynamicString(error.message ?: "Save failed")))
+            }
+        }
+    }
+
+    private fun CloudStickerPack.withSocial(social: data.remote.model.PackSocialStateData): CloudStickerPack =
+        copy(
+            likeCount = social.likeCount ?: likeCount,
+            saveCount = social.saveCount ?: saveCount,
+            downloadCount = social.downloadCount ?: downloadCount,
+            liked = social.liked,
+            saved = social.saved,
+            isLiked = social.liked,
+            isSaved = social.saved
+        )
 }

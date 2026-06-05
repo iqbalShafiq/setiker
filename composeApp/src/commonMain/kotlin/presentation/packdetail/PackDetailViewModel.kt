@@ -26,6 +26,7 @@ import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_failed_add_pack
 import setiker.composeapp.generated.resources.error_failed_add_stickers
 import setiker.composeapp.generated.resources.error_failed_delete_pack
+import setiker.composeapp.generated.resources.pack_collaborators_sync_required
 import setiker.composeapp.generated.resources.error_failed_delete_sticker
 import setiker.composeapp.generated.resources.error_pack_min_stickers_whatsapp
 import setiker.composeapp.generated.resources.error_tray_icon_required_whatsapp
@@ -80,6 +81,17 @@ class PackDetailViewModel(
             is PackDetailIntent.RevokeCloudShareLink -> revokeCloudShareLink(intent.linkId)
             PackDetailIntent.DuplicatePack -> duplicatePack()
             PackDetailIntent.OpenCollaboratorsSheet -> {
+                val cloudId = _state.value.pack?.cloudId
+                if (cloudId.isNullOrBlank()) {
+                    viewModelScope.launch {
+                        _effect.send(
+                            PackDetailEffect.ShowError(
+                                UiText.StringRes(Res.string.pack_collaborators_sync_required)
+                            )
+                        )
+                    }
+                    return
+                }
                 _state.update { it.copy(collaboratorsSheetOpen = true) }
                 refreshCollaborators()
             }
@@ -125,7 +137,15 @@ class PackDetailViewModel(
     }
 
     private fun refreshCollaborators() {
-        val cloudId = _state.value.pack?.cloudId ?: return
+        val cloudId = _state.value.pack?.cloudId
+        if (cloudId.isNullOrBlank()) {
+            viewModelScope.launch {
+                _effect.send(
+                    PackDetailEffect.ShowError(UiText.StringRes(Res.string.pack_collaborators_sync_required))
+                )
+            }
+            return
+        }
         viewModelScope.launch {
             _state.update { it.copy(collaboratorsLoading = true) }
             runCatching { exploreApiRepository.listPackCollaborators(cloudId) }
@@ -139,7 +159,15 @@ class PackDetailViewModel(
     }
 
     private fun inviteCollaborator(userId: String) {
-        val cloudId = _state.value.pack?.cloudId ?: return
+        val cloudId = _state.value.pack?.cloudId
+        if (cloudId.isNullOrBlank()) {
+            viewModelScope.launch {
+                _effect.send(
+                    PackDetailEffect.ShowError(UiText.StringRes(Res.string.pack_collaborators_sync_required))
+                )
+            }
+            return
+        }
         val permission = _state.value.collaboratorInvitePermission
         viewModelScope.launch {
             runCatching {
@@ -157,7 +185,15 @@ class PackDetailViewModel(
     }
 
     private fun removeCollaborator(userId: String) {
-        val cloudId = _state.value.pack?.cloudId ?: return
+        val cloudId = _state.value.pack?.cloudId
+        if (cloudId.isNullOrBlank()) {
+            viewModelScope.launch {
+                _effect.send(
+                    PackDetailEffect.ShowError(UiText.StringRes(Res.string.pack_collaborators_sync_required))
+                )
+            }
+            return
+        }
         viewModelScope.launch {
             runCatching { exploreApiRepository.removePackCollaborator(cloudId, userId) }
                 .onSuccess { refreshCollaborators() }

@@ -2,6 +2,7 @@ package presentation.explore
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -14,20 +15,26 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.outlined.Bookmark
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -42,13 +49,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import data.remote.ExploreFeed
-import data.remote.ExploreSort
 import data.remote.model.CloudStickerPack
 import org.jetbrains.compose.resources.stringResource
 import presentation.components.AppIllustration
-import presentation.components.EmptyState
-import presentation.components.LoadingIndicator
+import presentation.components.AppPrimaryButton
 import presentation.components.AppTopBar
+import presentation.components.EmptyState
+import presentation.components.ExploreSortBottomSheet
+import presentation.components.LoadingIndicator
 import presentation.components.NeubrutalSearchBar
 import presentation.components.NeubrutalSelectableChip
 import presentation.components.PackBottomBar
@@ -59,8 +67,8 @@ import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
-import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
@@ -69,15 +77,27 @@ import presentation.theme.neubrutalShadowColor
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_load_explore_failed
 import setiker.composeapp.generated.resources.explore_back
-import setiker.composeapp.generated.resources.retry
 import setiker.composeapp.generated.resources.explore_creator_unknown
+import setiker.composeapp.generated.resources.explore_empty_following_desc
+import setiker.composeapp.generated.resources.explore_empty_following_title
+import setiker.composeapp.generated.resources.explore_empty_saved_desc
+import setiker.composeapp.generated.resources.explore_empty_saved_title
+import setiker.composeapp.generated.resources.explore_empty_shared_desc
+import setiker.composeapp.generated.resources.explore_empty_shared_title
+import setiker.composeapp.generated.resources.explore_featured_badge
+import setiker.composeapp.generated.resources.explore_feed_discover
+import setiker.composeapp.generated.resources.explore_feed_following
+import setiker.composeapp.generated.resources.explore_feed_saved
+import setiker.composeapp.generated.resources.explore_feed_shared
 import setiker.composeapp.generated.resources.explore_history
+import setiker.composeapp.generated.resources.explore_sign_in_action
+import setiker.composeapp.generated.resources.explore_sign_in_desc
+import setiker.composeapp.generated.resources.explore_sign_in_title
 import setiker.composeapp.generated.resources.explore_sort
-import setiker.composeapp.generated.resources.explore_sort_title
-import setiker.composeapp.generated.resources.explore_subtitle
 import setiker.composeapp.generated.resources.explore_title
 import setiker.composeapp.generated.resources.no_search_results_desc
 import setiker.composeapp.generated.resources.no_search_results_title
+import setiker.composeapp.generated.resources.retry
 import setiker.composeapp.generated.resources.social_counts
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -127,175 +147,185 @@ fun ExploreScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
-        when {
-            state.isLoading -> LoadingIndicator(
+        PullToRefreshBox(
+            isRefreshing = state.isRefreshing,
+            onRefresh = { onIntent(ExploreIntent.Refresh) },
+            modifier = modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding),
-                illustration = AppIllustration.LoadingState
-            )
-            state.loadFailed -> {
-                EmptyState(
-                    title = stringResource(Res.string.error_load_explore_failed),
-                    description = stringResource(Res.string.no_search_results_desc),
-                    illustration = AppIllustration.ErrorState,
-                    modifier = modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    action = {
-                        presentation.components.AppPrimaryButton(
-                            text = stringResource(Res.string.retry),
-                            onClick = { onIntent(ExploreIntent.Refresh) }
+                    .padding(horizontal = 20.dp),
+                contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                item("search") {
+                    NeubrutalSearchBar(
+                        query = state.searchQuery,
+                        onQueryChange = { onIntent(ExploreIntent.SearchChanged(it)) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                item("feed_tabs") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        NeubrutalSelectableChip(
+                            label = stringResource(Res.string.explore_feed_discover),
+                            selected = state.feed == ExploreFeed.DISCOVER,
+                            onClick = { onIntent(ExploreIntent.ChangeFeed(ExploreFeed.DISCOVER)) }
+                        )
+                        NeubrutalSelectableChip(
+                            label = stringResource(Res.string.explore_feed_saved),
+                            selected = state.feed == ExploreFeed.SAVED,
+                            onClick = { onIntent(ExploreIntent.ChangeFeed(ExploreFeed.SAVED)) }
+                        )
+                        NeubrutalSelectableChip(
+                            label = stringResource(Res.string.explore_feed_following),
+                            selected = state.feed == ExploreFeed.FOLLOWING,
+                            onClick = { onIntent(ExploreIntent.ChangeFeed(ExploreFeed.FOLLOWING)) }
+                        )
+                        NeubrutalSelectableChip(
+                            label = stringResource(Res.string.explore_feed_shared),
+                            selected = state.feed == ExploreFeed.SHARED_WITH_ME,
+                            onClick = { onIntent(ExploreIntent.ChangeFeed(ExploreFeed.SHARED_WITH_ME)) }
                         )
                     }
-                )
-            }
-            state.packs.isEmpty() -> {
-                EmptyState(
-                    title = stringResource(Res.string.no_search_results_title),
-                    description = stringResource(Res.string.no_search_results_desc),
-                    illustration = AppIllustration.SearchEmpty,
-                    modifier = modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                )
-            }
-            else -> {
-                PullToRefreshBox(
-                    isRefreshing = state.isRefreshing,
-                    onRefresh = { onIntent(ExploreIntent.Refresh) },
-                    modifier = modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                ) {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 20.dp),
-                    contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    item("search") {
-                        NeubrutalSearchBar(
-                            query = state.searchQuery,
-                            onQueryChange = { onIntent(ExploreIntent.SearchChanged(it)) },
-                            modifier = Modifier.fillMaxWidth()
+                }
+                if (state.feed == ExploreFeed.DISCOVER && state.featuredPack != null) {
+                    item("featured") {
+                        PublicPackCard(
+                            pack = state.featuredPack,
+                            badge = stringResource(Res.string.explore_featured_badge),
+                            showSocialActions = state.isAuthenticated,
+                            onClick = { onIntent(ExploreIntent.OpenPack(state.featuredPack.id)) },
+                            onCreatorClick = state.featuredPack.owner?.id?.let { ownerId ->
+                                { onIntent(ExploreIntent.OpenCreator(ownerId)) }
+                            },
+                            onToggleLike = { onIntent(ExploreIntent.ToggleLike(state.featuredPack.id)) },
+                            onToggleSave = { onIntent(ExploreIntent.ToggleSave(state.featuredPack.id)) }
                         )
                     }
-                    item("feed_tabs") {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            NeubrutalSelectableChip(
-                                label = "Discover",
-                                selected = state.feed == ExploreFeed.DISCOVER,
-                                onClick = { onIntent(ExploreIntent.ChangeFeed(ExploreFeed.DISCOVER)) }
-                            )
-                            NeubrutalSelectableChip(
-                                label = "Saved",
-                                selected = state.feed == ExploreFeed.SAVED,
-                                onClick = { onIntent(ExploreIntent.ChangeFeed(ExploreFeed.SAVED)) }
-                            )
-                            NeubrutalSelectableChip(
-                                label = "Following",
-                                selected = state.feed == ExploreFeed.FOLLOWING,
-                                onClick = { onIntent(ExploreIntent.ChangeFeed(ExploreFeed.FOLLOWING)) }
-                            )
-                        }
-                    }
-                    state.featuredPack?.let { featured ->
-                        item("featured") {
-                            PublicPackCard(
-                                pack = featured,
-                                badge = "Sticker of the day",
-                                onClick = { onIntent(ExploreIntent.OpenPack(featured.id)) },
-                                onCreatorClick = featured.owner?.id?.let { ownerId ->
-                                    { onIntent(ExploreIntent.OpenCreator(ownerId)) }
+                }
+                when {
+                    state.requiresLogin -> {
+                        item("sign_in") {
+                            EmptyState(
+                                title = stringResource(Res.string.explore_sign_in_title),
+                                description = stringResource(Res.string.explore_sign_in_desc),
+                                illustration = AppIllustration.SearchEmpty,
+                                modifier = Modifier.fillMaxWidth(),
+                                action = {
+                                    AppPrimaryButton(
+                                        text = stringResource(Res.string.explore_sign_in_action),
+                                        onClick = { onIntent(ExploreIntent.NavigateLogin) }
+                                    )
                                 }
                             )
                         }
                     }
-                    items(state.packs, key = { it.id }) { pack ->
-                        PublicPackCard(
-                            pack = pack,
-                            onClick = { onIntent(ExploreIntent.OpenPack(pack.id)) },
-                            onCreatorClick = pack.owner?.id?.let { ownerId ->
-                                { onIntent(ExploreIntent.OpenCreator(ownerId)) }
-                            }
-                        )
-                    }
-                    item("pagination_loader") {
-                        if (state.canLoadMore) {
-                            LaunchedEffect(state.page, state.sort) {
-                                onIntent(ExploreIntent.LoadMore)
-                            }
-                            Row(
+                    state.isLoading && state.packs.isEmpty() -> {
+                        item("loading") {
+                            LoadingIndicator(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 12.dp),
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(22.dp),
-                                    strokeWidth = 2.dp,
-                                    color = AccentCoral
-                                )
+                                    .height(240.dp),
+                                illustration = AppIllustration.LoadingState
+                            )
+                        }
+                    }
+                    state.loadFailed -> {
+                        item("error") {
+                            EmptyState(
+                                title = stringResource(Res.string.error_load_explore_failed),
+                                description = stringResource(Res.string.no_search_results_desc),
+                                illustration = AppIllustration.ErrorState,
+                                modifier = Modifier.fillMaxWidth(),
+                                action = {
+                                    AppPrimaryButton(
+                                        text = stringResource(Res.string.retry),
+                                        onClick = { onIntent(ExploreIntent.Refresh) }
+                                    )
+                                }
+                            )
+                        }
+                    }
+                    state.packs.isEmpty() -> {
+                        item("empty") {
+                            val (title, desc) = emptyStateForFeed(state.feed)
+                            EmptyState(
+                                title = title,
+                                description = desc,
+                                illustration = AppIllustration.SearchEmpty,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                    else -> {
+                        items(state.packs, key = { it.id }) { pack ->
+                            PublicPackCard(
+                                pack = pack,
+                                showSocialActions = state.isAuthenticated,
+                                onClick = { onIntent(ExploreIntent.OpenPack(pack.id)) },
+                                onCreatorClick = pack.owner?.id?.let { ownerId ->
+                                    { onIntent(ExploreIntent.OpenCreator(ownerId)) }
+                                },
+                                onToggleLike = { onIntent(ExploreIntent.ToggleLike(pack.id)) },
+                                onToggleSave = { onIntent(ExploreIntent.ToggleSave(pack.id)) }
+                            )
+                        }
+                        if (state.isLoadingMore) {
+                            item("pagination_loader") {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 12.dp),
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(22.dp),
+                                        strokeWidth = 2.dp,
+                                        color = AccentCoral
+                                    )
+                                }
+                            }
+                        } else if (state.canLoadMore) {
+                            item("pagination_trigger") {
+                                LaunchedEffect(state.page, state.sort, state.feed) {
+                                    onIntent(ExploreIntent.LoadMore)
+                                }
                             }
                         }
                     }
-                }
                 }
             }
         }
 
         if (showSortSheet) {
-            ModalBottomSheet(
-                onDismissRequest = { showSortSheet = false },
-                containerColor = neubrutalScreenBackground()
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 8.dp)
-                        .padding(bottom = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Text(
-                        text = stringResource(Res.string.explore_sort_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                    ExploreSort.entries.forEach { option ->
-                        val selected = option == state.sort
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(if (selected) neubrutalCardSurface() else neubrutalScreenBackground())
-                                .neubrutalBorderWithGloss(
-                                    color = neubrutalBorderColor(),
-                                    cornerRadius = 12.dp,
-                                    highlightColor = neubrutalGlossyHighlightColor()
-                                )
-                                .clickable {
-                                    onIntent(ExploreIntent.ChangeSort(option))
-                                    showSortSheet = false
-                                }
-                                .padding(horizontal = 14.dp, vertical = 12.dp)
-                        ) {
-                            Text(
-                                text = option.value.replaceFirstChar { it.uppercase() },
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                                color = neubrutalOnSurface()
-                            )
-                        }
-                    }
-                }
-            }
+            ExploreSortBottomSheet(
+                currentSort = state.sort,
+                onSortSelected = { onIntent(ExploreIntent.ChangeSort(it)) },
+                onDismiss = { showSortSheet = false }
+            )
         }
     }
+}
+
+@Composable
+private fun emptyStateForFeed(feed: ExploreFeed): Pair<String, String> = when (feed) {
+    ExploreFeed.SAVED -> stringResource(Res.string.explore_empty_saved_title) to
+        stringResource(Res.string.explore_empty_saved_desc)
+    ExploreFeed.FOLLOWING -> stringResource(Res.string.explore_empty_following_title) to
+        stringResource(Res.string.explore_empty_following_desc)
+    ExploreFeed.SHARED_WITH_ME -> stringResource(Res.string.explore_empty_shared_title) to
+        stringResource(Res.string.explore_empty_shared_desc)
+    ExploreFeed.DISCOVER -> stringResource(Res.string.no_search_results_title) to
+        stringResource(Res.string.no_search_results_desc)
 }
 
 @Composable
@@ -303,11 +333,16 @@ private fun PublicPackCard(
     pack: CloudStickerPack,
     onClick: () -> Unit,
     badge: String? = null,
+    showSocialActions: Boolean = false,
     onCreatorClick: (() -> Unit)? = null,
+    onToggleLike: () -> Unit = {},
+    onToggleSave: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val firstSticker = pack.stickers.firstOrNull()?.sticker?.url
     val creator = pack.owner?.displayName ?: pack.owner?.username ?: stringResource(Res.string.explore_creator_unknown)
+    val liked = pack.isLiked ?: pack.liked ?: false
+    val saved = pack.isSaved ?: pack.saved ?: false
     val border = neubrutalBorderColor()
     val shadow = neubrutalShadowColor()
 
@@ -376,6 +411,24 @@ private fun PublicPackCard(
                 style = MaterialTheme.typography.labelSmall,
                 color = neubrutalMutedOnSurface()
             )
+        }
+        if (showSocialActions) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                IconButton(onClick = onToggleLike, modifier = Modifier.size(36.dp)) {
+                    Icon(
+                        imageVector = if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                        contentDescription = null,
+                        tint = if (liked) AccentCoral else neubrutalMutedOnSurface()
+                    )
+                }
+                IconButton(onClick = onToggleSave, modifier = Modifier.size(36.dp)) {
+                    Icon(
+                        imageVector = if (saved) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder,
+                        contentDescription = null,
+                        tint = if (saved) AccentCoral else neubrutalMutedOnSurface()
+                    )
+                }
+            }
         }
     }
 }

@@ -89,19 +89,6 @@ class CloudStickerRepository(
         return request("Bearer $refreshedToken")
     }
 
-    suspend fun getMyPacks(): List<CloudStickerPack> {
-        val response = withAuthRetry { authHeader ->
-            client.get("$baseUrl/api/v1/sticker-packs") {
-                header(HttpHeaders.Authorization, authHeader)
-            }
-        }
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudFetchFailed)
-        }
-        val envelope = json.decodeFromString<ApiSuccessEnvelope<List<CloudStickerPack>>>(response.bodyAsText())
-        return envelope.data ?: emptyList()
-    }
-
     suspend fun uploadPack(request: CreateStickerPackRequest, stickerPackId: String? = null): UploadData {
         val response = withAuthRetry { authHeader ->
             client.post("$baseUrl/api/v1/upload") {

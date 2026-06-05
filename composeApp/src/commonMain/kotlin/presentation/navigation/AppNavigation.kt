@@ -41,8 +41,7 @@ import presentation.crop.CropScreenRoot
 import presentation.editor.EditorScreenRoot
 import presentation.creator.CreatorProfileScreenRoot
 import presentation.explore.ExploreScreenRoot
-import presentation.notifications.NotificationsScreen
-import presentation.notifications.NotificationsViewModel
+import presentation.notifications.NotificationsScreenRoot
 import presentation.aijobs.AiJobsScreenRoot
 import presentation.history.ProcessingHistoryScreenRoot
 import presentation.home.HomeScreenRoot
@@ -434,12 +433,10 @@ fun AppNavigation(
         }
 
         composable("notifications") {
-            val viewModel: NotificationsViewModel = koinViewModel()
-            val state by viewModel.state.collectAsState()
-            NotificationsScreen(
-                state = state,
+            NotificationsScreenRoot(
                 onBackClick = { navController.popBackStack() },
-                onItemClick = { viewModel.markRead(it) }
+                onNavigateToPublicPack = { packId -> navController.navigate("publicPack/$packId") },
+                onNavigateToCreator = { userId -> navController.navigate("creator/$userId") }
             )
         }
 

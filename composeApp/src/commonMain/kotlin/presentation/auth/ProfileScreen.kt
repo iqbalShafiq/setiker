@@ -40,6 +40,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -94,6 +95,7 @@ import setiker.composeapp.generated.resources.packs_label
 import setiker.composeapp.generated.resources.premium_badge
 import setiker.composeapp.generated.resources.profile_ai_jobs_menu
 import setiker.composeapp.generated.resources.profile_explore_packs
+import setiker.composeapp.generated.resources.notifications_title
 import setiker.composeapp.generated.resources.profile_guest_login_prompt
 import setiker.composeapp.generated.resources.profile_processing_history
 import setiker.composeapp.generated.resources.send_feedback
@@ -121,6 +123,11 @@ fun ProfileScreenRoot(
 ) {
     val state by viewModel.state.collectAsState()
     val openUrl = rememberUrlLauncher()
+
+    LifecycleResumeEffect(Unit) {
+        viewModel.refresh()
+        onPauseOrDispose { }
+    }
 
     ProfileScreen(
         state = state,
@@ -286,9 +293,9 @@ fun ProfileScreen(
                             ProfileMenuItem(
                                 icon = Icons.Default.Notifications,
                                 label = if (state.notificationUnreadCount > 0) {
-                                    "Notifications (${state.notificationUnreadCount})"
+                                    "${stringResource(Res.string.notifications_title)} (${state.notificationUnreadCount})"
                                 } else {
-                                    "Notifications"
+                                    stringResource(Res.string.notifications_title)
                                 },
                                 iconBackgroundColor = PastelYellow,
                                 onClick = onNavigateNotifications

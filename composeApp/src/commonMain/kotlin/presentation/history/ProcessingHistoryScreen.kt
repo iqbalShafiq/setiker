@@ -1,6 +1,7 @@
 package presentation.history
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -26,8 +28,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import presentation.components.AppIllustration
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
@@ -62,7 +67,9 @@ import setiker.composeapp.generated.resources.history_none_title
 import setiker.composeapp.generated.resources.history_outputs
 import setiker.composeapp.generated.resources.history_refresh
 import setiker.composeapp.generated.resources.history_subtitle
+import setiker.composeapp.generated.resources.history_offline_banner
 import setiker.composeapp.generated.resources.history_title
+import setiker.composeapp.generated.resources.retry
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -130,7 +137,20 @@ fun ProcessingHistoryScreen(
                             .padding(horizontal = 20.dp)
                             .padding(top = 12.dp)
                     ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (state.isShowingCachedData) {
+                        Text(
+                            text = stringResource(Res.string.history_offline_banner),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = neubrutalMutedOnSurface(),
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         listOf(
                             null,
                             "generate",
@@ -163,7 +183,17 @@ fun ProcessingHistoryScreen(
                             illustration = if (state.error != null) AppIllustration.ErrorState else AppIllustration.SuccessSync,
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(top = 12.dp)
+                                .padding(top = 12.dp),
+                            action = if (state.error != null) {
+                                {
+                                    presentation.components.AppPrimaryButton(
+                                        text = stringResource(Res.string.retry),
+                                        onClick = { onIntent(ProcessingHistoryIntent.Load) }
+                                    )
+                                }
+                            } else {
+                                null
+                            }
                         )
                     } else {
                         LazyColumn(
@@ -192,7 +222,18 @@ fun ProcessingHistoryScreen(
                                         .padding(horizontal = 12.dp, vertical = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Column(modifier = Modifier.weight(1f)) {
+                                    val previewUrl = item.outputFiles.firstOrNull()?.url
+                                    if (!previewUrl.isNullOrBlank()) {
+                                        AsyncImage(
+                                            model = previewUrl,
+                                            contentDescription = item.type,
+                                            modifier = Modifier
+                                                .size(48.dp)
+                                                .clip(RoundedCornerShape(8.dp)),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    }
+                                    Column(modifier = Modifier.weight(1f).padding(start = if (previewUrl != null) 10.dp else 0.dp)) {
                                         Text(
                                             text = item.type,
                                             style = MaterialTheme.typography.titleSmall,

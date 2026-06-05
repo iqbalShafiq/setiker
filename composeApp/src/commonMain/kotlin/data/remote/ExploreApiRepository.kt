@@ -62,7 +62,8 @@ enum class ExploreSort(val value: String) {
 enum class ExploreFeed {
     DISCOVER,
     SAVED,
-    FOLLOWING
+    FOLLOWING,
+    SHARED_WITH_ME
 }
 
 data class PaginatedResult<T>(
@@ -148,6 +149,7 @@ class ExploreApiRepository(
             ExploreFeed.DISCOVER -> "/api/v1/sticker-packs/public"
             ExploreFeed.SAVED -> "/api/v1/sticker-packs/saved"
             ExploreFeed.FOLLOWING -> "/api/v1/sticker-packs/following"
+            ExploreFeed.SHARED_WITH_ME -> "/api/v1/sticker-packs/shared-with-me"
         }
         val response = if (feed == ExploreFeed.DISCOVER) {
             withOptionalAuthRetry { authHeader ->

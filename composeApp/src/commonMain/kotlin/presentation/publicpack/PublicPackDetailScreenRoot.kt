@@ -36,6 +36,7 @@ fun PublicPackDetailScreenRoot(
     }
 
     PublicPackDetailScreen(
+        packId = packId,
         state = state,
         onIntent = viewModel::onIntent,
         snackbarHostState = snackbarHostState

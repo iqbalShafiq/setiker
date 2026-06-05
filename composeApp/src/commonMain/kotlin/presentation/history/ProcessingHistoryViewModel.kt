@@ -6,6 +6,7 @@ import data.local.dao.ProcessingHistoryCacheDao
 import data.local.entity.ProcessingHistoryCacheEntity
 import data.remote.ExploreApiRepository
 import data.remote.model.ProcessingHistoryItem
+import data.remote.model.ProcessingHistoryOutputFile
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -41,16 +42,18 @@ class ProcessingHistoryViewModel(
 
     private fun load() {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            _state.update { it.copy(isLoading = true, error = null, isShowingCachedData = false) }
             runCatching {
                 exploreApiRepository.getProcessingHistory(_state.value.typeFilter)
             }.onSuccess { items ->
                 cacheItems(items)
-                _state.update { it.copy(isLoading = false, items = items) }
+                _state.update { it.copy(isLoading = false, items = items, isShowingCachedData = false) }
             }.onFailure { error ->
                 val cached = loadCachedItems()
                 if (cached.isNotEmpty()) {
-                    _state.update { it.copy(isLoading = false, items = cached) }
+                    _state.update {
+                        it.copy(isLoading = false, items = cached, isShowingCachedData = true, error = null)
+                    }
                 } else {
                     _state.update { it.copy(isLoading = false, error = error.message ?: "Failed to load history") }
                     _effect.send(ProcessingHistoryEffect.ShowMessage(UiText.DynamicString(error.message ?: "Failed to load history")))
@@ -111,11 +114,14 @@ class ProcessingHistoryViewModel(
             dao.observeByType(type)
         }
         return entities.first().map { entity ->
+            val outputs = entity.previewUrl?.let { url ->
+                listOf(ProcessingHistoryOutputFile(url = url))
+            } ?: emptyList()
             ProcessingHistoryItem(
                 id = entity.id,
                 userId = "",
                 type = entity.type,
-                outputFiles = emptyList(),
+                outputFiles = outputs,
                 expiresAt = "",
                 createdAt = entity.createdAt.toString()
             )
