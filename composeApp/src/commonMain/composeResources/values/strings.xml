@@ -281,6 +281,7 @@
     <string name="register_have_account">Already have an account?</string>
     <string name="register_sign_in_cta">Sign in</string>
     <string name="onboarding_skip">Skip</string>
+    <string name="splash_presented_by">Presented by Ratmo.co</string>
     <string name="onboarding_next">Next</string>
     <string name="onboarding_done">Get started</string>
     <string name="onboarding_page1_title">Create sticker packs</string>

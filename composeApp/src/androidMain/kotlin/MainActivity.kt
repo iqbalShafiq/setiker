@@ -1,33 +1,37 @@
 package com.setiker.app
 
-import android.graphics.Color
 import android.Manifest
 import android.content.Intent
+import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import data.aijob.AiNotificationHelper
 import presentation.navigation.NotificationDeepLink
+import presentation.splash.AndroidAppEntryPoint
 
 class MainActivity : ComponentActivity() {
 
     private val whatsAppLauncher = WhatsAppStickerLauncher()
     private var notificationDeepLink by mutableStateOf<NotificationDeepLink?>(null)
     private var notificationDeepLinkVersion by mutableIntStateOf(0)
+    private var keepSystemSplash by mutableStateOf(true)
 
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         applyDeepLinkFromIntent(intent)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -40,6 +44,8 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        splashScreen.setKeepOnScreenCondition { keepSystemSplash }
+
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.auto(
                 lightScrim = Color.TRANSPARENT,
@@ -51,14 +57,16 @@ class MainActivity : ComponentActivity() {
             )
         )
         setContent {
-            App(
-                notificationDeepLink = notificationDeepLink,
-                notificationDeepLinkVersion = notificationDeepLinkVersion,
+            AndroidAppEntryPoint(
+                keepSystemSplash = { keepSystemSplash },
+                onSystemSplashReadyToDismiss = { keepSystemSplash = false },
                 onAddToWhatsApp = { packId, packName ->
                     if (WhatsAppStickerLauncher.isWhatsAppInstalled(packageManager)) {
                         whatsAppLauncher.launchAddToWhatsApp(this, packId, packName)
                     }
-                }
+                },
+                notificationDeepLink = notificationDeepLink,
+                notificationDeepLinkVersion = notificationDeepLinkVersion
             )
         }
     }

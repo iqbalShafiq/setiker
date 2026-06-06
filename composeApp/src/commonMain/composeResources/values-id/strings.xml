@@ -30,6 +30,7 @@
     <string name="onboarding_page3_title">AI bekerja di belakang</string>
     <string name="onboarding_page3_desc">Generate, improve, dan cek draf kapan saja dari Pekerjaan AI.</string>
     <string name="onboarding_skip">Lewati</string>
+    <string name="splash_presented_by">Presented by Ratmo.co</string>
     <string name="onboarding_next">Lanjut</string>
     <string name="onboarding_done">Mulai</string>
     <string name="settings_title">Pengaturan</string>
