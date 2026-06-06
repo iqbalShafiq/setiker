@@ -3,9 +3,7 @@ package data.remote
 import data.remote.model.ApiErrorEnvelope
 import data.remote.model.ApiImage
 import data.remote.model.ApiSuccessEnvelope
-import data.remote.model.BackgroundRemoveData
 import data.remote.model.GenerateData
-import data.remote.model.GridSplitData
 import data.remote.model.GridSplitTextAssetsData
 import data.remote.model.ApiTextAsset
 import data.remote.model.VideoStickerPackPlanData
@@ -117,30 +115,6 @@ class SetikerApiService(
         val refreshedToken = authTokenRefresher?.refreshAccessToken(clearTokensOnFailure = true)
             ?: return firstResponse
         return request("Bearer $refreshedToken")
-    }
-
-    suspend fun removeBackground(imagePath: String): ApiImage {
-        val response = withAuthRetry { authHeader ->
-            client.post("/api/v1/background/remove") {
-                authHeader?.let { header(HttpHeaders.Authorization, it) }
-                setMultipartBody(
-                    imagePath = imagePath
-                )
-            }
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(
-                code = AppErrorCode.BackgroundRemoveRequestFailed,
-                message = runCatching { json.decodeFromString<ApiErrorEnvelope>(bodyText) }
-                    .getOrNull()
-                    ?.error
-                    ?.message
-            )
-        }
-        val parsed = json.decodeFromString<ApiSuccessEnvelope<BackgroundRemoveData>>(bodyText)
-        return parsed.data?.image
-            ?: throw ApiException(code = AppErrorCode.InvalidBackgroundRemoveResponse)
     }
 
     suspend fun generate(
@@ -296,28 +270,6 @@ class SetikerApiService(
         val parsed = json.decodeFromString<ApiSuccessEnvelope<GenerateData>>(bodyText)
         return parsed.data?.images
             ?: throw ApiException(code = AppErrorCode.InvalidGenerateResponse)
-    }
-
-    suspend fun splitGrid(imagePath: String): List<ApiImage> {
-        val response = withAuthRetry { authHeader ->
-            client.post("/api/v1/grid/split") {
-                authHeader?.let { header(HttpHeaders.Authorization, it) }
-                setMultipartBody(imagePath = imagePath)
-            }
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(
-                code = AppErrorCode.GridSplitRequestFailed,
-                message = runCatching { json.decodeFromString<ApiErrorEnvelope>(bodyText) }
-                    .getOrNull()
-                    ?.error
-                    ?.message
-            )
-        }
-        val parsed = json.decodeFromString<ApiSuccessEnvelope<GridSplitData>>(bodyText)
-        return parsed.data?.images
-            ?: throw ApiException(code = AppErrorCode.InvalidGridSplitResponse)
     }
 
     suspend fun extractGridTextAssets(imagePaths: List<String>): List<ApiTextAsset> {

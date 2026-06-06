@@ -27,11 +27,6 @@ class StickerApiRepository(
     private val fileStorage: StickerFileStorage,
     private val onDeviceImageProcessor: OnDeviceImageProcessor
 ) {
-    suspend fun removeBackground(imagePath: String): String {
-        val image = api.removeBackground(imagePath)
-        return downloadAndPersist(image)
-    }
-
     suspend fun generateStickers(
         prompt: String,
         inputImagePath: String? = null,
@@ -229,13 +224,6 @@ class StickerApiRepository(
         }
     }
 
-    suspend fun splitGrid(imagePath: String): List<GridSplitStickerFile> {
-        val images = api.splitGrid(
-            imagePath = imagePath
-        )
-        return downloadGridSplitFiles(images, operationTag = "grid-split")
-    }
-
     private suspend fun downloadAndPersist(image: ApiImage): String {
         val bytes = api.downloadImageBytes(image.url)
         val safeId = image.id
@@ -261,31 +249,6 @@ class StickerApiRepository(
         images.forEach { image ->
             runCatching { downloadAndPersistGenerated(image) }
                 .onSuccess { results += it }
-                .onFailure {
-                    println(
-                        "StickerApiRepository[$operationTag]: failed image id=${image.id}, url=${image.url}, reason=${it.message}"
-                    )
-                }
-        }
-        if (results.isEmpty() && images.isNotEmpty()) {
-            throw ApiException(code = AppErrorCode.ImageDownloadFailed)
-        }
-        return results
-    }
-
-    private suspend fun downloadGridSplitFiles(
-        images: List<ApiImage>,
-        operationTag: String
-    ): List<GridSplitStickerFile> {
-        val results = mutableListOf<GridSplitStickerFile>()
-        images.forEach { image ->
-            runCatching { downloadAndPersist(image) }
-                .onSuccess { path ->
-                    results += GridSplitStickerFile(
-                        localPath = path,
-                        decorations = image.toStickerDecorations()
-                    )
-                }
                 .onFailure {
                     println(
                         "StickerApiRepository[$operationTag]: failed image id=${image.id}, url=${image.url}, reason=${it.message}"
