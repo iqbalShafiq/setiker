@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -113,6 +115,7 @@ fun ExploreScreen(
     }
 
     var showSortSheet by remember { mutableStateOf(false) }
+    val contentHorizontalPadding = 20.dp
 
     Scaffold(
         topBar = {
@@ -155,46 +158,43 @@ fun ExploreScreen(
                 .padding(innerPadding)
         ) {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 20.dp),
-                contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 item("search") {
-                    NeubrutalSearchBar(
-                        query = state.searchQuery,
-                        onQueryChange = { onIntent(ExploreIntent.SearchChanged(it)) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    Box(modifier = Modifier.padding(horizontal = contentHorizontalPadding)) {
+                        NeubrutalSearchBar(
+                            query = state.searchQuery,
+                            onQueryChange = { onIntent(ExploreIntent.SearchChanged(it)) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
                 item("feed_tabs") {
+                    val feedTabs = listOf(
+                        ExploreFeed.DISCOVER to Res.string.explore_feed_discover,
+                        ExploreFeed.SAVED to Res.string.explore_feed_saved,
+                        ExploreFeed.FOLLOWING to Res.string.explore_feed_following,
+                        ExploreFeed.SHARED_WITH_ME to Res.string.explore_feed_shared
+                    )
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            .horizontalScroll(rememberScrollState())
                     ) {
-                        NeubrutalSelectableChip(
-                            label = stringResource(Res.string.explore_feed_discover),
-                            selected = state.feed == ExploreFeed.DISCOVER,
-                            onClick = { onIntent(ExploreIntent.ChangeFeed(ExploreFeed.DISCOVER)) }
-                        )
-                        NeubrutalSelectableChip(
-                            label = stringResource(Res.string.explore_feed_saved),
-                            selected = state.feed == ExploreFeed.SAVED,
-                            onClick = { onIntent(ExploreIntent.ChangeFeed(ExploreFeed.SAVED)) }
-                        )
-                        NeubrutalSelectableChip(
-                            label = stringResource(Res.string.explore_feed_following),
-                            selected = state.feed == ExploreFeed.FOLLOWING,
-                            onClick = { onIntent(ExploreIntent.ChangeFeed(ExploreFeed.FOLLOWING)) }
-                        )
-                        NeubrutalSelectableChip(
-                            label = stringResource(Res.string.explore_feed_shared),
-                            selected = state.feed == ExploreFeed.SHARED_WITH_ME,
-                            onClick = { onIntent(ExploreIntent.ChangeFeed(ExploreFeed.SHARED_WITH_ME)) }
-                        )
+                        Spacer(modifier = Modifier.width(contentHorizontalPadding))
+                        feedTabs.forEachIndexed { index, (feed, labelRes) ->
+                            if (index > 0) {
+                                Spacer(modifier = Modifier.width(8.dp))
+                            }
+                            NeubrutalSelectableChip(
+                                label = stringResource(labelRes),
+                                selected = state.feed == feed,
+                                onClick = { onIntent(ExploreIntent.ChangeFeed(feed)) }
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(contentHorizontalPadding))
                     }
                 }
                 if (state.feed == ExploreFeed.DISCOVER && state.featuredPack != null) {
@@ -208,7 +208,8 @@ fun ExploreScreen(
                                 { onIntent(ExploreIntent.OpenCreator(ownerId)) }
                             },
                             onToggleLike = { onIntent(ExploreIntent.ToggleLike(state.featuredPack.id)) },
-                            onToggleSave = { onIntent(ExploreIntent.ToggleSave(state.featuredPack.id)) }
+                            onToggleSave = { onIntent(ExploreIntent.ToggleSave(state.featuredPack.id)) },
+                            modifier = Modifier.padding(horizontal = contentHorizontalPadding)
                         )
                     }
                 }
@@ -219,7 +220,9 @@ fun ExploreScreen(
                                 title = stringResource(Res.string.explore_sign_in_title),
                                 description = stringResource(Res.string.explore_sign_in_desc),
                                 illustration = AppIllustration.SearchEmpty,
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = contentHorizontalPadding),
                                 action = {
                                     AppPrimaryButton(
                                         text = stringResource(Res.string.explore_sign_in_action),
@@ -234,6 +237,7 @@ fun ExploreScreen(
                             LoadingIndicator(
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .padding(horizontal = contentHorizontalPadding)
                                     .height(240.dp),
                                 illustration = AppIllustration.LoadingState
                             )
@@ -245,7 +249,9 @@ fun ExploreScreen(
                                 title = stringResource(Res.string.error_load_explore_failed),
                                 description = stringResource(Res.string.no_search_results_desc),
                                 illustration = AppIllustration.ErrorState,
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = contentHorizontalPadding),
                                 action = {
                                     AppPrimaryButton(
                                         text = stringResource(Res.string.retry),
@@ -262,7 +268,9 @@ fun ExploreScreen(
                                 title = title,
                                 description = desc,
                                 illustration = AppIllustration.SearchEmpty,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = contentHorizontalPadding)
                             )
                         }
                     }
@@ -276,7 +284,8 @@ fun ExploreScreen(
                                     { onIntent(ExploreIntent.OpenCreator(ownerId)) }
                                 },
                                 onToggleLike = { onIntent(ExploreIntent.ToggleLike(pack.id)) },
-                                onToggleSave = { onIntent(ExploreIntent.ToggleSave(pack.id)) }
+                                onToggleSave = { onIntent(ExploreIntent.ToggleSave(pack.id)) },
+                                modifier = Modifier.padding(horizontal = contentHorizontalPadding)
                             )
                         }
                         if (state.isLoadingMore) {
