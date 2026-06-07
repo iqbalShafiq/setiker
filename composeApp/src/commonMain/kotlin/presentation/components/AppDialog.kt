@@ -1,16 +1,20 @@
 package presentation.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
@@ -36,6 +40,30 @@ import setiker.composeapp.generated.resources.delete
 import setiker.composeapp.generated.resources.delete_pack_dialog_message
 import setiker.composeapp.generated.resources.delete_pack_dialog_title
 
+/** Material-style dialog width: near full-bleed on phones, capped on large screens. */
+private val AppDialogMaxWidth = 560.dp
+private val AppDialogHorizontalMargin = 6.dp
+
+@Composable
+fun AppDialogWidthContainer(
+    modifier: Modifier = Modifier,
+    content: @Composable BoxScope.() -> Unit
+) {
+    BoxWithConstraints(
+        modifier = modifier.fillMaxWidth(),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        val dialogWidth = minOf(
+            maxWidth - AppDialogHorizontalMargin * 2,
+            AppDialogMaxWidth
+        )
+        Box(
+            modifier = Modifier.width(dialogWidth),
+            content = content
+        )
+    }
+}
+
 @Composable
 fun AppDialog(
     title: String,
@@ -54,24 +82,25 @@ fun AppDialog(
     val shape = RoundedCornerShape(NeubrutalDialogRadius)
 
     Dialog(onDismissRequest = onDismiss) {
-        Column(
-            modifier = modifier
-                .fillMaxWidth()
-                .neubrutalShadow(
-                    offsetX = NeubrutalLargeShadowOffset,
-                    offsetY = NeubrutalLargeShadowOffset,
-                    cornerRadius = NeubrutalDialogRadius,
-                    color = shadow
-                )
-                .clip(shape)
-                .background(neubrutalCardSurface())
-                .neubrutalBorderWithGloss(
-                    color = border,
-                    cornerRadius = NeubrutalDialogRadius,
-                    highlightColor = neubrutalGlossyHighlightColor()
-                )
-                .padding(28.dp)
-        ) {
+        AppDialogWidthContainer {
+            Column(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .neubrutalShadow(
+                        offsetX = NeubrutalLargeShadowOffset,
+                        offsetY = NeubrutalLargeShadowOffset,
+                        cornerRadius = NeubrutalDialogRadius,
+                        color = shadow
+                    )
+                    .clip(shape)
+                    .background(neubrutalCardSurface())
+                    .neubrutalBorderWithGloss(
+                        color = border,
+                        cornerRadius = NeubrutalDialogRadius,
+                        highlightColor = neubrutalGlossyHighlightColor()
+                    )
+                    .padding(28.dp)
+            ) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.headlineSmall,
@@ -104,6 +133,7 @@ fun AppDialog(
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth()
             )
+        }
         }
     }
 }

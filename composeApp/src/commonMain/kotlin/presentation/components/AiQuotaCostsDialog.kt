@@ -2,13 +2,18 @@ package presentation.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -58,51 +63,70 @@ fun AiQuotaCostsDialog(
     val costRows = aiQuotaCostRows(usage)
 
     Dialog(onDismissRequest = onDismiss) {
-        Column(
-            modifier = modifier
-                .fillMaxWidth()
-                .neubrutalShadow(
-                    offsetX = NeubrutalLargeShadowOffset,
-                    offsetY = NeubrutalLargeShadowOffset,
-                    cornerRadius = NeubrutalDialogRadius,
-                    color = shadow
+        AppDialogWidthContainer {
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                val maxDialogHeight = (maxHeight * 0.85f).coerceAtMost(520.dp)
+                val scrollState = rememberScrollState()
+
+                Column(
+                    modifier = modifier
+                        .fillMaxWidth()
+                        .heightIn(max = maxDialogHeight)
+                        .neubrutalShadow(
+                            offsetX = NeubrutalLargeShadowOffset,
+                            offsetY = NeubrutalLargeShadowOffset,
+                            cornerRadius = NeubrutalDialogRadius,
+                            color = shadow
+                        )
+                        .clip(shape)
+                        .background(neubrutalCardSurface())
+                        .neubrutalBorderWithGloss(
+                            color = border,
+                            cornerRadius = NeubrutalDialogRadius,
+                            highlightColor = neubrutalGlossyHighlightColor()
+                        )
+                        .padding(28.dp)
+                ) {
+                Text(
+                    text = stringResource(Res.string.ai_quota_costs_dialog_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = neubrutalOnSurface()
                 )
-                .clip(shape)
-                .background(neubrutalCardSurface())
-                .neubrutalBorderWithGloss(
-                    color = border,
-                    cornerRadius = NeubrutalDialogRadius,
-                    highlightColor = neubrutalGlossyHighlightColor()
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = stringResource(Res.string.ai_quota_costs_dialog_message),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = neubrutalMutedOnSurface()
                 )
-                .padding(28.dp)
-        ) {
-            Text(
-                text = stringResource(Res.string.ai_quota_costs_dialog_title),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = neubrutalOnSurface()
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(
-                text = stringResource(Res.string.ai_quota_costs_dialog_message),
-                style = MaterialTheme.typography.bodyMedium,
-                color = neubrutalMutedOnSurface()
-            )
-            Spacer(modifier = Modifier.height(20.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                costRows.forEach { (labelRes, cost) ->
-                    AiQuotaCostRow(
-                        label = stringResource(labelRes),
-                        cost = cost
-                    )
+                Spacer(modifier = Modifier.height(20.dp))
+                Box(
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(scrollState),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        costRows.forEach { (labelRes, cost) ->
+                            AiQuotaCostRow(
+                                label = stringResource(labelRes),
+                                cost = cost
+                            )
+                        }
+                    }
                 }
+                Spacer(modifier = Modifier.height(24.dp))
+                AppPrimaryButton(
+                    text = stringResource(Res.string.ai_quota_costs_got_it),
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
-            Spacer(modifier = Modifier.height(24.dp))
-            AppPrimaryButton(
-                text = stringResource(Res.string.ai_quota_costs_got_it),
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth()
-            )
+            }
         }
     }
 }
