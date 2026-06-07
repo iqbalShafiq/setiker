@@ -41,7 +41,7 @@ class NavigationTransitionController {
         val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
             val entry = navController.currentBackStackEntry ?: return@OnDestinationChangedListener
             if (entry.savedStateHandle.get<String>(NAV_FORWARD_TRANSITION_KEY) == null) {
-                entry.saveEntryTransitionStyle(resolveForwardStyle(destination.route))
+                entry.saveEntryTransitionStyle(pendingForwardStyle)
             }
         }
         navController.addOnDestinationChangedListener(listener)
@@ -49,18 +49,18 @@ class NavigationTransitionController {
     }
 
     fun enterTransition(
-        scope: AnimatedContentTransitionScope<NavBackStackEntry>
+        @Suppress("UNUSED_PARAMETER") scope: AnimatedContentTransitionScope<NavBackStackEntry>
     ): EnterTransition {
-        return when (resolveForwardStyle(scope.targetState.destination.route)) {
+        return when (pendingForwardStyle) {
             NavForwardTransition.BOTTOM_UP -> bottomUpEnter()
             NavForwardTransition.TOP_DOWN -> topDownEnter()
         }
     }
 
     fun exitTransition(
-        scope: AnimatedContentTransitionScope<NavBackStackEntry>
+        @Suppress("UNUSED_PARAMETER") scope: AnimatedContentTransitionScope<NavBackStackEntry>
     ): ExitTransition {
-        return when (resolveForwardStyle(scope.targetState.destination.route)) {
+        return when (pendingForwardStyle) {
             NavForwardTransition.BOTTOM_UP -> bottomUpSourceExit()
             NavForwardTransition.TOP_DOWN -> topDownSourceExit()
         }
@@ -102,12 +102,6 @@ class NavigationTransitionController {
         navController.navigate(route, builder)
     }
 
-    private fun resolveForwardStyle(targetRoute: String?): NavForwardTransition {
-        if (targetRoute != null && targetRoute.isAlwaysTopDownDestination()) {
-            return NavForwardTransition.TOP_DOWN
-        }
-        return pendingForwardStyle
-    }
 }
 
 fun NavBackStackEntry.entryTransitionStyle(): NavForwardTransition {
@@ -118,19 +112,6 @@ fun NavBackStackEntry.entryTransitionStyle(): NavForwardTransition {
 
 fun NavBackStackEntry.saveEntryTransitionStyle(style: NavForwardTransition) {
     savedStateHandle[NAV_FORWARD_TRANSITION_KEY] = style.name
-}
-
-/**
- * Destinations that always enter from the top regardless of the navigation call site
- * (modal editors, share deep links, etc.). Multi-entry screens such as [aiJobs] are
- * intentionally excluded so their pop animation follows how they were opened.
- */
-fun String.isAlwaysTopDownDestination(): Boolean = when {
-    startsWith("crop/") -> true
-    startsWith("videoTrim/") -> true
-    startsWith("videoCrop/") -> true
-    startsWith("sharePreview/") -> true
-    else -> false
 }
 
 private fun slideAnimationSpec() = tween<IntOffset>(NavTransitionDefaults.DURATION_MS)

@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -46,10 +48,11 @@ import coil3.compose.rememberAsyncImagePainter
 import org.jetbrains.compose.resources.stringResource
 import presentation.components.AppIllustration
 import presentation.components.AppIllustrationImage
-import presentation.components.AppPrimaryButton
-import presentation.components.AppSecondaryButton
 import presentation.components.AppTopBar
-import presentation.components.LoadingIndicator
+import presentation.components.InteractionBlockedBox
+import presentation.components.PackBottomBar
+import presentation.components.PackBottomBarFab
+import presentation.components.PackBottomBarIconButton
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.neubrutalBorderWithGloss
@@ -67,9 +70,10 @@ import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import presentation.theme.neubrutalSubtleOnSurface
 import setiker.composeapp.generated.resources.Res
-import setiker.composeapp.generated.resources.apply_crop
-import setiker.composeapp.generated.resources.cancel
+import setiker.composeapp.generated.resources.back
 import setiker.composeapp.generated.resources.crop_image_title
+import setiker.composeapp.generated.resources.processing
+import setiker.composeapp.generated.resources.save_sticker
 import setiker.composeapp.generated.resources.flip_horizontal
 import setiker.composeapp.generated.resources.image_to_crop
 import setiker.composeapp.generated.resources.no_image_selected
@@ -91,25 +95,48 @@ fun CropScreen(
         topBar = {
             AppTopBar(
                 title = stringResource(Res.string.crop_image_title),
-                onBackClick = onBackClick
+                onBackClick = null
+            )
+        },
+        bottomBar = {
+            PackBottomBar(
+                actionStatusText = if (state.isProcessing) {
+                    stringResource(Res.string.processing)
+                } else {
+                    null
+                },
+                actions = {
+                    PackBottomBarIconButton(
+                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(Res.string.back),
+                        onClick = onBackClick,
+                        enabled = !state.isProcessing
+                    )
+                },
+                floatingActionButton = {
+                    PackBottomBarFab(
+                        icon = Icons.Default.Check,
+                        contentDescription = stringResource(Res.string.save_sticker),
+                        onClick = { onIntent(CropIntent.ApplyCrop) },
+                        enabled = state.imagePath.isNotBlank() && !state.isProcessing,
+                        isLoading = state.isProcessing
+                    )
+                }
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
-        if (state.isProcessing) {
-            LoadingIndicator(
-                modifier = modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                illustration = AppIllustration.LoadingState
-            )
-        } else {
-            val border = neubrutalBorderColor()
+        val border = neubrutalBorderColor()
+        InteractionBlockedBox(
+            blocked = state.isProcessing,
+            modifier = modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
             Column(
-                modifier = modifier
+                modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
                     .padding(horizontal = 20.dp, vertical = 16.dp)
             ) {
                 // Crop Area (Neubrutal Frame)
@@ -213,20 +240,6 @@ fun CropScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // Apply Button
-                AppPrimaryButton(
-                    text = stringResource(Res.string.apply_crop),
-                    onClick = { onIntent(CropIntent.ApplyCrop) }
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                AppSecondaryButton(
-                    text = stringResource(Res.string.cancel),
-                    onClick = onBackClick
-                )
             }
         }
     }
@@ -388,7 +401,7 @@ private fun CropScreenProcessingPreview() {
     MaterialTheme {
         CropScreen(
             state = CropState(
-                imagePath = "",
+                imagePath = "preview://image",
                 isProcessing = true
             ),
             onIntent = {},
