@@ -77,10 +77,15 @@ fun StickerCard(
             modifier = Modifier
                 .fillMaxSize()
                 .clip(innerShape),
-            contentScale = ContentScale.Crop
+            contentScale = ContentScale.Fit
         )
 
-        if (showDecorations && sticker.decorations.isNotEmpty()) {
+        // imageFile already includes baked decorations when sourceImageFile differs (saved stickers).
+        val decorationsAlreadyBaked = sticker.decorations.isNotEmpty() &&
+            sticker.sourceImageFile != null &&
+            sticker.imageFile != sticker.sourceImageFile
+
+        if (showDecorations && sticker.decorations.isNotEmpty() && !decorationsAlreadyBaked) {
             ReadOnlyDecorationOverlay(
                 decorations = sticker.decorations,
                 modifier = Modifier

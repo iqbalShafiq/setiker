@@ -62,6 +62,32 @@ object DecorationRenderSpec {
 
     fun shadowBlurRadiusPx(textSizePx: Float, ratio: Float): Float =
         if (ratio <= 0f) 0f else textSizePx * ratio.coerceIn(0f, 0.3f)
+
+    fun textDecorationPaddingPx(resolvedStyle: ResolvedTextDecorationStyle): Float {
+        val strokePad = resolvedStyle.layers.maxOfOrNull { layer ->
+            if (!layer.isFill) layer.strokeWidthPx else 0f
+        } ?: 0f
+        val layerOffsetPad = resolvedStyle.layers.maxOfOrNull { layer ->
+            kotlin.math.max(layer.offsetXPx, layer.offsetYPx)
+        } ?: 0f
+        return strokePad * 2f + layerOffsetPad
+    }
+
+    fun textDecorationBoxSizePx(
+        decoration: TextDecoration,
+        canvasWidthPx: Float,
+        minDimPx: Float,
+        scale: Float,
+        measuredTextWidthPx: Float,
+        measuredTextHeightPx: Float,
+        resolvedStyle: ResolvedTextDecorationStyle
+    ): Pair<Float, Float> {
+        val baseWidth = textBoxWidthPx(decoration, canvasWidthPx, minDimPx, scale)
+        val baseHeight = textBoxHeightPx(decoration, minDimPx, scale)
+        val padding = textDecorationPaddingPx(resolvedStyle)
+        return kotlin.math.max(baseWidth, measuredTextWidthPx + padding) to
+            kotlin.math.max(baseHeight, measuredTextHeightPx + padding)
+    }
 }
 
 fun TextDecoration.isBottomCaption(): Boolean = layout == TextDecorationLayout.BottomCaption

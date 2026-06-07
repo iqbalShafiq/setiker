@@ -266,25 +266,6 @@ fun rememberTextDecorationBoxMetrics(
         canvasWidthPx,
         scale
     ) {
-        val baseWidth = DecorationRenderSpec.textBoxWidthPx(
-            decoration = decoration,
-            canvasWidthPx = canvasWidthPx,
-            minDimPx = minDim,
-            scale = scale
-        )
-        val baseHeight = DecorationRenderSpec.textBoxHeightPx(
-            decoration = decoration,
-            minDimPx = minDim,
-            scale = scale
-        )
-        val strokePad = resolvedStyle.layers.maxOfOrNull { layer ->
-            if (!layer.isFill) layer.strokeWidthPx else 0f
-        } ?: 0f
-        val layerOffsetPad = resolvedStyle.layers.maxOfOrNull { layer ->
-            max(layer.offsetXPx, layer.offsetYPx)
-        } ?: 0f
-        val padding = strokePad * 2f + layerOffsetPad
-
         if (decoration.layout == TextDecorationLayout.Arched && decoration.arcIntensity != 0f) {
             val arched = computeArchedTextLayoutSpec(
                 text = decoration.text,
@@ -294,9 +275,18 @@ fun rememberTextDecorationBoxMetrics(
                 textSizePx = textSizePx,
                 textMeasurer = textMeasurer
             )
+            val (widthPx, heightPx) = DecorationRenderSpec.textDecorationBoxSizePx(
+                decoration = decoration,
+                canvasWidthPx = canvasWidthPx,
+                minDimPx = minDim,
+                scale = scale,
+                measuredTextWidthPx = arched.widthPx,
+                measuredTextHeightPx = arched.heightPx,
+                resolvedStyle = resolvedStyle
+            )
             TextDecorationBoxMetrics(
-                widthPx = max(baseWidth, arched.widthPx + padding),
-                heightPx = max(baseHeight, arched.heightPx + padding),
+                widthPx = widthPx,
+                heightPx = heightPx,
                 textSizePx = textSizePx,
                 baseStyle = baseStyle,
                 resolvedStyle = resolvedStyle,
@@ -308,9 +298,18 @@ fun rememberTextDecorationBoxMetrics(
                 baseStyle = baseStyle,
                 textMeasurer = textMeasurer
             )
+            val (widthPx, heightPx) = DecorationRenderSpec.textDecorationBoxSizePx(
+                decoration = decoration,
+                canvasWidthPx = canvasWidthPx,
+                minDimPx = minDim,
+                scale = scale,
+                measuredTextWidthPx = flat.widthPx,
+                measuredTextHeightPx = flat.heightPx,
+                resolvedStyle = resolvedStyle
+            )
             TextDecorationBoxMetrics(
-                widthPx = max(baseWidth, flat.widthPx + padding),
-                heightPx = max(baseHeight, flat.heightPx + padding),
+                widthPx = widthPx,
+                heightPx = heightPx,
                 textSizePx = textSizePx,
                 baseStyle = baseStyle,
                 resolvedStyle = resolvedStyle,

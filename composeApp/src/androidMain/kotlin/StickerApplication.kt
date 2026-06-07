@@ -1,6 +1,7 @@
 package com.setiker.app
 
 import android.app.Application
+import data.storage.ForegroundActivityProvider
 import data.aijob.AiJobManager
 import data.aijob.AiJobNotificationSync
 import data.aijob.AiNotificationHelper
@@ -19,7 +20,8 @@ import org.koin.core.context.startKoin
 class StickerApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-        
+        ForegroundActivityProvider.install(this)
+
         startKoin {
             androidLogger()
             androidContext(this@StickerApplication)

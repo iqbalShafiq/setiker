@@ -7,8 +7,6 @@ import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.Movie
 import android.graphics.Paint
-import android.graphics.RectF
-import android.graphics.Typeface
 import android.net.Uri
 import android.os.Build
 import android.text.Layout
@@ -27,17 +25,8 @@ import domain.model.CropTransform
 import domain.model.DecodedFrame
 import domain.model.DecorationFont
 import domain.model.DecorationFontWeight
-import domain.model.DecorationRenderSpec
-import domain.model.EmojiDecoration
-import domain.model.ImageDecoration
 import domain.model.StickerDecoration
 import domain.model.StickerPack
-import domain.model.TextDecoration
-import domain.model.TextDecorationLayout
-import domain.model.isBottomCaption
-import domain.model.resolveEmojiStyle
-import domain.model.resolveStyle
-import presentation.components.decorationTypeface
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
@@ -108,7 +97,7 @@ actual class StickerFileStorage(private val context: Context) {
                 ?: throw IllegalArgumentException("Cannot decode image: $sourcePath")
 
             try {
-                val scaledBitmap = resizeAndCenterCropTo512(bitmap)
+                val scaledBitmap = resizeAndFitTo512(bitmap)
 
                 val destFile = File(stickersDir, outputFileName)
                 FileOutputStream(destFile).use { out ->
@@ -163,7 +152,7 @@ actual class StickerFileStorage(private val context: Context) {
                 ?: throw IllegalArgumentException("Cannot decode image: $sourcePath")
 
             try {
-                val scaledBitmap = resizeAndCenterCropTo512(bitmap)
+                val scaledBitmap = resizeAndFitTo512(bitmap)
 
                 var quality = 90
                 var bytes: ByteArray
@@ -774,6 +763,41 @@ actual class StickerFileStorage(private val context: Context) {
     private fun resizeAndCenterCropTo512(source: Bitmap): Bitmap =
         resizeAndCenterCropToSize(source, StickerPack.STICKER_SIZE)
 
+    /**
+     * Aspect-fit into a 512×512 canvas (letterboxing), matching [ContentScale.Fit] in the editor
+     * preview and [applyCropTransformation] math so decoration coordinates stay aligned.
+     */
+    private fun resizeAndFitTo512(source: Bitmap): Bitmap =
+        resizeAndFitToSize(source, StickerPack.STICKER_SIZE)
+
+    private fun resizeAndFitToSize(source: Bitmap, target: Int): Bitmap {
+        if (source.width == target && source.height == target) {
+            return if (source.config == Bitmap.Config.ARGB_8888) {
+                source
+            } else {
+                source.copy(Bitmap.Config.ARGB_8888, false)
+            }
+        }
+
+        val output = Bitmap.createBitmap(target, target, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(output)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+
+        val maxDim = maxOf(source.width, source.height).toFloat().coerceAtLeast(1f)
+        val fitScale = target / maxDim
+        val scaledW = source.width * fitScale
+        val scaledH = source.height * fitScale
+        val left = (target - scaledW) / 2f
+        val top = (target - scaledH) / 2f
+
+        val matrix = Matrix().apply {
+            postScale(fitScale, fitScale)
+            postTranslate(left, top)
+        }
+        canvas.drawBitmap(source, matrix, paint)
+        return output
+    }
+
     private fun resizeAndCenterCropToSize(source: Bitmap, target: Int): Bitmap {
         if (source.width == target && source.height == target) return source
 
@@ -854,174 +878,21 @@ actual class StickerFileStorage(private val context: Context) {
         return output
     }
 
-    private fun composeDecorationsOntoBitmap(
+    private suspend fun composeDecorationsOntoBitmap(
         target: Bitmap,
         decorations: List<StickerDecoration>
     ) {
-        val canvas = Canvas(target)
-        val minDim = minOf(target.width, target.height).toFloat()
-        decorations.forEach { decoration ->
-            val centerX = decoration.centerX.coerceIn(0f, 1f) * target.width
-            val centerY = decoration.centerY.coerceIn(0f, 1f) * target.height
-            val scale = decoration.scale.coerceIn(
-                DecorationRenderSpec.MIN_SCALE,
-                DecorationRenderSpec.MAX_SCALE
+        if (decorations.isEmpty()) return
+        val overlay = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+            AndroidDecorationBitmapRenderer.render(
+                context = context,
+                width = target.width,
+                height = target.height,
+                decorations = decorations
             )
-            when (decoration) {
-                is TextDecoration -> {
-                    val textSizePx = DecorationRenderSpec.textSizePx(decoration, minDim, scale)
-                    val resolved = decoration.resolveStyle(textSizePx)
-                    val typeface = decorationTypeface(context, resolved.font, resolved.fontWeight)
-                    if (decoration.isBottomCaption()) {
-                        drawBottomCaptionTextDecoration(
-                            canvas = canvas,
-                            decoration = decoration,
-                            bitmapWidth = target.width,
-                            bitmapHeight = target.height,
-                            minDim = minDim,
-                            resolved = resolved,
-                            typeface = typeface,
-                            textSizePx = textSizePx
-                        )
-                    } else if (decoration.layout == TextDecorationLayout.Arched) {
-                        DecorationTextCanvasDrawer.drawArchedSingleLine(
-                            canvas = canvas,
-                            text = decoration.text,
-                            centerX = centerX,
-                            centerY = centerY,
-                            textSize = textSizePx,
-                            typeface = typeface,
-                            resolved = resolved,
-                            arcIntensity = decoration.arcIntensity
-                        )
-                    } else {
-                        DecorationTextCanvasDrawer.drawSingleLine(
-                            canvas = canvas,
-                            text = decoration.text,
-                            centerX = centerX,
-                            centerY = centerY,
-                            textSize = textSizePx,
-                            typeface = typeface,
-                            resolved = resolved
-                        )
-                    }
-                }
-
-                is EmojiDecoration -> {
-                    val textSizePx = minDim * DecorationRenderSpec.EMOJI_SIZE_RATIO * scale
-                    val emojiStyle = decoration.resolveEmojiStyle(textSizePx)
-                    DecorationTextCanvasDrawer.drawSingleLine(
-                        canvas = canvas,
-                        text = decoration.emoji,
-                        centerX = centerX,
-                        centerY = centerY,
-                        textSize = textSizePx,
-                        typeface = Typeface.DEFAULT,
-                        resolved = emojiStyle
-                    )
-                }
-
-                is ImageDecoration -> {
-                    val stickerBitmap = BitmapFactory.decodeFile(decoration.imagePath) ?: return@forEach
-                    val baseSize = minDim * DecorationRenderSpec.IMAGE_BASE_RATIO * scale
-                    val aspectRatio = stickerBitmap.width.toFloat() / stickerBitmap.height.toFloat()
-                    val drawWidth: Float
-                    val drawHeight: Float
-                    if (aspectRatio >= 1f) {
-                        drawWidth = baseSize
-                        drawHeight = baseSize / aspectRatio
-                    } else {
-                        drawHeight = baseSize
-                        drawWidth = baseSize * aspectRatio
-                    }
-                    val targetRect = RectF(
-                        centerX - drawWidth / 2f,
-                        centerY - drawHeight / 2f,
-                        centerX + drawWidth / 2f,
-                        centerY + drawHeight / 2f
-                    )
-                    canvas.drawBitmap(stickerBitmap, null, targetRect, null)
-                    stickerBitmap.recycle()
-                }
-            }
         }
-    }
-
-    private fun drawBottomCaptionTextDecoration(
-        canvas: Canvas,
-        decoration: TextDecoration,
-        bitmapWidth: Int,
-        bitmapHeight: Int,
-        minDim: Float,
-        resolved: domain.model.ResolvedTextDecorationStyle,
-        typeface: Typeface,
-        textSizePx: Float
-    ) {
-        val scale = decoration.scale.coerceIn(
-            DecorationRenderSpec.MIN_SCALE,
-            DecorationRenderSpec.MAX_SCALE
-        )
-        val boxWidthPx = DecorationRenderSpec.textBoxWidthPx(
-            decoration = decoration,
-            canvasWidthPx = bitmapWidth.toFloat(),
-            minDimPx = minDim,
-            scale = scale
-        )
-        val maxWidth = boxWidthPx.toInt().coerceAtLeast(1)
-
-        val centerXPx = decoration.centerX.coerceIn(0f, 1f) * bitmapWidth
-        val centerYPx = decoration.centerY.coerceIn(0f, 1f) * bitmapHeight
-
-        val layoutHeight = measureMultilineHeight(
-            text = decoration.text,
-            maxWidth = maxWidth,
-            textSizePx = textSizePx,
-            typeface = typeface,
-            resolved = resolved
-        )
-        var left = centerXPx - boxWidthPx / 2f
-        var top = centerYPx - layoutHeight / 2f
-        left = left.coerceIn(0f, (bitmapWidth - boxWidthPx).coerceAtLeast(0f))
-        top = top.coerceIn(0f, (bitmapHeight - layoutHeight).coerceAtLeast(0f))
-
-        canvas.save()
-        canvas.translate(left, top)
-        resolved.layers.forEach { layer ->
-            canvas.save()
-            canvas.translate(layer.offsetXPx, layer.offsetYPx)
-            DecorationTextCanvasDrawer.drawMultilineBlock(
-                canvas = canvas,
-                text = decoration.text,
-                maxWidth = maxWidth,
-                resolved = resolved.copy(layers = listOf(layer)),
-                textSize = textSizePx,
-                typeface = typeface
-            )
-            canvas.restore()
-        }
-        canvas.restore()
-    }
-
-    private fun measureMultilineHeight(
-        text: String,
-        maxWidth: Int,
-        textSizePx: Float,
-        typeface: Typeface,
-        resolved: domain.model.ResolvedTextDecorationStyle
-    ): Float {
-        val fillLayer = resolved.layers.lastOrNull() ?: return textSizePx
-        val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = fillLayer.colorArgb.toInt()
-            this.textSize = textSizePx
-            this.typeface = typeface
-        }
-        return StaticLayout.Builder.obtain(text, 0, text.length, paint, maxWidth)
-            .setAlignment(Layout.Alignment.ALIGN_CENTER)
-            .setIncludePad(false)
-            .setLineSpacing(0f, 1f)
-            .build()
-            .height
-            .toFloat()
+        Canvas(target).drawBitmap(overlay, 0f, 0f, null)
+        overlay.recycle()
     }
 
     companion object {
