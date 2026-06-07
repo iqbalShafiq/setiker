@@ -2,6 +2,8 @@ package presentation.animatededitor
 
 import domain.model.DecorationFont
 import domain.model.DecorationFontWeight
+import domain.model.TextDecorationLayout
+import domain.model.TextDecorationStyle
 
 sealed interface AnimatedEditorIntent {
     data class LoadDraft(val draftId: String) : AnimatedEditorIntent
@@ -10,7 +12,7 @@ sealed interface AnimatedEditorIntent {
     data object PausePreview : AnimatedEditorIntent
     data object AdvanceFrame : AnimatedEditorIntent
     data class SetApplyScope(val scope: DecorationApplyScope) : AnimatedEditorIntent
-    data class AddTextDecoration(val text: String, val font: DecorationFont) : AnimatedEditorIntent
+    data class AddTextDecoration(val text: String, val style: TextDecorationStyle) : AnimatedEditorIntent
     data class AddEmojiDecoration(val emoji: String) : AnimatedEditorIntent
     data class AddImageDecoration(val imagePath: String) : AnimatedEditorIntent
     data class SelectDecoration(val id: String?) : AnimatedEditorIntent
@@ -22,9 +24,12 @@ sealed interface AnimatedEditorIntent {
         val scale: Float
     ) : AnimatedEditorIntent
     data class UpdateTextDecorationText(val id: String, val text: String) : AnimatedEditorIntent
+    data class UpdateTextDecorationStyle(val id: String, val style: TextDecorationStyle) : AnimatedEditorIntent
     data class UpdateTextDecorationFont(val id: String, val font: DecorationFont) : AnimatedEditorIntent
     data class UpdateTextDecorationFontWeight(val id: String, val weight: DecorationFontWeight) : AnimatedEditorIntent
     data class UpdateTextDecorationColor(val id: String, val colorArgb: Long) : AnimatedEditorIntent
+    data class UpdateTextDecorationLayout(val id: String, val layout: TextDecorationLayout) : AnimatedEditorIntent
+    data class UpdateTextDecorationArcIntensity(val id: String, val intensity: Float) : AnimatedEditorIntent
     data class UpdateTextDecorationBorderColor(val id: String, val colorArgb: Long) : AnimatedEditorIntent
     data class UpdateTextDecorationBorderWidth(val id: String, val widthRatio: Float) : AnimatedEditorIntent
     data class UpdateEmojiDecoration(val id: String, val emoji: String) : AnimatedEditorIntent

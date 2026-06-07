@@ -17,9 +17,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
@@ -32,6 +29,7 @@ import domain.model.EmojiDecoration
 import domain.model.ImageDecoration
 import domain.model.StickerDecoration
 import domain.model.TextDecoration
+import domain.model.resolveEmojiStyle
 import kotlin.math.roundToInt
 
 /**
@@ -54,21 +52,23 @@ fun ReadOnlyDecorationOverlay(
         decorations.forEach { decoration ->
             val scale = decoration.scale.coerceIn(DecorationRenderSpec.MIN_SCALE, DecorationRenderSpec.MAX_SCALE)
 
+            val textMetrics = if (decoration is TextDecoration) {
+                rememberTextDecorationBoxMetrics(
+                    decoration = decoration,
+                    minDim = minDim,
+                    canvasWidthPx = widthPx,
+                    scale = scale
+                )
+            } else {
+                null
+            }
+
             val itemWidthPx: Float
             val itemHeightPx: Float
             when (decoration) {
                 is TextDecoration -> {
-                    itemWidthPx = DecorationRenderSpec.textBoxWidthPx(
-                        decoration = decoration,
-                        canvasWidthPx = widthPx,
-                        minDimPx = minDim,
-                        scale = scale
-                    )
-                    itemHeightPx = DecorationRenderSpec.textBoxHeightPx(
-                        decoration = decoration,
-                        minDimPx = minDim,
-                        scale = scale
-                    )
+                    itemWidthPx = textMetrics!!.widthPx
+                    itemHeightPx = textMetrics.heightPx
                 }
                 is EmojiDecoration -> {
                     val sq = minDim * DecorationRenderSpec.EMOJI_BOX_RATIO * scale
@@ -105,41 +105,30 @@ fun ReadOnlyDecorationOverlay(
             ) {
                 when (decoration) {
                     is TextDecoration -> {
-                        OutlinedDecorationText(
-                            text = decoration.text,
-                            style = TextStyle(
-                                color = Color(decoration.textColorArgb.toInt()),
-                                fontFamily = mapDecorationFont(decoration.font),
-                                fontWeight = mapDecorationFontWeight(decoration.fontWeight),
-                                fontSize = with(density) {
-                                    DecorationRenderSpec.textSizePx(decoration, minDim, scale).toSp()
-                                },
-                                textAlign = TextAlign.Center
-                            ),
-                            borderColor = Color(decoration.borderColorArgb.toInt()),
-                            borderWidthPx = DecorationRenderSpec.textSizePx(decoration, minDim, scale) *
-                                decoration.borderWidthRatio.coerceIn(0f, 0.2f),
+                        DecorationTextContent(
+                            decoration = decoration,
+                            minDim = minDim,
+                            scale = scale,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(Color.Transparent),
-                            maxLines = DecorationRenderSpec.textMaxLines(decoration)
+                            fitContainer = true,
+                            boxMetrics = textMetrics
                         )
                     }
 
                     is EmojiDecoration -> {
-                        OutlinedDecorationText(
+                        val emojiSizePx = minDim * DecorationRenderSpec.EMOJI_SIZE_RATIO * scale
+                        StyledDecorationText(
                             text = decoration.emoji,
-                            style = MaterialTheme.typography.headlineLarge.copy(
-                                fontSize = with(density) {
-                                    (minDim * DecorationRenderSpec.EMOJI_SIZE_RATIO * scale).toSp()
-                                },
-                                color = Color.White
+                            resolvedStyle = decoration.resolveEmojiStyle(emojiSizePx),
+                            baseStyle = MaterialTheme.typography.headlineLarge.copy(
+                                fontSize = with(density) { emojiSizePx.toSp() },
+                                color = Color.White,
+                                textAlign = TextAlign.Center
                             ),
-                            borderColor = Color(decoration.borderColorArgb.toInt()),
-                            borderWidthPx = (minDim * DecorationRenderSpec.EMOJI_SIZE_RATIO * scale) *
-                                decoration.borderWidthRatio.coerceIn(0f, 0.2f),
-                            modifier = Modifier.fillMaxSize(),
-                            maxLines = 1
+                            maxLines = 1,
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
 
@@ -155,24 +144,6 @@ fun ReadOnlyDecorationOverlay(
             }
         }
     }
-}
-
-private fun mapDecorationFont(font: DecorationFont): FontFamily = when (font) {
-    DecorationFont.Sans -> FontFamily.SansSerif
-    DecorationFont.Serif -> FontFamily.Serif
-    DecorationFont.Mono -> FontFamily.Monospace
-    DecorationFont.Cursive -> FontFamily.Cursive
-    DecorationFont.Display -> FontFamily.Serif
-    DecorationFont.Rounded -> FontFamily.SansSerif
-    DecorationFont.Condensed -> FontFamily.SansSerif
-}
-
-private fun mapDecorationFontWeight(weight: DecorationFontWeight): FontWeight = when (weight) {
-    DecorationFontWeight.Light -> FontWeight.Light
-    DecorationFontWeight.Regular -> FontWeight.Normal
-    DecorationFontWeight.Medium -> FontWeight.Medium
-    DecorationFontWeight.SemiBold -> FontWeight.SemiBold
-    DecorationFontWeight.Bold -> FontWeight.Bold
 }
 
 // MARK: - Previews

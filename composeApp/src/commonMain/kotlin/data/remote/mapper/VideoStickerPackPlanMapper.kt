@@ -75,6 +75,7 @@ private fun ApiVideoStickerDecoration.toDomain(id: String): StickerDecoration = 
         font = style.toDecorationFont(),
         fontWeight = style.toDecorationFontWeight(),
         textColorArgb = parseApiColorToArgb(style?.color) ?: 0xFFFFFFFFL,
+        style = domain.model.TextDecorationStyle.ApiCaption,
         source = TextDecorationSource.ApiOutsideForeground,
         layout = TextDecorationLayout.BottomCaption,
         centerX = centerX,

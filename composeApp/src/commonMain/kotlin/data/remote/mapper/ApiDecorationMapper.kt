@@ -11,6 +11,7 @@ import domain.model.StickerDecoration
 import domain.model.TextDecoration
 import domain.model.TextDecorationLayout
 import domain.model.TextDecorationSource
+import domain.model.TextDecorationStyle
 
 private const val DEFAULT_BOTTOM_CENTER_Y = 0.88f
 private const val DEFAULT_OVERLAY_SCALE = 0.58f
@@ -63,6 +64,7 @@ private fun buildApiTextDecoration(
         font = mapApiFontFamily(style?.fontFamily),
         fontWeight = mapApiFontWeight(style?.weight),
         textColorArgb = parseApiColorToArgb(style?.color) ?: 0xFF000000L,
+        style = TextDecorationStyle.ApiCaption,
         source = source,
         layout = TextDecorationLayout.BottomCaption,
         centerX = 0.5f,

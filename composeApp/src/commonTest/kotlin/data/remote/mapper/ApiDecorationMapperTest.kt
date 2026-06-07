@@ -9,6 +9,7 @@ import domain.model.DecorationFontWeight
 import domain.model.TextDecoration
 import domain.model.TextDecorationLayout
 import domain.model.TextDecorationSource
+import domain.model.TextDecorationStyle
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -36,6 +37,7 @@ class ApiDecorationMapperTest {
         assertEquals(DecorationFontWeight.Bold, decoration.fontWeight)
         assertEquals(0xFFFF0000L, decoration.textColorArgb)
         assertEquals(TextDecorationSource.ApiTextAsset, decoration.source)
+        assertEquals(TextDecorationStyle.ApiCaption, decoration.style)
         assertEquals(TextDecorationLayout.BottomCaption, decoration.layout)
         assertEquals(0.5f, decoration.centerX)
         assertEquals(0.88f, decoration.centerY)
@@ -57,6 +59,7 @@ class ApiDecorationMapperTest {
         assertEquals("CAPTION", decoration.text)
         assertEquals(0xFFFFFFFFL, decoration.textColorArgb)
         assertEquals(TextDecorationSource.ApiOutsideForeground, decoration.source)
+        assertEquals(TextDecorationStyle.ApiCaption, decoration.style)
         assertEquals(TextDecorationLayout.BottomCaption, decoration.layout)
         assertEquals(0.5f, decoration.centerX)
         assertEquals(0.88f, decoration.centerY)

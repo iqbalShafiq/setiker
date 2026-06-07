@@ -132,7 +132,7 @@ class EditorViewModelImproveTest {
         )
 
         viewModel.onIntent(EditorIntent.UpdateImagePath("/tmp/source.png"))
-        viewModel.onIntent(EditorIntent.AddTextDecoration("Local", DecorationFont.Sans))
+        viewModel.onIntent(EditorIntent.AddTextDecoration("Local", domain.model.TextDecorationStyle.ClassicOutline))
         assertTrue(viewModel.state.value.selectedDecorationId != null)
         viewModel.onIntent(EditorIntent.ApplyGeneratedSticker(draft))
 

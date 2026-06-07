@@ -33,7 +33,11 @@ import domain.model.ImageDecoration
 import domain.model.StickerDecoration
 import domain.model.StickerPack
 import domain.model.TextDecoration
+import domain.model.TextDecorationLayout
 import domain.model.isBottomCaption
+import domain.model.resolveEmojiStyle
+import domain.model.resolveStyle
+import presentation.components.decorationTypeface
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
@@ -865,40 +869,55 @@ actual class StickerFileStorage(private val context: Context) {
             )
             when (decoration) {
                 is TextDecoration -> {
+                    val textSizePx = DecorationRenderSpec.textSizePx(decoration, minDim, scale)
+                    val resolved = decoration.resolveStyle(textSizePx)
+                    val typeface = decorationTypeface(context, resolved.font, resolved.fontWeight)
                     if (decoration.isBottomCaption()) {
                         drawBottomCaptionTextDecoration(
                             canvas = canvas,
                             decoration = decoration,
                             bitmapWidth = target.width,
                             bitmapHeight = target.height,
-                            minDim = minDim
+                            minDim = minDim,
+                            resolved = resolved,
+                            typeface = typeface,
+                            textSizePx = textSizePx
                         )
-                    } else {
-                        drawTextDecoration(
+                    } else if (decoration.layout == TextDecorationLayout.Arched) {
+                        DecorationTextCanvasDrawer.drawArchedSingleLine(
                             canvas = canvas,
                             text = decoration.text,
                             centerX = centerX,
                             centerY = centerY,
-                            textSize = DecorationRenderSpec.textSizePx(decoration, minDim, scale),
-                            typeface = mapTypeface(decoration.font, decoration.fontWeight),
-                            textColor = decoration.textColorArgb.toInt(),
-                            borderColor = decoration.borderColorArgb.toInt(),
-                            borderWidthRatio = decoration.borderWidthRatio
+                            textSize = textSizePx,
+                            typeface = typeface,
+                            resolved = resolved,
+                            arcIntensity = decoration.arcIntensity
+                        )
+                    } else {
+                        DecorationTextCanvasDrawer.drawSingleLine(
+                            canvas = canvas,
+                            text = decoration.text,
+                            centerX = centerX,
+                            centerY = centerY,
+                            textSize = textSizePx,
+                            typeface = typeface,
+                            resolved = resolved
                         )
                     }
                 }
 
                 is EmojiDecoration -> {
-                    drawTextDecoration(
+                    val textSizePx = minDim * DecorationRenderSpec.EMOJI_SIZE_RATIO * scale
+                    val emojiStyle = decoration.resolveEmojiStyle(textSizePx)
+                    DecorationTextCanvasDrawer.drawSingleLine(
                         canvas = canvas,
                         text = decoration.emoji,
                         centerX = centerX,
                         centerY = centerY,
-                        textSize = minDim * DecorationRenderSpec.EMOJI_SIZE_RATIO * scale,
+                        textSize = textSizePx,
                         typeface = Typeface.DEFAULT,
-                        textColor = android.graphics.Color.WHITE,
-                        borderColor = decoration.borderColorArgb.toInt(),
-                        borderWidthRatio = decoration.borderWidthRatio
+                        resolved = emojiStyle
                     )
                 }
 
@@ -933,13 +952,15 @@ actual class StickerFileStorage(private val context: Context) {
         decoration: TextDecoration,
         bitmapWidth: Int,
         bitmapHeight: Int,
-        minDim: Float
+        minDim: Float,
+        resolved: domain.model.ResolvedTextDecorationStyle,
+        typeface: Typeface,
+        textSizePx: Float
     ) {
         val scale = decoration.scale.coerceIn(
             DecorationRenderSpec.MIN_SCALE,
             DecorationRenderSpec.MAX_SCALE
         )
-        val textSizePx = DecorationRenderSpec.textSizePx(decoration, minDim, scale)
         val boxWidthPx = DecorationRenderSpec.textBoxWidthPx(
             decoration = decoration,
             canvasWidthPx = bitmapWidth.toFloat(),
@@ -951,32 +972,13 @@ actual class StickerFileStorage(private val context: Context) {
         val centerXPx = decoration.centerX.coerceIn(0f, 1f) * bitmapWidth
         val centerYPx = decoration.centerY.coerceIn(0f, 1f) * bitmapHeight
 
-        val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = decoration.textColorArgb.toInt()
-            this.textSize = textSizePx
-            typeface = mapTypeface(decoration.font, decoration.fontWeight)
-            isAntiAlias = true
-            setShadowLayer(textSizePx * 0.14f, 0f, 1f, android.graphics.Color.BLACK)
-        }
-        val strokePaint = TextPaint(textPaint).apply {
-            style = Paint.Style.STROKE
-            color = decoration.borderColorArgb.toInt()
-            strokeWidth = (textSizePx * decoration.borderWidthRatio.coerceIn(0f, 0.2f)).coerceAtLeast(0f)
-            setShadowLayer(0f, 0f, 0f, android.graphics.Color.TRANSPARENT)
-        }
-
-        val staticLayout = StaticLayout.Builder.obtain(
-            decoration.text,
-            0,
-            decoration.text.length,
-            textPaint,
-            maxWidth
-        ).setAlignment(Layout.Alignment.ALIGN_CENTER)
-            .setIncludePad(false)
-            .setLineSpacing(0f, 1f)
-            .build()
-
-        val layoutHeight = staticLayout.height.toFloat()
+        val layoutHeight = measureMultilineHeight(
+            text = decoration.text,
+            maxWidth = maxWidth,
+            textSizePx = textSizePx,
+            typeface = typeface,
+            resolved = resolved
+        )
         var left = centerXPx - boxWidthPx / 2f
         var top = centerYPx - layoutHeight / 2f
         left = left.coerceIn(0f, (bitmapWidth - boxWidthPx).coerceAtLeast(0f))
@@ -984,71 +986,42 @@ actual class StickerFileStorage(private val context: Context) {
 
         canvas.save()
         canvas.translate(left, top)
-        if (strokePaint.strokeWidth > 0f) {
-            StaticLayout.Builder.obtain(
-                decoration.text,
-                0,
-                decoration.text.length,
-                strokePaint,
-                maxWidth
-            ).setAlignment(Layout.Alignment.ALIGN_CENTER)
-                .setIncludePad(false)
-                .setLineSpacing(0f, 1f)
-                .build()
-                .draw(canvas)
+        resolved.layers.forEach { layer ->
+            canvas.save()
+            canvas.translate(layer.offsetXPx, layer.offsetYPx)
+            DecorationTextCanvasDrawer.drawMultilineBlock(
+                canvas = canvas,
+                text = decoration.text,
+                maxWidth = maxWidth,
+                resolved = resolved.copy(layers = listOf(layer)),
+                textSize = textSizePx,
+                typeface = typeface
+            )
+            canvas.restore()
         }
-        staticLayout.draw(canvas)
         canvas.restore()
     }
 
-    private fun drawTextDecoration(
-        canvas: Canvas,
+    private fun measureMultilineHeight(
         text: String,
-        centerX: Float,
-        centerY: Float,
-        textSize: Float,
+        maxWidth: Int,
+        textSizePx: Float,
         typeface: Typeface,
-        textColor: Int,
-        borderColor: Int,
-        borderWidthRatio: Float
-    ) {
-        val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = textColor
-            this.textSize = textSize
+        resolved: domain.model.ResolvedTextDecorationStyle
+    ): Float {
+        val fillLayer = resolved.layers.lastOrNull() ?: return textSizePx
+        val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = fillLayer.colorArgb.toInt()
+            this.textSize = textSizePx
             this.typeface = typeface
-            textAlign = Paint.Align.CENTER
-            style = Paint.Style.FILL
         }
-        val strokePaint = Paint(fillPaint).apply {
-            color = borderColor
-            style = Paint.Style.STROKE
-            strokeWidth = (textSize * borderWidthRatio.coerceIn(0f, 0.2f)).coerceAtLeast(0f)
-        }
-        val baselineY = centerY - (fillPaint.descent() + fillPaint.ascent()) / 2f
-        if (strokePaint.strokeWidth > 0f) {
-            canvas.drawText(text, centerX, baselineY, strokePaint)
-        }
-        canvas.drawText(text, centerX, baselineY, fillPaint)
-    }
-
-    private fun mapTypeface(font: DecorationFont, fontWeight: DecorationFontWeight): Typeface {
-        val base = when (font) {
-            DecorationFont.Sans -> Typeface.SANS_SERIF
-            DecorationFont.Serif -> Typeface.SERIF
-            DecorationFont.Mono -> Typeface.MONOSPACE
-            DecorationFont.Cursive -> Typeface.create("cursive", Typeface.NORMAL)
-            DecorationFont.Display -> Typeface.create("serif", Typeface.NORMAL)
-            DecorationFont.Rounded -> Typeface.create("sans-serif-medium", Typeface.NORMAL)
-            DecorationFont.Condensed -> Typeface.create("sans-serif-condensed", Typeface.NORMAL)
-        }
-        val style = when (fontWeight) {
-            DecorationFontWeight.Light -> Typeface.NORMAL
-            DecorationFontWeight.Regular -> Typeface.NORMAL
-            DecorationFontWeight.Medium -> Typeface.NORMAL
-            DecorationFontWeight.SemiBold -> Typeface.BOLD
-            DecorationFontWeight.Bold -> Typeface.BOLD
-        }
-        return Typeface.create(base, style)
+        return StaticLayout.Builder.obtain(text, 0, text.length, paint, maxWidth)
+            .setAlignment(Layout.Alignment.ALIGN_CENTER)
+            .setIncludePad(false)
+            .setLineSpacing(0f, 1f)
+            .build()
+            .height
+            .toFloat()
     }
 
     companion object {

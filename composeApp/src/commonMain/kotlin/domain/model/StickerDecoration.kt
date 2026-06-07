@@ -12,7 +12,10 @@ enum class DecorationFont {
     Cursive,
     Display,
     Rounded,
-    Condensed
+    Condensed,
+    Bungee,
+    LuckiestGuy,
+    Fredoka
 }
 
 @Serializable
@@ -34,7 +37,8 @@ enum class TextDecorationSource {
 @Serializable
 enum class TextDecorationLayout {
     Freeform,
-    BottomCaption
+    BottomCaption,
+    Arched
 }
 
 @Serializable
@@ -58,21 +62,31 @@ data class TextDecoration(
     val textColorArgb: Long = 0xFFFFFFFFL,
     val borderColorArgb: Long = DEFAULT_DECORATION_BORDER_COLOR_ARGB,
     val borderWidthRatio: Float = DEFAULT_DECORATION_BORDER_WIDTH_RATIO,
+    val style: TextDecorationStyle = TextDecorationStyle.ClassicOutline,
     val source: TextDecorationSource = TextDecorationSource.User,
     val layout: TextDecorationLayout = TextDecorationLayout.Freeform,
+    /** Arc intensity for [TextDecorationLayout.Arched], in range -1..1. */
+    val arcIntensity: Float = 0.35f,
     override val centerX: Float = 0.5f,
     override val centerY: Float = 0.5f,
     override val scale: Float = 1f
 ) : StickerDecoration
 
 fun StickerDecoration.normalizedForCurrentSchema(): StickerDecoration = when (this) {
-    is TextDecoration -> if (layout == TextDecorationLayout.Freeform && id.startsWith("api_txt_")) {
-        copy(
-            source = TextDecorationSource.ApiOutsideForeground,
-            layout = TextDecorationLayout.BottomCaption
-        )
-    } else {
-        this
+    is TextDecoration -> {
+        val migrated = if (layout == TextDecorationLayout.Freeform && id.startsWith("api_txt_")) {
+            copy(
+                source = TextDecorationSource.ApiOutsideForeground,
+                layout = TextDecorationLayout.BottomCaption
+            )
+        } else {
+            this
+        }
+        if (migrated.style == TextDecorationStyle.ClassicOutline) {
+            migrated.copy(style = migrated.inferStyleFromLegacyFields())
+        } else {
+            migrated
+        }
     }
     else -> this
 }

@@ -112,8 +112,15 @@ actual class StickerFileStorage {
         fileName: String,
         decorations: List<StickerDecoration>
     ): String = withContext(Dispatchers.IO) {
-        // iOS fallback keeps current behavior until native compositing is added.
-        saveStickerImage(sourcePath, fileName)
+        if (decorations.isEmpty()) {
+            return@withContext saveStickerImage(sourcePath, fileName)
+        }
+        val composedBytes = IosDecorationCompositor.compose(sourcePath, decorations)
+        if (composedBytes != null) {
+            saveBytes(composedBytes, fileName)
+        } else {
+            saveStickerImage(sourcePath, fileName)
+        }
     }
 
     actual suspend fun getVideoDurationMs(videoPath: String): Long = -1L

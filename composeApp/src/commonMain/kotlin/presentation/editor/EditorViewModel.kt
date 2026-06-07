@@ -33,6 +33,10 @@ import domain.model.ImageDecoration
 import domain.model.Sticker
 import domain.model.StickerDecoration
 import domain.model.TextDecoration
+import domain.model.TextDecorationLayout
+import domain.model.TextDecorationStyle
+import domain.model.TextDecorationStyleRegistry
+import domain.model.applyStylePreset
 import domain.repository.StickerRepository
 import domain.repository.AiQuotaRepository
 import kotlinx.coroutines.CancellationException
@@ -204,7 +208,7 @@ class EditorViewModel(
                 _state.update { it.copy(recentEmojis = intent.emojis) }
             }
             is EditorIntent.AddImageDecorationFromGallery -> addImageDecoration(intent.path)
-            is EditorIntent.AddTextDecoration -> addTextDecoration(intent.text, intent.font)
+            is EditorIntent.AddTextDecoration -> addTextDecoration(intent.text, intent.style)
             is EditorIntent.AddEmojiDecoration -> addEmojiDecoration(intent.emoji)
             is EditorIntent.UpdateDecorationTransform -> updateDecorationTransform(
                 id = intent.id,
@@ -251,9 +255,12 @@ class EditorViewModel(
                 _state.update { it.copy(isTextDecorationSheetOpen = false) }
             }
             is EditorIntent.UpdateTextDecorationText -> updateTextDecorationText(intent.id, intent.text)
+            is EditorIntent.UpdateTextDecorationStyle -> updateTextDecorationStyle(intent.id, intent.style)
             is EditorIntent.UpdateTextDecorationFont -> updateTextDecorationFont(intent.id, intent.font)
             is EditorIntent.UpdateTextDecorationFontWeight -> updateTextDecorationFontWeight(intent.id, intent.fontWeight)
             is EditorIntent.UpdateTextDecorationColor -> updateTextDecorationColor(intent.id, intent.colorArgb)
+            is EditorIntent.UpdateTextDecorationLayout -> updateTextDecorationLayout(intent.id, intent.layout)
+            is EditorIntent.UpdateTextDecorationArcIntensity -> updateTextDecorationArcIntensity(intent.id, intent.intensity)
             is EditorIntent.UpdateTextDecorationBorderColor -> updateTextDecorationBorderColor(intent.id, intent.colorArgb)
             is EditorIntent.UpdateTextDecorationBorderWidth -> updateTextDecorationBorderWidth(intent.id, intent.widthRatio)
             is EditorIntent.UpdateEmojiDecorationValue -> updateEmojiDecorationValue(intent.id, intent.emoji)
@@ -490,16 +497,18 @@ class EditorViewModel(
         }
     }
 
-    private fun addTextDecoration(text: String, font: DecorationFont) {
+    private fun addTextDecoration(text: String, style: TextDecorationStyle) {
         if (text.isBlank()) return
         recordHistory()
         _state.update {
+            val preset = TextDecorationStyleRegistry.preset(style)
             val decoration = TextDecoration(
                 id = nextDecorationId(),
                 text = text.trim(),
-                font = font,
-                fontWeight = DecorationFontWeight.Regular,
-                textColorArgb = 0xFFFFFFFFL,
+                font = preset.font,
+                fontWeight = preset.fontWeight,
+                textColorArgb = preset.defaultTextColorArgb,
+                style = style,
                 centerX = 0.5f,
                 centerY = 0.5f
             )
@@ -544,12 +553,26 @@ class EditorViewModel(
         }
     }
 
+    private fun updateTextDecorationStyle(id: String, style: TextDecorationStyle) {
+        _state.update { current ->
+            current.copy(
+                decorations = current.decorations.map { decoration ->
+                    if (decoration is TextDecoration && decoration.id == id) {
+                        decoration.applyStylePreset(style, preserveTextColor = true)
+                    } else {
+                        decoration
+                    }
+                }
+            )
+        }
+    }
+
     private fun updateTextDecorationFont(id: String, font: DecorationFont) {
         _state.update { current ->
             current.copy(
                 decorations = current.decorations.map { decoration ->
                     if (decoration is TextDecoration && decoration.id == id) {
-                        decoration.copy(font = font)
+                        decoration.copy(font = font, style = TextDecorationStyle.Custom)
                     } else {
                         decoration
                     }
@@ -577,7 +600,7 @@ class EditorViewModel(
             current.copy(
                 decorations = current.decorations.map { decoration ->
                     if (decoration is TextDecoration && decoration.id == id) {
-                        decoration.copy(fontWeight = fontWeight)
+                        decoration.copy(fontWeight = fontWeight, style = TextDecorationStyle.Custom)
                     } else {
                         decoration
                     }
@@ -585,12 +608,41 @@ class EditorViewModel(
             )
         }
     }
+
+    private fun updateTextDecorationLayout(id: String, layout: TextDecorationLayout) {
+        _state.update { current ->
+            current.copy(
+                decorations = current.decorations.map { decoration ->
+                    if (decoration is TextDecoration && decoration.id == id) {
+                        decoration.copy(layout = layout)
+                    } else {
+                        decoration
+                    }
+                }
+            )
+        }
+    }
+
+    private fun updateTextDecorationArcIntensity(id: String, intensity: Float) {
+        _state.update { current ->
+            current.copy(
+                decorations = current.decorations.map { decoration ->
+                    if (decoration is TextDecoration && decoration.id == id) {
+                        decoration.copy(arcIntensity = intensity.coerceIn(-1f, 1f))
+                    } else {
+                        decoration
+                    }
+                }
+            )
+        }
+    }
+
     private fun updateTextDecorationBorderColor(id: String, colorArgb: Long) {
         _state.update { current ->
             current.copy(
                 decorations = current.decorations.map { decoration ->
                     if (decoration is TextDecoration && decoration.id == id) {
-                        decoration.copy(borderColorArgb = colorArgb)
+                        decoration.copy(borderColorArgb = colorArgb, style = TextDecorationStyle.Custom)
                     } else decoration
                 }
             )
@@ -603,7 +655,7 @@ class EditorViewModel(
             current.copy(
                 decorations = current.decorations.map { decoration ->
                     if (decoration is TextDecoration && decoration.id == id) {
-                        decoration.copy(borderWidthRatio = clamped)
+                        decoration.copy(borderWidthRatio = clamped, style = TextDecorationStyle.Custom)
                     } else decoration
                 }
             )

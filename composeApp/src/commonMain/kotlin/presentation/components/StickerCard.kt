@@ -81,12 +81,8 @@ fun StickerCard(
         )
 
         if (showDecorations && sticker.decorations.isNotEmpty()) {
-            DecorationPreviewLayer(
+            ReadOnlyDecorationOverlay(
                 decorations = sticker.decorations,
-                selectedDecorationId = null,
-                onSelectDecoration = {},
-                onUpdateDecoration = { _, _, _, _ -> },
-                onDeleteDecoration = {},
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(innerShape)

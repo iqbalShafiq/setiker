@@ -628,6 +628,7 @@ private fun PackDetailContent(
                         sticker = sticker,
                         onClick = { onEditSticker(index) },
                         onDeleteClick = { onIntent(PackDetailIntent.DeleteSticker(index)) },
+                        showDecorations = true,
                         modifier = Modifier.animateItem()
                     )
                 }

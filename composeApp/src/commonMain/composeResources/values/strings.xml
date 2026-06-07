@@ -155,6 +155,15 @@
     <string name="text_decoration_placeholder">Type text for your sticker</string>
     <string name="add_decoration">Add decoration</string>
     <string name="change_font">Change font</string>
+    <string name="change_style">Change style</string>
+    <string name="style_classic">Classic</string>
+    <string name="style_pop">Pop</string>
+    <string name="style_bubble">Bubble</string>
+    <string name="style_neon">Neon</string>
+    <string name="style_minimal">Minimal</string>
+    <string name="style_sunset">Sunset</string>
+    <string name="style_caption">Caption</string>
+    <string name="style_custom">Custom</string>
     <string name="change_font_weight">Change font weight</string>
     <string name="change_color">Change color</string>
     <string name="change_border_color">Change border color</string>

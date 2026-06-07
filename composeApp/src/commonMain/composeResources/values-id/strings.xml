@@ -82,4 +82,13 @@
     <string name="settings_password_changed">Kata sandi diperbarui</string>
     <string name="settings_password_mismatch">Kata sandi baru tidak cocok</string>
     <string name="home_try_sample_pack_cta">Coba paket contoh</string>
+    <string name="change_style">Ubah gaya</string>
+    <string name="style_classic">Klasik</string>
+    <string name="style_pop">Pop</string>
+    <string name="style_bubble">Gelembung</string>
+    <string name="style_neon">Neon</string>
+    <string name="style_minimal">Minimal</string>
+    <string name="style_sunset">Sunset</string>
+    <string name="style_caption">Keterangan</string>
+    <string name="style_custom">Kustom</string>
 </resources>

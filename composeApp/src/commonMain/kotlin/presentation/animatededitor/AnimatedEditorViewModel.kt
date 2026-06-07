@@ -12,6 +12,10 @@ import domain.model.ImageDecoration
 import domain.model.Sticker
 import domain.model.StickerDecoration
 import domain.model.TextDecoration
+import domain.model.TextDecorationLayout
+import domain.model.TextDecorationStyle
+import domain.model.TextDecorationStyleRegistry
+import domain.model.applyStylePreset
 import domain.model.aijob.AiJobStatus
 import domain.model.aijob.AiJobType
 import domain.model.aijob.AnimatedEncodePayload
@@ -160,7 +164,7 @@ class AnimatedEditorViewModel(
             is AnimatedEditorIntent.PausePreview -> stopPlayback()
             is AnimatedEditorIntent.AdvanceFrame -> advanceFrame()
             is AnimatedEditorIntent.SetApplyScope -> _state.update { it.copy(applyScope = intent.scope) }
-            is AnimatedEditorIntent.AddTextDecoration -> addTextDecoration(intent.text, intent.font)
+            is AnimatedEditorIntent.AddTextDecoration -> addTextDecoration(intent.text, intent.style)
             is AnimatedEditorIntent.AddEmojiDecoration -> addEmojiDecoration(intent.emoji)
             is AnimatedEditorIntent.AddImageDecoration -> addImageDecoration(intent.imagePath)
             is AnimatedEditorIntent.SelectDecoration -> _state.update { it.copy(selectedDecorationId = intent.id) }
@@ -172,11 +176,26 @@ class AnimatedEditorViewModel(
                 scale = intent.scale
             )
             is AnimatedEditorIntent.UpdateTextDecorationText -> mutateText(intent.id) { it.copy(text = intent.text.trim()) }
-            is AnimatedEditorIntent.UpdateTextDecorationFont -> mutateText(intent.id) { it.copy(font = intent.font) }
-            is AnimatedEditorIntent.UpdateTextDecorationFontWeight -> mutateText(intent.id) { it.copy(fontWeight = intent.weight) }
+            is AnimatedEditorIntent.UpdateTextDecorationStyle -> mutateText(intent.id) {
+                it.applyStylePreset(intent.style, preserveTextColor = true)
+            }
+            is AnimatedEditorIntent.UpdateTextDecorationFont -> mutateText(intent.id) {
+                it.copy(font = intent.font, style = TextDecorationStyle.Custom)
+            }
+            is AnimatedEditorIntent.UpdateTextDecorationFontWeight -> mutateText(intent.id) {
+                it.copy(fontWeight = intent.weight, style = TextDecorationStyle.Custom)
+            }
             is AnimatedEditorIntent.UpdateTextDecorationColor -> mutateText(intent.id) { it.copy(textColorArgb = intent.colorArgb) }
-            is AnimatedEditorIntent.UpdateTextDecorationBorderColor -> mutateText(intent.id) { it.copy(borderColorArgb = intent.colorArgb) }
-            is AnimatedEditorIntent.UpdateTextDecorationBorderWidth -> mutateText(intent.id) { it.copy(borderWidthRatio = intent.widthRatio.coerceIn(0f, 0.2f)) }
+            is AnimatedEditorIntent.UpdateTextDecorationLayout -> mutateText(intent.id) { it.copy(layout = intent.layout) }
+            is AnimatedEditorIntent.UpdateTextDecorationArcIntensity -> mutateText(intent.id) {
+                it.copy(arcIntensity = intent.intensity.coerceIn(-1f, 1f))
+            }
+            is AnimatedEditorIntent.UpdateTextDecorationBorderColor -> mutateText(intent.id) {
+                it.copy(borderColorArgb = intent.colorArgb, style = TextDecorationStyle.Custom)
+            }
+            is AnimatedEditorIntent.UpdateTextDecorationBorderWidth -> mutateText(intent.id) {
+                it.copy(borderWidthRatio = intent.widthRatio.coerceIn(0f, 0.2f), style = TextDecorationStyle.Custom)
+            }
             is AnimatedEditorIntent.UpdateEmojiDecoration -> mutateEmoji(intent.id) { it.copy(emoji = intent.emoji) }
             is AnimatedEditorIntent.UpdateEmojiDecorationBorderColor -> mutateEmoji(intent.id) { it.copy(borderColorArgb = intent.colorArgb) }
             is AnimatedEditorIntent.UpdateEmojiDecorationBorderWidth -> mutateEmoji(intent.id) { it.copy(borderWidthRatio = intent.widthRatio.coerceIn(0f, 0.2f)) }
@@ -314,15 +333,17 @@ class AnimatedEditorViewModel(
         }
     }
 
-    private fun addTextDecoration(text: String, font: DecorationFont) {
+    private fun addTextDecoration(text: String, style: TextDecorationStyle) {
         if (text.isBlank()) return
+        val preset = TextDecorationStyleRegistry.preset(style)
         addDecoration(
             TextDecoration(
                 id = nextDecorationId(),
                 text = text.trim(),
-                font = font,
-                fontWeight = domain.model.DecorationFontWeight.Regular,
-                textColorArgb = 0xFFFFFFFFL
+                font = preset.font,
+                fontWeight = preset.fontWeight,
+                textColorArgb = preset.defaultTextColorArgb,
+                style = style
             )
         )
         _state.update { it.copy(showTextDecorationSheet = false) }

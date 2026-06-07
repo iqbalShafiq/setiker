@@ -64,4 +64,13 @@ class DecorationRenderSpecTest {
             )
         )
     }
+
+    @Test
+    fun layerStrokeWidthUsesWidthRatio() {
+        assertEquals(
+            48f * 0.08f,
+            DecorationRenderSpec.layerStrokeWidthPx(textSizePx = 48f, strokeWidthRatio = 0.08f)
+        )
+        assertEquals(0f, DecorationRenderSpec.layerStrokeWidthPx(textSizePx = 48f, strokeWidthRatio = 0f))
+    }
 }

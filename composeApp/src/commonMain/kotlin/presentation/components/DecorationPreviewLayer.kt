@@ -38,13 +38,12 @@ import androidx.compose.ui.unit.IntOffset
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
-import domain.model.DecorationFont
 import domain.model.DecorationRenderSpec
 import domain.model.EmojiDecoration
 import domain.model.ImageDecoration
 import domain.model.StickerDecoration
 import domain.model.TextDecoration
-import domain.model.DecorationFontWeight
+import domain.model.resolveEmojiStyle
 import kotlin.math.roundToInt
 import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.neubrutalBorderWithGloss
@@ -83,23 +82,22 @@ fun DecorationPreviewLayer(
                 is ImageDecoration -> minDim * DecorationRenderSpec.IMAGE_BASE_RATIO * scale
             }
 
+            val textMetrics = if (decoration is TextDecoration) {
+                rememberTextDecorationBoxMetrics(
+                    decoration = decoration,
+                    minDim = minDim,
+                    canvasWidthPx = widthPx,
+                    scale = scale
+                )
+            } else {
+                null
+            }
             val itemWidth = when (decoration) {
-                is TextDecoration ->
-                    DecorationRenderSpec.textBoxWidthPx(
-                        decoration = decoration,
-                        canvasWidthPx = widthPx,
-                        minDimPx = minDim,
-                        scale = scale
-                    )
+                is TextDecoration -> textMetrics!!.widthPx
                 else -> itemSizePx
             }
             val itemHeight = when (decoration) {
-                is TextDecoration ->
-                    DecorationRenderSpec.textBoxHeightPx(
-                        decoration = decoration,
-                        minDimPx = minDim,
-                        scale = scale
-                    )
+                is TextDecoration -> textMetrics!!.heightPx
                 else -> itemSizePx
             }
             val centerX = decoration.centerX.coerceIn(0f, 1f) * widthPx
@@ -160,41 +158,30 @@ fun DecorationPreviewLayer(
             ) {
                 when (decoration) {
                     is TextDecoration -> {
-                        OutlinedDecorationText(
-                            text = decoration.text,
-                            style = TextStyle(
-                                color = Color(decoration.textColorArgb.toInt()),
-                                fontFamily = mapFontFamily(decoration.font),
-                                fontWeight = mapFontWeight(decoration.fontWeight),
-                                fontSize = with(density) {
-                                    DecorationRenderSpec.textSizePx(decoration, minDim, scale).toSp()
-                                },
-                                textAlign = TextAlign.Center
-                            ),
-                            borderColor = Color(decoration.borderColorArgb.toInt()),
-                            borderWidthPx = DecorationRenderSpec.textSizePx(decoration, minDim, scale) *
-                                decoration.borderWidthRatio.coerceIn(0f, 0.2f),
+                        DecorationTextContent(
+                            decoration = decoration,
+                            minDim = minDim,
+                            scale = scale,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(Color.Transparent),
-                            maxLines = DecorationRenderSpec.textMaxLines(decoration)
+                            fitContainer = true,
+                            boxMetrics = textMetrics
                         )
                     }
 
                     is EmojiDecoration -> {
-                        OutlinedDecorationText(
+                        val emojiSizePx = minDim * DecorationRenderSpec.EMOJI_SIZE_RATIO * scale
+                        StyledDecorationText(
                             text = decoration.emoji,
-                            style = MaterialTheme.typography.headlineLarge.copy(
-                                fontSize = with(density) {
-                                    (minDim * DecorationRenderSpec.EMOJI_SIZE_RATIO * scale).toSp()
-                                },
-                                color = Color.White
+                            resolvedStyle = decoration.resolveEmojiStyle(emojiSizePx),
+                            baseStyle = MaterialTheme.typography.headlineLarge.copy(
+                                fontSize = with(density) { emojiSizePx.toSp() },
+                                color = Color.White,
+                                textAlign = TextAlign.Center
                             ),
-                            borderColor = Color(decoration.borderColorArgb.toInt()),
-                            borderWidthPx = (minDim * DecorationRenderSpec.EMOJI_SIZE_RATIO * scale) *
-                                decoration.borderWidthRatio.coerceIn(0f, 0.2f),
-                            modifier = Modifier.fillMaxSize(),
-                            maxLines = 1
+                            maxLines = 1,
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
 
@@ -300,8 +287,9 @@ private fun DecorationPreviewLayerPreview() {
         TextDecoration(
             id = "txt_1",
             text = "Hello World",
-            font = DecorationFont.Sans,
-            fontWeight = DecorationFontWeight.Bold,
+            font = domain.model.DecorationFont.Fredoka,
+            fontWeight = domain.model.DecorationFontWeight.Bold,
+            style = domain.model.TextDecorationStyle.ClassicOutline,
             textColorArgb = 0xFF000000L,
             centerX = 0.5f,
             centerY = 0.35f,

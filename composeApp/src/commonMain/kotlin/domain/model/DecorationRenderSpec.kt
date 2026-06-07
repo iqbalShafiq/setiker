@@ -54,6 +54,14 @@ object DecorationRenderSpec {
 
     fun textMaxLines(decoration: TextDecoration): Int =
         if (decoration.isBottomCaption()) 6 else 3
+
+    fun layerStrokeWidthPx(textSizePx: Float, strokeWidthRatio: Float): Float =
+        textSizePx * strokeWidthRatio.coerceIn(0f, 0.2f)
+
+    fun layerOffsetPx(textSizePx: Float, ratio: Float): Float = textSizePx * ratio
+
+    fun shadowBlurRadiusPx(textSizePx: Float, ratio: Float): Float =
+        if (ratio <= 0f) 0f else textSizePx * ratio.coerceIn(0f, 0.3f)
 }
 
 fun TextDecoration.isBottomCaption(): Boolean = layout == TextDecorationLayout.BottomCaption

@@ -65,7 +65,7 @@ import presentation.components.DecorationActionChip
 import presentation.components.DecorationPreviewLayer
 import presentation.components.EditTextDecorationBottomSheet
 import presentation.components.EmojiPickerBottomSheet
-import presentation.components.FontPickerBottomSheet
+import presentation.components.StylePickerBottomSheet
 import presentation.components.BorderStyleBottomSheet
 import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
@@ -100,6 +100,7 @@ import setiker.composeapp.generated.resources.change_border_color
 import setiker.composeapp.generated.resources.change_border_thickness
 import setiker.composeapp.generated.resources.change_emoji
 import setiker.composeapp.generated.resources.change_font
+import setiker.composeapp.generated.resources.change_style
 import setiker.composeapp.generated.resources.change_image
 import setiker.composeapp.generated.resources.edit_animated_sticker_title
 import setiker.composeapp.generated.resources.edit_text_decoration
@@ -135,7 +136,7 @@ fun AnimatedEditorScreen(
     // looked up against the visible decorations so per-frame and shared decorations work.
     val selectedDecoration = state.visibleDecorations.firstOrNull { it.id == state.selectedDecorationId }
     var isEditTextSheetOpen by remember { mutableStateOf(false) }
-    var isFontSheetOpen by remember { mutableStateOf(false) }
+    var isStyleSheetOpen by remember { mutableStateOf(false) }
     var isColorSheetOpen by remember { mutableStateOf(false) }
     var isBorderSheetOpen by remember { mutableStateOf(false) }
 
@@ -222,20 +223,14 @@ fun AnimatedEditorScreen(
                                     )
                                     PackBottomBarIconButton(
                                         icon = Icons.Filled.FontDownload,
-                                        contentDescription = stringResource(Res.string.change_font),
-                                        onClick = { isFontSheetOpen = true },
+                                        contentDescription = stringResource(Res.string.change_style),
+                                        onClick = { isStyleSheetOpen = true },
                                         enabled = !state.isSaving
                                     )
                                     PackBottomBarIconButton(
                                         icon = Icons.Filled.FormatColorText,
                                         contentDescription = stringResource(Res.string.change_color),
                                         onClick = { isColorSheetOpen = true },
-                                        enabled = !state.isSaving
-                                    )
-                                    PackBottomBarIconButton(
-                                        icon = Icons.Filled.BorderColor,
-                                        contentDescription = stringResource(Res.string.change_border_thickness),
-                                        onClick = { isBorderSheetOpen = true },
                                         enabled = !state.isSaving
                                     )
                                 }
@@ -496,8 +491,8 @@ fun AnimatedEditorScreen(
     }
     if (state.showTextDecorationSheet) {
         AddTextDecorationBottomSheet(
-            onAdd = { text, font ->
-                onIntent(AnimatedEditorIntent.AddTextDecoration(text, font))
+            onAdd = { text, style ->
+                onIntent(AnimatedEditorIntent.AddTextDecoration(text, style))
             },
             onDismiss = { onIntent(AnimatedEditorIntent.HideTextDecorationSheet) }
         )
@@ -514,17 +509,38 @@ fun AnimatedEditorScreen(
             onDismiss = { isEditTextSheetOpen = false }
         )
     }
-    if (isFontSheetOpen && selectedDecoration is TextDecoration) {
-        FontPickerBottomSheet(
+    if (isStyleSheetOpen && selectedDecoration is TextDecoration) {
+        StylePickerBottomSheet(
+            previewText = selectedDecoration.text,
+            selectedStyle = selectedDecoration.style,
             selectedFont = selectedDecoration.font,
             selectedWeight = selectedDecoration.fontWeight,
+            selectedLayout = selectedDecoration.layout,
+            arcIntensity = selectedDecoration.arcIntensity,
+            borderColorArgb = selectedDecoration.borderColorArgb,
+            borderWidthRatio = selectedDecoration.borderWidthRatio,
+            onSelectStyle = { style ->
+                onIntent(AnimatedEditorIntent.UpdateTextDecorationStyle(selectedDecoration.id, style))
+            },
             onSelectFont = { font ->
                 onIntent(AnimatedEditorIntent.UpdateTextDecorationFont(selectedDecoration.id, font))
             },
             onSelectWeight = { weight ->
                 onIntent(AnimatedEditorIntent.UpdateTextDecorationFontWeight(selectedDecoration.id, weight))
             },
-            onDismiss = { isFontSheetOpen = false }
+            onSelectLayout = { layout ->
+                onIntent(AnimatedEditorIntent.UpdateTextDecorationLayout(selectedDecoration.id, layout))
+            },
+            onArcIntensityChange = { intensity ->
+                onIntent(AnimatedEditorIntent.UpdateTextDecorationArcIntensity(selectedDecoration.id, intensity))
+            },
+            onBorderColorChange = { color ->
+                onIntent(AnimatedEditorIntent.UpdateTextDecorationBorderColor(selectedDecoration.id, color))
+            },
+            onBorderWidthChange = { width ->
+                onIntent(AnimatedEditorIntent.UpdateTextDecorationBorderWidth(selectedDecoration.id, width))
+            },
+            onDismiss = { isStyleSheetOpen = false }
         )
     }
     if (isColorSheetOpen && selectedDecoration is TextDecoration) {
@@ -535,18 +551,6 @@ fun AnimatedEditorScreen(
                 isColorSheetOpen = false
             },
             onDismiss = { isColorSheetOpen = false }
-        )
-    }
-    if (isBorderSheetOpen && selectedDecoration is TextDecoration) {
-        BorderStyleBottomSheet(
-            initialBorderColorArgb = selectedDecoration.borderColorArgb,
-            initialWidthRatio = selectedDecoration.borderWidthRatio,
-            onSelect = { color, width ->
-                onIntent(AnimatedEditorIntent.UpdateTextDecorationBorderColor(selectedDecoration.id, color))
-                onIntent(AnimatedEditorIntent.UpdateTextDecorationBorderWidth(selectedDecoration.id, width))
-                isBorderSheetOpen = false
-            },
-            onDismiss = { isBorderSheetOpen = false }
         )
     }
     if (isBorderSheetOpen && selectedDecoration is EmojiDecoration) {

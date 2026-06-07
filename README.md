@@ -50,6 +50,19 @@ setiker/
 
 The app expects a compatible **stiker-api** backend (auth subcodes, refresh body, `/api/v1/ai/usage`, `/api/v1/legal/*`, share URL fields). Point `ApiConfig` at your server.
 
+## Bundled fonts
+
+Text decoration presets use these open-source fonts (see [SIL Open Font License 1.1](https://scripts.sil.org/OFL)):
+
+| Font | Preset usage | Source |
+|------|----------------|--------|
+| [Bungee](https://fonts.google.com/specimen/Bungee) | Sticker Pop | Google Fonts (OFL) |
+| [Luckiest Guy](https://fonts.google.com/specimen/Luckiest+Guy) | Bubble Red | Google Fonts (OFL) |
+| [Fredoka](https://fonts.google.com/specimen/Fredoka) | Bubble / Neon / Sunset | Google Fonts (OFL) |
+| Instrument Sans, Space Grotesk | UI / classic decoration weights | Bundled in `composeResources/font/` |
+
+Font files live in `composeApp/src/commonMain/composeResources/font/` (Compose preview) and `composeApp/src/androidMain/assets/fonts/` (Android export).
+
 ## Verification
 
 ```bash
