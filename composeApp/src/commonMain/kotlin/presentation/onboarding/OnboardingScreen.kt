@@ -1,10 +1,7 @@
 package presentation.onboarding
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -15,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -28,7 +24,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -41,11 +36,6 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.components.AppPrimaryButton
 import presentation.components.PageIndicator
-import presentation.theme.NeubrutalCardRadius
-import presentation.theme.neubrutalBorderColor
-import presentation.theme.neubrutalBorderWithGloss
-import presentation.theme.neubrutalCardSurface
-import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalSubtleOnSurface
@@ -65,6 +55,8 @@ import setiker.composeapp.generated.resources.onboarding_page2_title
 import setiker.composeapp.generated.resources.onboarding_page3_desc
 import setiker.composeapp.generated.resources.onboarding_page3_title
 import setiker.composeapp.generated.resources.onboarding_skip
+
+private val contentHorizontalPadding = 24.dp
 
 @Composable
 fun OnboardingScreenRoot(
@@ -116,24 +108,32 @@ fun OnboardingScreen(
             modifier = modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(24.dp),
+                .padding(top = contentHorizontalPadding),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             TextButton(
                 onClick = { onIntent(OnboardingIntent.Skip) },
-                modifier = Modifier.align(Alignment.End)
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .padding(horizontal = contentHorizontalPadding)
             ) {
                 Text(stringResource(Res.string.onboarding_skip))
             }
 
             HorizontalPager(
                 state = pagerState,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
             ) {
                 OnboardingPageContent(page = pages[it])
             }
 
             Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = contentHorizontalPadding)
+                    .padding(bottom = contentHorizontalPadding),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -158,60 +158,42 @@ private fun OnboardingPageContent(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 4.dp),
+        modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        OnboardingIllustration(
-            image = if (isSystemInDarkTheme()) page.darkImage else page.lightImage,
+        Image(
+            painter = painterResource(
+                if (isSystemInDarkTheme()) page.darkImage else page.lightImage
+            ),
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1.34f)
         )
         Spacer(modifier = Modifier.height(32.dp))
-        Text(
-            text = stringResource(page.title),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.ExtraBold,
-            color = neubrutalOnSurface(),
-            textAlign = TextAlign.Center
-        )
-        Text(
-            text = stringResource(page.description),
-            style = MaterialTheme.typography.bodyLarge,
-            color = neubrutalSubtleOnSurface(),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 16.dp)
-        )
-    }
-}
-
-@Composable
-private fun OnboardingIllustration(
-    image: DrawableResource,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(NeubrutalCardRadius))
-            .background(neubrutalCardSurface())
-            .border(2.dp, neubrutalBorderColor(), RoundedCornerShape(NeubrutalCardRadius))
-            .neubrutalBorderWithGloss(
-                color = neubrutalBorderColor(),
-                cornerRadius = NeubrutalCardRadius,
-                highlightColor = neubrutalGlossyHighlightColor()
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = contentHorizontalPadding),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = stringResource(page.title),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = neubrutalOnSurface(),
+                textAlign = TextAlign.Center
             )
-            .padding(18.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Image(
-            painter = painterResource(image),
-            contentDescription = null,
-            contentScale = ContentScale.Fit,
-            modifier = Modifier.fillMaxSize()
-        )
+            Text(
+                text = stringResource(page.description),
+                style = MaterialTheme.typography.bodyLarge,
+                color = neubrutalSubtleOnSurface(),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 16.dp)
+            )
+        }
     }
 }
 
