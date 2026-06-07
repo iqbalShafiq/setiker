@@ -45,7 +45,8 @@ fun AppDialog(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     dismissText: String? = null,
-    isDanger: Boolean = true
+    isDanger: Boolean = true,
+    confirmEnabled: Boolean = true
 ) {
     val resolvedDismissText = dismissText ?: stringResource(Res.string.cancel)
     val border = neubrutalBorderColor()
@@ -92,7 +93,8 @@ fun AppDialog(
             AppPrimaryButton(
                 text = confirmText,
                 onClick = onConfirm,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                enabled = confirmEnabled
             )
 
             Spacer(modifier = Modifier.height(10.dp))

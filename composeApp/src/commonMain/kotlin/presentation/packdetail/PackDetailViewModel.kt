@@ -79,7 +79,15 @@ class PackDetailViewModel(
             PackDetailIntent.RefreshCloudShareLinks -> refreshCloudShareLinks()
             PackDetailIntent.CreateCloudShareLink -> createCloudShareLink()
             is PackDetailIntent.RevokeCloudShareLink -> revokeCloudShareLink(intent.linkId)
-            PackDetailIntent.DuplicatePack -> duplicatePack()
+            PackDetailIntent.RequestDuplicate -> {
+                _state.update { it.copy(showDuplicateDialog = true) }
+            }
+            PackDetailIntent.ConfirmDuplicate -> duplicatePack()
+            PackDetailIntent.DismissDuplicateDialog -> {
+                if (!_state.value.isDuplicating) {
+                    _state.update { it.copy(showDuplicateDialog = false) }
+                }
+            }
             PackDetailIntent.OpenCollaboratorsSheet -> {
                 val cloudId = _state.value.pack?.cloudId
                 if (cloudId.isNullOrBlank()) {
@@ -243,13 +251,17 @@ class PackDetailViewModel(
 
     private fun duplicatePack() {
         val packId = _state.value.pack?.identifier ?: return
+        if (_state.value.isDuplicating) return
         viewModelScope.launch {
+            _state.update { it.copy(isDuplicating = true) }
             runCatching { repository.duplicatePack(packId) }
                 .onSuccess { newPackId ->
+                    _state.update { it.copy(isDuplicating = false, showDuplicateDialog = false) }
                     _effect.send(PackDetailEffect.ShowSuccess(UiText.StringRes(Res.string.pack_duplicate_success)))
                     _effect.send(PackDetailEffect.NavigateToDuplicatedPack(newPackId))
                 }
                 .onFailure { error ->
+                    _state.update { it.copy(isDuplicating = false) }
                     _effect.send(PackDetailEffect.ShowError(error.toUiText(Res.string.error_failed_add_pack)))
                 }
         }

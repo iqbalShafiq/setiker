@@ -28,7 +28,9 @@ data class PackDetailState(
     val collaboratorSearchResults: List<UserSearchResult> = emptyList(),
     val collaboratorInvitePermission: String = "view",
     val visibilityDialog: VisibilityDialog? = null,
-    val isUpdatingVisibility: Boolean = false
+    val isUpdatingVisibility: Boolean = false,
+    val showDuplicateDialog: Boolean = false,
+    val isDuplicating: Boolean = false
 )
 
 enum class VisibilityDialog {

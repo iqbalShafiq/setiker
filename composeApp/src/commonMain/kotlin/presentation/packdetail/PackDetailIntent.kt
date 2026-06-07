@@ -20,7 +20,9 @@ sealed interface PackDetailIntent {
     data object RefreshCloudShareLinks : PackDetailIntent
     data object CreateCloudShareLink : PackDetailIntent
     data class RevokeCloudShareLink(val linkId: String) : PackDetailIntent
-    data object DuplicatePack : PackDetailIntent
+    data object RequestDuplicate : PackDetailIntent
+    data object ConfirmDuplicate : PackDetailIntent
+    data object DismissDuplicateDialog : PackDetailIntent
     data object OpenCollaboratorsSheet : PackDetailIntent
     data object DismissCollaboratorsSheet : PackDetailIntent
     data object RefreshCollaborators : PackDetailIntent

@@ -134,7 +134,7 @@ fun AppTopBar(
     modifier: Modifier = Modifier,
     onBackClick: (() -> Unit)? = null,
     titleContent: (@Composable () -> Unit)? = null,
-    actions: @Composable RowScope.() -> Unit = {}
+    actions: (@Composable RowScope.() -> Unit)? = null
 ) {
     val border = neubrutalBorderColor()
     val shadow = neubrutalShadowColor()
@@ -185,11 +185,13 @@ fun AppTopBar(
                 }
             },
             actions = {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(end = 8.dp)
-                ) {
-                    actions()
+                if (actions != null) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(end = 12.dp)
+                    ) {
+                        actions.invoke(this)
+                    }
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(

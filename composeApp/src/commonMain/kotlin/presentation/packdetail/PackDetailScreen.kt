@@ -65,6 +65,8 @@ import presentation.components.AppDialog
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
 import presentation.components.AppTopBar
+import presentation.components.AppTopBarActionIcon
+import presentation.components.DuplicatePackConfirmDialog
 import presentation.components.EmptyState
 import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
@@ -99,7 +101,18 @@ import setiker.composeapp.generated.resources.cloud_links_share
 import setiker.composeapp.generated.resources.cloud_links_title
 import setiker.composeapp.generated.resources.delete
 import setiker.composeapp.generated.resources.delete_pack
+import setiker.composeapp.generated.resources.pack_collaborators
 import setiker.composeapp.generated.resources.pack_duplicate
+import setiker.composeapp.generated.resources.pack_duplicating
+import setiker.composeapp.generated.resources.pack_make_public
+import setiker.composeapp.generated.resources.pack_make_public_dialog_message
+import setiker.composeapp.generated.resources.pack_make_public_dialog_title
+import setiker.composeapp.generated.resources.pack_publish_confirm
+import setiker.composeapp.generated.resources.pack_unpublish
+import setiker.composeapp.generated.resources.pack_unpublish_confirm
+import setiker.composeapp.generated.resources.pack_unpublish_dialog_message
+import setiker.composeapp.generated.resources.pack_unpublish_dialog_title
+import setiker.composeapp.generated.resources.pack_updating_visibility
 import setiker.composeapp.generated.resources.delete_pack_dialog_message
 import setiker.composeapp.generated.resources.delete_pack_dialog_title
 import setiker.composeapp.generated.resources.delete_sticker_dialog_message
@@ -140,12 +153,19 @@ fun PackDetailScreen(
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     var deleteStickerIndex by remember { mutableStateOf(-1) }
-    val isOperationInProgress = state.isDeleting || state.cloudShareLinksLoading
+    val isOperationInProgress = state.isDeleting ||
+        state.cloudShareLinksLoading ||
+        state.isDuplicating ||
+        state.isUpdatingVisibility
     val bottomOperationLabel = when {
         state.isDeleting -> stringResource(Res.string.deleting)
+        state.isDuplicating -> stringResource(Res.string.pack_duplicating)
+        state.isUpdatingVisibility -> stringResource(Res.string.pack_updating_visibility)
         state.cloudShareLinksLoading -> stringResource(Res.string.processing)
         else -> null
     }
+    val isPublicPack = state.pack?.visibility.equals("PUBLIC", ignoreCase = true)
+    val topBarActionsEnabled = !state.isLoading && !isOperationInProgress && state.pack != null
 
     val multipleImagePicker = rememberMultipleImagePicker { imagePaths ->
         if (imagePaths.isNotEmpty()) {
@@ -221,17 +241,42 @@ fun PackDetailScreen(
     }
 
     state.visibilityDialog?.let { dialog ->
-        val isPublic = state.pack?.visibility.equals("PUBLIC", ignoreCase = true)
+        val makePublic = dialog == VisibilityDialog.MakePublic
         AppDialog(
-            title = if (dialog == VisibilityDialog.MakePublic) "Make public?" else "Unpublish?",
-            message = if (dialog == VisibilityDialog.MakePublic) {
-                "This pack will appear on Explore for everyone."
-            } else {
-                "This pack will be hidden from Explore."
-            },
-            confirmText = if (dialog == VisibilityDialog.MakePublic) "Publish" else "Unpublish",
+            title = stringResource(
+                if (makePublic) {
+                    Res.string.pack_make_public_dialog_title
+                } else {
+                    Res.string.pack_unpublish_dialog_title
+                }
+            ),
+            message = stringResource(
+                if (makePublic) {
+                    Res.string.pack_make_public_dialog_message
+                } else {
+                    Res.string.pack_unpublish_dialog_message
+                }
+            ),
+            confirmText = stringResource(
+                if (makePublic) {
+                    Res.string.pack_publish_confirm
+                } else {
+                    Res.string.pack_unpublish_confirm
+                }
+            ),
             onConfirm = { onIntent(PackDetailIntent.ConfirmVisibilityChange) },
-            onDismiss = { onIntent(PackDetailIntent.DismissVisibilityDialog) }
+            onDismiss = { onIntent(PackDetailIntent.DismissVisibilityDialog) },
+            isDanger = false,
+            confirmEnabled = !state.isUpdatingVisibility
+        )
+    }
+
+    if (state.showDuplicateDialog) {
+        DuplicatePackConfirmDialog(
+            packName = state.pack?.name.orEmpty(),
+            onConfirm = { onIntent(PackDetailIntent.ConfirmDuplicate) },
+            onDismiss = { onIntent(PackDetailIntent.DismissDuplicateDialog) },
+            confirmEnabled = !state.isDuplicating
         )
     }
 
@@ -282,7 +327,35 @@ fun PackDetailScreen(
         topBar = {
             AppTopBar(
                 title = state.pack?.name ?: stringResource(Res.string.pack_details_title),
-                onBackClick = null
+                onBackClick = null,
+                actions = {
+                    AppTopBarActionIcon(
+                        icon = Icons.Default.Group,
+                        contentDescription = stringResource(Res.string.pack_collaborators),
+                        onClick = { onIntent(PackDetailIntent.OpenCollaboratorsSheet) },
+                        enabled = topBarActionsEnabled && !state.pack?.cloudId.isNullOrBlank()
+                    )
+                    AppTopBarActionIcon(
+                        icon = if (isPublicPack) Icons.Default.VisibilityOff else Icons.Default.Public,
+                        contentDescription = stringResource(
+                            if (isPublicPack) Res.string.pack_unpublish else Res.string.pack_make_public
+                        ),
+                        onClick = {
+                            if (isPublicPack) {
+                                onIntent(PackDetailIntent.RequestUnpublish)
+                            } else {
+                                onIntent(PackDetailIntent.RequestMakePublic)
+                            }
+                        },
+                        enabled = topBarActionsEnabled
+                    )
+                    AppTopBarActionIcon(
+                        icon = Icons.Default.ContentCopy,
+                        contentDescription = stringResource(Res.string.pack_duplicate),
+                        onClick = { onIntent(PackDetailIntent.RequestDuplicate) },
+                        enabled = topBarActionsEnabled
+                    )
+                }
             )
         },
         bottomBar = {
@@ -310,28 +383,6 @@ fun PackDetailScreen(
                         contentDescription = stringResource(Res.string.share_pack),
                         onClick = { onIntent(PackDetailIntent.OpenCloudShareSheet) },
                         enabled = !state.isLoading && !isOperationInProgress
-                    )
-                    PackBottomBarIconButton(
-                        icon = Icons.Default.Group,
-                        contentDescription = "Collaborators",
-                        onClick = { onIntent(PackDetailIntent.OpenCollaboratorsSheet) },
-                        enabled = !state.isLoading && !isOperationInProgress && state.pack?.cloudId != null
-                    )
-                    val isPublicPack = state.pack?.visibility.equals("PUBLIC", ignoreCase = true)
-                    PackBottomBarIconButton(
-                        icon = if (isPublicPack) Icons.Default.VisibilityOff else Icons.Default.Public,
-                        contentDescription = if (isPublicPack) "Unpublish" else "Make public",
-                        onClick = {
-                            if (isPublicPack) onIntent(PackDetailIntent.RequestUnpublish)
-                            else onIntent(PackDetailIntent.RequestMakePublic)
-                        },
-                        enabled = !state.isLoading && !isOperationInProgress && state.pack != null && !state.isUpdatingVisibility
-                    )
-                    PackBottomBarIconButton(
-                        icon = Icons.Default.ContentCopy,
-                        contentDescription = stringResource(Res.string.pack_duplicate),
-                        onClick = { onIntent(PackDetailIntent.DuplicatePack) },
-                        enabled = !state.isLoading && !isOperationInProgress && state.pack != null
                     )
                     PackBottomBarIconButton(
                         icon = Icons.Default.Delete,
