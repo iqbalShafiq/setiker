@@ -1,13 +1,27 @@
 package presentation.components
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import domain.model.AiQuotaOperation
@@ -18,6 +32,7 @@ import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
 import presentation.theme.neubrutalMutedOnSurface
 import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.ai_quota_costs_info_cd
 import setiker.composeapp.generated.resources.ai_quota_loading
 import setiker.composeapp.generated.resources.ai_quota_unavailable
 import kotlin.math.roundToInt
@@ -29,9 +44,12 @@ fun AiQuotaSummary(
     hasError: Boolean,
     modifier: Modifier = Modifier,
     showOperationCosts: Boolean = false,
+    operationCostsInInfoDialog: Boolean = false,
     highlightOperation: AiQuotaOperation? = null,
     showIllustration: Boolean = false
 ) {
+    var showCostsDialog by remember { mutableStateOf(false) }
+
     Column(modifier = modifier.fillMaxWidth()) {
         when {
             isLoading -> {
@@ -55,11 +73,65 @@ fun AiQuotaSummary(
                 AiQuotaLine(text = stringResource(Res.string.ai_quota_unavailable))
             }
             usage != null -> {
-                AiQuotaLine(text = usage.compactQuotaText())
-                if (showOperationCosts) {
+                val showInlineCosts = showOperationCosts && !operationCostsInInfoDialog
+                val showInfoIcon = operationCostsInInfoDialog && usage.hasBillableOperations()
+
+                AiQuotaCompactRow(
+                    text = usage.compactQuotaText(),
+                    showInfoIcon = showInfoIcon,
+                    onInfoClick = { showCostsDialog = true }
+                )
+                if (showInlineCosts) {
                     AiQuotaLine(text = usage.operationCostsLine(highlightOperation))
                 }
             }
+        }
+    }
+
+    if (showCostsDialog && usage != null) {
+        AiQuotaCostsDialog(
+            usage = usage,
+            onDismiss = { showCostsDialog = false }
+        )
+    }
+}
+
+@Composable
+private fun AiQuotaCompactRow(
+    text: String,
+    showInfoIcon: Boolean,
+    onInfoClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val textStyle = MaterialTheme.typography.bodySmall
+    val iconSize = with(LocalDensity.current) { textStyle.fontSize.toDp() }
+
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Text(
+            text = text,
+            style = textStyle,
+            color = neubrutalMutedOnSurface(),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+        if (showInfoIcon) {
+            Icon(
+                imageVector = Icons.Outlined.Info,
+                contentDescription = stringResource(Res.string.ai_quota_costs_info_cd),
+                tint = neubrutalMutedOnSurface(),
+                modifier = Modifier
+                    .size(iconSize)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onInfoClick
+                    )
+            )
         }
     }
 }
@@ -73,6 +145,16 @@ private fun AiQuotaLine(text: String) {
         maxLines = 1,
         overflow = TextOverflow.Ellipsis
     )
+}
+
+private fun AiUsage.hasBillableOperations(): Boolean {
+    val costs = operationCosts
+    return costs.generate > 0 ||
+        costs.gridSplit > 0 ||
+        costs.backgroundRemove > 0 ||
+        costs.videoStickerPack > 0 ||
+        costs.improve > 0 ||
+        costs.packImport > 0
 }
 
 private fun AiUsage.compactQuotaText(): String {

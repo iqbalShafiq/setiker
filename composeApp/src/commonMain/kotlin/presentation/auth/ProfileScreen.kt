@@ -251,7 +251,7 @@ fun ProfileScreen(
                             usage = state.aiUsage,
                             isLoading = state.isLoadingAiUsage,
                             hasError = state.aiUsageLoadFailed,
-                            showOperationCosts = true
+                            operationCostsInInfoDialog = true
                         )
                     }
                 }
