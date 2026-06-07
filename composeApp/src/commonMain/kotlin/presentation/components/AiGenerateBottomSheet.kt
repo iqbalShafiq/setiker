@@ -203,7 +203,10 @@ fun AiGenerateBottomSheet(
                 value = prompt,
                 onValueChange = onPromptChange,
                 label = stringResource(Res.string.prompt_label),
-                placeholder = stringResource(Res.string.prompt_placeholder)
+                placeholder = stringResource(Res.string.prompt_placeholder),
+                trailingIcon = onOpenPresets?.let { openPresets ->
+                    { PromptPresetsTrailingIcon(onClick = openPresets) }
+                }
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -211,13 +214,6 @@ fun AiGenerateBottomSheet(
                 style = MaterialTheme.typography.bodySmall,
                 color = neubrutalMutedOnSurface()
             )
-            if (onOpenPresets != null) {
-                AppSecondaryButton(
-                    text = "Prompt presets",
-                    onClick = onOpenPresets
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
             Spacer(modifier = Modifier.height(12.dp))
             val generateLabel = if (isGenerating) {
                 stringResource(Res.string.generating)

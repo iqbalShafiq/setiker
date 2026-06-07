@@ -18,6 +18,9 @@
     <string name="generate_pack_sheet_title">Generate sticker pack</string>
     <string name="prompt_label">Prompt</string>
     <string name="prompt_placeholder">Example: cute cats, minimal outline</string>
+    <string name="prompt_presets">Prompt presets</string>
+    <string name="prompt_presets_open">Open prompt presets</string>
+    <string name="prompt_presets_empty">No presets available</string>
     <string name="generate_tip">Tip: include style, subject, and mood for more consistent results.</string>
     <string name="grid_on">Grid: On</string>
     <string name="grid_off">Grid: Off</string>

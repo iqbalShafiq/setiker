@@ -224,7 +224,8 @@ fun CreatePackScreen(
             onDismiss = { onIntent(CreatePackIntent.CloseAiGenerateSheet) },
             aiUsage = state.aiUsage,
             isLoadingQuota = state.isLoadingAiUsage,
-            quotaLoadFailed = state.aiUsageLoadFailed
+            quotaLoadFailed = state.aiUsageLoadFailed,
+            onOpenPresets = { onIntent(CreatePackIntent.OpenPresetPicker) }
         )
     }
 
@@ -681,12 +682,6 @@ fun CreatePackScreen(
                 PublishChecklistRow(
                     met = state.cloudId != null,
                     label = "Synced to cloud (save + sync)"
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                AppSecondaryButton(
-                    text = "Prompt presets",
-                    onClick = { onIntent(CreatePackIntent.OpenPresetPicker) },
-                    enabled = !isOperationInProgress
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 AppPrimaryButton(

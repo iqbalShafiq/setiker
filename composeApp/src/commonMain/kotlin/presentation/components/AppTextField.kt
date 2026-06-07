@@ -2,11 +2,14 @@ package presentation.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -68,9 +71,7 @@ fun AppTextField(
             modifier = Modifier.padding(bottom = 6.dp)
         )
 
-        BasicTextField(
-            value = value,
-            onValueChange = { if (enabled) onValueChange(it) },
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .neubrutalShadow(
@@ -86,30 +87,49 @@ fun AppTextField(
                     cornerRadius = NeubrutalCardRadius,
                     highlightColor = neubrutalGlossyHighlightColor()
                 )
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            singleLine = singleLine,
-            maxLines = maxLines,
-            textStyle = TextStyle(
-                color = if (enabled) onSurface else onSurface.copy(alpha = 0.45f),
-                fontSize = MaterialTheme.typography.bodyLarge.fontSize,
-                fontWeight = FontWeight.Normal
-            ),
-            cursorBrush = androidx.compose.ui.graphics.SolidColor(onSurface),
-            keyboardOptions = KeyboardOptions(
-                imeAction = imeAction,
-                keyboardType = keyboardType
-            ),
-            decorationBox = { innerTextField ->
-                if (value.isEmpty() && placeholder.isNotEmpty()) {
-                    Text(
-                        text = placeholder,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = neubrutalSubtleOnSurface()
-                    )
-                }
-                innerTextField()
+                .padding(horizontal = 16.dp, vertical = 14.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                leadingIcon?.invoke()
+                BasicTextField(
+                    value = value,
+                    onValueChange = { if (enabled) onValueChange(it) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(
+                            start = if (leadingIcon != null) 8.dp else 0.dp,
+                            end = if (trailingIcon != null) 4.dp else 0.dp
+                        ),
+                    singleLine = singleLine,
+                    maxLines = maxLines,
+                    enabled = enabled,
+                    textStyle = TextStyle(
+                        color = if (enabled) onSurface else onSurface.copy(alpha = 0.45f),
+                        fontSize = MaterialTheme.typography.bodyLarge.fontSize,
+                        fontWeight = FontWeight.Normal
+                    ),
+                    cursorBrush = androidx.compose.ui.graphics.SolidColor(onSurface),
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = imeAction,
+                        keyboardType = keyboardType
+                    ),
+                    decorationBox = { innerTextField ->
+                        if (value.isEmpty() && placeholder.isNotEmpty()) {
+                            Text(
+                                text = placeholder,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = neubrutalSubtleOnSurface()
+                            )
+                        }
+                        innerTextField()
+                    }
+                )
+                trailingIcon?.invoke()
             }
-        )
+        }
 
         if (isError && supportingText != null) {
             Spacer(modifier = Modifier.height(4.dp))
