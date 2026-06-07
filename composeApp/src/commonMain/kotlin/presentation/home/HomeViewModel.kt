@@ -333,6 +333,9 @@ class HomeViewModel(
             HomeIntent.NavigateToAiJobs -> {
                 viewModelScope.launch { _effect.send(HomeEffect.NavigateToAiJobs) }
             }
+            HomeIntent.NavigateToAiJobsFromTopBar -> {
+                viewModelScope.launch { _effect.send(HomeEffect.NavigateToAiJobsFromTopBar) }
+            }
         }
     }
 

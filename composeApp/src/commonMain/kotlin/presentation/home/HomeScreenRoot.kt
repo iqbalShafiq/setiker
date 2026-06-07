@@ -19,6 +19,7 @@ fun HomeScreenRoot(
     onLoginClick: () -> Unit,
     onVideoStickerPackClick: (String) -> Unit,
     onAiJobsClick: () -> Unit = {},
+    onTopBarAiJobsClick: () -> Unit = {},
     showOfflineBanner: Boolean = false,
     viewModel: HomeViewModel = koinViewModel()
 ) {
@@ -42,6 +43,7 @@ fun HomeScreenRoot(
                 is HomeEffect.NavigateToLogin -> onLoginClick()
                 is HomeEffect.NavigateToVideoStickerPack -> onVideoStickerPackClick(effect.videoPath)
                 HomeEffect.NavigateToAiJobs -> onAiJobsClick()
+                HomeEffect.NavigateToAiJobsFromTopBar -> onTopBarAiJobsClick()
             }
         }
     }

@@ -25,4 +25,5 @@ sealed interface HomeIntent {
     data object GenerateStickerPack : HomeIntent
     data class StartVideoStickerPack(val videoPath: String) : HomeIntent
     data object NavigateToAiJobs : HomeIntent
+    data object NavigateToAiJobsFromTopBar : HomeIntent
 }

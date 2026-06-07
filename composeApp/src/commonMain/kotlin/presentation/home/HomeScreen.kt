@@ -178,7 +178,7 @@ fun HomeScreen(
                         icon = Icons.Default.Workspaces,
                         contentDescription = stringResource(Res.string.home_ai_jobs_cd),
                         badgeCount = state.aiJobsBadgeCount,
-                        onClick = { onIntent(HomeIntent.NavigateToAiJobs) }
+                        onClick = { onIntent(HomeIntent.NavigateToAiJobsFromTopBar) }
                     )
                 }
             )

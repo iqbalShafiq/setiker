@@ -1,20 +1,14 @@
 package presentation.navigation
 
- import androidx.compose.animation.AnimatedContentTransitionScope
- import androidx.compose.animation.core.tween
- import androidx.compose.animation.fadeIn
- import androidx.compose.animation.fadeOut
- import androidx.compose.animation.slideInHorizontally
- import androidx.compose.animation.slideInVertically
- import androidx.compose.animation.slideOutHorizontally
- import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
 import androidx.navigation.NavHostController
+import androidx.navigation.NavOptionsBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navDeepLink
@@ -68,7 +62,6 @@ private object CropRecipient {
     const val PackDetailImport = "pack_detail_import"
 }
 
-private const val ANIMATION_DURATION = 300
 private const val VIDEO_STICKER_PACK_ROUTE = "videoStickerPack/{videoPath}"
 
 private fun Screen.VideoStickerPack.toRoute(): String =
@@ -93,13 +86,26 @@ fun AppNavigation(
     val currentRoute = currentBackStackEntry?.destination?.route
     val loginGuardRoutes = setOf("home", "profile", "sync", "history", "aiJobs")
 
+    val navigationTransitions = remember { NavigationTransitionController() }
+    fun navBottomUp(route: String, builder: NavOptionsBuilder.() -> Unit = {}) {
+        navigationTransitions.navigateBottomUp(navController, route, builder)
+    }
+    fun navTopDown(route: String, builder: NavOptionsBuilder.() -> Unit = {}) {
+        navigationTransitions.navigateTopDown(navController, route, builder)
+    }
+
+    DisposableEffect(navController, navigationTransitions) {
+        val unbind = navigationTransitions.bindTo(navController)
+        onDispose { unbind() }
+    }
+
     LaunchedEffect(Unit) {
         networkMonitor.startMonitoring()
     }
 
     LaunchedEffect(onboardingCompleted, currentRoute) {
         if (!onboardingCompleted && currentRoute == "home") {
-            navController.navigate("onboarding") {
+            navBottomUp("onboarding") {
                 launchSingleTop = true
             }
         }
@@ -108,7 +114,7 @@ fun AppNavigation(
     LaunchedEffect(authState, currentRoute) {
         if (authState == AuthState.UNAUTHENTICATED) {
             if (currentRoute in loginGuardRoutes) {
-                navController.navigate("login") {
+                navBottomUp("login") {
                     popUpTo("home") { inclusive = true }
                 }
             }
@@ -118,7 +124,7 @@ fun AppNavigation(
     LaunchedEffect(notificationDeepLinkVersion, notificationDeepLink) {
         val link = notificationDeepLink ?: return@LaunchedEffect
         if (link.openAiJobsOnly) {
-            navController.navigate("aiJobs") {
+            navBottomUp("aiJobs") {
                 launchSingleTop = true
                 popUpTo("home") { inclusive = false }
             }
@@ -131,7 +137,7 @@ fun AppNavigation(
             draftId = link.draftId,
             jobId = link.jobId
         )
-        navigateToNotificationTarget(navController, target)
+        navigateToNotificationTarget(navigationTransitions, navController, target)
     }
 
     val editorCropResult = remember { mutableStateOf<String?>(null) }
@@ -150,12 +156,16 @@ fun AppNavigation(
 
     NavHost(
         navController = navController,
-        startDestination = "home"
+        startDestination = "home",
+        enterTransition = { navigationTransitions.enterTransition(this) },
+        exitTransition = { navigationTransitions.exitTransition(this) },
+        popEnterTransition = { navigationTransitions.popEnterTransition(this) },
+        popExitTransition = { navigationTransitions.popExitTransition(this) }
     ) {
         composable("onboarding") {
             OnboardingScreenRoot(
                 onFinished = {
-                    navController.navigate("home") {
+                    navBottomUp("home") {
                         popUpTo("onboarding") { inclusive = true }
                     }
                 }
@@ -166,12 +176,12 @@ fun AppNavigation(
             SettingsScreenRoot(
                 onBack = { navController.popBackStack() },
                 onAccountDeleted = {
-                    navController.navigate("login") {
+                    navBottomUp("login") {
                         popUpTo("home") { inclusive = true }
                     }
                 },
                 onShowOnboarding = {
-                    navController.navigate("onboarding") {
+                    navBottomUp("onboarding") {
                         launchSingleTop = true
                     }
                 }
@@ -181,27 +191,28 @@ fun AppNavigation(
         composable("home") {
             HomeScreenRoot(
                 onPackClick = { packId ->
-                    navController.navigate("packDetail/$packId")
+                    navBottomUp("packDetail/$packId")
                 },
                 onCreatePackClick = {
-                    navController.navigate("createPack")
+                    navBottomUp("createPack")
                 },
                 onExploreClick = {
-                    navController.navigate("explore")
+                    navBottomUp("explore")
                 },
                 onProfileClick = {
-                    navController.navigate("profile")
+                    navBottomUp("profile")
                 },
                 onSyncClick = {
-                    navController.navigate("sync")
+                    navBottomUp("sync")
                 },
                 onLoginClick = {
-                    navController.navigate("login")
+                    navBottomUp("login")
                 },
                 onVideoStickerPackClick = { videoPath ->
-                    navController.navigate(Screen.VideoStickerPack(videoPath).toRoute())
+                    navBottomUp(Screen.VideoStickerPack(videoPath).toRoute())
                 },
-                onAiJobsClick = { navController.navigate("aiJobs") },
+                onAiJobsClick = { navBottomUp("aiJobs") },
+                onTopBarAiJobsClick = { navTopDown("aiJobs") },
                 showOfflineBanner = !isOnline
             )
         }
@@ -210,9 +221,9 @@ fun AppNavigation(
             AiJobsScreenRoot(
                 onBackClick = { navController.popBackStack() },
                 onOpenDraft = { draftId, originRoute ->
-                    navigateToWorkspaceDraft(navController, draftId, originRoute)
+                    navigateToWorkspaceDraft(navigationTransitions, navController, draftId, originRoute)
                 },
-                onOpenPack = { packId -> navController.navigate("packDetail/$packId") }
+                onOpenPack = { packId -> navBottomUp("packDetail/$packId") }
             )
         }
 
@@ -226,182 +237,85 @@ fun AppNavigation(
                 videoPath = route.videoPath,
                 onBackClick = { navController.popBackStack() },
                 onNavigateToPackDetail = { packId ->
-                    navController.navigate("packDetail/$packId") {
+                    navBottomUp("packDetail/$packId") {
                         popUpTo("home") { inclusive = false }
                     }
                 }
             )
         }
 
-         composable("login",
-              enterTransition = {
-                  when (initialState.destination.route) {
-                      "home" -> slideInVertically(
-                          initialOffsetY = { it },
-                          animationSpec = tween(ANIMATION_DURATION)
-                      ) + fadeIn(animationSpec = tween(ANIMATION_DURATION))
-                      "register" -> slideInHorizontally(
-                          initialOffsetX = { -it },
-                          animationSpec = tween(ANIMATION_DURATION)
-                      ) + fadeIn(animationSpec = tween(ANIMATION_DURATION))
-                      else -> slideInHorizontally(
-                          initialOffsetX = { it },
-                          animationSpec = tween(ANIMATION_DURATION)
-                      ) + fadeIn(animationSpec = tween(ANIMATION_DURATION))
-                  }
-              },
-             exitTransition = {
-                 when (targetState.destination.route) {
-                     "register" -> slideOutHorizontally(
-                         targetOffsetX = { -it },
-                         animationSpec = tween(ANIMATION_DURATION)
-                     ) + fadeOut(animationSpec = tween(ANIMATION_DURATION))
-                     else -> slideOutVertically(
-                         targetOffsetY = { it },
-                         animationSpec = tween(ANIMATION_DURATION)
-                     ) + fadeOut(animationSpec = tween(ANIMATION_DURATION))
-                 }
-             },
-             popEnterTransition = {
-                 when (initialState.destination.route) {
-                     "register" -> slideInHorizontally(
-                         initialOffsetX = { -it },
-                         animationSpec = tween(ANIMATION_DURATION)
-                     ) + fadeIn(animationSpec = tween(ANIMATION_DURATION))
-                     else -> slideInVertically(
-                         initialOffsetY = { it },
-                         animationSpec = tween(ANIMATION_DURATION)
-                     ) + fadeIn(animationSpec = tween(ANIMATION_DURATION))
-                 }
-             },
-              popExitTransition = {
-                  when (targetState.destination.route) {
-                      "register" -> slideOutHorizontally(
-                          targetOffsetX = { it },
-                          animationSpec = tween(ANIMATION_DURATION)
-                      ) + fadeOut(animationSpec = tween(ANIMATION_DURATION))
-                      else -> slideOutVertically(
-                          targetOffsetY = { it },
-                          animationSpec = tween(ANIMATION_DURATION)
-                      ) + fadeOut(animationSpec = tween(ANIMATION_DURATION))
-                  }
-              }
-          ) {
+        composable("login") {
              val viewModel: LoginViewModel = koinViewModel()
              LoginScreenRoot(
                  viewModel = viewModel,
                  onNavigateToHome = {
-                     navController.navigate("home") {
+                     navBottomUp("home") {
                          popUpTo("home") { inclusive = true }
                      }
                  },
                  onNavigateToRegister = {
-                     navController.navigate("register") {
+                     navBottomUp("register") {
                          popUpTo("login") { inclusive = true }
                      }
                  }
              )
          }
  
-          composable("register",
-              enterTransition = {
-                  slideInHorizontally(
-                      initialOffsetX = { it },
-                      animationSpec = tween(ANIMATION_DURATION)
-                  ) + fadeIn(animationSpec = tween(ANIMATION_DURATION))
-              },
-              exitTransition = {
-                  when (targetState.destination.route) {
-                      "login" -> slideOutHorizontally(
-                          targetOffsetX = { it },
-                          animationSpec = tween(ANIMATION_DURATION)
-                      ) + fadeOut(animationSpec = tween(ANIMATION_DURATION))
-                      else -> slideOutHorizontally(
-                          targetOffsetX = { -it },
-                          animationSpec = tween(ANIMATION_DURATION)
-                      ) + fadeOut(animationSpec = tween(ANIMATION_DURATION))
-                  }
-              },
-              popEnterTransition = {
-                  slideInHorizontally(
-                      initialOffsetX = { -it },
-                      animationSpec = tween(ANIMATION_DURATION)
-                  ) + fadeIn(animationSpec = tween(ANIMATION_DURATION))
-              },
-               popExitTransition = {
-                   slideOutHorizontally(
-                       targetOffsetX = { it },
-                       animationSpec = tween(ANIMATION_DURATION)
-                   ) + fadeOut(animationSpec = tween(ANIMATION_DURATION))
-               }
-           ) {
+        composable("register") {
                val viewModel: RegisterViewModel = koinViewModel()
                RegisterScreenRoot(
                    viewModel = viewModel,
                    onNavigateToHome = {
-                       navController.navigate("home") {
+                       navBottomUp("home") {
                            popUpTo("home") { inclusive = true }
                        }
                    },
                    onNavigateToLogin = {
-                       navController.navigate("login") {
+                       navBottomUp("login") {
                            popUpTo("register") { inclusive = true }
                        }
                    }
                )
            }
   
-          composable("profile",
-            enterTransition = {
-                slideInVertically(
-                    initialOffsetY = { it },
-                    animationSpec = tween(ANIMATION_DURATION)
-                ) + fadeIn(animationSpec = tween(ANIMATION_DURATION))
-            },
-            exitTransition = {
-                slideOutVertically(
-                    targetOffsetY = { it },
-                    animationSpec = tween(ANIMATION_DURATION)
-                ) + fadeOut(animationSpec = tween(ANIMATION_DURATION))
-            }
-        ) {
+        composable("profile") {
             val viewModel: ProfileViewModel = koinViewModel()
             ProfileScreenRoot(
                 viewModel = viewModel,
                 onLogout = {
-                    navController.navigate("login") {
+                    navBottomUp("login") {
                         popUpTo("home") { inclusive = true }
                     }
                 },
                 onBackClick = { navController.navigateUp() },
-                onSettingsClick = { navController.navigate("settings") },
+                onSettingsClick = { navBottomUp("settings") },
                 onNavigateHome = {
-                    navController.navigate("home") {
+                    navBottomUp("home") {
                         popUpTo("home") { inclusive = true }
                     }
                 },
                 onNavigateExplore = {
-                    navController.navigate("explore")
+                    navBottomUp("explore")
                 },
                 onNavigateHistory = {
                     if (authState == AuthState.AUTHENTICATED) {
-                        navController.navigate("history")
+                        navBottomUp("history")
                     } else {
-                        navController.navigate("login")
+                        navBottomUp("login")
                     }
                 },
                 onNavigateAiJobs = {
                     if (authState == AuthState.AUTHENTICATED) {
-                        navController.navigate("aiJobs")
+                        navBottomUp("aiJobs")
                     } else {
-                        navController.navigate("login")
+                        navBottomUp("login")
                     }
                 },
                 onNavigateNotifications = {
                     if (authState == AuthState.AUTHENTICATED) {
-                        navController.navigate("notifications")
+                        navTopDown("notifications")
                     } else {
-                        navController.navigate("login")
+                        navBottomUp("login")
                     }
                 }
             )
@@ -410,13 +324,13 @@ fun AppNavigation(
         composable("explore") {
             ExploreScreenRoot(
                 onBackClick = { navController.popBackStack() },
-                onPackClick = { packId -> navController.navigate("publicPack/$packId") },
-                onCreatorClick = { userId -> navController.navigate("creator/$userId") },
+                onPackClick = { packId -> navBottomUp("publicPack/$packId") },
+                onCreatorClick = { userId -> navBottomUp("creator/$userId") },
                 onHistoryClick = {
-                    if (authState == AuthState.AUTHENTICATED) navController.navigate("history")
-                    else navController.navigate("login")
+                    if (authState == AuthState.AUTHENTICATED) navBottomUp("history")
+                    else navBottomUp("login")
                 },
-                onLoginClick = { navController.navigate("login") }
+                onLoginClick = { navBottomUp("login") }
             )
         }
 
@@ -428,15 +342,15 @@ fun AppNavigation(
             CreatorProfileScreenRoot(
                 userId = userId,
                 onBackClick = { navController.popBackStack() },
-                onPackClick = { packId -> navController.navigate("publicPack/$packId") }
+                onPackClick = { packId -> navBottomUp("publicPack/$packId") }
             )
         }
 
         composable("notifications") {
             NotificationsScreenRoot(
                 onBackClick = { navController.popBackStack() },
-                onNavigateToPublicPack = { packId -> navController.navigate("publicPack/$packId") },
-                onNavigateToCreator = { userId -> navController.navigate("creator/$userId") }
+                onNavigateToPublicPack = { packId -> navBottomUp("publicPack/$packId") },
+                onNavigateToCreator = { userId -> navBottomUp("creator/$userId") }
             )
         }
 
@@ -449,11 +363,11 @@ fun AppNavigation(
                 packId = packId,
                 onBackClick = { navController.popBackStack() },
                 onNavigateToLocalPack = { localPackId ->
-                    navController.navigate("packDetail/$localPackId") {
+                    navBottomUp("packDetail/$localPackId") {
                         popUpTo("home") { inclusive = false }
                     }
                 },
-                onNavigateToLogin = { navController.navigate("login") }
+                onNavigateToLogin = { navBottomUp("login") }
             )
         }
 
@@ -476,9 +390,9 @@ fun AppNavigation(
                 kind = "pack",
                 token = token,
                 onBackClick = { navController.popBackStack() },
-                onNavigateToLogin = { navController.navigate("login") },
+                onNavigateToLogin = { navBottomUp("login") },
                 onNavigateToLocalPack = { localPackId ->
-                    navController.navigate("packDetail/$localPackId") {
+                    navBottomUp("packDetail/$localPackId") {
                         popUpTo("home") { inclusive = false }
                     }
                 }
@@ -498,29 +412,16 @@ fun AppNavigation(
                 kind = "sticker",
                 token = token,
                 onBackClick = { navController.popBackStack() },
-                onNavigateToLogin = { navController.navigate("login") },
+                onNavigateToLogin = { navBottomUp("login") },
                 onNavigateToLocalPack = { localPackId ->
-                    navController.navigate("packDetail/$localPackId") {
+                    navBottomUp("packDetail/$localPackId") {
                         popUpTo("home") { inclusive = false }
                     }
                 }
             )
         }
 
-        composable("sync",
-            enterTransition = {
-                slideInVertically(
-                    initialOffsetY = { it },
-                    animationSpec = tween(ANIMATION_DURATION)
-                ) + fadeIn(animationSpec = tween(ANIMATION_DURATION))
-            },
-            exitTransition = {
-                slideOutVertically(
-                    targetOffsetY = { it },
-                    animationSpec = tween(ANIMATION_DURATION)
-                ) + fadeOut(animationSpec = tween(ANIMATION_DURATION))
-            }
-        ) {
+        composable("sync") {
             val viewModel: SyncViewModel = koinViewModel()
             SyncScreenRoot(
                 viewModel = viewModel,
@@ -536,27 +437,27 @@ fun AppNavigation(
             PackDetailScreenRoot(
                 packId = packId,
                 onBackClick = { navController.popBackStack() },
-                onEditPack = { navController.navigate("createPack?packId=$it") },
-                onAddSticker = { navController.navigate("editor?packId=$it") },
+                onEditPack = { navBottomUp("createPack?packId=$it") },
+                onAddSticker = { navBottomUp("editor?packId=$it") },
                 onEditSticker = { index, pId ->
-                    navController.navigate("editor?packId=$pId&stickerIndex=$index")
+                    navBottomUp("editor?packId=$pId&stickerIndex=$index")
                 },
                 onAddToWhatsApp = onAddToWhatsApp,
                 croppedStickerImportPath = packDetailImportDeliveredPath,
                 onStickerImportCropConsumed = { packDetailImportCrop.value = null },
                 onNavigateToCropForStickerImport = { path ->
                     packDetailImportCrop.value = null
-                    navController.navigate(
+                    navBottomUp(
                         "crop/${PathEncoder.encode(path)}/${CropRecipient.PackDetailImport}"
                     )
                 },
                 onNavigateToPack = { newPackId ->
-                    navController.navigate("packDetail/$newPackId") {
+                    navBottomUp("packDetail/$newPackId") {
                         launchSingleTop = true
                     }
                 },
                 onNavigateToPublicPack = { cloudId ->
-                    navController.navigate("publicPack/$cloudId")
+                    navBottomUp("publicPack/$cloudId")
                 }
             )
         }
@@ -567,7 +468,7 @@ fun AppNavigation(
                 workspaceDraftId = null,
                 onBackClick = { navController.popBackStack() },
                 onPackSaved = { savedPackId ->
-                    navController.navigate("packDetail/$savedPackId") {
+                    navBottomUp("packDetail/$savedPackId") {
                         popUpTo("home") { inclusive = false }
                     }
                 },
@@ -579,24 +480,24 @@ fun AppNavigation(
                 onAnimatedDraftConsumed = { pendingAnimatedDraft.value = null },
                 onNavigateToCropSticker = { path ->
                     createPackStickerCrop.value = null
-                    navController.navigate(
+                    navBottomUp(
                         "crop/${PathEncoder.encode(path)}/${CropRecipient.CreatePackSticker}"
                     )
                 },
                 onNavigateToCropTray = { path ->
                     createPackTrayCrop.value = null
-                    navController.navigate(
+                    navBottomUp(
                         "crop/${PathEncoder.encode(path)}/${CropRecipient.CreatePackTray}"
                     )
                 },
                 onNavigateToVideoTrim = { videoPath ->
                     pendingAnimatedDraft.value = null
-                    navController.navigate(
+                    navBottomUp(
                         "videoTrim/${PathEncoder.encode(videoPath)}?packId="
                     )
                 },
                 onNavigateToPublicPack = { cloudId ->
-                    navController.navigate("publicPack/$cloudId")
+                    navBottomUp("publicPack/$cloudId")
                 }
             )
         }
@@ -623,7 +524,7 @@ fun AppNavigation(
                 workspaceDraftId = workspaceDraftId,
                 onBackClick = { navController.popBackStack() },
                 onPackSaved = { savedPackId ->
-                    navController.navigate("packDetail/$savedPackId") {
+                    navBottomUp("packDetail/$savedPackId") {
                         popUpTo("home") { inclusive = false }
                     }
                 },
@@ -635,25 +536,25 @@ fun AppNavigation(
                 onAnimatedDraftConsumed = { pendingAnimatedDraft.value = null },
                 onNavigateToCropSticker = { path ->
                     createPackStickerCrop.value = null
-                    navController.navigate(
+                    navBottomUp(
                         "crop/${PathEncoder.encode(path)}/${CropRecipient.CreatePackSticker}"
                     )
                 },
                 onNavigateToCropTray = { path ->
                     createPackTrayCrop.value = null
-                    navController.navigate(
+                    navBottomUp(
                         "crop/${PathEncoder.encode(path)}/${CropRecipient.CreatePackTray}"
                     )
                 },
                 onNavigateToVideoTrim = { videoPath ->
                     pendingAnimatedDraft.value = null
                     val effectivePackId = packId.orEmpty()
-                    navController.navigate(
+                    navBottomUp(
                         "videoTrim/${PathEncoder.encode(videoPath)}?packId=${PathEncoder.encode(effectivePackId)}"
                     )
                 },
                 onNavigateToPublicPack = { cloudId ->
-                    navController.navigate("publicPack/$cloudId")
+                    navBottomUp("publicPack/$cloudId")
                 }
             )
         }
@@ -683,7 +584,7 @@ fun AppNavigation(
                 onBackClick = { navController.popBackStack() },
                 onNavigateToCrop = { imagePath ->
                     editorCropResult.value = null
-                    navController.navigate(
+                    navBottomUp(
                         "crop/${PathEncoder.encode(imagePath)}/${CropRecipient.Editor}"
                     )
                 },
@@ -737,7 +638,7 @@ fun AppNavigation(
                 videoPath = videoPath,
                 onBackClick = { navController.popBackStack() },
                 onNavigateToVideoCrop = { vp, spec ->
-                    navController.navigate(
+                    navBottomUp(
                         "videoCrop/${PathEncoder.encode(vp)}" +
                             "?packId=${PathEncoder.encode(packId)}" +
                             "&trimStart=${spec.trimStartMs}" +
@@ -780,7 +681,7 @@ fun AppNavigation(
                 packId = packIdArg,
                 onBackClick = { navController.popBackStack() },
                 onNavigateToAnimatedEditor = { draftId ->
-                    navController.navigate(
+                    navBottomUp(
                         "animatedEditor/$draftId?packId=${PathEncoder.encode(packIdArg)}"
                     ) {
                         popUpTo("createPack?packId=${packIdArg.takeIf { it.isNotBlank() } ?: "{packId}"}") {
@@ -826,27 +727,29 @@ fun AppNavigation(
 }
 
 private fun navigateToWorkspaceDraft(
+    navigationTransitions: NavigationTransitionController,
     navController: NavHostController,
     draftId: String,
     originRoute: String?
 ) {
     val route = WorkspaceDraftNavigation.routeForDraft(draftId, originRoute)
-    navController.navigate(route) {
+    navigationTransitions.navigateBottomUp(navController, route) {
         launchSingleTop = true
     }
 }
 
 private fun navigateToNotificationTarget(
+    navigationTransitions: NavigationTransitionController,
     navController: NavHostController,
     target: WorkspaceDraftNavigation.Target
 ) {
     if (target.navigateToAiJobsFirst) {
-        navController.navigate("aiJobs") {
+        navigationTransitions.navigateBottomUp(navController, "aiJobs") {
             launchSingleTop = true
             popUpTo("home") { inclusive = false }
         }
     }
-    navController.navigate(target.route) {
+    navigationTransitions.navigateBottomUp(navController, target.route) {
         launchSingleTop = true
         popUpTo("home") { inclusive = false }
     }
