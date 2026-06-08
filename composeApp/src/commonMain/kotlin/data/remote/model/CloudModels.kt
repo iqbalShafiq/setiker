@@ -18,6 +18,12 @@ data class UpdateStickerPackRequest(
 )
 
 @Serializable
+data class DeleteStickerSyncPayload(
+    val stickerPackId: String,
+    val stickerId: String,
+)
+
+@Serializable
 data class StickerPackStickerInput(
     val name: String,
     val filename: String,

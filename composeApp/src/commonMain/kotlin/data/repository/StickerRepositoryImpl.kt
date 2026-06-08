@@ -3,10 +3,12 @@ package data.repository
 import data.auth.AuthManager
 import data.local.database.StickerDao
 import data.local.database.StickerPackDao
+import data.local.database.compactSortOrders
 import data.local.entity.StickerEntity
 import data.local.entity.StickerPackEntity
 import data.storage.StickerFileStorage
 import data.sync.SyncManager
+import data.sync.createDeleteStickerSyncOperation
 import data.sync.createPackSyncOperation
 import data.sync.createPackVisibilitySyncOperation
 import data.sync.normalizePackVisibilityForStorage
@@ -64,10 +66,11 @@ class StickerRepositoryImpl(
     }
 
     @OptIn(ExperimentalUuidApi::class)
-    override suspend fun savePack(pack: StickerPack) = withContext(Dispatchers.Default) {
+    override suspend fun savePack(pack: StickerPack, syncToCloud: Boolean) = withContext(Dispatchers.Default) {
         val identifier = pack.identifier.takeIf { it.isNotBlank() } ?: Uuid.random().toString()
         val existing = packDao.getById(identifier)
         val now = Clock.System.now().toEpochMilliseconds()
+        val existingStickers = existing?.let { stickerDao.getByPackId(identifier) }.orEmpty()
         val entity = StickerPackEntity(
             identifier = identifier,
             name = pack.name,
@@ -76,48 +79,25 @@ class StickerRepositoryImpl(
             isAnimated = pack.isAnimated,
             createdAt = existing?.createdAt ?: now,
             updatedAt = now,
-            cloudId = existing?.cloudId,
-            syncState = existing?.syncState ?: "LOCAL_ONLY",
+            cloudId = existing?.cloudId ?: pack.cloudId,
+            syncState = when {
+                syncToCloud && !existing?.cloudId.isNullOrBlank() -> "LOCAL_ONLY"
+                else -> existing?.syncState ?: "LOCAL_ONLY"
+            },
             lastSyncAt = existing?.lastSyncAt,
             visibility = pack.visibility,
-            cloudOwnerId = existing?.cloudOwnerId,
+            cloudOwnerId = existing?.cloudOwnerId ?: pack.cloudOwnerId,
         )
         packDao.insert(entity)
-
-        // Enqueue cloud sync if authenticated
-        if (authManager?.isAuthenticated() == true) {
-            val syncTarget = resolvePackSaveSyncTarget(existing, identifier)
-            val syncOp = createPackSyncOperation(
-                pack = entity,
-                stickers = pack.stickers.mapIndexed { index, sticker ->
-                    StickerEntity(
-                        id = Uuid.random().toString(),
-                        packId = identifier,
-                        imageFile = sticker.imageFile,
-                        sourceImageFile = sticker.sourceImageFile,
-                        emojis = Json.encodeToString(sticker.emojis),
-                        accessibilityText = sticker.accessibilityText,
-                        decorationsJson = Json.encodeToString(sticker.decorations),
-                        isAnimated = sticker.isAnimated,
-                        sourceVideoFile = sticker.sourceVideoFile,
-                        frameDecorationsJson = encodeFrameDecorations(sticker.frameDecorations),
-                        sortOrder = index,
-                    )
-                },
-                id = Uuid.random().toString(),
-                createdAt = Clock.System.now().toEpochMilliseconds(),
-                syncTarget = syncTarget,
-            )
-            syncManager?.enqueue(syncOp)
-        }
 
         // Saving an existing pack is a full replacement of its current sticker
         // list. Without clearing old rows first, every edit (including only
         // changing the tray icon) appends duplicate stickers with new UUIDs.
         stickerDao.deleteByPackId(entity.identifier)
         pack.stickers.forEachIndexed { index, sticker ->
+            val prior = existingStickers.getOrNull(index)
             val stickerEntity = StickerEntity(
-                id = Uuid.random().toString(),
+                id = prior?.id ?: Uuid.random().toString(),
                 packId = entity.identifier,
                 imageFile = sticker.imageFile,
                 sourceImageFile = sticker.sourceImageFile,
@@ -127,14 +107,46 @@ class StickerRepositoryImpl(
                 isAnimated = sticker.isAnimated,
                 sourceVideoFile = sticker.sourceVideoFile,
                 frameDecorationsJson = encodeFrameDecorations(sticker.frameDecorations),
-                sortOrder = index
+                sortOrder = index,
+                cloudId = prior?.cloudId,
+                syncState = prior?.syncState ?: "LOCAL_ONLY",
+                lastSyncAt = prior?.lastSyncAt,
+                cloudUrl = prior?.cloudUrl,
             )
             stickerDao.insert(stickerEntity)
+        }
+
+        if (syncToCloud && authManager?.isAuthenticated() == true) {
+            val persistedStickers = stickerDao.getByPackId(identifier)
+            val syncTarget = resolvePackSaveSyncTarget(existing, identifier)
+            val syncOp = createPackSyncOperation(
+                pack = entity,
+                stickers = persistedStickers,
+                id = Uuid.random().toString(),
+                createdAt = Clock.System.now().toEpochMilliseconds(),
+                syncTarget = syncTarget,
+            )
+            syncManager?.enqueue(syncOp)
+            syncManager?.pushPackOperations(identifier)
         }
     }
 
     override suspend fun deletePack(identifier: String) = withContext(Dispatchers.Default) {
         val pack = packDao.getById(identifier) ?: return@withContext
+        val cloudPackId = pack.cloudId
+
+        if (!cloudPackId.isNullOrBlank() && authManager?.isAuthenticated() == true) {
+            val syncOp = SyncOperation(
+                id = Uuid.random().toString(),
+                type = SyncOperationType.DELETE_PACK,
+                targetId = cloudPackId,
+                payload = "{}",
+                status = SyncOperationStatus.PENDING,
+                createdAt = Clock.System.now().toEpochMilliseconds()
+            )
+            syncManager?.enqueue(syncOp)
+            syncManager?.pushPackOperations(identifier, cloudPackId)
+        }
 
         val stickers = stickerDao.getByPackId(identifier)
         stickers.forEach { sticker ->
@@ -146,18 +158,6 @@ class StickerRepositoryImpl(
 
         stickerDao.deleteByPackId(identifier)
         packDao.delete(pack)
-
-        if (pack.cloudId != null && authManager?.isAuthenticated() == true) {
-            val syncOp = SyncOperation(
-                id = Uuid.random().toString(),
-                type = SyncOperationType.DELETE_PACK,
-                targetId = pack.cloudId,
-                payload = "{}",
-                status = SyncOperationStatus.PENDING,
-                createdAt = Clock.System.now().toEpochMilliseconds()
-            )
-            syncManager?.enqueue(syncOp)
-        }
     }
 
     @OptIn(ExperimentalUuidApi::class)
@@ -183,7 +183,7 @@ class StickerRepositoryImpl(
                 markPackDirty(pack)
             }
         }
-        syncManager?.sync()
+        syncManager?.pushPackOperations(packId)
     }
 
     override suspend fun updateStickerInPack(packId: String, index: Int, sticker: Sticker) {
@@ -208,21 +208,45 @@ class StickerRepositoryImpl(
                 markPackDirty(pack)
             }
         }
-        syncManager?.sync()
+        syncManager?.pushPackOperations(packId)
     }
 
     override suspend fun removeStickerFromPack(packId: String, index: Int) = withContext(Dispatchers.Default) {
         val stickers = stickerDao.getByPackId(packId)
         val stickerToDelete = stickers.getOrNull(index) ?: return@withContext
+        val pack = packDao.getById(packId) ?: return@withContext
+        val now = Clock.System.now().toEpochMilliseconds()
 
         listOfNotNull(stickerToDelete.imageFile, stickerToDelete.sourceImageFile).distinct().forEach {
             fileStorage.deleteImage(it)
         }
-        stickerDao.deleteByPackAndIndex(packId, index)
-        packDao.getById(packId)?.let { pack ->
+        stickerDao.deleteById(stickerToDelete.id)
+        stickerDao.compactSortOrders(packId)
+        packDao.insert(pack.copy(updatedAt = now))
+
+        if (authManager?.isAuthenticated() != true) {
+            return@withContext
+        }
+
+        val cloudPackId = pack.cloudId
+        if (cloudPackId.isNullOrBlank()) {
+            return@withContext
+        }
+
+        val cloudStickerId = stickerToDelete.cloudId
+        if (!cloudStickerId.isNullOrBlank()) {
+            syncManager?.enqueue(
+                createDeleteStickerSyncOperation(
+                    cloudPackId = cloudPackId,
+                    cloudStickerId = cloudStickerId,
+                    id = Uuid.random().toString(),
+                    createdAt = now,
+                )
+            )
+        } else {
             markPackDirty(pack)
         }
-        syncManager?.sync()
+        syncManager?.pushPackOperations(packId, cloudPackId)
     }
 
     private suspend fun markPackDirty(pack: StickerPackEntity) {
@@ -294,6 +318,9 @@ class StickerRepositoryImpl(
 
         val cloudId = existing.cloudId
         if (!cloudId.isNullOrBlank()) {
+            if (existing.syncState == "SYNCED") {
+                syncManager?.cancelPendingContentUploadOps(packId, cloudId)
+            }
             syncManager?.enqueue(
                 createPackVisibilitySyncOperation(
                     cloudPackId = cloudId,
@@ -302,6 +329,11 @@ class StickerRepositoryImpl(
                     createdAt = now,
                 )
             )
+            syncManager?.pushPackVisibilityOperations(packId, cloudId)
+        } else {
+            // Pack belum ada di cloud: upload sekali dengan visibility target.
+            markPackDirty(existing.copy(visibility = normalizedVisibility))
+            syncManager?.pushPackOperations(packId)
         }
     }
 
@@ -316,7 +348,7 @@ class StickerRepositoryImpl(
     }
 
     override suspend fun syncPack(packId: String): SyncReport {
-        return syncManager?.sync() ?: SyncReport(result = SyncResult.SkippedNotAuthenticated)
+        return syncManager?.pushPackOperations(packId) ?: SyncReport(result = SyncResult.SkippedNotAuthenticated)
     }
 
     override fun observeSyncStatus(): Flow<SyncStatus> {

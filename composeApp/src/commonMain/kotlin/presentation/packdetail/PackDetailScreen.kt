@@ -436,6 +436,7 @@ fun PackDetailScreen(
                         enabled = !isOperationInProgress,
                         onIntent = onIntent,
                         onEditSticker = onEditSticker,
+                        onDeleteSticker = { deleteStickerIndex = it },
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -478,6 +479,7 @@ private fun PackDetailContent(
     enabled: Boolean,
     onIntent: (PackDetailIntent) -> Unit,
     onEditSticker: (Int) -> Unit,
+    onDeleteSticker: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -622,12 +624,16 @@ private fun PackDetailContent(
             ) {
                 itemsIndexed(
                     items = pack.stickers,
-                    key = { index, _ -> index }
+                    key = { _, sticker -> sticker.imageFile }
                 ) { index, sticker ->
                     StickerCard(
                         sticker = sticker,
                         onClick = { onEditSticker(index) },
-                        onDeleteClick = { onIntent(PackDetailIntent.DeleteSticker(index)) },
+                        onDeleteClick = if (enabled) {
+                            { onDeleteSticker(index) }
+                        } else {
+                            null
+                        },
                         showDecorations = false,
                         modifier = Modifier.animateItem()
                     )

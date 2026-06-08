@@ -1,19 +1,32 @@
 package data.sync
 
+import kotlinx.coroutines.async
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
 
 class SyncRunGateTest {
 
     @Test
-    fun secondSyncCannotEnterWhileFirstSyncIsActive() {
+    fun withLockSerializesConcurrentSyncRuns() = runTest {
         val gate = SyncRunGate()
+        val order = mutableListOf<Int>()
 
-        assertTrue(gate.tryEnter())
-        assertFalse(gate.tryEnter())
+        val first = async {
+            gate.withLock {
+                order += 1
+                order += 2
+            }
+        }
+        val second = async {
+            gate.withLock {
+                order += 3
+            }
+        }
 
-        gate.leave()
-        assertTrue(gate.tryEnter())
+        first.await()
+        second.await()
+
+        assertEquals(listOf(1, 2, 3), order)
     }
 }

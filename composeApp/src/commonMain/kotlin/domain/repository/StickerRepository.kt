@@ -15,7 +15,7 @@ sealed class SyncStatus {
 interface StickerRepository {
     suspend fun getAllPacks(): List<StickerPack>
     suspend fun getPack(identifier: String): StickerPack
-    suspend fun savePack(pack: StickerPack)
+    suspend fun savePack(pack: StickerPack, syncToCloud: Boolean = true)
     suspend fun deletePack(identifier: String)
     suspend fun duplicatePack(identifier: String): String
     suspend fun addStickerToPack(packId: String, sticker: Sticker)

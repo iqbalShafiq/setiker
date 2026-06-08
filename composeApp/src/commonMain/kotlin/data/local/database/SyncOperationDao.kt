@@ -45,4 +45,26 @@ interface SyncOperationDao {
 
     @Query("DELETE FROM sync_queue")
     suspend fun clearAll()
+
+    @Query(
+        """
+        UPDATE sync_queue
+        SET status = 'CANCELLED'
+        WHERE status = 'PENDING'
+          AND type = 'CREATE_PACK'
+          AND targetId = :localPackId
+        """
+    )
+    suspend fun cancelPendingCreatePack(localPackId: String)
+
+    @Query(
+        """
+        UPDATE sync_queue
+        SET status = 'CANCELLED'
+        WHERE status = 'PENDING'
+          AND type = 'UPDATE_PACK'
+          AND targetId = :cloudPackId
+        """
+    )
+    suspend fun cancelPendingUpdatePack(cloudPackId: String)
 }

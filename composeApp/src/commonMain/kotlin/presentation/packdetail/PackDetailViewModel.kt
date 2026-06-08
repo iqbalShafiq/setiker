@@ -230,7 +230,6 @@ class PackDetailViewModel(
             runCatching {
                 val visibility = if (makePublic) "PUBLIC" else "PRIVATE"
                 repository.updatePackVisibility(pack.identifier, visibility)
-                repository.syncPack(pack.identifier)
                 repository.getPack(pack.identifier)
             }.onSuccess { synced ->
                 _state.update { it.copy(isUpdatingVisibility = false, pack = synced) }
@@ -239,9 +238,6 @@ class PackDetailViewModel(
                         UiText.DynamicString(if (makePublic) "Pack is now public on Explore" else "Pack removed from Explore")
                     )
                 )
-                if (makePublic && !synced.cloudId.isNullOrBlank()) {
-                    _effect.send(PackDetailEffect.NavigateToPublicPack(synced.cloudId!!))
-                }
             }.onFailure { error ->
                 _state.update { it.copy(isUpdatingVisibility = false) }
                 _effect.send(PackDetailEffect.ShowError(error.toUiText(Res.string.error_failed_add_pack)))
@@ -413,11 +409,12 @@ class PackDetailViewModel(
     private fun deleteSticker(index: Int) {
         viewModelScope.launch {
             if (_state.value.isDeleting) return@launch
+            val pack = _state.value.pack ?: return@launch
             try {
-                val pack = _state.value.pack ?: return@launch
                 _state.update { it.copy(isDeleting = true) }
                 repository.removeStickerFromPack(pack.identifier, index)
-                loadPack(pack.identifier)
+                val updatedPack = repository.getPack(pack.identifier)
+                _state.update { it.copy(isDeleting = false, pack = updatedPack) }
             } catch (e: Exception) {
                 _state.update { it.copy(isDeleting = false) }
                 _effect.send(

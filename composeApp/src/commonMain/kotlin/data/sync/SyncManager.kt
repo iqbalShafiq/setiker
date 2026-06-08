@@ -19,6 +19,10 @@ interface SyncManager {
     suspend fun cancel(operationId: String)
     suspend fun clearCompleted()
     suspend fun sync(): SyncReport
+    suspend fun pushPendingOperations(): SyncReport
+    suspend fun pushPackOperations(localPackId: String, cloudPackId: String? = null): SyncReport
+    suspend fun pushPackVisibilityOperations(localPackId: String, cloudPackId: String? = null): SyncReport
+    suspend fun cancelPendingContentUploadOps(localPackId: String, cloudPackId: String?)
     fun startMonitoring()
     fun stopMonitoring()
 }

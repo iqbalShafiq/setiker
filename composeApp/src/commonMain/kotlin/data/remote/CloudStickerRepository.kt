@@ -107,7 +107,11 @@ class CloudStickerRepository(
         return envelope.data ?: throw ApiException(code = AppErrorCode.CloudUpdateFailed)
     }
 
-    suspend fun uploadPack(request: CreateStickerPackRequest, stickerPackId: String? = null): UploadData {
+    suspend fun uploadPack(
+        request: CreateStickerPackRequest,
+        stickerPackId: String? = null,
+        replaceExistingStickers: Boolean = !stickerPackId.isNullOrBlank() && request.stickers.isNotEmpty(),
+    ): UploadData {
         val response = withAuthRetry { authHeader ->
             client.post("$baseUrl/api/v1/upload") {
                 header(HttpHeaders.Authorization, authHeader)
@@ -119,6 +123,9 @@ class CloudStickerRepository(
                                 request.description?.let { append("stickerPackDescription", it) }
                             } else {
                                 append("stickerPackId", stickerPackId)
+                                if (replaceExistingStickers) {
+                                    append("replaceStickers", "true")
+                                }
                             }
                             append("visibility", normalizePackVisibilityForApi(request.visibility))
                             request.stickers.sortedBy { it.order }.forEachIndexed { index, sticker ->
@@ -141,6 +148,26 @@ class CloudStickerRepository(
         }
         val envelope = json.decodeFromString<ApiSuccessEnvelope<UploadData>>(response.bodyAsText())
         return envelope.data ?: throw ApiException(code = AppErrorCode.CloudCreateFailed)
+    }
+
+    suspend fun deleteStickerFromPack(stickerPackId: String, stickerId: String) {
+        val response = withAuthRetry { authHeader ->
+            client.post("$baseUrl/api/v1/upload") {
+                header(HttpHeaders.Authorization, authHeader)
+                setBody(
+                    MultiPartFormDataContent(
+                        formData {
+                            append("action", "delete")
+                            append("stickerPackId", stickerPackId)
+                            append("stickerId", stickerId)
+                        }
+                    )
+                )
+            }
+        }
+        if (!response.status.isSuccess()) {
+            throw ApiException(code = AppErrorCode.CloudDeleteFailed)
+        }
     }
 
     suspend fun deletePackViaUpload(stickerPackId: String) {

@@ -254,6 +254,10 @@ class HomeViewModelGeneratePackTest {
             every { lastSyncReport } returns MutableStateFlow<SyncReport?>(null)
             every { syncStage } returns MutableStateFlow(SyncStage.IDLE)
             coEvery { sync() } returns SyncReport()
+            coEvery { pushPendingOperations() } returns SyncReport()
+            coEvery { pushPackOperations(any(), any()) } returns SyncReport()
+            coEvery { pushPackVisibilityOperations(any(), any()) } returns SyncReport()
+            coEvery { cancelPendingContentUploadOps(any(), any()) } returns Unit
         }
     }
 

@@ -9,6 +9,7 @@ import data.repository.StickerPackDraftSaver
 import domain.model.AiQuotaOperation
 import domain.model.StickerDraftInput
 import domain.model.StickerPack
+import domain.model.SyncReport
 import domain.model.SyncResult
 import domain.model.aijob.AiJobOrigin
 import domain.model.aijob.GenerateStickersPayload
@@ -337,9 +338,20 @@ class CreatePackViewModel(
                         }
                     )
                 )
-                repository.savePack(pack)
-                val syncReport = repository.syncPack(identifier)
+                val alreadyOnCloud = current.isEditing &&
+                    current.packId.isNotBlank() &&
+                    !current.cloudId.isNullOrBlank()
+                if (alreadyOnCloud) {
+                    repository.updatePackVisibility(identifier, "PUBLIC")
+                } else {
+                    repository.savePack(pack, syncToCloud = true)
+                }
                 val synced = repository.getPack(identifier)
+                val syncReport = if (alreadyOnCloud) {
+                    SyncReport(result = SyncResult.Success)
+                } else {
+                    SyncReport(result = if (synced.cloudId.isNullOrBlank()) SyncResult.Failed("Cloud sync failed") else SyncResult.Success)
+                }
                 _state.update {
                     it.copy(
                         isPublishing = false,
@@ -359,7 +371,6 @@ class CreatePackViewModel(
                     )
                 } else {
                     _effect.send(CreatePackEffect.ShowSuccess("Published to Explore"))
-                    _effect.send(CreatePackEffect.NavigateToPublicPack(cloudId))
                 }
             } catch (e: Exception) {
                 _state.update { it.copy(isPublishing = false) }
