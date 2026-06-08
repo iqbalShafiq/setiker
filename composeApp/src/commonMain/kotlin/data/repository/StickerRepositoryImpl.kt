@@ -5,10 +5,12 @@ import data.local.database.StickerDao
 import data.local.database.StickerPackDao
 import data.local.entity.StickerEntity
 import data.local.entity.StickerPackEntity
-import data.remote.model.CreateStickerPackRequest
-import data.remote.model.StickerPackStickerInput
 import data.storage.StickerFileStorage
 import data.sync.SyncManager
+import data.sync.createPackSyncOperation
+import data.sync.createPackVisibilitySyncOperation
+import data.sync.normalizePackVisibilityForStorage
+import data.sync.resolvePackSaveSyncTarget
 import domain.error.AppErrorCode
 import domain.error.AppException
 import domain.model.Sticker
@@ -40,7 +42,8 @@ class StickerRepositoryImpl(
     private val stickerDao: StickerDao,
     private val fileStorage: StickerFileStorage,
     private val syncManager: SyncManager? = null,
-    private val authManager: AuthManager? = null
+    private val authManager: AuthManager? = null,
+    private val cloudSyncedLocalDataCleaner: CloudSyncedLocalDataCleaner? = null,
 ) : StickerRepository {
 
     override suspend fun getAllPacks(): List<StickerPack> = withContext(Dispatchers.Default) {
@@ -279,6 +282,35 @@ class StickerRepositoryImpl(
         }
     }
 
+    override suspend fun updatePackVisibility(packId: String, visibility: String) = withContext(Dispatchers.Default) {
+        val existing = packDao.getById(packId) ?: throw AppException(code = AppErrorCode.PackNotFound)
+        val normalizedVisibility = normalizePackVisibilityForStorage(visibility)
+        val now = Clock.System.now().toEpochMilliseconds()
+        packDao.insert(existing.copy(visibility = normalizedVisibility, updatedAt = now))
+
+        if (authManager?.isAuthenticated() != true) {
+            return@withContext
+        }
+
+        val cloudId = existing.cloudId
+        if (!cloudId.isNullOrBlank()) {
+            syncManager?.enqueue(
+                createPackVisibilitySyncOperation(
+                    cloudPackId = cloudId,
+                    visibility = normalizedVisibility,
+                    id = Uuid.random().toString(),
+                    createdAt = now,
+                )
+            )
+        }
+    }
+
+    override suspend fun clearCloudSyncedDataOnLogout() {
+        withContext(Dispatchers.Default) {
+            cloudSyncedLocalDataCleaner?.clearOnLogout()
+        }
+    }
+
     override suspend fun syncAll(): SyncReport {
         return syncManager?.sync() ?: SyncReport(result = SyncResult.SkippedNotAuthenticated)
     }
@@ -333,49 +365,3 @@ class StickerRepositoryImpl(
         newId
     }
 }
-
-internal data class PackSaveSyncTarget(
-    val type: SyncOperationType,
-    val targetId: String,
-)
-
-internal fun resolvePackSaveSyncTarget(
-    existing: StickerPackEntity?,
-    localIdentifier: String,
-): PackSaveSyncTarget {
-    val cloudId = existing?.cloudId
-    return if (cloudId.isNullOrBlank()) {
-        PackSaveSyncTarget(SyncOperationType.CREATE_PACK, localIdentifier)
-    } else {
-        PackSaveSyncTarget(SyncOperationType.UPDATE_PACK, cloudId)
-    }
-}
-
-internal fun createPackSyncOperation(
-    pack: StickerPackEntity,
-    stickers: List<StickerEntity>,
-    id: String,
-    createdAt: Long,
-    syncTarget: PackSaveSyncTarget = resolvePackSaveSyncTarget(pack, pack.identifier),
-): SyncOperation = SyncOperation(
-    id = id,
-    type = syncTarget.type,
-    targetId = syncTarget.targetId,
-    payload = Json.encodeToString(
-        CreateStickerPackRequest(
-            name = pack.name,
-            description = null,
-            visibility = pack.visibility,
-            stickers = stickers.sortedBy { it.sortOrder }.mapIndexed { index, sticker ->
-                StickerPackStickerInput(
-                    name = sticker.accessibilityText ?: "sticker_$index",
-                    filename = sticker.imageFile.substringAfterLast("/"),
-                    url = sticker.imageFile,
-                    order = index,
-                )
-            },
-        )
-    ),
-    status = SyncOperationStatus.PENDING,
-    createdAt = createdAt,
-)

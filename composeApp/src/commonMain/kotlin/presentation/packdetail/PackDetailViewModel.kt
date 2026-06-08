@@ -228,8 +228,8 @@ class PackDetailViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isUpdatingVisibility = true, visibilityDialog = null) }
             runCatching {
-                val updated = pack.copy(visibility = if (makePublic) "PUBLIC" else "PRIVATE")
-                repository.savePack(updated)
+                val visibility = if (makePublic) "PUBLIC" else "PRIVATE"
+                repository.updatePackVisibility(pack.identifier, visibility)
                 repository.syncPack(pack.identifier)
                 repository.getPack(pack.identifier)
             }.onSuccess { synced ->

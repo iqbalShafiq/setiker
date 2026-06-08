@@ -26,6 +26,9 @@ interface StickerDao {
     @Query("DELETE FROM stickers WHERE cloudId = :cloudId")
     suspend fun deleteByCloudId(cloudId: String)
 
+    @Query("DELETE FROM stickers WHERE id = :id")
+    suspend fun deleteById(id: String)
+
     @Query("SELECT COUNT(*) FROM stickers WHERE packId = :packId")
     suspend fun getCountByPackId(packId: String): Int
 

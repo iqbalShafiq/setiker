@@ -3,6 +3,7 @@ package presentation.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import data.auth.AuthManager
+import data.auth.AuthSessionCoordinator
 import data.remote.ExploreApiRepository
 import data.remote.LegalApiRepository
 import domain.model.AiUsage
@@ -30,6 +31,7 @@ data class ProfileState(
 
 class ProfileViewModel(
     private val authManager: AuthManager,
+    private val authSessionCoordinator: AuthSessionCoordinator,
     private val stickerRepository: StickerRepository,
     private val aiQuotaRepository: AiQuotaRepository,
     private val legalApiRepository: LegalApiRepository,
@@ -78,8 +80,14 @@ class ProfileViewModel(
     
     fun logout() {
         viewModelScope.launch {
-            authManager.clearTokens()
-            _state.value = _state.value.copy(user = null)
+            authSessionCoordinator.endSession()
+            _state.value = _state.value.copy(
+                user = null,
+                stickersCount = 0,
+                packsCount = 0,
+                aiUsage = null,
+                notificationUnreadCount = 0,
+            )
         }
     }
 }

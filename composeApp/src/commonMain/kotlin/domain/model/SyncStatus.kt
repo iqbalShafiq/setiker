@@ -10,6 +10,7 @@ enum class SyncState {
 enum class SyncOperationType {
     CREATE_PACK,
     UPDATE_PACK,
+    UPDATE_PACK_VISIBILITY,
     DELETE_PACK,
     ADD_STICKER,
     UPDATE_STICKER,

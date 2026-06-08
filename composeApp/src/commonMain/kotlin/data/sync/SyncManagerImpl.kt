@@ -10,7 +10,9 @@ import data.local.entity.StickerPackEntity
 import data.remote.CloudStickerRepository
 import data.remote.model.CloudStickerPack
 import data.remote.model.CreateStickerPackRequest
-import data.repository.createPackSyncOperation
+import data.remote.model.UpdateStickerPackRequest
+import data.sync.createPackSyncOperation
+import data.sync.normalizePackVisibilityForStorage
 import data.storage.StickerFileStorage
 import domain.model.SyncOperation
 import domain.model.SyncOperationStatus
@@ -378,6 +380,22 @@ class SyncManagerImpl(
                     packDao.getByCloudId(operation.targetId)?.let { pack ->
                         packDao.updateSyncStatus(pack.identifier, SYNC_STATE_SYNCED, Clock.System.now().toEpochMilliseconds())
                         updateLocalStickerCloudInfo(pack.identifier, upload.stickers)
+                    }
+                    OperationResult.Success
+                }
+                SyncOperationType.UPDATE_PACK_VISIBILITY -> {
+                    val request = json.decodeFromString<UpdateStickerPackRequest>(operation.payload)
+                    val updatedPack = cloudRepo.updatePack(operation.targetId, request)
+                    val now = Clock.System.now().toEpochMilliseconds()
+                    packDao.getByCloudId(operation.targetId)?.let { pack ->
+                        packDao.insert(
+                            pack.copy(
+                                visibility = normalizePackVisibilityForStorage(updatedPack.visibility),
+                                syncState = SYNC_STATE_SYNCED,
+                                lastSyncAt = now,
+                                updatedAt = now,
+                            )
+                        )
                     }
                     OperationResult.Success
                 }

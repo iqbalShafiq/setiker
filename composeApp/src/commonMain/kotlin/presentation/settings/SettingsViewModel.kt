@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import data.auth.AuthApiService
 import data.auth.AuthManager
+import data.auth.AuthSessionCoordinator
 import data.auth.model.ChangePasswordRequest
 import data.remote.ApiException
 import data.preferences.UserPreferencesRepository
@@ -30,6 +31,7 @@ class SettingsViewModel(
     private val aiUsageApiRepository: AiUsageApiRepository,
     private val authManager: AuthManager,
     private val authApiService: AuthApiService,
+    private val authSessionCoordinator: AuthSessionCoordinator,
     private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
     private val _state = MutableStateFlow(SettingsState())
@@ -170,7 +172,7 @@ class SettingsViewModel(
             _state.update { it.copy(isDeletingAccount = true) }
             runCatching { authApiService.deleteAccount(token) }
                 .onSuccess {
-                    authManager.clearTokens()
+                    authSessionCoordinator.endSession()
                     _state.update { it.copy(isDeletingAccount = false, showDeleteConfirm = false) }
                     _effect.send(SettingsEffect.AccountDeleted)
                 }

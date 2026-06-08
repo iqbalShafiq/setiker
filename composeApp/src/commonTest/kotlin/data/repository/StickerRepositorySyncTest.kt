@@ -2,6 +2,8 @@ package data.repository
 
 import data.local.entity.StickerPackEntity
 import data.local.entity.StickerEntity
+import data.sync.createPackSyncOperation
+import data.sync.resolvePackSaveSyncTarget
 import domain.model.SyncOperationType
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject

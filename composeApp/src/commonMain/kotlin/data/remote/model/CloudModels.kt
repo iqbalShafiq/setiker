@@ -11,6 +11,13 @@ data class CreateStickerPackRequest(
 )
 
 @Serializable
+data class UpdateStickerPackRequest(
+    val name: String? = null,
+    val description: String? = null,
+    val visibility: String? = null,
+)
+
+@Serializable
 data class StickerPackStickerInput(
     val name: String,
     val filename: String,

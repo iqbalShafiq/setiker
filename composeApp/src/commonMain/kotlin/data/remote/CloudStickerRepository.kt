@@ -6,6 +6,7 @@ import data.remote.model.ApiSuccessEnvelope
 import data.remote.model.CloudStickerPack
 import data.remote.model.CreateStickerPackRequest
 import data.remote.model.SyncData
+import data.remote.model.UpdateStickerPackRequest
 import data.remote.model.UploadData
 import domain.error.AppErrorCode
 import io.ktor.client.HttpClient
@@ -21,6 +22,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
@@ -28,13 +30,14 @@ import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
 import io.ktor.http.Url
 import io.ktor.http.URLBuilder
-import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import data.sync.encodeLastSyncAt
+import data.sync.normalizePackVisibilityForApi
 import data.remote.readFileBytes
 
 class CloudStickerRepository(
@@ -89,6 +92,21 @@ class CloudStickerRepository(
         return request("Bearer $refreshedToken")
     }
 
+    suspend fun updatePack(cloudPackId: String, request: UpdateStickerPackRequest): CloudStickerPack {
+        val response = withAuthRetry { authHeader ->
+            client.put("$baseUrl/api/v1/sticker-packs/$cloudPackId") {
+                header(HttpHeaders.Authorization, authHeader)
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }
+        }
+        if (!response.status.isSuccess()) {
+            throw ApiException(code = AppErrorCode.CloudUpdateFailed)
+        }
+        val envelope = json.decodeFromString<ApiSuccessEnvelope<CloudStickerPack>>(response.bodyAsText())
+        return envelope.data ?: throw ApiException(code = AppErrorCode.CloudUpdateFailed)
+    }
+
     suspend fun uploadPack(request: CreateStickerPackRequest, stickerPackId: String? = null): UploadData {
         val response = withAuthRetry { authHeader ->
             client.post("$baseUrl/api/v1/upload") {
@@ -102,7 +120,7 @@ class CloudStickerRepository(
                             } else {
                                 append("stickerPackId", stickerPackId)
                             }
-                            append("visibility", request.visibility.lowercase())
+                            append("visibility", normalizePackVisibilityForApi(request.visibility))
                             request.stickers.sortedBy { it.order }.forEachIndexed { index, sticker ->
                                 append(
                                     key = "images",

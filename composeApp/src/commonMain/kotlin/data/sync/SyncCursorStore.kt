@@ -20,6 +20,12 @@ class SyncCursorStore(
         }
     }
 
+    suspend fun clear() {
+        dataStore.edit { preferences ->
+            preferences.remove(KEY_LAST_PULL_SYNC_AT)
+        }
+    }
+
     private companion object {
         val KEY_LAST_PULL_SYNC_AT = longPreferencesKey("last_pull_sync_at")
     }
