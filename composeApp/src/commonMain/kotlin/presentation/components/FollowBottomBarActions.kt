@@ -1,8 +1,8 @@
 package presentation.components
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.PersonCheck
 import androidx.compose.runtime.Composable
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalWhite
@@ -18,7 +18,7 @@ fun FollowPackBottomBarIconButton(
     unfollowContentDescription: String = "Unfollow"
 ) {
     PackBottomBarIconButton(
-        icon = if (isFollowing) Icons.Filled.Person else Icons.Default.PersonAdd,
+        icon = if (isFollowing) Icons.Filled.PersonCheck else Icons.Default.PersonAdd,
         contentDescription = if (isFollowing) unfollowContentDescription else followContentDescription,
         onClick = onClick,
         enabled = enabled,
@@ -35,7 +35,7 @@ fun FollowPackBottomBarFab(
     followingContentDescription: String = "Following"
 ) {
     PackBottomBarFab(
-        icon = if (isFollowing) Icons.Filled.Person else Icons.Default.PersonAdd,
+        icon = if (isFollowing) Icons.Filled.PersonCheck else Icons.Default.PersonAdd,
         contentDescription = if (isFollowing) followingContentDescription else followContentDescription,
         onClick = onClick,
         enabled = enabled,
