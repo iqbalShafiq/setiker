@@ -5,7 +5,6 @@ data class PublicPackDetailState(
     val isLoading: Boolean = true,
     val loadFailed: Boolean = false,
     val isImporting: Boolean = false,
-    val isFollowLoading: Boolean = false,
     val error: String? = null,
     val errorDialogMessage: String? = null,
     val pack: CloudStickerPack? = null,

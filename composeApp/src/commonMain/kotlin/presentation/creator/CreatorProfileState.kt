@@ -9,6 +9,5 @@ data class CreatorProfileState(
     val profile: PublicUserProfile? = null,
     val packs: List<CloudStickerPack> = emptyList(),
     val sort: ExploreSort = ExploreSort.RECENT,
-    val isFollowLoading: Boolean = false,
     val loadFailed: Boolean = false
 )

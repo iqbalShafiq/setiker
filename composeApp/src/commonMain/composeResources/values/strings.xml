@@ -451,6 +451,10 @@
     <string name="creator_not_found_desc">This profile is unavailable.</string>
     <string name="creator_follow">Follow</string>
     <string name="creator_following">Following</string>
+    <string name="creator_public_packs">Public packs</string>
+    <string name="unfollow_confirm_title">Unfollow?</string>
+    <string name="unfollow_confirm_message">You will stop seeing packs from %1$s in your Following feed.</string>
+    <string name="unfollow_confirm_action">Unfollow</string>
     <string name="explore_pack_not_found_title">Pack not found</string>
     <string name="explore_pack_not_found_desc">The public pack is unavailable.</string>
     <string name="public_pack_by">By %1$s</string>

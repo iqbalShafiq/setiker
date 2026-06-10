@@ -61,6 +61,22 @@ class CloudStickerPackSocialTest {
     }
 
     @Test
+    fun `withOptimisticFollowOwner toggles following and owner follower count`() {
+        val pack = samplePack().copy(
+            owner = CloudOwner(id = "owner-1", followerCount = 10),
+            isFollowingOwner = false
+        )
+
+        val followed = pack.withOptimisticFollowOwner(following = true)
+        assertTrue(followed.userIsFollowingOwner())
+        assertEquals(11, followed.owner?.followerCount)
+
+        val unfollowed = followed.withOptimisticFollowOwner(following = false)
+        assertFalse(unfollowed.userIsFollowingOwner())
+        assertEquals(10, unfollowed.owner?.followerCount)
+    }
+
+    @Test
     fun `applySocialUpdate can clear liked when api explicitly returns false`() {
         val pack = samplePack(isLiked = true, isSaved = false)
 

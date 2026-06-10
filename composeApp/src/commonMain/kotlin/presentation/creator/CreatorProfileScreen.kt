@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -45,12 +44,14 @@ import presentation.components.AppPrimaryButton
 import presentation.components.AppTopBar
 import presentation.components.EmptyState
 import presentation.components.ExploreSortBottomSheet
+import presentation.components.FollowPackBottomBarFab
 import presentation.components.LoadingIndicator
 import presentation.components.NeubrutalSelectableChip
 import presentation.components.PackBottomBar
-import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
 import presentation.components.ScreenContentHorizontalScrollRow
+import presentation.components.ScreenSectionTitle
+import presentation.components.UnfollowConfirmDialog
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.neubrutalBorderColor
@@ -68,6 +69,8 @@ import setiker.composeapp.generated.resources.creator_follow
 import setiker.composeapp.generated.resources.creator_following
 import setiker.composeapp.generated.resources.creator_not_found_desc
 import setiker.composeapp.generated.resources.creator_not_found_title
+import setiker.composeapp.generated.resources.creator_public_packs
+import setiker.composeapp.generated.resources.explore_sort
 import setiker.composeapp.generated.resources.explore_sort_downloads
 import setiker.composeapp.generated.resources.explore_sort_likes
 import setiker.composeapp.generated.resources.explore_sort_popular
@@ -75,6 +78,7 @@ import setiker.composeapp.generated.resources.explore_sort_recent
 import setiker.composeapp.generated.resources.explore_sort_saves
 import setiker.composeapp.generated.resources.retry
 import setiker.composeapp.generated.resources.social_counts
+import setiker.composeapp.generated.resources.sort_by
 
 @Composable
 fun CreatorProfileScreen(
@@ -85,6 +89,7 @@ fun CreatorProfileScreen(
     modifier: Modifier = Modifier
 ) {
     var showSortSheet by remember { mutableStateOf(false) }
+    var showUnfollowDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -94,24 +99,48 @@ fun CreatorProfileScreen(
             )
         },
         bottomBar = {
-            PackBottomBar(
-                actions = {
-                    PackBottomBarIconButton(
-                        icon = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        onClick = { onIntent(CreatorProfileIntent.NavigateBack) }
-                    )
-                },
-                floatingActionButton = {
-                    if (state.profile != null) {
-                        PackBottomBarFab(
+            if (state.profile != null) {
+                val profile = state.profile
+                PackBottomBar(
+                    actions = {
+                        PackBottomBarIconButton(
+                            icon = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            onClick = { onIntent(CreatorProfileIntent.NavigateBack) }
+                        )
+                        PackBottomBarIconButton(
                             icon = Icons.Default.Sort,
-                            contentDescription = "Sort",
+                            contentDescription = stringResource(Res.string.explore_sort),
                             onClick = { showSortSheet = true }
                         )
+                    },
+                    floatingActionButton = {
+                        FollowPackBottomBarFab(
+                            isFollowing = profile.isFollowing,
+                            onClick = {
+                                if (profile.isFollowing) {
+                                    showUnfollowDialog = true
+                                } else {
+                                    onIntent(CreatorProfileIntent.ToggleFollow)
+                                }
+                            },
+                            followContentDescription = stringResource(Res.string.creator_follow),
+                            followingContentDescription = stringResource(Res.string.creator_following)
+                        )
                     }
-                }
-            )
+                )
+            } else {
+                PackBottomBar(
+                    actions = {
+                        PackBottomBarIconButton(
+                            icon = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            onClick = { onIntent(CreatorProfileIntent.NavigateBack) }
+                        )
+                    },
+                    floatingActionButton = null
+                )
+            }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
@@ -153,17 +182,15 @@ fun CreatorProfileScreen(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = neubrutalMutedOnSurface()
                             )
-                            AppPrimaryButton(
-                                text = if (profile.isFollowing) {
-                                    stringResource(Res.string.creator_following)
-                                } else {
-                                    stringResource(Res.string.creator_follow)
-                                },
-                                onClick = { onIntent(CreatorProfileIntent.ToggleFollow) },
-                                enabled = !state.isFollowLoading,
-                                modifier = Modifier.fillMaxWidth()
-                            )
                         }
+                    }
+                    item("sort_section_title") {
+                        ScreenSectionTitle(
+                            text = stringResource(Res.string.sort_by),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 4.dp)
+                        )
                     }
                     item("sort_tabs") {
                         ScreenContentHorizontalScrollRow { spacing ->
@@ -178,6 +205,14 @@ fun CreatorProfileScreen(
                                 )
                             }
                         }
+                    }
+                    item("packs_section_title") {
+                        ScreenSectionTitle(
+                            text = stringResource(Res.string.creator_public_packs),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 4.dp)
+                        )
                     }
                     items(state.packs, key = { it.id }) { pack ->
                         val thumb = resolveApiUrl(pack.stickers.firstOrNull()?.sticker?.url)
@@ -239,6 +274,18 @@ fun CreatorProfileScreen(
                 currentSort = state.sort,
                 onSortSelected = { onIntent(CreatorProfileIntent.ChangeSort(it)) },
                 onDismiss = { showSortSheet = false }
+            )
+        }
+
+        if (showUnfollowDialog && state.profile != null) {
+            val profile = state.profile
+            UnfollowConfirmDialog(
+                displayName = profile.displayName ?: "@${profile.username}",
+                onConfirm = {
+                    showUnfollowDialog = false
+                    onIntent(CreatorProfileIntent.ToggleFollow)
+                },
+                onDismiss = { showUnfollowDialog = false }
             )
         }
     }

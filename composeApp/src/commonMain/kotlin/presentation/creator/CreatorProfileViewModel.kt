@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import data.remote.ExploreApiRepository
 import data.remote.ExploreSort
+import data.remote.model.applyFollowUpdate
+import data.remote.model.withOptimisticFollow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -71,24 +73,31 @@ class CreatorProfileViewModel(
     private fun toggleFollow() {
         val profile = _state.value.profile ?: return
         viewModelScope.launch {
-            _state.update { it.copy(isFollowLoading = true) }
+            val snapshot = _state.value
+            val wasFollowing = profile.isFollowing
+            val targetFollowing = !wasFollowing
+            applyOptimisticFollow(targetFollowing)
             runCatching {
-                if (profile.isFollowing) exploreApiRepository.unfollowUser(profile.id)
+                if (wasFollowing) exploreApiRepository.unfollowUser(profile.id)
                 else exploreApiRepository.followUser(profile.id)
             }.onSuccess { result ->
-                _state.update {
-                    it.copy(
-                        isFollowLoading = false,
-                        profile = profile.copy(
-                            isFollowing = result.following,
-                            followerCount = result.followerCount
-                        )
-                    )
+                _state.update { current ->
+                    current.copy(profile = current.profile?.applyFollowUpdate(result))
                 }
             }.onFailure { error ->
-                _state.update { it.copy(isFollowLoading = false) }
+                restoreFollowSnapshot(snapshot)
                 _effect.send(CreatorProfileEffect.ShowMessage(UiText.DynamicString(error.message ?: "Follow failed")))
             }
         }
+    }
+
+    private fun applyOptimisticFollow(following: Boolean) {
+        _state.update { current ->
+            current.copy(profile = current.profile?.withOptimisticFollow(following))
+        }
+    }
+
+    private fun restoreFollowSnapshot(snapshot: CreatorProfileState) {
+        _state.update { it.copy(profile = snapshot.profile) }
     }
 }

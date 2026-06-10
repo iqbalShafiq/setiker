@@ -268,7 +268,9 @@ fun PackBottomBarFab(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    isLoading: Boolean = false
+    isLoading: Boolean = false,
+    containerColor: Color = AccentCoral,
+    iconTint: Color = NeubrutalWhite
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -299,7 +301,9 @@ fun PackBottomBarFab(
                 color = shadow
             )
             .clip(shape)
-            .background(if (enabled || isLoading) AccentCoral else AccentCoral.copy(alpha = 0.4f))
+            .background(
+                if (enabled || isLoading) containerColor else containerColor.copy(alpha = 0.4f)
+            )
             .neubrutalBorderWithGloss(
                 color = border,
                 cornerRadius = NeubrutalButtonRadius,
@@ -318,13 +322,13 @@ fun PackBottomBarFab(
                 CircularProgressIndicator(
                     modifier = Modifier.size(24.dp),
                     strokeWidth = 3.dp,
-                    color = NeubrutalWhite
+                    color = iconTint
                 )
             } else {
                 Icon(
                     imageVector = icon,
                     contentDescription = contentDescription,
-                    tint = if (enabled) NeubrutalWhite else NeubrutalWhite.copy(alpha = 0.5f)
+                    tint = if (enabled) iconTint else iconTint.copy(alpha = 0.5f)
                 )
             }
         }

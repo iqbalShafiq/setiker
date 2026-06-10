@@ -94,6 +94,57 @@ data class UserFollowStateData(
     val followingCount: Int
 )
 
+fun PublicUserProfile.withOptimisticFollow(following: Boolean): PublicUserProfile {
+    val delta = when {
+        isFollowing == following -> 0
+        following -> 1
+        else -> -1
+    }
+    return copy(
+        isFollowing = following,
+        followerCount = (followerCount + delta).coerceAtLeast(0)
+    )
+}
+
+fun PublicUserProfile.applyFollowUpdate(followState: UserFollowStateData): PublicUserProfile {
+    return copy(
+        isFollowing = followState.following,
+        followerCount = followState.followerCount,
+        followingCount = followState.followingCount
+    )
+}
+
+fun CloudStickerPack.userIsFollowingOwner(): Boolean = isFollowingOwner ?: following ?: false
+
+fun CloudStickerPack.withOptimisticFollowOwner(following: Boolean): CloudStickerPack {
+    val wasFollowing = userIsFollowingOwner()
+    val delta = when {
+        wasFollowing == following -> 0
+        following -> 1
+        else -> -1
+    }
+    val updatedOwner = owner?.copy(
+        followerCount = ((owner.followerCount ?: 0) + delta).coerceAtLeast(0)
+    )
+    return copy(
+        following = following,
+        isFollowingOwner = following,
+        owner = updatedOwner
+    )
+}
+
+fun CloudStickerPack.applyFollowUpdate(followState: UserFollowStateData): CloudStickerPack {
+    val updatedOwner = owner?.copy(
+        followerCount = followState.followerCount,
+        followingCount = followState.followingCount
+    )
+    return copy(
+        following = followState.following,
+        isFollowingOwner = followState.following,
+        owner = updatedOwner
+    )
+}
+
 @Serializable
 data class SharePreviewPackData(
     val resourceType: String,

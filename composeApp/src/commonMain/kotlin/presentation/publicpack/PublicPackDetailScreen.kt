@@ -21,7 +21,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.AlertDialog
@@ -33,6 +32,10 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,10 +49,13 @@ import presentation.components.AppIllustration
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
 import presentation.components.AppTopBar
+import presentation.components.FollowPackBottomBarIconButton
 import presentation.components.InteractionBlockedBox
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
+import presentation.components.ScreenSectionTitle
+import presentation.components.UnfollowConfirmDialog
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.neubrutalBorderWithGloss
@@ -77,8 +83,11 @@ import setiker.composeapp.generated.resources.public_pack_import_cancel
 import setiker.composeapp.generated.resources.public_pack_import_confirm
 import setiker.composeapp.generated.resources.public_pack_import_owner_credit
 import setiker.composeapp.generated.resources.public_pack_import_title
+import setiker.composeapp.generated.resources.creator_follow
+import setiker.composeapp.generated.resources.creator_following
 import setiker.composeapp.generated.resources.retry
 import setiker.composeapp.generated.resources.social_counts
+import setiker.composeapp.generated.resources.stickers_title
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,6 +98,8 @@ fun PublicPackDetailScreen(
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
 ) {
+    var showUnfollowDialog by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             AppTopBar(
@@ -121,11 +132,18 @@ fun PublicPackDetailScreen(
                         iconTint = if (state.isSaved) AccentCoral else neubrutalOnSurface()
                     )
                     if (!state.isOwnPack) {
-                        PackBottomBarIconButton(
-                            icon = Icons.Default.PersonAdd,
-                            contentDescription = if (state.isFollowingCreator) "Unfollow" else "Follow",
-                            onClick = { onIntent(PublicPackDetailIntent.ToggleFollowCreator) },
-                            enabled = !state.isImporting && !state.isFollowLoading
+                        FollowPackBottomBarIconButton(
+                            isFollowing = state.isFollowingCreator,
+                            onClick = {
+                                if (state.isFollowingCreator) {
+                                    showUnfollowDialog = true
+                                } else {
+                                    onIntent(PublicPackDetailIntent.ToggleFollowCreator)
+                                }
+                            },
+                            enabled = !state.isImporting,
+                            followContentDescription = stringResource(Res.string.creator_follow),
+                            unfollowContentDescription = stringResource(Res.string.creator_following)
                         )
                     }
                 },
@@ -206,6 +224,13 @@ fun PublicPackDetailScreen(
                         color = neubrutalMutedOnSurface()
                     )
                     Spacer(modifier = Modifier.height(16.dp))
+                    ScreenSectionTitle(
+                        text = stringResource(Res.string.stickers_title),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
                     LazyVerticalGrid(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -267,6 +292,20 @@ fun PublicPackDetailScreen(
                     Text(stringResource(Res.string.close))
                 }
             }
+        )
+    }
+
+    if (showUnfollowDialog && state.pack != null) {
+        val creatorName = state.pack.owner?.displayName
+            ?: state.pack.owner?.username
+            ?: "Creator"
+        UnfollowConfirmDialog(
+            displayName = creatorName,
+            onConfirm = {
+                showUnfollowDialog = false
+                onIntent(PublicPackDetailIntent.ToggleFollowCreator)
+            },
+            onDismiss = { showUnfollowDialog = false }
         )
     }
 

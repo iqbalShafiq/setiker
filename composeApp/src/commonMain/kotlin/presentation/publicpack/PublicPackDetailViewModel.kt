@@ -5,9 +5,12 @@ import androidx.lifecycle.viewModelScope
 import data.auth.AuthManager
 import data.remote.CloudStickerRepository
 import data.remote.ExploreApiRepository
+import data.remote.model.applyFollowUpdate
 import data.remote.model.applySocialUpdate
 import data.remote.model.userHasLiked
 import data.remote.model.userHasSaved
+import data.remote.model.userIsFollowingOwner
+import data.remote.model.withOptimisticFollowOwner
 import data.remote.model.withOptimisticLike
 import data.remote.model.withOptimisticSave
 import data.storage.StickerFileStorage
@@ -201,30 +204,45 @@ class PublicPackDetailViewModel(
     private fun toggleFollow() = requireAuth {
         val snapshot = _state.value
         val ownerId = snapshot.pack?.owner?.id ?: return@requireAuth
-        if (snapshot.isFollowLoading || snapshot.isOwnPack) return@requireAuth
-        _state.update { it.copy(isFollowLoading = true) }
+        if (snapshot.isOwnPack) return@requireAuth
+        val wasFollowing = snapshot.isFollowingCreator
+        val targetFollowing = !wasFollowing
+        applyOptimisticFollow(targetFollowing)
         runCatching {
-            if (snapshot.isFollowingCreator) exploreApiRepository.unfollowUser(ownerId)
+            if (wasFollowing) exploreApiRepository.unfollowUser(ownerId)
             else exploreApiRepository.followUser(ownerId)
         }.onSuccess { followState ->
-            _state.update {
-                val owner = it.pack?.owner
-                it.copy(
-                    isFollowLoading = false,
-                    isFollowingCreator = followState.following,
-                    pack = it.pack?.copy(
-                        owner = owner?.copy(
-                            followerCount = followState.followerCount,
-                            followingCount = followState.followingCount
-                        )
-                    )
+            _state.update { current ->
+                val updatedPack = current.pack?.applyFollowUpdate(followState)
+                current.copy(
+                    isFollowingCreator = updatedPack?.userIsFollowingOwner() ?: current.isFollowingCreator,
+                    pack = updatedPack
                 )
             }
         }.onFailure { error ->
-            _state.update { it.copy(isFollowLoading = false) }
+            restoreFollowSnapshot(snapshot)
             _state.update {
                 it.copy(errorDialogMessage = error.message ?: "Follow action failed")
             }
+        }
+    }
+
+    private fun applyOptimisticFollow(following: Boolean) {
+        _state.update { current ->
+            val updatedPack = current.pack?.withOptimisticFollowOwner(following)
+            current.copy(
+                isFollowingCreator = following,
+                pack = updatedPack
+            )
+        }
+    }
+
+    private fun restoreFollowSnapshot(snapshot: PublicPackDetailState) {
+        _state.update {
+            it.copy(
+                isFollowingCreator = snapshot.isFollowingCreator,
+                pack = snapshot.pack
+            )
         }
     }
 
