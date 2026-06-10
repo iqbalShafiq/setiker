@@ -1,6 +1,7 @@
 package presentation.publicpack
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -56,6 +57,7 @@ import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.screenContentHorizontalPadding
 import org.jetbrains.compose.resources.stringResource
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.back_content_description
@@ -166,21 +168,21 @@ fun PublicPackDetailScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(horizontal = 20.dp, vertical = 16.dp)
+                            .screenContentHorizontalPadding()
+                            .padding(vertical = 16.dp)
                     ) {
+                    val creatorName = pack.owner?.displayName ?: pack.owner?.username ?: "Creator"
+                    val creatorId = pack.owner?.id
                     Text(
-                        text = pack.name,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = neubrutalOnSurface()
-                    )
-                    Text(
-                        text = stringResource(
-                            Res.string.public_pack_by,
-                            pack.owner?.displayName ?: pack.owner?.username ?: "Creator"
-                        ),
+                        text = stringResource(Res.string.public_pack_by, creatorName),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = neubrutalMutedOnSurface()
+                        fontWeight = FontWeight.Medium,
+                        color = neubrutalOnSurface(),
+                        modifier = if (creatorId != null) {
+                            Modifier.clickable { onIntent(PublicPackDetailIntent.OpenCreator(creatorId)) }
+                        } else {
+                            Modifier
+                        }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(

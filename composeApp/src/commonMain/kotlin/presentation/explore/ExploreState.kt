@@ -23,4 +23,15 @@ data class ExploreState(
 ) {
     val canLoadMore: Boolean
         get() = page < totalPages && !isLoadingMore && !requiresLogin
+
+    val showFeaturedSection: Boolean
+        get() = feed == ExploreFeed.DISCOVER && featuredPack != null
+
+    /** Packs for the main list, excluding the featured pack when shown separately. */
+    val listPacks: List<CloudStickerPack>
+        get() {
+            val featuredId = featuredPack?.id ?: return packs
+            if (feed != ExploreFeed.DISCOVER) return packs
+            return packs.filter { it.id != featuredId }
+        }
 }

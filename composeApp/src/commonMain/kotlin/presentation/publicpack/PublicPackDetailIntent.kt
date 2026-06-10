@@ -9,4 +9,5 @@ sealed interface PublicPackDetailIntent {
     data object ConfirmImport : PublicPackDetailIntent
     data object DismissImportDialog : PublicPackDetailIntent
     data object NavigateBack : PublicPackDetailIntent
+    data class OpenCreator(val userId: String) : PublicPackDetailIntent
 }

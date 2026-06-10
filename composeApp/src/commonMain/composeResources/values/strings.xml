@@ -419,6 +419,7 @@
     <string name="explore_feed_following">Following</string>
     <string name="explore_feed_shared">Shared with me</string>
     <string name="explore_featured_badge">Sticker of the day</string>
+    <string name="explore_section_more_packs">More packs</string>
     <string name="explore_sign_in_title">Sign in required</string>
     <string name="explore_sign_in_desc">Log in to view saved packs, creators you follow, and packs shared with you.</string>
     <string name="explore_sign_in_action">Sign in</string>

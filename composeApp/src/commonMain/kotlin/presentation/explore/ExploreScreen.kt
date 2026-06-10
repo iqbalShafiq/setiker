@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -63,6 +64,7 @@ import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
 import presentation.components.ScreenContentHorizontalScrollRow
+import presentation.components.ScreenSectionTitle
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
@@ -95,6 +97,7 @@ import setiker.composeapp.generated.resources.explore_history
 import setiker.composeapp.generated.resources.explore_sign_in_action
 import setiker.composeapp.generated.resources.explore_sign_in_desc
 import setiker.composeapp.generated.resources.explore_sign_in_title
+import setiker.composeapp.generated.resources.explore_section_more_packs
 import setiker.composeapp.generated.resources.explore_sort
 import setiker.composeapp.generated.resources.explore_title
 import setiker.composeapp.generated.resources.no_search_results_desc
@@ -190,18 +193,26 @@ fun ExploreScreen(
                         }
                     }
                 }
-                if (state.feed == ExploreFeed.DISCOVER && state.featuredPack != null) {
+                if (state.showFeaturedSection) {
+                    item("featured_section_title") {
+                        ScreenSectionTitle(
+                            text = stringResource(Res.string.explore_featured_badge),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 4.dp)
+                        )
+                    }
                     item("featured") {
+                        val featuredPack = state.featuredPack ?: return@item
                         PublicPackCard(
-                            pack = state.featuredPack,
-                            badge = stringResource(Res.string.explore_featured_badge),
+                            pack = featuredPack,
                             showSocialActions = state.isAuthenticated,
-                            onClick = { onIntent(ExploreIntent.OpenPack(state.featuredPack.id)) },
-                            onCreatorClick = state.featuredPack.owner?.id?.let { ownerId ->
+                            onClick = { onIntent(ExploreIntent.OpenPack(featuredPack.id)) },
+                            onCreatorClick = featuredPack.owner?.id?.let { ownerId ->
                                 { onIntent(ExploreIntent.OpenCreator(ownerId)) }
                             },
-                            onToggleLike = { onIntent(ExploreIntent.ToggleLike(state.featuredPack.id)) },
-                            onToggleSave = { onIntent(ExploreIntent.ToggleSave(state.featuredPack.id)) },
+                            onToggleLike = { onIntent(ExploreIntent.ToggleLike(featuredPack.id)) },
+                            onToggleSave = { onIntent(ExploreIntent.ToggleSave(featuredPack.id)) },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -249,7 +260,7 @@ fun ExploreScreen(
                             )
                         }
                     }
-                    state.packs.isEmpty() -> {
+                    state.listPacks.isEmpty() && !state.isLoading && !state.showFeaturedSection -> {
                         item("empty") {
                             val (title, desc) = emptyStateForFeed(state.feed)
                             EmptyState(
@@ -261,7 +272,17 @@ fun ExploreScreen(
                         }
                     }
                     else -> {
-                        items(state.packs, key = { it.id }) { pack ->
+                        if (state.showFeaturedSection && state.listPacks.isNotEmpty()) {
+                            item("packs_section_title") {
+                                ScreenSectionTitle(
+                                    text = stringResource(Res.string.explore_section_more_packs),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 4.dp)
+                                )
+                            }
+                        }
+                        items(state.listPacks, key = { it.id }) { pack ->
                             PublicPackCard(
                                 pack = pack,
                                 showSocialActions = state.isAuthenticated,
@@ -327,13 +348,15 @@ private fun emptyStateForFeed(feed: ExploreFeed): Pair<String, String> = when (f
 private fun PublicPackCard(
     pack: CloudStickerPack,
     onClick: () -> Unit,
-    badge: String? = null,
     showSocialActions: Boolean = false,
     onCreatorClick: (() -> Unit)? = null,
     onToggleLike: () -> Unit = {},
     onToggleSave: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val imageSize = 72.dp
+    val socialButtonSize = 28.dp
+    val socialIconSize = 16.dp
     val firstSticker = resolveApiUrl(pack.stickers.firstOrNull()?.sticker?.url)
     val creator = pack.owner?.displayName ?: pack.owner?.username ?: stringResource(Res.string.explore_creator_unknown)
     val liked = pack.isLiked ?: pack.liked ?: false
@@ -359,13 +382,13 @@ private fun PublicPackCard(
             )
             .clickable(onClick = onClick)
             .padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.Top
     ) {
         AsyncImage(
             model = firstSticker,
             contentDescription = pack.name,
             modifier = Modifier
-                .size(72.dp)
+                .size(imageSize)
                 .clip(RoundedCornerShape(12.dp))
                 .background(neubrutalScreenBackground())
                 .neubrutalBorderWithGloss(
@@ -379,49 +402,69 @@ private fun PublicPackCard(
             modifier = Modifier
                 .padding(start = 12.dp)
                 .weight(1f)
+                .height(imageSize)
         ) {
-            if (badge != null) {
-                Text(
-                    text = badge,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = AccentCoral
-                )
-            }
             Text(
                 text = pack.name,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = neubrutalOnSurface()
+                color = neubrutalOnSurface(),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = creator,
                 style = MaterialTheme.typography.bodySmall,
                 color = neubrutalMutedOnSurface(),
-                modifier = if (onCreatorClick != null) Modifier.clickable(onClick = onCreatorClick) else Modifier
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = stringResource(Res.string.social_counts, pack.likeCount, pack.saveCount, pack.downloadCount),
-                style = MaterialTheme.typography.labelSmall,
-                color = neubrutalMutedOnSurface()
-            )
-        }
-        if (showSocialActions) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                IconButton(onClick = onToggleLike, modifier = Modifier.size(36.dp)) {
-                    Icon(
-                        imageVector = if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                        contentDescription = null,
-                        tint = if (liked) AccentCoral else neubrutalMutedOnSurface()
-                    )
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = if (onCreatorClick != null) {
+                    Modifier.clickable(onClick = onCreatorClick)
+                } else {
+                    Modifier
                 }
-                IconButton(onClick = onToggleSave, modifier = Modifier.size(36.dp)) {
-                    Icon(
-                        imageVector = if (saved) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder,
-                        contentDescription = null,
-                        tint = if (saved) AccentCoral else neubrutalMutedOnSurface()
-                    )
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(Res.string.social_counts, pack.likeCount, pack.saveCount, pack.downloadCount),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = neubrutalMutedOnSurface(),
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (showSocialActions) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(
+                            onClick = onToggleLike,
+                            modifier = Modifier.size(socialButtonSize)
+                        ) {
+                            Icon(
+                                imageVector = if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                                contentDescription = null,
+                                modifier = Modifier.size(socialIconSize),
+                                tint = if (liked) AccentCoral else neubrutalMutedOnSurface()
+                            )
+                        }
+                        IconButton(
+                            onClick = onToggleSave,
+                            modifier = Modifier.size(socialButtonSize)
+                        ) {
+                            Icon(
+                                imageVector = if (saved) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder,
+                                contentDescription = null,
+                                modifier = Modifier.size(socialIconSize),
+                                tint = if (saved) AccentCoral else neubrutalMutedOnSurface()
+                            )
+                        }
+                    }
                 }
             }
         }

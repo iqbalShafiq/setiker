@@ -50,6 +50,9 @@ class PublicPackDetailViewModel(
                 _state.update { it.copy(showImportDialog = false) }
             }
             PublicPackDetailIntent.NavigateBack -> viewModelScope.launch { _effect.send(PublicPackDetailEffect.NavigateBack) }
+            is PublicPackDetailIntent.OpenCreator -> viewModelScope.launch {
+                _effect.send(PublicPackDetailEffect.NavigateToCreator(intent.userId))
+            }
         }
     }
 

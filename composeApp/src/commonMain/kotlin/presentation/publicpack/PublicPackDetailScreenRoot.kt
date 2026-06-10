@@ -15,6 +15,7 @@ fun PublicPackDetailScreenRoot(
     onBackClick: () -> Unit,
     onNavigateToLocalPack: (String) -> Unit,
     onNavigateToLogin: () -> Unit,
+    onNavigateToCreator: (String) -> Unit,
     viewModel: PublicPackDetailViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -30,6 +31,7 @@ fun PublicPackDetailScreenRoot(
                 PublicPackDetailEffect.NavigateBack -> onBackClick()
                 PublicPackDetailEffect.NavigateToLogin -> onNavigateToLogin()
                 is PublicPackDetailEffect.NavigateToLocalPack -> onNavigateToLocalPack(effect.localPackId)
+                is PublicPackDetailEffect.NavigateToCreator -> onNavigateToCreator(effect.userId)
                 is PublicPackDetailEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
             }
         }

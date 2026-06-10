@@ -214,17 +214,13 @@ class ExploreViewModel(
                 _effect.send(ExploreEffect.NavigateLogin)
                 return@launch
             }
-            val pack = _state.value.packs.find { it.id == packId } ?: return@launch
+            val pack = findPack(packId) ?: return@launch
             val liked = pack.isLiked ?: pack.liked ?: false
             runCatching {
                 if (liked) exploreApiRepository.unlikePack(packId)
                 else exploreApiRepository.likePack(packId)
             }.onSuccess { social ->
-                _state.update { current ->
-                    current.copy(packs = current.packs.map { item ->
-                        if (item.id == packId) item.withSocial(social) else item
-                    })
-                }
+                _state.update { current -> current.withPackSocial(packId, social) }
             }.onFailure { error ->
                 _effect.send(ExploreEffect.ShowError(UiText.DynamicString(error.message ?: "Like failed")))
             }
@@ -237,21 +233,36 @@ class ExploreViewModel(
                 _effect.send(ExploreEffect.NavigateLogin)
                 return@launch
             }
-            val pack = _state.value.packs.find { it.id == packId } ?: return@launch
+            val pack = findPack(packId) ?: return@launch
             val saved = pack.isSaved ?: pack.saved ?: false
             runCatching {
                 if (saved) exploreApiRepository.unsavePack(packId)
                 else exploreApiRepository.savePack(packId)
             }.onSuccess { social ->
-                _state.update { current ->
-                    current.copy(packs = current.packs.map { item ->
-                        if (item.id == packId) item.withSocial(social) else item
-                    })
-                }
+                _state.update { current -> current.withPackSocial(packId, social) }
             }.onFailure { error ->
                 _effect.send(ExploreEffect.ShowError(UiText.DynamicString(error.message ?: "Save failed")))
             }
         }
+    }
+
+    private fun findPack(packId: String): CloudStickerPack? {
+        val current = _state.value
+        return current.packs.find { it.id == packId }
+            ?: current.featuredPack?.takeIf { it.id == packId }
+    }
+
+    private fun ExploreState.withPackSocial(
+        packId: String,
+        social: data.remote.model.PackSocialStateData
+    ): ExploreState {
+        val updated = { pack: CloudStickerPack ->
+            if (pack.id == packId) pack.withSocial(social) else pack
+        }
+        return copy(
+            packs = packs.map(updated),
+            featuredPack = featuredPack?.let(updated)
+        )
     }
 
     private fun CloudStickerPack.withSocial(social: data.remote.model.PackSocialStateData): CloudStickerPack =

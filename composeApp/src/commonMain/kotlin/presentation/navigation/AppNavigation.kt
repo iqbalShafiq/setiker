@@ -367,7 +367,8 @@ fun AppNavigation(
                         popUpTo("home") { inclusive = false }
                     }
                 },
-                onNavigateToLogin = { navBottomUp("login") }
+                onNavigateToLogin = { navBottomUp("login") },
+                onNavigateToCreator = { userId -> navBottomUp("creator/$userId") }
             )
         }
 
