@@ -8,6 +8,8 @@ import data.remote.ExploreApiRepository
 import data.remote.model.applySocialUpdate
 import data.remote.model.userHasLiked
 import data.remote.model.userHasSaved
+import data.remote.model.withOptimisticLike
+import data.remote.model.withOptimisticSave
 import data.storage.StickerFileStorage
 import domain.model.Sticker
 import domain.model.StickerPack
@@ -52,6 +54,9 @@ class PublicPackDetailViewModel(
             PublicPackDetailIntent.DismissImportDialog -> {
                 _state.update { it.copy(showImportDialog = false) }
             }
+            PublicPackDetailIntent.DismissErrorDialog -> {
+                _state.update { it.copy(errorDialogMessage = null) }
+            }
             PublicPackDetailIntent.NavigateBack -> viewModelScope.launch { _effect.send(PublicPackDetailEffect.NavigateBack) }
             is PublicPackDetailIntent.OpenCreator -> viewModelScope.launch {
                 _effect.send(PublicPackDetailEffect.NavigateToCreator(intent.userId))
@@ -64,9 +69,12 @@ class PublicPackDetailViewModel(
         currentPackId = packId
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, loadFailed = false, error = null) }
+            val currentUserId = authManager.getUser()?.id
             runCatching {
                 exploreApiRepository.getPublicPackDetail(packId)
             }.onSuccess { pack ->
+                val isOwnPack = currentUserId != null &&
+                    (pack.ownerId == currentUserId || pack.owner?.id == currentUserId)
                 _state.update {
                     it.copy(
                         isLoading = false,
@@ -74,7 +82,8 @@ class PublicPackDetailViewModel(
                         pack = pack,
                         isLiked = pack.userHasLiked(),
                         isSaved = pack.userHasSaved(),
-                        isFollowingCreator = pack.isFollowingOwner ?: pack.following ?: false
+                        isFollowingCreator = pack.isFollowingOwner ?: pack.following ?: false,
+                        isOwnPack = isOwnPack
                     )
                 }
             }.onFailure { error ->
@@ -101,57 +110,99 @@ class PublicPackDetailViewModel(
 
     private fun toggleLike() = requireAuth {
         val snapshot = _state.value
-        if (snapshot.isActionLoading) return@requireAuth
-        _state.update { it.copy(isActionLoading = true) }
-        val result = runCatching {
-            if (snapshot.isLiked) exploreApiRepository.unlikePack(currentPackId)
+        val wasLiked = snapshot.isLiked
+        val targetLiked = !wasLiked
+        applyOptimisticLike(targetLiked)
+        runCatching {
+            if (wasLiked) exploreApiRepository.unlikePack(currentPackId)
             else exploreApiRepository.likePack(currentPackId)
-        }
-        result.onSuccess { social ->
-            _state.update {
-                val updatedPack = it.pack?.applySocialUpdate(social)
-                it.copy(
-                    isActionLoading = false,
-                    isLiked = updatedPack?.userHasLiked() ?: it.isLiked,
-                    isSaved = updatedPack?.userHasSaved() ?: it.isSaved,
+        }.onSuccess { social ->
+            _state.update { current ->
+                val updatedPack = current.pack?.applySocialUpdate(social)
+                current.copy(
+                    isLiked = updatedPack?.userHasLiked() ?: current.isLiked,
+                    isSaved = updatedPack?.userHasSaved() ?: current.isSaved,
                     pack = updatedPack
                 )
             }
         }.onFailure { error ->
-            _state.update { it.copy(isActionLoading = false) }
-            _effect.send(PublicPackDetailEffect.ShowMessage(UiText.DynamicString(error.message ?: "Like action failed")))
+            restoreLikeSnapshot(snapshot)
+            _state.update {
+                it.copy(errorDialogMessage = error.message ?: "Like action failed")
+            }
         }
     }
 
     private fun toggleSave() = requireAuth {
         val snapshot = _state.value
-        if (snapshot.isActionLoading) return@requireAuth
-        _state.update { it.copy(isActionLoading = true) }
-        val result = runCatching {
-            if (snapshot.isSaved) exploreApiRepository.unsavePack(currentPackId)
+        val wasSaved = snapshot.isSaved
+        val targetSaved = !wasSaved
+        applyOptimisticSave(targetSaved)
+        runCatching {
+            if (wasSaved) exploreApiRepository.unsavePack(currentPackId)
             else exploreApiRepository.savePack(currentPackId)
-        }
-        result.onSuccess { social ->
-            _state.update {
-                val updatedPack = it.pack?.applySocialUpdate(social)
-                it.copy(
-                    isActionLoading = false,
-                    isLiked = updatedPack?.userHasLiked() ?: it.isLiked,
-                    isSaved = updatedPack?.userHasSaved() ?: it.isSaved,
+        }.onSuccess { social ->
+            _state.update { current ->
+                val updatedPack = current.pack?.applySocialUpdate(social)
+                current.copy(
+                    isLiked = updatedPack?.userHasLiked() ?: current.isLiked,
+                    isSaved = updatedPack?.userHasSaved() ?: current.isSaved,
                     pack = updatedPack
                 )
             }
         }.onFailure { error ->
-            _state.update { it.copy(isActionLoading = false) }
-            _effect.send(PublicPackDetailEffect.ShowMessage(UiText.DynamicString(error.message ?: "Save action failed")))
+            restoreSaveSnapshot(snapshot)
+            _state.update {
+                it.copy(errorDialogMessage = error.message ?: "Save action failed")
+            }
+        }
+    }
+
+    private fun applyOptimisticLike(liked: Boolean) {
+        _state.update { current ->
+            val updatedPack = current.pack?.withOptimisticLike(liked)
+            current.copy(
+                isLiked = liked,
+                pack = updatedPack
+            )
+        }
+    }
+
+    private fun applyOptimisticSave(saved: Boolean) {
+        _state.update { current ->
+            val updatedPack = current.pack?.withOptimisticSave(saved)
+            current.copy(
+                isSaved = saved,
+                pack = updatedPack
+            )
+        }
+    }
+
+    private fun restoreLikeSnapshot(snapshot: PublicPackDetailState) {
+        _state.update {
+            it.copy(
+                isLiked = snapshot.isLiked,
+                isSaved = snapshot.isSaved,
+                pack = snapshot.pack
+            )
+        }
+    }
+
+    private fun restoreSaveSnapshot(snapshot: PublicPackDetailState) {
+        _state.update {
+            it.copy(
+                isLiked = snapshot.isLiked,
+                isSaved = snapshot.isSaved,
+                pack = snapshot.pack
+            )
         }
     }
 
     private fun toggleFollow() = requireAuth {
         val snapshot = _state.value
         val ownerId = snapshot.pack?.owner?.id ?: return@requireAuth
-        if (snapshot.isActionLoading) return@requireAuth
-        _state.update { it.copy(isActionLoading = true) }
+        if (snapshot.isFollowLoading || snapshot.isOwnPack) return@requireAuth
+        _state.update { it.copy(isFollowLoading = true) }
         runCatching {
             if (snapshot.isFollowingCreator) exploreApiRepository.unfollowUser(ownerId)
             else exploreApiRepository.followUser(ownerId)
@@ -159,7 +210,7 @@ class PublicPackDetailViewModel(
             _state.update {
                 val owner = it.pack?.owner
                 it.copy(
-                    isActionLoading = false,
+                    isFollowLoading = false,
                     isFollowingCreator = followState.following,
                     pack = it.pack?.copy(
                         owner = owner?.copy(
@@ -170,12 +221,15 @@ class PublicPackDetailViewModel(
                 )
             }
         }.onFailure { error ->
-            _state.update { it.copy(isActionLoading = false) }
-            _effect.send(PublicPackDetailEffect.ShowMessage(UiText.DynamicString(error.message ?: "Follow action failed")))
+            _state.update { it.copy(isFollowLoading = false) }
+            _state.update {
+                it.copy(errorDialogMessage = error.message ?: "Follow action failed")
+            }
         }
     }
 
     private fun prepareImport() = requireAuth {
+        if (_state.value.isOwnPack) return@requireAuth
         viewModelScope.launch {
             val gateError = AiQuotaGate.checkCanStart(aiQuotaRepository, AiQuotaOperation.PACK_IMPORT, forceRefresh = true)
             if (gateError != null) {
@@ -197,7 +251,8 @@ class PublicPackDetailViewModel(
 
     private fun importPack() = requireAuth {
         val pack = _state.value.pack ?: return@requireAuth
-        _state.update { it.copy(isActionLoading = true, showImportDialog = false) }
+        if (_state.value.isOwnPack) return@requireAuth
+        _state.update { it.copy(isImporting = true, showImportDialog = false) }
         runCatching {
             val result = exploreApiRepository.importPublicPack(pack.id)
             val localPack = buildLocalPack(result.pack)
@@ -205,11 +260,13 @@ class PublicPackDetailViewModel(
             exploreApiRepository.trackDownload(pack.id)
             Triple(localPack.identifier, result.ownerCredited, Unit)
         }.onSuccess { (localPackId, ownerCredited, _) ->
-            _state.update { it.copy(isActionLoading = false, importOwnerCredit = ownerCredited) }
+            _state.update { it.copy(isImporting = false, importOwnerCredit = ownerCredited) }
             _effect.send(PublicPackDetailEffect.NavigateToLocalPack(localPackId))
         }.onFailure { error ->
-            _state.update { it.copy(isActionLoading = false) }
-            _effect.send(PublicPackDetailEffect.ShowMessage(UiText.DynamicString(error.message ?: "Import failed")))
+            _state.update { it.copy(isImporting = false) }
+            _state.update {
+                it.copy(errorDialogMessage = error.message ?: "Import failed")
+            }
         }
     }
 

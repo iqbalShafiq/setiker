@@ -46,6 +46,32 @@ fun CloudStickerPack.userHasSaved(): Boolean = isSaved ?: saved ?: false
  * Merges a partial social-action API response without clearing unrelated flags
  * (e.g. save response must not reset an existing liked state).
  */
+fun CloudStickerPack.withOptimisticLike(liked: Boolean): CloudStickerPack {
+    val delta = when {
+        userHasLiked() == liked -> 0
+        liked -> 1
+        else -> -1
+    }
+    return copy(
+        liked = liked,
+        isLiked = liked,
+        likeCount = (likeCount + delta).coerceAtLeast(0)
+    )
+}
+
+fun CloudStickerPack.withOptimisticSave(saved: Boolean): CloudStickerPack {
+    val delta = when {
+        userHasSaved() == saved -> 0
+        saved -> 1
+        else -> -1
+    }
+    return copy(
+        saved = saved,
+        isSaved = saved,
+        saveCount = (saveCount + delta).coerceAtLeast(0)
+    )
+}
+
 fun CloudStickerPack.applySocialUpdate(social: PackSocialStateData): CloudStickerPack {
     val resolvedLiked = social.liked ?: isLiked ?: liked
     val resolvedSaved = social.saved ?: isSaved ?: saved

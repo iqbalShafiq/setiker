@@ -1,6 +1,7 @@
 package data.remote.model
 
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -44,6 +45,19 @@ class CloudStickerPackSocialTest {
 
         assertTrue(updated.userHasLiked())
         assertTrue(updated.userHasSaved())
+    }
+
+    @Test
+    fun `withOptimisticLike toggles liked and count`() {
+        val pack = samplePack(isLiked = false, isSaved = false)
+
+        val liked = pack.withOptimisticLike(liked = true)
+        assertTrue(liked.userHasLiked())
+        assertEquals(1, liked.likeCount)
+
+        val unliked = liked.withOptimisticLike(liked = false)
+        assertFalse(unliked.userHasLiked())
+        assertEquals(0, unliked.likeCount)
     }
 
     @Test

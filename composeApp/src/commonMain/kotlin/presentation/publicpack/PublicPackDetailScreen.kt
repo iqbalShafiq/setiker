@@ -66,6 +66,8 @@ import presentation.theme.screenContentHorizontalPadding
 import org.jetbrains.compose.resources.stringResource
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.back_content_description
+import setiker.composeapp.generated.resources.close
+import setiker.composeapp.generated.resources.error_dialog_title
 import setiker.composeapp.generated.resources.explore_pack_not_found_desc
 import setiker.composeapp.generated.resources.explore_pack_not_found_title
 import setiker.composeapp.generated.resources.processing
@@ -96,43 +98,49 @@ fun PublicPackDetailScreen(
         },
         bottomBar = {
             PackBottomBar(
-                actionStatusText = if (state.isActionLoading) stringResource(Res.string.processing) else null,
+                actionStatusText = if (state.isImporting) stringResource(Res.string.processing) else null,
                 actions = {
                     PackBottomBarIconButton(
                         icon = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(Res.string.back_content_description),
                         onClick = { onIntent(PublicPackDetailIntent.NavigateBack) },
-                        enabled = !state.isActionLoading
+                        enabled = !state.isImporting
                     )
                     PackBottomBarIconButton(
                         icon = if (state.isLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                         contentDescription = if (state.isLiked) "Unlike" else "Like",
                         onClick = { onIntent(PublicPackDetailIntent.ToggleLike) },
-                        enabled = !state.isActionLoading,
+                        enabled = !state.isImporting,
                         iconTint = if (state.isLiked) AccentCoral else neubrutalOnSurface()
                     )
                     PackBottomBarIconButton(
                         icon = if (state.isSaved) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder,
                         contentDescription = if (state.isSaved) "Unsave" else "Save",
                         onClick = { onIntent(PublicPackDetailIntent.ToggleSave) },
-                        enabled = !state.isActionLoading,
+                        enabled = !state.isImporting,
                         iconTint = if (state.isSaved) AccentCoral else neubrutalOnSurface()
                     )
-                    PackBottomBarIconButton(
-                        icon = Icons.Default.PersonAdd,
-                        contentDescription = if (state.isFollowingCreator) "Unfollow" else "Follow",
-                        onClick = { onIntent(PublicPackDetailIntent.ToggleFollowCreator) },
-                        enabled = !state.isActionLoading
-                    )
+                    if (!state.isOwnPack) {
+                        PackBottomBarIconButton(
+                            icon = Icons.Default.PersonAdd,
+                            contentDescription = if (state.isFollowingCreator) "Unfollow" else "Follow",
+                            onClick = { onIntent(PublicPackDetailIntent.ToggleFollowCreator) },
+                            enabled = !state.isImporting && !state.isFollowLoading
+                        )
+                    }
                 },
-                floatingActionButton = {
-                    PackBottomBarFab(
-                        icon = Icons.Default.Download,
-                        contentDescription = "Import",
-                        onClick = { onIntent(PublicPackDetailIntent.ImportPack) },
-                        enabled = !state.isActionLoading && state.pack != null,
-                        isLoading = state.isActionLoading
-                    )
+                floatingActionButton = if (!state.isOwnPack) {
+                    {
+                        PackBottomBarFab(
+                            icon = Icons.Default.Download,
+                            contentDescription = "Import",
+                            onClick = { onIntent(PublicPackDetailIntent.ImportPack) },
+                            enabled = !state.isImporting && state.pack != null,
+                            isLoading = state.isImporting
+                        )
+                    }
+                } else {
+                    null
                 }
             )
         },
@@ -167,7 +175,7 @@ fun PublicPackDetailScreen(
             else -> {
                 val pack = state.pack
                 InteractionBlockedBox(
-                    blocked = state.isActionLoading,
+                    blocked = state.isImporting,
                     modifier = modifier
                         .fillMaxSize()
                         .padding(innerPadding)
@@ -247,6 +255,19 @@ fun PublicPackDetailScreen(
                 }
             }
         }
+    }
+
+    state.errorDialogMessage?.let { errorMessage ->
+        AlertDialog(
+            onDismissRequest = { onIntent(PublicPackDetailIntent.DismissErrorDialog) },
+            title = { Text(stringResource(Res.string.error_dialog_title)) },
+            text = { Text(errorMessage) },
+            confirmButton = {
+                TextButton(onClick = { onIntent(PublicPackDetailIntent.DismissErrorDialog) }) {
+                    Text(stringResource(Res.string.close))
+                }
+            }
+        )
     }
 
     if (state.showImportDialog) {

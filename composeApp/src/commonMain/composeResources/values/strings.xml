@@ -41,6 +41,7 @@
     <string name="generating">Generating...</string>
     <string name="generate">Generate</string>
     <string name="close">Close</string>
+    <string name="error_dialog_title">Error</string>
     <string name="generate_confirm_title">Confirm generated results</string>
     <string name="generate_confirm_subtitle">Select the images you want to add to this pack.</string>
     <string name="generate_improve_confirm_title">Confirm improved stickers</string>
