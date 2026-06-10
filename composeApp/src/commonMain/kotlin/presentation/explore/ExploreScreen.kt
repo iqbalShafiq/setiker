@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import data.remote.ExploreFeed
 import data.remote.model.CloudStickerPack
+import data.remote.resolveApiUrl
 import org.jetbrains.compose.resources.stringResource
 import presentation.components.AppIllustration
 import presentation.components.AppPrimaryButton
@@ -333,7 +334,7 @@ private fun PublicPackCard(
     onToggleSave: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val firstSticker = pack.stickers.firstOrNull()?.sticker?.url
+    val firstSticker = resolveApiUrl(pack.stickers.firstOrNull()?.sticker?.url)
     val creator = pack.owner?.displayName ?: pack.owner?.username ?: stringResource(Res.string.explore_creator_unknown)
     val liked = pack.isLiked ?: pack.liked ?: false
     val saved = pack.isSaved ?: pack.saved ?: false

@@ -33,6 +33,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import data.remote.resolveApiUrl
 import presentation.components.AppIllustration
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
@@ -222,7 +223,7 @@ fun ProcessingHistoryScreen(
                                         .padding(horizontal = 12.dp, vertical = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    val previewUrl = item.outputFiles.firstOrNull()?.url
+                                    val previewUrl = resolveApiUrl(item.outputFiles.firstOrNull()?.url)
                                     if (!previewUrl.isNullOrBlank()) {
                                         AsyncImage(
                                             model = previewUrl,

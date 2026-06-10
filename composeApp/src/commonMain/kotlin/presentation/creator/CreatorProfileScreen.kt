@@ -38,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import data.remote.ExploreSort
+import data.remote.resolveApiUrl
 import org.jetbrains.compose.resources.stringResource
 import presentation.components.AppIllustration
 import presentation.components.AppPrimaryButton
@@ -178,7 +179,7 @@ fun CreatorProfileScreen(
                         }
                     }
                     items(state.packs, key = { it.id }) { pack ->
-                        val thumb = pack.stickers.firstOrNull()?.sticker?.url
+                        val thumb = resolveApiUrl(pack.stickers.firstOrNull()?.sticker?.url)
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()

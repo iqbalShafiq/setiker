@@ -36,6 +36,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import data.remote.resolveApiUrl
 import presentation.components.AppIllustration
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
@@ -215,7 +216,7 @@ fun PublicPackDetailScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 AsyncImage(
-                                    model = sticker?.url,
+                                    model = resolveApiUrl(sticker?.url),
                                     contentDescription = sticker?.name ?: "Sticker",
                                     modifier = Modifier
                                         .fillMaxWidth()
