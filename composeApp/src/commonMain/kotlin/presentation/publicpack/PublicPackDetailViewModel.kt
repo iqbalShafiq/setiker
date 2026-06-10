@@ -5,6 +5,9 @@ import androidx.lifecycle.viewModelScope
 import data.auth.AuthManager
 import data.remote.CloudStickerRepository
 import data.remote.ExploreApiRepository
+import data.remote.model.applySocialUpdate
+import data.remote.model.userHasLiked
+import data.remote.model.userHasSaved
 import data.storage.StickerFileStorage
 import domain.model.Sticker
 import domain.model.StickerPack
@@ -69,8 +72,8 @@ class PublicPackDetailViewModel(
                         isLoading = false,
                         loadFailed = false,
                         pack = pack,
-                        isLiked = pack.isLiked ?: pack.liked ?: false,
-                        isSaved = pack.isSaved ?: pack.saved ?: false,
+                        isLiked = pack.userHasLiked(),
+                        isSaved = pack.userHasSaved(),
                         isFollowingCreator = pack.isFollowingOwner ?: pack.following ?: false
                     )
                 }
@@ -106,11 +109,12 @@ class PublicPackDetailViewModel(
         }
         result.onSuccess { social ->
             _state.update {
-                val existing = it.pack
+                val updatedPack = it.pack?.applySocialUpdate(social)
                 it.copy(
                     isActionLoading = false,
-                    isLiked = social.liked ?: !snapshot.isLiked,
-                    pack = existing?.copy(likeCount = social.likeCount ?: existing.likeCount)
+                    isLiked = updatedPack?.userHasLiked() ?: it.isLiked,
+                    isSaved = updatedPack?.userHasSaved() ?: it.isSaved,
+                    pack = updatedPack
                 )
             }
         }.onFailure { error ->
@@ -129,11 +133,12 @@ class PublicPackDetailViewModel(
         }
         result.onSuccess { social ->
             _state.update {
-                val existing = it.pack
+                val updatedPack = it.pack?.applySocialUpdate(social)
                 it.copy(
                     isActionLoading = false,
-                    isSaved = social.saved ?: !snapshot.isSaved,
-                    pack = existing?.copy(saveCount = social.saveCount ?: existing.saveCount)
+                    isLiked = updatedPack?.userHasLiked() ?: it.isLiked,
+                    isSaved = updatedPack?.userHasSaved() ?: it.isSaved,
+                    pack = updatedPack
                 )
             }
         }.onFailure { error ->

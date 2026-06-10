@@ -50,6 +50,8 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import data.remote.ExploreFeed
 import data.remote.model.CloudStickerPack
+import data.remote.model.userHasLiked
+import data.remote.model.userHasSaved
 import data.remote.resolveApiUrl
 import org.jetbrains.compose.resources.stringResource
 import presentation.components.AppIllustration
@@ -359,8 +361,8 @@ private fun PublicPackCard(
     val socialIconSize = 16.dp
     val firstSticker = resolveApiUrl(pack.stickers.firstOrNull()?.sticker?.url)
     val creator = pack.owner?.displayName ?: pack.owner?.username ?: stringResource(Res.string.explore_creator_unknown)
-    val liked = pack.isLiked ?: pack.liked ?: false
-    val saved = pack.isSaved ?: pack.saved ?: false
+    val liked = pack.userHasLiked()
+    val saved = pack.userHasSaved()
     val border = neubrutalBorderColor()
     val shadow = neubrutalShadowColor()
 

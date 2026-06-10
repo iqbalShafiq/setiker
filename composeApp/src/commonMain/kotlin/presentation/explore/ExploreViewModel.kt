@@ -7,6 +7,9 @@ import data.remote.ExploreApiRepository
 import data.remote.ExploreFeed
 import data.remote.ExploreSort
 import data.remote.model.CloudStickerPack
+import data.remote.model.applySocialUpdate
+import data.remote.model.userHasLiked
+import data.remote.model.userHasSaved
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -215,7 +218,7 @@ class ExploreViewModel(
                 return@launch
             }
             val pack = findPack(packId) ?: return@launch
-            val liked = pack.isLiked ?: pack.liked ?: false
+            val liked = pack.userHasLiked()
             runCatching {
                 if (liked) exploreApiRepository.unlikePack(packId)
                 else exploreApiRepository.likePack(packId)
@@ -234,7 +237,7 @@ class ExploreViewModel(
                 return@launch
             }
             val pack = findPack(packId) ?: return@launch
-            val saved = pack.isSaved ?: pack.saved ?: false
+            val saved = pack.userHasSaved()
             runCatching {
                 if (saved) exploreApiRepository.unsavePack(packId)
                 else exploreApiRepository.savePack(packId)
@@ -257,22 +260,11 @@ class ExploreViewModel(
         social: data.remote.model.PackSocialStateData
     ): ExploreState {
         val updated = { pack: CloudStickerPack ->
-            if (pack.id == packId) pack.withSocial(social) else pack
+            if (pack.id == packId) pack.applySocialUpdate(social) else pack
         }
         return copy(
             packs = packs.map(updated),
             featuredPack = featuredPack?.let(updated)
         )
     }
-
-    private fun CloudStickerPack.withSocial(social: data.remote.model.PackSocialStateData): CloudStickerPack =
-        copy(
-            likeCount = social.likeCount ?: likeCount,
-            saveCount = social.saveCount ?: saveCount,
-            downloadCount = social.downloadCount ?: downloadCount,
-            liked = social.liked,
-            saved = social.saved,
-            isLiked = social.liked,
-            isSaved = social.saved
-        )
 }

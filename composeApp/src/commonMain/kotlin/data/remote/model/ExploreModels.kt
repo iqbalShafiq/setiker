@@ -36,6 +36,31 @@ data class PackSocialStateData(
     val downloadCount: Int? = null
 )
 
+/** Whether the current user has liked this pack (supports API field aliases). */
+fun CloudStickerPack.userHasLiked(): Boolean = isLiked ?: liked ?: false
+
+/** Whether the current user has saved this pack (supports API field aliases). */
+fun CloudStickerPack.userHasSaved(): Boolean = isSaved ?: saved ?: false
+
+/**
+ * Merges a partial social-action API response without clearing unrelated flags
+ * (e.g. save response must not reset an existing liked state).
+ */
+fun CloudStickerPack.applySocialUpdate(social: PackSocialStateData): CloudStickerPack {
+    val resolvedLiked = social.liked ?: isLiked ?: liked
+    val resolvedSaved = social.saved ?: isSaved ?: saved
+    return copy(
+        likeCount = social.likeCount ?: likeCount,
+        saveCount = social.saveCount ?: saveCount,
+        downloadCount = social.downloadCount ?: downloadCount,
+        liked = resolvedLiked,
+        saved = resolvedSaved,
+        downloaded = social.downloaded ?: downloaded,
+        isLiked = resolvedLiked,
+        isSaved = resolvedSaved
+    )
+}
+
 @Serializable
 data class UserFollowStateData(
     val following: Boolean,

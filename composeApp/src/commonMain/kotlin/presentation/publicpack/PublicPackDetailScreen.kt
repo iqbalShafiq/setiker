@@ -20,8 +20,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.PersonAdd
-import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.outlined.Bookmark
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TextButton
@@ -48,6 +50,7 @@ import presentation.components.InteractionBlockedBox
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
+import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalGlossyHighlightColor
@@ -102,16 +105,18 @@ fun PublicPackDetailScreen(
                         enabled = !state.isActionLoading
                     )
                     PackBottomBarIconButton(
-                        icon = Icons.Default.Favorite,
+                        icon = if (state.isLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                         contentDescription = if (state.isLiked) "Unlike" else "Like",
                         onClick = { onIntent(PublicPackDetailIntent.ToggleLike) },
-                        enabled = !state.isActionLoading
+                        enabled = !state.isActionLoading,
+                        iconTint = if (state.isLiked) AccentCoral else neubrutalOnSurface()
                     )
                     PackBottomBarIconButton(
-                        icon = Icons.Default.Save,
+                        icon = if (state.isSaved) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder,
                         contentDescription = if (state.isSaved) "Unsave" else "Save",
                         onClick = { onIntent(PublicPackDetailIntent.ToggleSave) },
-                        enabled = !state.isActionLoading
+                        enabled = !state.isActionLoading,
+                        iconTint = if (state.isSaved) AccentCoral else neubrutalOnSurface()
                     )
                     PackBottomBarIconButton(
                         icon = Icons.Default.PersonAdd,
