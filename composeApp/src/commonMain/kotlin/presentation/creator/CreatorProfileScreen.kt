@@ -60,6 +60,7 @@ import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.screenContentHorizontalPadding
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.creator_follow
 import setiker.composeapp.generated.resources.creator_following
@@ -130,7 +131,10 @@ fun CreatorProfileScreen(
             else -> {
                 val profile = state.profile
                 LazyColumn(
-                    modifier = modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 20.dp),
+                    modifier = modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .screenContentHorizontalPadding(),
                     contentPadding = PaddingValues(vertical = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {

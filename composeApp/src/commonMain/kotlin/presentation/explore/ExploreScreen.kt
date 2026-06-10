@@ -2,9 +2,7 @@ package presentation.explore
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -17,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -64,6 +61,7 @@ import presentation.components.NeubrutalSelectableChip
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
+import presentation.components.ScreenContentHorizontalScrollRow
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
@@ -76,6 +74,7 @@ import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.screenContentHorizontalPadding
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_load_explore_failed
 import setiker.composeapp.generated.resources.explore_back
@@ -115,7 +114,6 @@ fun ExploreScreen(
     }
 
     var showSortSheet by remember { mutableStateOf(false) }
-    val contentHorizontalPadding = 20.dp
 
     Scaffold(
         topBar = {
@@ -158,18 +156,18 @@ fun ExploreScreen(
                 .padding(innerPadding)
         ) {
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .screenContentHorizontalPadding(),
                 contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 item("search") {
-                    Box(modifier = Modifier.padding(horizontal = contentHorizontalPadding)) {
-                        NeubrutalSearchBar(
-                            query = state.searchQuery,
-                            onQueryChange = { onIntent(ExploreIntent.SearchChanged(it)) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
+                    NeubrutalSearchBar(
+                        query = state.searchQuery,
+                        onQueryChange = { onIntent(ExploreIntent.SearchChanged(it)) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
                 item("feed_tabs") {
                     val feedTabs = listOf(
@@ -178,15 +176,10 @@ fun ExploreScreen(
                         ExploreFeed.FOLLOWING to Res.string.explore_feed_following,
                         ExploreFeed.SHARED_WITH_ME to Res.string.explore_feed_shared
                     )
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState())
-                    ) {
-                        Spacer(modifier = Modifier.width(contentHorizontalPadding))
+                    ScreenContentHorizontalScrollRow { spacing ->
                         feedTabs.forEachIndexed { index, (feed, labelRes) ->
                             if (index > 0) {
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(spacing))
                             }
                             NeubrutalSelectableChip(
                                 label = stringResource(labelRes),
@@ -194,7 +187,6 @@ fun ExploreScreen(
                                 onClick = { onIntent(ExploreIntent.ChangeFeed(feed)) }
                             )
                         }
-                        Spacer(modifier = Modifier.width(contentHorizontalPadding))
                     }
                 }
                 if (state.feed == ExploreFeed.DISCOVER && state.featuredPack != null) {
@@ -209,7 +201,7 @@ fun ExploreScreen(
                             },
                             onToggleLike = { onIntent(ExploreIntent.ToggleLike(state.featuredPack.id)) },
                             onToggleSave = { onIntent(ExploreIntent.ToggleSave(state.featuredPack.id)) },
-                            modifier = Modifier.padding(horizontal = contentHorizontalPadding)
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }
@@ -220,9 +212,7 @@ fun ExploreScreen(
                                 title = stringResource(Res.string.explore_sign_in_title),
                                 description = stringResource(Res.string.explore_sign_in_desc),
                                 illustration = AppIllustration.SearchEmpty,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = contentHorizontalPadding),
+                                modifier = Modifier.fillMaxWidth(),
                                 action = {
                                     AppPrimaryButton(
                                         text = stringResource(Res.string.explore_sign_in_action),
@@ -237,7 +227,6 @@ fun ExploreScreen(
                             LoadingIndicator(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = contentHorizontalPadding)
                                     .height(240.dp),
                                 illustration = AppIllustration.LoadingState
                             )
@@ -249,9 +238,7 @@ fun ExploreScreen(
                                 title = stringResource(Res.string.error_load_explore_failed),
                                 description = stringResource(Res.string.no_search_results_desc),
                                 illustration = AppIllustration.ErrorState,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = contentHorizontalPadding),
+                                modifier = Modifier.fillMaxWidth(),
                                 action = {
                                     AppPrimaryButton(
                                         text = stringResource(Res.string.retry),
@@ -268,9 +255,7 @@ fun ExploreScreen(
                                 title = title,
                                 description = desc,
                                 illustration = AppIllustration.SearchEmpty,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = contentHorizontalPadding)
+                                modifier = Modifier.fillMaxWidth()
                             )
                         }
                     }
@@ -285,7 +270,7 @@ fun ExploreScreen(
                                 },
                                 onToggleLike = { onIntent(ExploreIntent.ToggleLike(pack.id)) },
                                 onToggleSave = { onIntent(ExploreIntent.ToggleSave(pack.id)) },
-                                modifier = Modifier.padding(horizontal = contentHorizontalPadding)
+                                modifier = Modifier.fillMaxWidth()
                             )
                         }
                         if (state.isLoadingMore) {

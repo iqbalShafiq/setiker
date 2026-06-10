@@ -5,6 +5,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,6 +16,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.CornerRadius
@@ -65,6 +69,40 @@ val NeubrutalSmallShadowOffset = 2.dp
 
 /** Large shadow offset (dialogs). */
 val NeubrutalLargeShadowOffset = 6.dp
+
+/** Standard horizontal inset for screen scrollable content (lists, search bars, cards). */
+val ScreenContentHorizontalPadding = 20.dp
+
+/** Applies [ScreenContentHorizontalPadding] to the receiver. */
+fun Modifier.screenContentHorizontalPadding(): Modifier =
+    padding(horizontal = ScreenContentHorizontalPadding)
+
+/**
+ * Padded full-width content when the parent does **not** already apply
+ * [screenContentHorizontalPadding] (e.g. [androidx.compose.foundation.layout.Column] sections).
+ */
+fun Modifier.screenContentWidth(): Modifier =
+    screenContentHorizontalPadding().fillMaxWidth()
+
+/**
+ * Expands width to cancel a parent's [screenContentHorizontalPadding] so children can scroll
+ * edge-to-edge. Pair with leading/trailing spacers in [presentation.components.ScreenContentHorizontalScrollRow].
+ */
+fun Modifier.breakOutOfParentHorizontalPadding(
+    padding: Dp = ScreenContentHorizontalPadding
+): Modifier = graphicsLayer { clip = false }.layout { measurable, constraints ->
+    val paddingPx = padding.roundToPx()
+    val outward = paddingPx * 2
+    val placeable = measurable.measure(
+        constraints.copy(
+            minWidth = constraints.maxWidth + outward,
+            maxWidth = constraints.maxWidth + outward
+        )
+    )
+    layout(constraints.maxWidth, placeable.height) {
+        placeable.placeRelative(-paddingPx, 0)
+    }
+}
 
 /** Thickness of the filled top/left glossy bevel band (not a hairline stroke). */
 val NeubrutalGlossyBandWidth = 4.dp

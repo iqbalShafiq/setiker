@@ -61,6 +61,7 @@ import presentation.components.rememberImagePicker
 import presentation.components.rememberVideoPicker
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalScreenBackground
+import presentation.theme.screenContentHorizontalPadding
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.cancel_search
 import setiker.composeapp.generated.resources.error_load_packs_failed
@@ -261,7 +262,7 @@ fun HomeScreen(
                     modifier = modifier
                         .fillMaxSize()
                         .padding(innerPadding)
-                        .padding(horizontal = 20.dp)
+                        .screenContentHorizontalPadding()
                         .padding(top = 12.dp)
                 ) {
                     if (showOfflineBanner) {
