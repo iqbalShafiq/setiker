@@ -59,6 +59,7 @@ class CreatePackViewModelSavePackTest {
             trayImageFile = "/saved/tray.webp",
             stickers = listOf(Sticker(imageFile = "/saved/sticker.webp"))
         )
+        coEvery { repository.getPack(any()) } returns knownPack
         val saver = CapturingDraftSaver(knownPack)
 
         val aiDeps = ViewModelAiJobTestSupport.createPackDependencies()
@@ -106,8 +107,11 @@ class CreatePackViewModelSavePackTest {
         assertEquals("/tmp/source.mp4", captured.stickers[1].sourceVideoFile)
         assertEquals(mapOf(0 to listOf(decoration)), captured.stickers[1].frameDecorations)
 
-        coVerify(exactly = 1) { repository.savePack(knownPack) }
+        coVerify(exactly = 1) { repository.savePack(knownPack, syncToCloud = false) }
+        coVerify(exactly = 1) { repository.getPack(any()) }
         assertFalse(viewModel.state.value.isSaving)
+        assertTrue(viewModel.state.value.isEditing)
+        assertEquals(captured.identifier, viewModel.state.value.packId)
     }
 
     private class CapturingDraftSaver(

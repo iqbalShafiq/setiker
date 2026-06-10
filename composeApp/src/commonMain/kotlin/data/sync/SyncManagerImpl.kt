@@ -18,6 +18,7 @@ import data.sync.operationBelongsToPack
 import data.sync.operationIsPackVisibilityUpdate
 import data.sync.shouldIgnoreRemoteStickerDeletion
 import data.sync.shouldImportStickersIntoExistingPack
+import data.sync.shouldPreserveLocalStickersOnPull
 import data.storage.StickerFileStorage
 import domain.model.SyncOperation
 import domain.model.SyncOperationStatus
@@ -356,8 +357,14 @@ class SyncManagerImpl(
     private suspend fun importRemotePack(remotePack: CloudStickerPack): RemotePackImportResult {
         val existing = packDao.getByCloudId(remotePack.id)
         if (existing != null) {
-            mergeRemotePackMetadata(existing, remotePack)
             val localStickerCount = stickerDao.getByPackId(existing.identifier).size
+            mergeRemotePackMetadata(existing, remotePack)
+            if (shouldPreserveLocalStickersOnPull(hasExistingPack = true, localStickerCount = localStickerCount)) {
+                return RemotePackImportResult(
+                    stickersImported = 0,
+                    downloadFailures = 0,
+                )
+            }
             val remoteStickerCount = remotePack.stickers.size
             if (!shouldImportStickersIntoExistingPack(localStickerCount, remoteStickerCount)) {
                 return RemotePackImportResult(
@@ -398,7 +405,7 @@ class SyncManagerImpl(
         val imported = downloadRemoteStickers(localIdentifier, remotePack)
         imported.stickers.forEach { stickerDao.insert(it) }
         if (imported.stickers.isNotEmpty()) {
-            packDao.insert(mergedPack.copy(trayImageFile = imported.stickers.first().imageFile))
+            packDao.upsert(mergedPack.copy(trayImageFile = imported.stickers.first().imageFile))
         }
 
         return RemotePackImportResult(
@@ -459,7 +466,7 @@ class SyncManagerImpl(
         } else {
             SYNC_STATE_SYNCED
         }
-        packDao.insert(
+        packDao.upsert(
             existing.copy(
                 visibility = normalizePackVisibilityForStorage(remotePack.visibility),
                 syncState = syncState,
@@ -500,7 +507,7 @@ class SyncManagerImpl(
                     packDao.updateSyncStatus(operation.targetId, SYNC_STATE_SYNCED, now)
                     authManager.getUser()?.id?.let { ownerId ->
                         packDao.getById(operation.targetId)?.let { pack ->
-                            packDao.insert(pack.copy(cloudOwnerId = ownerId))
+                            packDao.upsert(pack.copy(cloudOwnerId = ownerId))
                         }
                     }
                     updateLocalStickerCloudInfo(operation.targetId, upload.stickers)
@@ -529,7 +536,7 @@ class SyncManagerImpl(
                     val updatedPack = cloudRepo.updatePack(operation.targetId, request)
                     val now = Clock.System.now().toEpochMilliseconds()
                     packDao.getByCloudId(operation.targetId)?.let { pack ->
-                        packDao.insert(
+                        packDao.upsert(
                             pack.copy(
                                 visibility = normalizePackVisibilityForStorage(updatedPack.visibility),
                                 syncState = SYNC_STATE_SYNCED,

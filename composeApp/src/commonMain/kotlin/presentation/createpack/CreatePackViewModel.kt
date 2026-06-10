@@ -341,28 +341,29 @@ class CreatePackViewModel(
                 val alreadyOnCloud = current.isEditing &&
                     current.packId.isNotBlank() &&
                     !current.cloudId.isNullOrBlank()
-                if (alreadyOnCloud) {
-                    repository.updatePackVisibility(identifier, "PUBLIC")
-                } else {
-                    repository.savePack(pack, syncToCloud = true)
-                }
-                val synced = repository.getPack(identifier)
+                // Always persist pack content first so visibility-only cloud updates never
+                // run against a pack whose stickers were never written to local storage.
+                repository.savePack(pack, syncToCloud = false)
                 val syncReport = if (alreadyOnCloud) {
+                    repository.updatePackVisibility(identifier, "PUBLIC")
                     SyncReport(result = SyncResult.Success)
                 } else {
-                    SyncReport(result = if (synced.cloudId.isNullOrBlank()) SyncResult.Failed("Cloud sync failed") else SyncResult.Success)
+                    repository.syncPack(identifier)
                 }
+                val synced = repository.getPack(identifier)
+                val cloudSyncSucceeded = alreadyOnCloud || !synced.cloudId.isNullOrBlank()
                 _state.update {
                     it.copy(
                         isPublishing = false,
                         visibility = "PUBLIC",
                         cloudId = synced.cloudId,
                         packId = identifier,
-                        isEditing = true
+                        isEditing = true,
+                        trayImagePath = synced.trayImageFile,
+                        stickers = synced.toDraftStickers(),
                     )
                 }
-                val cloudId = synced.cloudId
-                if (cloudId.isNullOrBlank()) {
+                if (!cloudSyncSucceeded) {
                     val syncError = (syncReport.result as? SyncResult.Failed)?.error
                     _effect.send(
                         CreatePackEffect.ShowError(
@@ -448,27 +449,10 @@ class CreatePackViewModel(
             _state.update { it.copy(isLoading = true) }
             try {
                 val pack = repository.getPack(packId)
-                val fromServer = pack.stickers.map { sticker ->
-                    DraftSticker(
-                        imagePath = if (sticker.isAnimated) sticker.imageFile else (sticker.sourceImageFile ?: sticker.imageFile),
-                        decorations = sticker.decorations,
-                        isAnimated = sticker.isAnimated,
-                        sourceVideoFile = sticker.sourceVideoFile,
-                        frameDecorations = sticker.frameDecorations
-                    )
-                }
-                val serverPaths = pack.stickers
-                    .flatMap { listOfNotNull(it.sourceImageFile, it.imageFile) }
-                    .toSet()
-                val previousSession = _state.value.stickers.filter { it.imagePath.isNotBlank() }
-                val mergedStickers = buildList {
-                    addAll(fromServer)
-                    for (local in previousSession) {
-                        if (local.imagePath !in serverPaths && none { it.imagePath == local.imagePath }) {
-                            add(local)
-                        }
-                    }
-                }
+                val mergedStickers = mergeDraftStickersFromPack(
+                    persisted = pack.toDraftStickers(),
+                    inSession = _state.value.stickers,
+                )
                 _state.update {
                     it.copy(
                         isLoading = false,
@@ -552,8 +536,19 @@ class CreatePackViewModel(
                     )
                 )
                 
-                repository.savePack(pack)
-                _state.update { it.copy(isSaving = false) }
+                repository.savePack(pack, syncToCloud = false)
+                val saved = repository.getPack(identifier)
+                _state.update {
+                    it.copy(
+                        isSaving = false,
+                        packId = identifier,
+                        isEditing = true,
+                        cloudId = saved.cloudId,
+                        visibility = saved.visibility,
+                        trayImagePath = saved.trayImageFile,
+                        stickers = saved.toDraftStickers(),
+                    )
+                }
                 _effect.send(CreatePackEffect.PackSaved(identifier))
             } catch (e: Exception) {
                 _state.update { it.copy(isSaving = false) }

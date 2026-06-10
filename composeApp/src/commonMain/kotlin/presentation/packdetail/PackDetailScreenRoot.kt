@@ -28,6 +28,10 @@ fun PackDetailScreenRoot(
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    LaunchedEffect(packId) {
+        viewModel.onIntent(PackDetailIntent.LoadPack(packId, silentRefresh = false))
+    }
+
     // Reload when this screen resumes; silent when we already show this pack — avoids full-screen loading flicker.
     LifecycleResumeEffect(packId) {
         viewModel.onIntent(PackDetailIntent.LoadPack(packId, silentRefresh = true))

@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import data.local.entity.StickerPackEntity
 
@@ -16,11 +17,26 @@ interface StickerPackDao {
     @Query("SELECT * FROM sticker_packs WHERE identifier = :id")
     suspend fun getById(id: String): StickerPackEntity?
 
+    /**
+     * Inserts a brand-new pack row only. Do not use to update an existing pack:
+     * [OnConflictStrategy.REPLACE] deletes the old row first, which cascades and
+     * wipes child sticker rows (see [StickerEntity] FK).
+     */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(pack: StickerPackEntity)
 
     @Update
     suspend fun update(pack: StickerPackEntity)
+
+    /** Updates metadata when the pack already exists; inserts when it does not. */
+    @Transaction
+    suspend fun upsert(pack: StickerPackEntity) {
+        if (getById(pack.identifier) != null) {
+            update(pack)
+        } else {
+            insert(pack)
+        }
+    }
 
      @Delete
      suspend fun delete(pack: StickerPackEntity)

@@ -88,7 +88,7 @@ class StickerRepositoryImpl(
             visibility = pack.visibility,
             cloudOwnerId = existing?.cloudOwnerId ?: pack.cloudOwnerId,
         )
-        packDao.insert(entity)
+        packDao.upsert(entity)
 
         // Saving an existing pack is a full replacement of its current sticker
         // list. Without clearing old rows first, every edit (including only
@@ -222,7 +222,7 @@ class StickerRepositoryImpl(
         }
         stickerDao.deleteById(stickerToDelete.id)
         stickerDao.compactSortOrders(packId)
-        packDao.insert(pack.copy(updatedAt = now))
+        packDao.update(pack.copy(updatedAt = now))
 
         if (authManager?.isAuthenticated() != true) {
             return@withContext
@@ -310,7 +310,7 @@ class StickerRepositoryImpl(
         val existing = packDao.getById(packId) ?: throw AppException(code = AppErrorCode.PackNotFound)
         val normalizedVisibility = normalizePackVisibilityForStorage(visibility)
         val now = Clock.System.now().toEpochMilliseconds()
-        packDao.insert(existing.copy(visibility = normalizedVisibility, updatedAt = now))
+        packDao.upsert(existing.copy(visibility = normalizedVisibility, updatedAt = now))
 
         if (authManager?.isAuthenticated() != true) {
             return@withContext
