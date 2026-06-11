@@ -9,16 +9,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material3.Icon
@@ -47,6 +46,7 @@ import presentation.components.AppIllustrationImage
 import presentation.components.AppPasswordTextField
 import presentation.components.AppPrimaryButton
 import presentation.components.AppTextField
+import presentation.components.FormScreenScrollColumn
 import presentation.theme.ErrorRed
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
@@ -113,17 +113,11 @@ fun RegisterScreen(
     modifier: Modifier = Modifier
 ) {
     Scaffold(
-        containerColor = neubrutalScreenBackground()
+        containerColor = neubrutalScreenBackground(),
+        contentWindowInsets = WindowInsets.statusBars
     ) { innerPadding ->
-        Column(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .imePadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+        FormScreenScrollColumn(
+            modifier = modifier.padding(innerPadding)
         ) {
             AppIllustrationImage(
                 illustration = AppIllustration.AuthCloud,
