@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import presentation.components.keyboardAwareScroll
+import presentation.components.scaffoldBottomBarScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -400,7 +400,7 @@ fun EditorScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
-                        .keyboardAwareScroll(editorScrollState)
+                        .scaffoldBottomBarScroll(editorScrollState)
                 ) {
                 Spacer(modifier = Modifier.height(20.dp))
                 Text(

@@ -31,7 +31,7 @@ import presentation.components.AppIllustration
 import presentation.components.AppIllustrationImage
 import presentation.components.AppPasswordTextField
 import presentation.components.AppTopBar
-import presentation.components.KeyboardAwareLazyColumn
+import presentation.components.ScaffoldBottomBarLazyColumn
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
@@ -149,7 +149,7 @@ fun SettingsScreen(
         },
         containerColor = neubrutalScreenBackground()
     ) { padding ->
-        KeyboardAwareLazyColumn(
+        ScaffoldBottomBarLazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)

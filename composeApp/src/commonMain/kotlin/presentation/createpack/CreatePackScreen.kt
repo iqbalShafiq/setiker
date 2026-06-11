@@ -70,7 +70,7 @@ import presentation.components.AiGenerateBottomSheet
 import presentation.components.PromptPresetPickerSheet
 import presentation.components.ImproveConfirmDialog
 import presentation.components.BottomSheetScrollColumn
-import presentation.components.keyboardAwareScroll
+import presentation.components.scaffoldBottomBarScroll
 import presentation.components.zeroBottomSheetWindowInsets
 import presentation.components.rememberImagePicker
 import presentation.components.rememberStickerImagePicker
@@ -638,7 +638,7 @@ fun CreatePackScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 20.dp, vertical = 16.dp)
-                        .keyboardAwareScroll(rememberScrollState())
+                        .scaffoldBottomBarScroll(rememberScrollState())
                 ) {
                 AppTextField(
                     value = state.name,
