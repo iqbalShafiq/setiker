@@ -254,9 +254,7 @@ fun AppNavigation(
                      }
                  },
                  onNavigateToRegister = {
-                     navBottomUp("register") {
-                         popUpTo("login") { inclusive = true }
-                     }
+                     navBottomUp("register")
                  }
              )
          }
@@ -271,9 +269,7 @@ fun AppNavigation(
                        }
                    },
                    onNavigateToLogin = {
-                       navBottomUp("login") {
-                           popUpTo("register") { inclusive = true }
-                       }
+                       navController.popBackStack()
                    }
                )
            }
