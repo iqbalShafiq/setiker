@@ -5,65 +5,43 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ErrorOutline
-import androidx.compose.material3.Icon
+import androidx.compose.material.icons.filled.Login
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import presentation.components.AppPasswordTextField
-import presentation.components.AppPrimaryButton
-import presentation.components.AppTextField
-import presentation.components.FormScreenScrollColumn
-import presentation.theme.ErrorRed
-import presentation.theme.NeubrutalCardRadius
-import presentation.theme.neubrutalBorderWithGloss
-import presentation.theme.neubrutalGlossyHighlightColor
-import presentation.theme.NeubrutalShadowOffset
-import presentation.theme.neubrutalBorderColor
-import presentation.theme.neubrutalCardSurface
-import presentation.theme.neubrutalOnSurface
-import presentation.theme.neubrutalScreenBackground
-import presentation.theme.neubrutalShadow
-import presentation.theme.neubrutalShadowColor
-import presentation.theme.neubrutalSubtleOnSurface
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import presentation.common.UiText
 import presentation.common.resolveLocal
 import presentation.components.AppIllustration
 import presentation.components.AppIllustrationImage
+import presentation.components.AppPasswordTextField
+import presentation.components.AppTextField
+import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalSubtleOnSurface
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.login_email_invalid
 import setiker.composeapp.generated.resources.login_email_label
 import setiker.composeapp.generated.resources.login_email_placeholder
-import setiker.composeapp.generated.resources.login_no_account
 import setiker.composeapp.generated.resources.login_password_invalid
 import setiker.composeapp.generated.resources.login_password_label
 import setiker.composeapp.generated.resources.login_password_placeholder
@@ -104,19 +82,23 @@ fun LoginScreen(
     onIntent: (LoginIntent) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Scaffold(
-        containerColor = neubrutalScreenBackground(),
-        contentWindowInsets = WindowInsets.statusBars
-    ) { innerPadding ->
-        FormScreenScrollColumn(
-            modifier = modifier.padding(innerPadding)
-        ) {
-            AppIllustrationImage(
+    AuthFormScaffold(
+        modifier = modifier,
+        title = stringResource(Res.string.login_submit),
+        isLoading = state.isLoading,
+        loadingStatusText = stringResource(Res.string.login_signing_in),
+        onPrimaryAction = { onIntent(LoginIntent.Submit) },
+        primaryFabIcon = Icons.Filled.Login,
+        primaryFabContentDescription = stringResource(Res.string.login_submit),
+        onSecondaryAction = { onIntent(LoginIntent.NavigateToRegister) },
+        secondaryActionIcon = Icons.Filled.PersonAdd,
+        secondaryActionContentDescription = stringResource(Res.string.login_register_cta)
+    ) {
+        AppIllustrationImage(
                 illustration = AppIllustration.AuthCloud,
                 modifier = Modifier.padding(top = 24.dp, bottom = 20.dp)
             )
 
-            // Header
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.padding(bottom = 28.dp)
@@ -140,7 +122,6 @@ fun LoginScreen(
                 )
             }
 
-            // Form
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -156,6 +137,7 @@ fun LoginScreen(
                     } else null,
                     keyboardType = KeyboardType.Email,
                     imeAction = ImeAction.Next,
+                    enabled = !state.isLoading,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -169,19 +151,19 @@ fun LoginScreen(
                         { Text(stringResource(Res.string.login_password_invalid), color = MaterialTheme.colorScheme.error) }
                     } else null,
                     imeAction = ImeAction.Done,
+                    enabled = !state.isLoading,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Error Message
             AnimatedVisibility(
                 visible = state.error != null,
                 enter = expandVertically() + fadeIn(),
                 exit = shrinkVertically() + fadeOut()
             ) {
-                ErrorMessageBox(
+                AuthErrorMessageBox(
                     message = state.error?.resolveLocal().orEmpty(),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -189,38 +171,9 @@ fun LoginScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            AppPrimaryButton(
-                text = stringResource(if (state.isLoading) Res.string.login_signing_in else Res.string.login_submit),
-                onClick = { onIntent(LoginIntent.Submit) },
-                enabled = !state.isLoading,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            TextButton(
-                onClick = { onIntent(LoginIntent.NavigateToRegister) },
-                modifier = Modifier.padding(bottom = 16.dp)
-            ) {
-                Text(
-                    text = stringResource(Res.string.login_no_account) + " ",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = neubrutalSubtleOnSurface()
-                )
-                Text(
-                    text = stringResource(Res.string.login_register_cta),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
-
-// MARK: - Previews
 
 @Preview
 @Composable
@@ -265,55 +218,5 @@ private fun LoginScreenErrorPreview() {
             ),
             onIntent = {}
         )
-    }
-}
-
-@Composable
-private fun ErrorMessageBox(
-    message: String,
-    modifier: Modifier = Modifier
-) {
-    val surfaceColor = neubrutalCardSurface()
-    val borderColor = neubrutalBorderColor()
-    
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .neubrutalShadow(
-                offsetX = NeubrutalShadowOffset,
-                offsetY = NeubrutalShadowOffset,
-                cornerRadius = NeubrutalCardRadius,
-                color = neubrutalShadowColor()
-            )
-            .clip(RoundedCornerShape(NeubrutalCardRadius))
-            .background(surfaceColor)
-            .neubrutalBorderWithGloss(
-                color = ErrorRed.copy(alpha = 0.5f),
-                cornerRadius = NeubrutalCardRadius,
-                highlightColor = neubrutalGlossyHighlightColor()
-            )
-            .padding(16.dp)
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(
-                imageVector = Icons.Default.ErrorOutline,
-                contentDescription = "Error",
-                tint = ErrorRed,
-                modifier = Modifier.size(24.dp)
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = ErrorRed,
-                textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Medium
-            )
-        }
     }
 }

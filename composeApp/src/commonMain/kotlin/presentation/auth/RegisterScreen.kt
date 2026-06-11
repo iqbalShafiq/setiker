@@ -5,33 +5,24 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ErrorOutline
-import androidx.compose.material3.Icon
+import androidx.compose.material.icons.filled.Login
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -44,20 +35,8 @@ import presentation.common.resolveLocal
 import presentation.components.AppIllustration
 import presentation.components.AppIllustrationImage
 import presentation.components.AppPasswordTextField
-import presentation.components.AppPrimaryButton
 import presentation.components.AppTextField
-import presentation.components.FormScreenScrollColumn
-import presentation.theme.ErrorRed
-import presentation.theme.NeubrutalCardRadius
-import presentation.theme.NeubrutalShadowOffset
-import presentation.theme.neubrutalBorderColor
-import presentation.theme.neubrutalBorderWithGloss
-import presentation.theme.neubrutalCardSurface
-import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalOnSurface
-import presentation.theme.neubrutalScreenBackground
-import presentation.theme.neubrutalShadow
-import presentation.theme.neubrutalShadowColor
 import presentation.theme.neubrutalSubtleOnSurface
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.login_email_invalid
@@ -69,7 +48,6 @@ import setiker.composeapp.generated.resources.login_password_placeholder
 import setiker.composeapp.generated.resources.register_confirm_password_label
 import setiker.composeapp.generated.resources.register_confirm_password_placeholder
 import setiker.composeapp.generated.resources.register_creating_account
-import setiker.composeapp.generated.resources.register_have_account
 import setiker.composeapp.generated.resources.register_name_label
 import setiker.composeapp.generated.resources.register_name_placeholder
 import setiker.composeapp.generated.resources.register_password_mismatch
@@ -112,14 +90,19 @@ fun RegisterScreen(
     onIntent: (RegisterIntent) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Scaffold(
-        containerColor = neubrutalScreenBackground(),
-        contentWindowInsets = WindowInsets.statusBars
-    ) { innerPadding ->
-        FormScreenScrollColumn(
-            modifier = modifier.padding(innerPadding)
-        ) {
-            AppIllustrationImage(
+    AuthFormScaffold(
+        modifier = modifier,
+        title = stringResource(Res.string.register_title),
+        isLoading = state.isLoading,
+        loadingStatusText = stringResource(Res.string.register_creating_account),
+        onPrimaryAction = { onIntent(RegisterIntent.Submit) },
+        primaryFabIcon = Icons.Filled.PersonAdd,
+        primaryFabContentDescription = stringResource(Res.string.register_submit),
+        onSecondaryAction = { onIntent(RegisterIntent.NavigateToLogin) },
+        secondaryActionIcon = Icons.Filled.Login,
+        secondaryActionContentDescription = stringResource(Res.string.register_sign_in_cta)
+    ) {
+        AppIllustrationImage(
                 illustration = AppIllustration.AuthCloud,
                 modifier = Modifier.padding(top = 24.dp, bottom = 16.dp)
             )
@@ -157,6 +140,7 @@ fun RegisterScreen(
                     label = stringResource(Res.string.register_name_label),
                     placeholder = stringResource(Res.string.register_name_placeholder),
                     imeAction = ImeAction.Next,
+                    enabled = !state.isLoading,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -170,6 +154,7 @@ fun RegisterScreen(
                         { Text(stringResource(Res.string.register_username_required), color = MaterialTheme.colorScheme.error) }
                     } else null,
                     imeAction = ImeAction.Next,
+                    enabled = !state.isLoading,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -184,6 +169,7 @@ fun RegisterScreen(
                     } else null,
                     keyboardType = KeyboardType.Email,
                     imeAction = ImeAction.Next,
+                    enabled = !state.isLoading,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -197,6 +183,7 @@ fun RegisterScreen(
                         { Text(stringResource(Res.string.login_password_invalid), color = MaterialTheme.colorScheme.error) }
                     } else null,
                     imeAction = ImeAction.Next,
+                    enabled = !state.isLoading,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -206,6 +193,7 @@ fun RegisterScreen(
                     label = stringResource(Res.string.register_confirm_password_label),
                     placeholder = stringResource(Res.string.register_confirm_password_placeholder),
                     imeAction = ImeAction.Done,
+                    enabled = !state.isLoading,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -217,7 +205,7 @@ fun RegisterScreen(
                 enter = expandVertically() + fadeIn(),
                 exit = shrinkVertically() + fadeOut()
             ) {
-                ErrorMessageBox(
+                AuthErrorMessageBox(
                     message = state.error?.resolveLocal().orEmpty(),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -225,36 +213,7 @@ fun RegisterScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            AppPrimaryButton(
-                text = stringResource(
-                    if (state.isLoading) Res.string.register_creating_account else Res.string.register_submit
-                ),
-                onClick = { onIntent(RegisterIntent.Submit) },
-                enabled = !state.isLoading,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            TextButton(
-                onClick = { onIntent(RegisterIntent.NavigateToLogin) },
-                modifier = Modifier.padding(bottom = 32.dp)
-            ) {
-                Text(
-                    text = stringResource(Res.string.register_have_account) + " ",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = neubrutalSubtleOnSurface()
-                )
-                Text(
-                    text = stringResource(Res.string.register_sign_in_cta),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
@@ -277,6 +236,24 @@ private fun RegisterScreenPreview() {
 
 @Preview
 @Composable
+private fun RegisterScreenLoadingPreview() {
+    MaterialTheme {
+        RegisterScreen(
+            state = RegisterState(
+                name = "John Doe",
+                username = "johndoe",
+                email = "john@example.com",
+                password = "password123",
+                confirmPassword = "password123",
+                isLoading = true
+            ),
+            onIntent = {}
+        )
+    }
+}
+
+@Preview
+@Composable
 private fun RegisterScreenErrorPreview() {
     MaterialTheme {
         RegisterScreen(
@@ -288,54 +265,5 @@ private fun RegisterScreenErrorPreview() {
             ),
             onIntent = {}
         )
-    }
-}
-
-@Composable
-private fun ErrorMessageBox(
-    message: String,
-    modifier: Modifier = Modifier
-) {
-    val surfaceColor = neubrutalCardSurface()
-
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .neubrutalShadow(
-                offsetX = NeubrutalShadowOffset,
-                offsetY = NeubrutalShadowOffset,
-                cornerRadius = NeubrutalCardRadius,
-                color = neubrutalShadowColor()
-            )
-            .clip(RoundedCornerShape(NeubrutalCardRadius))
-            .background(surfaceColor)
-            .neubrutalBorderWithGloss(
-                color = ErrorRed.copy(alpha = 0.5f),
-                cornerRadius = NeubrutalCardRadius,
-                highlightColor = neubrutalGlossyHighlightColor()
-            )
-            .padding(16.dp)
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(
-                imageVector = Icons.Default.ErrorOutline,
-                contentDescription = null,
-                tint = ErrorRed,
-                modifier = Modifier.size(24.dp)
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = ErrorRed,
-                textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Medium
-            )
-        }
     }
 }

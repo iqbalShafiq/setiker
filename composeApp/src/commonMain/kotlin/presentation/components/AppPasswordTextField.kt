@@ -57,7 +57,8 @@ fun AppPasswordTextField(
     placeholder: String = "",
     isError: Boolean = false,
     supportingText: @Composable (() -> Unit)? = null,
-    imeAction: ImeAction = ImeAction.Done
+    imeAction: ImeAction = ImeAction.Done,
+    enabled: Boolean = true
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
 
@@ -95,14 +96,15 @@ fun AppPasswordTextField(
         ) {
             BasicTextField(
                 value = value,
-                onValueChange = onValueChange,
+                onValueChange = { if (enabled) onValueChange(it) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(end = 24.dp),
                 singleLine = true,
                 maxLines = 1,
+                enabled = enabled,
                 textStyle = TextStyle(
-                    color = onSurface,
+                    color = if (enabled) onSurface else onSurface.copy(alpha = 0.45f),
                     fontSize = MaterialTheme.typography.bodyLarge.fontSize,
                     fontWeight = FontWeight.Normal
                 ),
@@ -134,7 +136,7 @@ fun AppPasswordTextField(
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
-                    ) { passwordVisible = !passwordVisible }
+                    ) { if (enabled) passwordVisible = !passwordVisible }
             )
         }
 

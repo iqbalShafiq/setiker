@@ -16,7 +16,8 @@ import androidx.compose.ui.unit.dp
 val FormScreenHorizontalPadding = 24.dp
 
 /**
- * Scrollable centered column for full-screen forms (login, register, etc.).
+ * Scrollable column for full-screen forms **without** a scaffold bottom bar.
+ * Auth screens with [presentation.auth.AuthFormScaffold] use [presentation.auth.AuthFormScrollColumn] instead.
  */
 @Composable
 fun FormScreenScrollColumn(
