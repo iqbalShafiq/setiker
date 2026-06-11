@@ -115,7 +115,7 @@ class SharePreviewViewModel(
                         publisher = pack.owner?.displayName ?: pack.owner?.username ?: "Shared",
                         trayImageFile = stickers.firstOrNull()?.imageFile.orEmpty(),
                         stickers = stickers,
-                        cloudId = pack.id,
+                        cloudId = null,
                         cloudOwnerId = pack.ownerId,
                         visibility = "PRIVATE"
                     )

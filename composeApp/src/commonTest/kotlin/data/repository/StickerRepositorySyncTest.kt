@@ -45,12 +45,38 @@ class StickerRepositorySyncTest {
             publisher = "Setiker",
             trayImageFile = "tray.webp",
             cloudId = "cloud-pack",
+            cloudOwnerId = "user-1",
         )
 
-        val target = resolvePackSaveSyncTarget(existing, localIdentifier = "local-pack")
+        val target = resolvePackSaveSyncTarget(
+            existing = existing,
+            localIdentifier = "local-pack",
+            currentUserId = "user-1",
+        )
 
         assertEquals(SyncOperationType.UPDATE_PACK, target.type)
         assertEquals("cloud-pack", target.targetId)
+    }
+
+    @Test
+    fun foreignCloudLinkedPackFallsBackToCreateOperation() {
+        val existing = StickerPackEntity(
+            identifier = "imported-pack",
+            name = "Imported Pack",
+            publisher = "Other",
+            trayImageFile = "tray.webp",
+            cloudId = "cloud-pack-other",
+            cloudOwnerId = "user-2",
+        )
+
+        val target = resolvePackSaveSyncTarget(
+            existing = existing,
+            localIdentifier = "imported-pack",
+            currentUserId = "user-1",
+        )
+
+        assertEquals(SyncOperationType.CREATE_PACK, target.type)
+        assertEquals("imported-pack", target.targetId)
     }
 
     @Test

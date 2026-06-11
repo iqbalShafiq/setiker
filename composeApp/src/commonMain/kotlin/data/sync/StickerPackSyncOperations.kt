@@ -19,12 +19,16 @@ data class PackSaveSyncTarget(
 fun resolvePackSaveSyncTarget(
     existing: StickerPackEntity?,
     localIdentifier: String,
+    currentUserId: String? = null,
 ): PackSaveSyncTarget {
     val cloudId = existing?.cloudId
-    return if (cloudId.isNullOrBlank()) {
-        PackSaveSyncTarget(SyncOperationType.CREATE_PACK, localIdentifier)
-    } else {
+    val canUpdateCloud = existing != null &&
+        !cloudId.isNullOrBlank() &&
+        shouldSyncPackWithCloud(existing, currentUserId)
+    return if (canUpdateCloud) {
         PackSaveSyncTarget(SyncOperationType.UPDATE_PACK, cloudId)
+    } else {
+        PackSaveSyncTarget(SyncOperationType.CREATE_PACK, localIdentifier)
     }
 }
 

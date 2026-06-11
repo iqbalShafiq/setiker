@@ -147,9 +147,14 @@ class StickerPackSyncOperationsTest {
             publisher = "Setiker",
             trayImageFile = "tray.webp",
             cloudId = "cloud-pack",
+            cloudOwnerId = "user-1",
         )
 
-        val target = resolvePackSaveSyncTarget(existing, localIdentifier = "local-pack")
+        val target = resolvePackSaveSyncTarget(
+            existing = existing,
+            localIdentifier = "local-pack",
+            currentUserId = "user-1",
+        )
 
         assertEquals(SyncOperationType.UPDATE_PACK, target.type)
         assertEquals("cloud-pack", target.targetId)

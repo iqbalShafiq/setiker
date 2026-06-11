@@ -13,6 +13,7 @@ import data.remote.model.CreateStickerPackRequest
 import data.remote.model.DeleteStickerSyncPayload
 import data.remote.model.UpdateStickerPackRequest
 import data.sync.createPackSyncOperation
+import data.sync.resolvePackSaveSyncTarget
 import data.sync.normalizePackVisibilityForStorage
 import data.sync.operationBelongsToPack
 import data.sync.operationIsPackVisibilityUpdate
@@ -287,6 +288,7 @@ class SyncManagerImpl(
 
     private suspend fun reconcilePackIfNeeded(pack: StickerPackEntity): Int {
         if (pack.syncState == SYNC_STATE_SYNCED) return 0
+        if (!shouldSyncPackWithCloud(pack, authManager.getUser()?.id)) return 0
 
         val blockingOperations = operationDao.getBlockingOperations()
         val cloudId = pack.cloudId
@@ -300,6 +302,11 @@ class SyncManagerImpl(
                 stickers = stickerDao.getByPackId(pack.identifier),
                 id = Uuid.random().toString(),
                 createdAt = Clock.System.now().toEpochMilliseconds(),
+                syncTarget = resolvePackSaveSyncTarget(
+                    existing = pack,
+                    localIdentifier = pack.identifier,
+                    currentUserId = authManager.getUser()?.id,
+                ),
             ).toEntity()
         )
         return 1
@@ -307,15 +314,19 @@ class SyncManagerImpl(
 
     private suspend fun pullRemoteChanges(): PullSyncResult {
         val syncData = cloudRepo.sync(syncCursorStore.getLastPullSyncAt())
+        val currentUserId = authManager.getUser()?.id
         val blockingOperations = operationDao.getBlockingOperations()
         var packsDownloaded = 0
         var stickersDownloaded = 0
         var itemsDeleted = 0
         var downloadFailures = 0
 
+        purgeForeignSyncedPacks(currentUserId)
+
         val packDelta = syncData.stickerPacks
         val remotePacks = (packDelta?.created.orEmpty() + packDelta?.updated.orEmpty())
             .distinctBy { it.id }
+            .filter { shouldImportRemotePackForSync(it, currentUserId) }
         for (remotePack in remotePacks) {
             if (hasBlockingLocalOperation(blockingOperations, remotePack.id)) continue
             val result = importRemotePack(remotePack)
@@ -352,6 +363,16 @@ class SyncManagerImpl(
             itemsDeleted = itemsDeleted,
             downloadFailures = downloadFailures,
         )
+    }
+
+    private suspend fun purgeForeignSyncedPacks(currentUserId: String?) {
+        if (currentUserId.isNullOrBlank()) return
+        packDao.getAll()
+            .filter { isForeignSyncedPack(it, currentUserId) }
+            .forEach { pack ->
+                deleteLocalPackFiles(pack.identifier)
+                packDao.delete(pack)
+            }
     }
 
     private suspend fun importRemotePack(remotePack: CloudStickerPack): RemotePackImportResult {

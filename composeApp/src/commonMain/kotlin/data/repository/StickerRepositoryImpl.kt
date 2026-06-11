@@ -13,6 +13,7 @@ import data.sync.createPackSyncOperation
 import data.sync.createPackVisibilitySyncOperation
 import data.sync.normalizePackVisibilityForStorage
 import data.sync.resolvePackSaveSyncTarget
+import data.sync.shouldSyncPackWithCloud
 import domain.error.AppErrorCode
 import domain.error.AppException
 import domain.model.Sticker
@@ -118,7 +119,11 @@ class StickerRepositoryImpl(
 
         if (syncToCloud && authManager?.isAuthenticated() == true) {
             val persistedStickers = stickerDao.getByPackId(identifier)
-            val syncTarget = resolvePackSaveSyncTarget(existing, identifier)
+            val syncTarget = resolvePackSaveSyncTarget(
+                existing = entity,
+                localIdentifier = identifier,
+                currentUserId = authManager.getUser()?.id,
+            )
             val syncOp = createPackSyncOperation(
                 pack = entity,
                 stickers = persistedStickers,
@@ -135,7 +140,11 @@ class StickerRepositoryImpl(
         val pack = packDao.getById(identifier) ?: return@withContext
         val cloudPackId = pack.cloudId
 
-        if (!cloudPackId.isNullOrBlank() && authManager?.isAuthenticated() == true) {
+        if (
+            !cloudPackId.isNullOrBlank() &&
+            authManager?.isAuthenticated() == true &&
+            shouldSyncPackWithCloud(pack, authManager.getUser()?.id)
+        ) {
             val syncOp = SyncOperation(
                 id = Uuid.random().toString(),
                 type = SyncOperationType.DELETE_PACK,
@@ -229,7 +238,7 @@ class StickerRepositoryImpl(
         }
 
         val cloudPackId = pack.cloudId
-        if (cloudPackId.isNullOrBlank()) {
+        if (cloudPackId.isNullOrBlank() || !shouldSyncPackWithCloud(pack, authManager.getUser()?.id)) {
             return@withContext
         }
 
@@ -317,7 +326,7 @@ class StickerRepositoryImpl(
         }
 
         val cloudId = existing.cloudId
-        if (!cloudId.isNullOrBlank()) {
+        if (!cloudId.isNullOrBlank() && shouldSyncPackWithCloud(existing, authManager.getUser()?.id)) {
             if (existing.syncState == "SYNCED") {
                 syncManager?.cancelPendingContentUploadOps(packId, cloudId)
             }
