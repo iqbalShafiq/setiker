@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -79,15 +78,10 @@ fun AddTextDecorationBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = neubrutalScreenBackground(),
-        scrimColor = Color.Black.copy(alpha = 0.45f)
+        scrimColor = Color.Black.copy(alpha = 0.45f),
+        contentWindowInsets = { zeroBottomSheetWindowInsets() }
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .imePadding()
-                .padding(horizontal = 20.dp, vertical = 8.dp)
-                .padding(bottom = 24.dp)
-        ) {
+        BottomSheetScrollColumn {
             Text(
                 text = stringResource(Res.string.text_decoration),
                 style = MaterialTheme.typography.titleLarge,
@@ -131,15 +125,10 @@ fun EditTextDecorationBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = neubrutalScreenBackground(),
-        scrimColor = Color.Black.copy(alpha = 0.45f)
+        scrimColor = Color.Black.copy(alpha = 0.45f),
+        contentWindowInsets = { zeroBottomSheetWindowInsets() }
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .imePadding()
-                .padding(horizontal = 20.dp, vertical = 8.dp)
-                .padding(bottom = 24.dp)
-        ) {
+        BottomSheetScrollColumn {
             AppTextField(
                 value = text,
                 onValueChange = { text = it },

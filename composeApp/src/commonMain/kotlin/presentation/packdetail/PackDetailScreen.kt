@@ -66,6 +66,8 @@ import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
 import presentation.components.AppTopBar
 import presentation.components.AppTopBarActionIcon
+import presentation.components.BottomSheetScrollColumn
+import presentation.components.zeroBottomSheetWindowInsets
 import presentation.components.DuplicatePackConfirmDialog
 import presentation.components.EmptyState
 import presentation.components.InteractionBlockedBox
@@ -284,21 +286,23 @@ fun PackDetailScreen(
         ModalBottomSheet(
             onDismissRequest = { onIntent(PackDetailIntent.DismissCollaboratorsSheet) },
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-            containerColor = neubrutalScreenBackground()
+            containerColor = neubrutalScreenBackground(),
+            contentWindowInsets = { zeroBottomSheetWindowInsets() }
         ) {
-            PackCollaboratorsSheet(
-                searchQuery = state.collaboratorSearchQuery,
-                onSearchQueryChange = { onIntent(PackDetailIntent.CollaboratorSearchChanged(it)) },
-                searchResults = state.collaboratorSearchResults,
-                collaborators = state.collaborators,
-                isLoading = state.collaboratorsLoading,
-                invitePermission = state.collaboratorInvitePermission,
-                onInvitePermissionChange = { onIntent(PackDetailIntent.CollaboratorPermissionChanged(it)) },
-                onInvite = { onIntent(PackDetailIntent.InviteCollaborator(it)) },
-                onRemove = { onIntent(PackDetailIntent.RemoveCollaborator(it)) },
-                onRefresh = { onIntent(PackDetailIntent.RefreshCollaborators) },
-                modifier = Modifier.padding(bottom = 24.dp)
-            )
+            BottomSheetScrollColumn {
+                PackCollaboratorsSheet(
+                    searchQuery = state.collaboratorSearchQuery,
+                    onSearchQueryChange = { onIntent(PackDetailIntent.CollaboratorSearchChanged(it)) },
+                    searchResults = state.collaboratorSearchResults,
+                    collaborators = state.collaborators,
+                    isLoading = state.collaboratorsLoading,
+                    invitePermission = state.collaboratorInvitePermission,
+                    onInvitePermissionChange = { onIntent(PackDetailIntent.CollaboratorPermissionChanged(it)) },
+                    onInvite = { onIntent(PackDetailIntent.InviteCollaborator(it)) },
+                    onRemove = { onIntent(PackDetailIntent.RemoveCollaborator(it)) },
+                    onRefresh = { onIntent(PackDetailIntent.RefreshCollaborators) }
+                )
+            }
         }
     }
 

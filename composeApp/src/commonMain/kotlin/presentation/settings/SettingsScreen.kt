@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -32,6 +31,7 @@ import presentation.components.AppIllustration
 import presentation.components.AppIllustrationImage
 import presentation.components.AppPasswordTextField
 import presentation.components.AppTopBar
+import presentation.components.KeyboardAwareLazyColumn
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
@@ -149,7 +149,7 @@ fun SettingsScreen(
         },
         containerColor = neubrutalScreenBackground()
     ) { padding ->
-        LazyColumn(
+        KeyboardAwareLazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)

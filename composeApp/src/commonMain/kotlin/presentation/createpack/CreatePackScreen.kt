@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -71,6 +70,7 @@ import presentation.components.AiGenerateBottomSheet
 import presentation.components.PromptPresetPickerSheet
 import presentation.components.ImproveConfirmDialog
 import presentation.components.BottomSheetScrollColumn
+import presentation.components.keyboardAwareScroll
 import presentation.components.zeroBottomSheetWindowInsets
 import presentation.components.rememberImagePicker
 import presentation.components.rememberStickerImagePicker
@@ -638,7 +638,7 @@ fun CreatePackScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 20.dp, vertical = 16.dp)
-                        .verticalScroll(rememberScrollState())
+                        .keyboardAwareScroll(rememberScrollState())
                 ) {
                 AppTextField(
                     value = state.name,
