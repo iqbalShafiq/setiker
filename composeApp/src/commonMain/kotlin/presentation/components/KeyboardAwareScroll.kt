@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
  * recommended order for text-input screens.
  */
 @OptIn(ExperimentalLayoutApi::class)
+@Composable
 fun Modifier.keyboardAwareScroll(scrollState: ScrollState): Modifier =
     keyboardAwareInsets()
         .imeNestedScroll()
@@ -28,6 +29,7 @@ fun Modifier.keyboardAwareScroll(scrollState: ScrollState): Modifier =
  * Applies [keyboardAwareInsets] and [imeNestedScroll] for [LazyColumn] bodies.
  */
 @OptIn(ExperimentalLayoutApi::class)
+@Composable
 fun Modifier.keyboardAwareLazyList(): Modifier =
     keyboardAwareInsets()
         .imeNestedScroll()
