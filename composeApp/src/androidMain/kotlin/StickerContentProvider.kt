@@ -10,9 +10,12 @@ import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.util.Log
 import androidx.room.Room
+import data.local.database.DatabaseMigrations
 import data.local.database.StickerDatabase
 import data.storage.StickerFileStorage
+import domain.model.decodeStickerDecorationsForCurrentSchema
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
 import java.io.File
 
 class StickerContentProvider : ContentProvider() {
@@ -60,7 +63,12 @@ class StickerContentProvider : ContentProvider() {
                 context,
                 StickerDatabase::class.java,
                 StickerDatabase.DATABASE_NAME
-            ).build()
+            )
+                .addMigrations(DatabaseMigrations.MIGRATION_1_2)
+                .addMigrations(DatabaseMigrations.MIGRATION_2_3)
+                .addMigrations(DatabaseMigrations.MIGRATION_3_4)
+                .addMigrations(DatabaseMigrations.MIGRATION_4_5)
+                .build()
         }
         return database!!
     }
@@ -153,7 +161,14 @@ class StickerContentProvider : ContentProvider() {
             METADATA_CODE -> "vnd.android.cursor.dir/vnd.${context?.packageName}.stickercontentprovider.$METADATA"
             METADATA_CODE_FOR_SINGLE_PACK -> "vnd.android.cursor.item/vnd.${context?.packageName}.stickercontentprovider.$METADATA"
             STICKERS_CODE -> "vnd.android.cursor.dir/vnd.${context?.packageName}.stickercontentprovider.$STICKERS"
-            STICKERS_ASSET_CODE -> "image/webp"
+            STICKERS_ASSET_CODE -> {
+                // Tray icons share the same URI shape (stickers_asset/<id>/<file>) as sticker
+                // files, so we differentiate by extension. Tray icons are PNGs (.png), sticker
+                // files are WebPs (.webp). Returning the correct MIME type matters because
+                // WhatsApp probes it when caching / decoding the asset.
+                val fileName = uri.lastPathSegment.orEmpty()
+                if (fileName.endsWith(".png", ignoreCase = true)) "image/png" else "image/webp"
+            }
             STICKER_PACK_TRAY_ICON_CODE -> "image/png"
             else -> throw IllegalArgumentException("Unknown URI: $uri")
         }
@@ -184,9 +199,9 @@ class StickerContentProvider : ContentProvider() {
             Log.d(TAG, "Found ${packs.size} packs in database")
             packs.forEach { entity ->
                 val stickers = getDatabase().stickerDao().getByPackId(entity.identifier)
-                val trayFileName = File(entity.trayImageFile ?: "").name
+                val trayFileName = File(entity.trayImageFile).name
                 Log.d(TAG, "Pack: ${entity.identifier}, trayImage: $trayFileName (original: ${entity.trayImageFile})")
-                cursor.addRow(arrayOf(
+                cursor.addRow(arrayOf<Any?>(
                     entity.identifier,
                     entity.name,
                     entity.publisher,
@@ -199,7 +214,7 @@ class StickerContentProvider : ContentProvider() {
                     null, // license_agreement_website
                     "1",  // image_data_version
                     0,    // avoid_cache
-                    0     // animated_sticker_pack
+                    if (entity.isAnimated) 1 else 0
                 ))
             }
         } catch (e: Exception) {
@@ -221,15 +236,15 @@ class StickerContentProvider : ContentProvider() {
         try {
             val entity = getDatabase().stickerPackDao().getById(identifier)
             if (entity != null) {
-                val trayFileName = File(entity.trayImageFile ?: "").name
+                val trayFileName = File(entity.trayImageFile).name
                 Log.d(TAG, "Pack: ${entity.identifier}, trayImage: $trayFileName (original: ${entity.trayImageFile})")
-                cursor.addRow(arrayOf(
+                cursor.addRow(arrayOf<Any?>(
                     entity.identifier,
                     entity.name,
                     entity.publisher,
                     trayFileName,
                     null, null, null, null, null, null,
-                    "1", 0, 0
+                    "1", 0, if (entity.isAnimated) 1 else 0
                 ))
             } else {
                 Log.w(TAG, "Pack not found: $identifier")
@@ -249,12 +264,12 @@ class StickerContentProvider : ContentProvider() {
             val stickers = getDatabase().stickerDao().getByPackId(identifier)
             Log.d(TAG, "Found ${stickers.size} stickers for pack: $identifier")
             stickers.forEach { sticker ->
-                val fileName = File(sticker.imageFile ?: "").name
+                val fileName = File(sticker.imageFile).name
                 Log.d(TAG, "Sticker: $fileName (original: ${sticker.imageFile})")
                 cursor.addRow(arrayOf(
                     fileName,
-                    sticker.emojis ?: "",
-                    sticker.accessibilityText ?: ""
+                    decodeEmojisAsCsv(sticker.emojis),
+                    sticker.accessibilityText
                 ))
             }
         } catch (e: Exception) {
@@ -265,12 +280,56 @@ class StickerContentProvider : ContentProvider() {
         return cursor
     }
 
+    /**
+     * We persist `StickerEntity.emojis` as a JSON-encoded array (e.g. `["⭐","🎉"]`) so the
+     * domain model stays a `List<String>`. WhatsApp's loader however parses the emoji column
+     * with `emojisConcatenated.split(",")` (see `StickerPackLoader.fetchFromContentProviderForStickers`),
+     * so handing it raw JSON corrupts emojis on the WhatsApp side and — when count crosses
+     * `EMOJI_MAX_LIMIT = 3` — also fails the `StickerPackValidator` and silently rejects the pack.
+     * Re-serialize as comma-separated values that match the official contract.
+     */
+    private fun decodeEmojisAsCsv(raw: String?): String {
+        if (raw.isNullOrBlank()) return ""
+        return try {
+            Json.decodeFromString<List<String>>(raw).joinToString(",")
+        } catch (_: Exception) {
+            raw
+        }
+    }
+
     private suspend fun getStickerFile(fileName: String, identifier: String): ParcelFileDescriptor? {
         return try {
             Log.d(TAG, "Getting sticker file: $fileName")
+            cleanupOldExportFiles()
+            val stickerEntity = getDatabase()
+                .stickerDao()
+                .getByPackId(identifier)
+                .firstOrNull { File(it.imageFile).name == fileName }
+
             val filePath = getFileStorage().getImagePath(fileName)
-            Log.d(TAG, "Resolved path: $filePath")
-            val file = File(filePath)
+            val exportPath = if (stickerEntity?.isAnimated == true) {
+                // Animated WebP is already fully baked at save-time (decorations + frames).
+                // Re-running the static decoration compositor would destroy the animation.
+                filePath
+            } else if (stickerEntity?.sourceImageFile != null) {
+                // New flow stores flattened preview directly in imageFile.
+                filePath
+            } else if (stickerEntity?.decorationsJson.isNullOrBlank()) {
+                filePath
+            } else {
+                val decorations = decodeStickerDecorationsForCurrentSchema(stickerEntity.decorationsJson)
+                if (decorations.isEmpty()) {
+                    filePath
+                } else {
+                    getFileStorage().saveStickerImageWithDecorations(
+                        sourcePath = filePath,
+                        fileName = "wa_export_${identifier}_${fileName}",
+                        decorations = decorations
+                    )
+                }
+            }
+            Log.d(TAG, "Resolved export path: $exportPath")
+            val file = File(exportPath)
             if (file.exists()) {
                 Log.d(TAG, "File exists, size: ${file.length()} bytes")
                 ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
@@ -282,5 +341,19 @@ class StickerContentProvider : ContentProvider() {
             Log.e(TAG, "Error opening file: $fileName", e)
             null
         }
+    }
+
+    private fun cleanupOldExportFiles() {
+        val stickersDir = File(context?.filesDir, "stickers")
+        if (!stickersDir.exists()) return
+        val now = System.currentTimeMillis()
+        stickersDir.listFiles()
+            ?.filter { it.name.startsWith("wa_export_") }
+            ?.forEach { file ->
+                val ageMs = now - file.lastModified()
+                if (ageMs > 24 * 60 * 60 * 1000L) {
+                    file.delete()
+                }
+            }
     }
 }

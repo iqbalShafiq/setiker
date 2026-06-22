@@ -1,0 +1,349 @@
+package presentation.publicpack
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.outlined.Bookmark
+import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
+import data.remote.resolveApiUrl
+import presentation.components.AppIllustration
+import presentation.components.EmptyState
+import presentation.components.LoadingIndicator
+import presentation.components.AppTopBar
+import presentation.components.FollowPackBottomBarIconButton
+import presentation.components.InteractionBlockedBox
+import presentation.components.PackBottomBar
+import presentation.components.PackBottomBarFab
+import presentation.components.PackBottomBarIconButton
+import presentation.components.ScreenSectionTitle
+import presentation.components.UnfollowConfirmDialog
+import presentation.theme.AccentCoral
+import presentation.theme.NeubrutalCardRadius
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
+import presentation.theme.NeubrutalSmallShadowOffset
+import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalMutedOnSurface
+import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalScreenBackground
+import presentation.theme.neubrutalShadow
+import presentation.theme.neubrutalShadowColor
+import presentation.theme.screenContentHorizontalPadding
+import org.jetbrains.compose.resources.stringResource
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.back_content_description
+import setiker.composeapp.generated.resources.close
+import setiker.composeapp.generated.resources.error_dialog_title
+import setiker.composeapp.generated.resources.explore_pack_not_found_desc
+import setiker.composeapp.generated.resources.explore_pack_not_found_title
+import setiker.composeapp.generated.resources.processing
+import setiker.composeapp.generated.resources.public_pack_by
+import setiker.composeapp.generated.resources.public_pack_import_body
+import setiker.composeapp.generated.resources.public_pack_import_cancel
+import setiker.composeapp.generated.resources.public_pack_import_confirm
+import setiker.composeapp.generated.resources.public_pack_import_owner_credit
+import setiker.composeapp.generated.resources.public_pack_import_title
+import setiker.composeapp.generated.resources.creator_follow
+import setiker.composeapp.generated.resources.creator_following
+import setiker.composeapp.generated.resources.retry
+import setiker.composeapp.generated.resources.social_counts
+import setiker.composeapp.generated.resources.stickers_title
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PublicPackDetailScreen(
+    packId: String,
+    state: PublicPackDetailState,
+    onIntent: (PublicPackDetailIntent) -> Unit,
+    snackbarHostState: SnackbarHostState,
+    modifier: Modifier = Modifier
+) {
+    var showUnfollowDialog by remember { mutableStateOf(false) }
+
+    Scaffold(
+        topBar = {
+            AppTopBar(
+                title = state.pack?.name ?: "",
+                onBackClick = null
+            )
+        },
+        bottomBar = {
+            PackBottomBar(
+                actionStatusText = if (state.isImporting) stringResource(Res.string.processing) else null,
+                actions = {
+                    PackBottomBarIconButton(
+                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(Res.string.back_content_description),
+                        onClick = { onIntent(PublicPackDetailIntent.NavigateBack) },
+                        enabled = !state.isImporting
+                    )
+                    PackBottomBarIconButton(
+                        icon = if (state.isLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                        contentDescription = if (state.isLiked) "Unlike" else "Like",
+                        onClick = { onIntent(PublicPackDetailIntent.ToggleLike) },
+                        enabled = !state.isImporting,
+                        iconTint = if (state.isLiked) AccentCoral else neubrutalOnSurface()
+                    )
+                    PackBottomBarIconButton(
+                        icon = if (state.isSaved) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder,
+                        contentDescription = if (state.isSaved) "Unsave" else "Save",
+                        onClick = { onIntent(PublicPackDetailIntent.ToggleSave) },
+                        enabled = !state.isImporting,
+                        iconTint = if (state.isSaved) AccentCoral else neubrutalOnSurface()
+                    )
+                    if (!state.isOwnPack) {
+                        FollowPackBottomBarIconButton(
+                            isFollowing = state.isFollowingCreator,
+                            onClick = {
+                                if (state.isFollowingCreator) {
+                                    showUnfollowDialog = true
+                                } else {
+                                    onIntent(PublicPackDetailIntent.ToggleFollowCreator)
+                                }
+                            },
+                            enabled = !state.isImporting,
+                            followContentDescription = stringResource(Res.string.creator_follow),
+                            unfollowContentDescription = stringResource(Res.string.creator_following)
+                        )
+                    }
+                },
+                floatingActionButton = if (!state.isOwnPack) {
+                    {
+                        PackBottomBarFab(
+                            icon = Icons.Default.Download,
+                            contentDescription = "Import",
+                            onClick = { onIntent(PublicPackDetailIntent.ImportPack) },
+                            enabled = !state.isImporting && state.pack != null,
+                            isLoading = state.isImporting
+                        )
+                    }
+                } else {
+                    null
+                }
+            )
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = neubrutalScreenBackground()
+    ) { innerPadding ->
+        when {
+            state.isLoading -> LoadingIndicator(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                illustration = AppIllustration.LoadingState
+            )
+            state.pack == null -> EmptyState(
+                title = stringResource(Res.string.explore_pack_not_found_title),
+                description = state.error ?: stringResource(Res.string.explore_pack_not_found_desc),
+                illustration = AppIllustration.ErrorState,
+                modifier = modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                action = if (state.loadFailed) {
+                    {
+                        presentation.components.AppPrimaryButton(
+                            text = stringResource(Res.string.retry),
+                            onClick = { onIntent(PublicPackDetailIntent.Load(packId)) }
+                        )
+                    }
+                } else {
+                    null
+                }
+            )
+            else -> {
+                val pack = state.pack
+                InteractionBlockedBox(
+                    blocked = state.isImporting,
+                    modifier = modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .screenContentHorizontalPadding()
+                            .padding(vertical = 16.dp)
+                    ) {
+                    val creatorName = pack.owner?.displayName ?: pack.owner?.username ?: "Creator"
+                    val creatorId = pack.owner?.id
+                    Text(
+                        text = stringResource(Res.string.public_pack_by, creatorName),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = neubrutalOnSurface(),
+                        modifier = if (creatorId != null) {
+                            Modifier.clickable { onIntent(PublicPackDetailIntent.OpenCreator(creatorId)) }
+                        } else {
+                            Modifier
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(Res.string.social_counts, pack.likeCount, pack.saveCount, pack.downloadCount),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = neubrutalMutedOnSurface()
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    ScreenSectionTitle(
+                        text = stringResource(Res.string.stickers_title),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    LazyVerticalGrid(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f, fill = true)
+                            .graphicsLayer { clip = false },
+                        columns = GridCells.Fixed(3),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        contentPadding = PaddingValues(
+                            bottom = NeubrutalSmallShadowOffset + 14.dp
+                        )
+                    ) {
+                        items(pack.stickers, key = { it.id ?: it.stickerId }) { relation ->
+                            val sticker = relation.sticker
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .neubrutalShadow(
+                                        offsetX = NeubrutalSmallShadowOffset,
+                                        offsetY = NeubrutalSmallShadowOffset,
+                                        cornerRadius = NeubrutalCardRadius,
+                                        color = neubrutalShadowColor()
+                                    )
+                                    .clip(RoundedCornerShape(NeubrutalCardRadius))
+                                    .background(neubrutalCardSurface())
+                                    .neubrutalBorderWithGloss(
+                                        color = neubrutalBorderColor(),
+                                        cornerRadius = NeubrutalCardRadius,
+                                        highlightColor = neubrutalGlossyHighlightColor()
+                                    )
+                                    .padding(6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                AsyncImage(
+                                    model = resolveApiUrl(sticker?.url),
+                                    contentDescription = sticker?.name ?: "Sticker",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(neubrutalScreenBackground()),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                        }
+                    }
+                    }
+                }
+            }
+        }
+    }
+
+    state.errorDialogMessage?.let { errorMessage ->
+        AlertDialog(
+            onDismissRequest = { onIntent(PublicPackDetailIntent.DismissErrorDialog) },
+            title = { Text(stringResource(Res.string.error_dialog_title)) },
+            text = { Text(errorMessage) },
+            confirmButton = {
+                TextButton(onClick = { onIntent(PublicPackDetailIntent.DismissErrorDialog) }) {
+                    Text(stringResource(Res.string.close))
+                }
+            }
+        )
+    }
+
+    if (showUnfollowDialog && state.pack != null) {
+        val creatorName = state.pack.owner?.displayName
+            ?: state.pack.owner?.username
+            ?: "Creator"
+        UnfollowConfirmDialog(
+            displayName = creatorName,
+            onConfirm = {
+                showUnfollowDialog = false
+                onIntent(PublicPackDetailIntent.ToggleFollowCreator)
+            },
+            onDismiss = { showUnfollowDialog = false }
+        )
+    }
+
+    if (state.showImportDialog) {
+        AlertDialog(
+            onDismissRequest = { onIntent(PublicPackDetailIntent.DismissImportDialog) },
+            title = { Text(stringResource(Res.string.public_pack_import_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        stringResource(
+                            Res.string.public_pack_import_body,
+                            state.importPointCost,
+                            state.pointsRemaining
+                        )
+                    )
+                    if (state.importOwnerCredit > 0) {
+                        Text(
+                            stringResource(
+                                Res.string.public_pack_import_owner_credit,
+                                state.importOwnerCredit
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = neubrutalMutedOnSurface()
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { onIntent(PublicPackDetailIntent.ConfirmImport) }) {
+                    Text(stringResource(Res.string.public_pack_import_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { onIntent(PublicPackDetailIntent.DismissImportDialog) }) {
+                    Text(stringResource(Res.string.public_pack_import_cancel))
+                }
+            }
+        )
+    }
+}

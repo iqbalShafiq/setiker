@@ -13,9 +13,19 @@ val NeubrutalWhite = Color(0xFFFFFFFF)
 val NeubrutalBg = Color(0xFFF5F5F5)
 val NeubrutalGray = Color(0xFF8B8B8B)
 
+/** Glossy top/left bevel fill in light mode. */
+val NeubrutalGlossyHighlightLight = Color(0xFFFAE9E1)
+/** Glossy top/left bevel fill in dark mode; warmer than white so it stays visible beside white borders. */
+val NeubrutalGlossyHighlightDark = Color(0xFFFFBDAA)
+/** Brighter glossy bevel for saturated dark-mode fills such as primary buttons. */
+val NeubrutalGlossyHighlightDarkFilled = Color(0xFFFFF0C7)
+
 // -- Accent / Primary --
 val AccentCoral = Color(0xFFFF8C69)
 val AccentCoralLight = Color(0xFFFFE5DC)
+val AppBarCoralDark = Color(0xFF3A241F)
+val BottomBarCreamLight = Color(0xFFFFF3BF)
+val BottomBarMintDark = Color(0xFF203229)
 
 // -- Pastel Icon Backgrounds --
 val PastelPink = Color(0xFFFFB3B3)

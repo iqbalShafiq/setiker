@@ -4,7 +4,6 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -14,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -21,11 +21,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.stringResource
 import presentation.theme.AccentCoral
-import presentation.theme.NeubrutalBlack
 import presentation.theme.NeubrutalWhite
+import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalShadow
+import presentation.theme.neubrutalShadowColor
+import presentation.theme.NeubrutalDialogRadius
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.create_new_pack
 
 @Composable
 fun ClayFab(
@@ -43,6 +51,7 @@ fun ClayFab(
         label = "fab_scale"
     )
 
+    val border = neubrutalBorderColor()
     Box(
         modifier = modifier
             .size(64.dp)
@@ -50,15 +59,15 @@ fun ClayFab(
             .neubrutalShadow(
                 offsetX = if (isPressed) 1.dp else 4.dp,
                 offsetY = if (isPressed) 1.dp else 4.dp,
-                cornerRadius = 20.dp,
-                color = NeubrutalBlack
+                cornerRadius = NeubrutalDialogRadius,
+                color = neubrutalShadowColor()
             )
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(NeubrutalDialogRadius))
             .background(AccentCoral)
-            .border(
-                width = 2.dp,
-                color = NeubrutalBlack,
-                shape = RoundedCornerShape(20.dp)
+            .neubrutalBorderWithGloss(
+                color = border,
+                cornerRadius = NeubrutalDialogRadius,
+                highlightColor = neubrutalGlossyHighlightColor(onFilledSurface = true)
             )
             .clickable(
                 interactionSource = interactionSource,
@@ -69,9 +78,18 @@ fun ClayFab(
     ) {
         Icon(
             imageVector = Icons.Default.Add,
-            contentDescription = "Create new pack",
+            contentDescription = stringResource(Res.string.create_new_pack),
             tint = NeubrutalWhite,
             modifier = Modifier.size(28.dp)
         )
+    }
+}
+
+// MARK: - Previews
+@Preview
+@Composable
+private fun ClayFabPreview() {
+    MaterialTheme {
+        ClayFab(onClick = {})
     }
 }

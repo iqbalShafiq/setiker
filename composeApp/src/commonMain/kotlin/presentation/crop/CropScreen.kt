@@ -2,7 +2,6 @@ package presentation.crop
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -19,48 +18,69 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
-import presentation.components.AppPrimaryButton
-import presentation.components.AppSecondaryButton
+import org.jetbrains.compose.resources.stringResource
+import presentation.components.AppIllustration
+import presentation.components.AppIllustrationImage
 import presentation.components.AppTopBar
-import presentation.components.LoadingIndicator
+import presentation.components.InteractionBlockedBox
+import presentation.components.PackBottomBar
+import presentation.components.PackBottomBarFab
+import presentation.components.PackBottomBarIconButton
 import presentation.theme.AccentCoral
-import presentation.theme.NeubrutalBg
-import presentation.theme.NeubrutalBlack
-import presentation.theme.NeubrutalGray
+import presentation.theme.NeubrutalCardRadius
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
+import presentation.theme.NeubrutalDialogRadius
+import presentation.theme.NeubrutalShadowOffset
+import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.NeubrutalWhite
+import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalMutedOnSurface
+import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
+import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalSubtleOnSurface
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.back
+import setiker.composeapp.generated.resources.crop_image_title
+import setiker.composeapp.generated.resources.processing
+import setiker.composeapp.generated.resources.save_sticker
+import setiker.composeapp.generated.resources.flip_horizontal
+import setiker.composeapp.generated.resources.image_to_crop
+import setiker.composeapp.generated.resources.no_image_selected
+import setiker.composeapp.generated.resources.reset
+import setiker.composeapp.generated.resources.rotate_left
+import setiker.composeapp.generated.resources.rotate_right
+import setiker.composeapp.generated.resources.zoom
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,24 +94,49 @@ fun CropScreen(
     Scaffold(
         topBar = {
             AppTopBar(
-                title = "Crop Image",
-                onBackClick = onBackClick
+                title = stringResource(Res.string.crop_image_title),
+                onBackClick = null
+            )
+        },
+        bottomBar = {
+            PackBottomBar(
+                actionStatusText = if (state.isProcessing) {
+                    stringResource(Res.string.processing)
+                } else {
+                    null
+                },
+                actions = {
+                    PackBottomBarIconButton(
+                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(Res.string.back),
+                        onClick = onBackClick,
+                        enabled = !state.isProcessing
+                    )
+                },
+                floatingActionButton = {
+                    PackBottomBarFab(
+                        icon = Icons.Default.Check,
+                        contentDescription = stringResource(Res.string.save_sticker),
+                        onClick = { onIntent(CropIntent.ApplyCrop) },
+                        enabled = state.imagePath.isNotBlank() && !state.isProcessing,
+                        isLoading = state.isProcessing
+                    )
+                }
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = NeubrutalBg
+        containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
-        if (state.isProcessing) {
-            LoadingIndicator(
-                modifier = modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            )
-        } else {
+        val border = neubrutalBorderColor()
+        InteractionBlockedBox(
+            blocked = state.isProcessing,
+            modifier = modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
             Column(
-                modifier = modifier
+                modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
                     .padding(horizontal = 20.dp, vertical = 16.dp)
             ) {
                 // Crop Area (Neubrutal Frame)
@@ -100,17 +145,17 @@ fun CropScreen(
                         .fillMaxWidth()
                         .aspectRatio(1f)
                         .neubrutalShadow(
-                            offsetX = 4.dp,
-                            offsetY = 4.dp,
-                            cornerRadius = 20.dp,
-                            color = NeubrutalBlack
+                            offsetX = NeubrutalShadowOffset,
+                            offsetY = NeubrutalShadowOffset,
+                            cornerRadius = NeubrutalDialogRadius,
+                            color = neubrutalShadowColor()
                         )
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(NeubrutalWhite)
-                        .border(
-                            width = 2.dp,
-                            color = NeubrutalBlack,
-                            shape = RoundedCornerShape(20.dp)
+                        .clip(RoundedCornerShape(NeubrutalDialogRadius))
+                        .background(neubrutalCardSurface())
+                        .neubrutalBorderWithGloss(
+                            color = border,
+                            cornerRadius = NeubrutalDialogRadius,
+                            highlightColor = neubrutalGlossyHighlightColor()
                         )
                         .padding(4.dp),
                     contentAlignment = Alignment.Center
@@ -120,8 +165,8 @@ fun CropScreen(
                             imagePath = state.imagePath,
                             rotation = state.rotation,
                             scale = state.scale,
-                            offsetX = state.offsetX,
-                            offsetY = state.offsetY,
+                            offsetXNorm = state.offsetX,
+                            offsetYNorm = state.offsetY,
                             isFlippedHorizontal = state.isFlippedHorizontal,
                             isFlippedVertical = state.isFlippedVertical,
                             onTransform = { scale, offsetX, offsetY ->
@@ -130,11 +175,18 @@ fun CropScreen(
                             }
                         )
                     } else {
-                        Text(
-                            text = "No image selected",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = NeubrutalGray
-                        )
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            AppIllustrationImage(
+                                illustration = AppIllustration.EditorTools,
+                                modifier = Modifier.fillMaxWidth(0.82f)
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = stringResource(Res.string.no_image_selected),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = neubrutalSubtleOnSurface()
+                            )
+                        }
                     }
                 }
 
@@ -142,16 +194,16 @@ fun CropScreen(
 
                 // Zoom Slider
                 Text(
-                    text = "Zoom",
+                    text = stringResource(Res.string.zoom),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Medium,
-                    color = NeubrutalBlack
+                    color = neubrutalOnSurface()
                 )
 
                 Slider(
                     value = state.scale,
                     onValueChange = { onIntent(CropIntent.UpdateScale(it)) },
-                    valueRange = 0.5f..3f,
+                    valueRange = 0.5f..4f,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -164,44 +216,30 @@ fun CropScreen(
                 ) {
                     NeubrutalToolButton(
                         icon = Icons.Default.Refresh,
-                        label = "Rotate L",
+                        label = stringResource(Res.string.rotate_left),
                         isSelected = false,
                         onClick = { onIntent(CropIntent.RotateLeft) }
                     )
                     NeubrutalToolButton(
                         icon = Icons.Default.Refresh,
-                        label = "Rotate R",
+                        label = stringResource(Res.string.rotate_right),
                         isSelected = false,
                         onClick = { onIntent(CropIntent.RotateRight) }
                     )
                     NeubrutalToolButton(
                         icon = Icons.Default.Refresh,
-                        label = "Flip H",
+                        label = stringResource(Res.string.flip_horizontal),
                         isSelected = false,
                         onClick = { onIntent(CropIntent.FlipHorizontal) }
                     )
                     NeubrutalToolButton(
                         icon = Icons.Default.Refresh,
-                        label = "Reset",
+                        label = stringResource(Res.string.reset),
                         isSelected = false,
                         onClick = { onIntent(CropIntent.Reset) }
                     )
                 }
 
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // Apply Button
-                AppPrimaryButton(
-                    text = "Apply Crop",
-                    onClick = { onIntent(CropIntent.ApplyCrop) }
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                AppSecondaryButton(
-                    text = "Cancel",
-                    onClick = onBackClick
-                )
             }
         }
     }
@@ -215,6 +253,7 @@ private fun NeubrutalToolButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val border = neubrutalBorderColor()
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -223,17 +262,20 @@ private fun NeubrutalToolButton(
             modifier = Modifier
                 .size(48.dp)
                 .neubrutalShadow(
-                    offsetX = 2.dp,
-                    offsetY = 2.dp,
+                    offsetX = NeubrutalSmallShadowOffset,
+                    offsetY = NeubrutalSmallShadowOffset,
                     cornerRadius = 24.dp,
-                    color = NeubrutalBlack
+                    color = neubrutalShadowColor()
                 )
                 .clip(CircleShape)
-                .background(if (isSelected) AccentCoral else NeubrutalWhite)
-                .border(
-                    width = 2.dp,
-                    color = NeubrutalBlack,
-                    shape = CircleShape
+                .background(if (isSelected) AccentCoral else neubrutalCardSurface())
+                .neubrutalBorderWithGloss(
+                    color = border,
+                    cornerRadius = 24.dp,
+                    shape = CircleShape,
+                    highlightColor = neubrutalGlossyHighlightColor(
+                        onFilledSurface = isSelected
+                    )
                 )
                 .clickable(onClick = onClick),
             contentAlignment = Alignment.Center
@@ -242,7 +284,7 @@ private fun NeubrutalToolButton(
                 imageVector = icon,
                 contentDescription = label,
                 modifier = Modifier.size(22.dp),
-                tint = if (isSelected) NeubrutalWhite else NeubrutalBlack
+                tint = if (isSelected) NeubrutalWhite else neubrutalOnSurface()
             )
         }
 
@@ -251,7 +293,7 @@ private fun NeubrutalToolButton(
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = NeubrutalGray
+            color = neubrutalMutedOnSurface()
         )
     }
 }
@@ -261,8 +303,8 @@ private fun CropImagePreview(
     imagePath: String,
     rotation: Float,
     scale: Float,
-    offsetX: Float,
-    offsetY: Float,
+    offsetXNorm: Float,
+    offsetYNorm: Float,
     isFlippedHorizontal: Boolean,
     isFlippedVertical: Boolean,
     onTransform: (Float, Float, Float) -> Unit,
@@ -270,97 +312,64 @@ private fun CropImagePreview(
 ) {
     // Use rememberUpdatedState to always have latest values in gesture handler
     val currentScale by rememberUpdatedState(scale)
-    val currentOffsetX by rememberUpdatedState(offsetX)
-    val currentOffsetY by rememberUpdatedState(offsetY)
+    val currentOffsetX by rememberUpdatedState(offsetXNorm)
+    val currentOffsetY by rememberUpdatedState(offsetYNorm)
     val currentOnTransform by rememberUpdatedState(onTransform)
 
     Box(
         modifier = modifier
             .fillMaxSize()
+            .clip(RoundedCornerShape(NeubrutalCardRadius))
             .pointerInput(Unit) {
                 detectTransformGestures { _, pan, zoom, _ ->
+                    val boxW = size.width.toFloat().coerceAtLeast(1f)
+                    val boxH = size.height.toFloat().coerceAtLeast(1f)
                     currentOnTransform(
                         currentScale * zoom,
-                        currentOffsetX + pan.x,
-                        currentOffsetY + pan.y
+                        currentOffsetX + pan.x / boxW,
+                        currentOffsetY + pan.y / boxH
                     )
                 }
             }
     ) {
         Image(
             painter = rememberAsyncImagePainter(imagePath),
-            contentDescription = "Image to crop",
+            contentDescription = stringResource(Res.string.image_to_crop),
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer {
                     this.rotationZ = rotation
                     this.scaleX = scale * if (isFlippedHorizontal) -1f else 1f
                     this.scaleY = scale * if (isFlippedVertical) -1f else 1f
-                    this.translationX = offsetX
-                    this.translationY = offsetY
+                    this.translationX = offsetXNorm * size.width
+                    this.translationY = offsetYNorm * size.height
                 },
             contentScale = ContentScale.Fit
         )
 
-        // Crop overlay - using 4 rectangles instead of BlendMode.Clear
+        // Rule-of-thirds grid over the exact square that will be exported.
+        // Earlier this screen drew an 80% inner crop box, but the Android crop
+        // processor exported the full square. That visual-only box made the
+        // preview feel different from the result. Now the visible square frame
+        // itself is the crop area, matching VideoCropScreen.
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .drawWithContent {
-                    val cropSize = size.minDimension * 0.8f
-                    val cropLeft = (size.width - cropSize) / 2
-                    val cropTop = (size.height - cropSize) / 2
-                    val cropRight = cropLeft + cropSize
-                    val cropBottom = cropTop + cropSize
-
-                    // Top overlay
-                    drawRect(
-                        color = Color.Black.copy(alpha = 0.45f),
-                        topLeft = Offset(0f, 0f),
-                        size = Size(size.width, cropTop)
-                    )
-                    // Bottom overlay
-                    drawRect(
-                        color = Color.Black.copy(alpha = 0.45f),
-                        topLeft = Offset(0f, cropBottom),
-                        size = Size(size.width, size.height - cropBottom)
-                    )
-                    // Left overlay
-                    drawRect(
-                        color = Color.Black.copy(alpha = 0.45f),
-                        topLeft = Offset(0f, cropTop),
-                        size = Size(cropLeft, cropSize)
-                    )
-                    // Right overlay
-                    drawRect(
-                        color = Color.Black.copy(alpha = 0.45f),
-                        topLeft = Offset(cropRight, cropTop),
-                        size = Size(size.width - cropRight, cropSize)
-                    )
-
-                    // Draw crop border
-                    drawRect(
-                        color = Color.White,
-                        topLeft = Offset(cropLeft, cropTop),
-                        size = Size(cropSize, cropSize),
-                        style = Stroke(width = 2.dp.toPx())
-                    )
-
-                    // Draw grid lines
-                    val thirdWidth = cropSize / 3
-                    val thirdHeight = cropSize / 3
+                    val thirdWidth = size.width / 3
+                    val thirdHeight = size.height / 3
 
                     repeat(2) { i ->
                         drawLine(
-                            color = Color.White.copy(alpha = 0.5f),
-                            start = Offset(cropLeft + (i + 1) * thirdWidth, cropTop),
-                            end = Offset(cropLeft + (i + 1) * thirdWidth, cropBottom),
+                            color = NeubrutalWhite.copy(alpha = 0.6f),
+                            start = Offset((i + 1) * thirdWidth, 0f),
+                            end = Offset((i + 1) * thirdWidth, size.height),
                             strokeWidth = 1.dp.toPx()
                         )
                         drawLine(
-                            color = Color.White.copy(alpha = 0.5f),
-                            start = Offset(cropLeft, cropTop + (i + 1) * thirdHeight),
-                            end = Offset(cropRight, cropTop + (i + 1) * thirdHeight),
+                            color = NeubrutalWhite.copy(alpha = 0.6f),
+                            start = Offset(0f, (i + 1) * thirdHeight),
+                            end = Offset(size.width, (i + 1) * thirdHeight),
                             strokeWidth = 1.dp.toPx()
                         )
                     }
@@ -392,7 +401,7 @@ private fun CropScreenProcessingPreview() {
     MaterialTheme {
         CropScreen(
             state = CropState(
-                imagePath = "",
+                imagePath = "preview://image",
                 isProcessing = true
             ),
             onIntent = {},

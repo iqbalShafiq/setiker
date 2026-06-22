@@ -22,10 +22,18 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import domain.model.StickerPack
 import org.jetbrains.compose.ui.tooling.preview.Preview
-import presentation.theme.NeubrutalBlack
-import presentation.theme.NeubrutalGray
-import presentation.theme.NeubrutalWhite
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalShadowOffset
+import presentation.theme.NeubrutalSmallRadius
+import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalMutedOnSurface
+import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
+import presentation.theme.neubrutalShadowColor
 
 @Composable
 fun StickerPackCard(
@@ -33,21 +41,27 @@ fun StickerPackCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val border = neubrutalBorderColor()
+    val surface = neubrutalCardSurface()
+    val shadow = neubrutalShadowColor()
+    val shape = RoundedCornerShape(NeubrutalCardRadius)
+    val innerShape = RoundedCornerShape(NeubrutalSmallRadius)
+
     Column(
         modifier = modifier
             .fillMaxWidth()
             .neubrutalShadow(
-                offsetX = 4.dp,
-                offsetY = 4.dp,
-                cornerRadius = 20.dp,
-                color = NeubrutalBlack
+                offsetX = NeubrutalShadowOffset,
+                offsetY = NeubrutalShadowOffset,
+                cornerRadius = NeubrutalCardRadius,
+                color = shadow
             )
-            .clip(RoundedCornerShape(20.dp))
-            .background(NeubrutalWhite)
-            .border(
-                width = 2.dp,
-                color = NeubrutalBlack,
-                shape = RoundedCornerShape(20.dp)
+            .clip(shape)
+            .background(surface)
+            .neubrutalBorderWithGloss(
+                color = border,
+                cornerRadius = NeubrutalCardRadius,
+                highlightColor = neubrutalGlossyHighlightColor()
             )
             .clickable(onClick = onClick)
             .padding(16.dp)
@@ -58,12 +72,12 @@ fun StickerPackCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
-                .clip(RoundedCornerShape(12.dp))
-                .background(NeubrutalWhite)
-                .border(
-                    width = 2.dp,
-                    color = NeubrutalBlack,
-                    shape = RoundedCornerShape(12.dp)
+                .clip(innerShape)
+                .background(surface)
+                .neubrutalBorderWithGloss(
+                    color = border,
+                    cornerRadius = NeubrutalSmallRadius,
+                    highlightColor = neubrutalGlossyHighlightColor()
                 ),
             contentScale = ContentScale.Crop
         )
@@ -74,7 +88,7 @@ fun StickerPackCard(
             text = pack.name,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
-            color = NeubrutalBlack,
+            color = neubrutalOnSurface(),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -82,7 +96,7 @@ fun StickerPackCard(
         Text(
             text = "${pack.stickers.size} stickers",
             style = MaterialTheme.typography.bodyMedium,
-            color = NeubrutalGray
+            color = neubrutalMutedOnSurface()
         )
     }
 }

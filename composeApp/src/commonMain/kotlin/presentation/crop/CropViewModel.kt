@@ -10,6 +10,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import presentation.common.UiText
+import presentation.common.toUiText
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.error_failed_crop_image
 
 class CropViewModel : ViewModel() {
 
@@ -37,10 +41,15 @@ class CropViewModel : ViewModel() {
                 _state.update { it.copy(isFlippedVertical = !it.isFlippedVertical) }
             }
             is CropIntent.UpdateScale -> {
-                _state.update { it.copy(scale = intent.scale.coerceIn(0.5f, 3f)) }
+                _state.update { it.copy(scale = intent.scale.coerceIn(0.5f, 4f)) }
             }
             is CropIntent.UpdateOffset -> {
-                _state.update { it.copy(offsetX = intent.x, offsetY = intent.y) }
+                _state.update {
+                    it.copy(
+                        offsetX = intent.x.coerceIn(-1f, 1f),
+                        offsetY = intent.y.coerceIn(-1f, 1f)
+                    )
+                }
             }
             is CropIntent.ApplyCrop -> applyCrop()
             is CropIntent.Reset -> {
@@ -78,7 +87,11 @@ class CropViewModel : ViewModel() {
                 _effect.send(CropEffect.ImageCropped(croppedPath))
             } catch (e: Exception) {
                 _state.update { it.copy(isProcessing = false, error = e.message) }
-                _effect.send(CropEffect.ShowError(e.message ?: "Failed to crop image"))
+                _effect.send(
+                    CropEffect.ShowError(
+                        e.toUiText(Res.string.error_failed_crop_image)
+                    )
+                )
             }
         }
     }

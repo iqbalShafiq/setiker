@@ -1,0 +1,20 @@
+package presentation.explore
+
+import data.remote.ExploreFeed
+import data.remote.ExploreSort
+
+sealed interface ExploreIntent {
+    data object LoadInitial : ExploreIntent
+    data object Refresh : ExploreIntent
+    data object LoadMore : ExploreIntent
+    data class ChangeSort(val sort: ExploreSort) : ExploreIntent
+    data class ChangeFeed(val feed: ExploreFeed) : ExploreIntent
+    data class SearchChanged(val query: String) : ExploreIntent
+    data class OpenPack(val packId: String) : ExploreIntent
+    data class OpenCreator(val userId: String) : ExploreIntent
+    data class ToggleLike(val packId: String) : ExploreIntent
+    data class ToggleSave(val packId: String) : ExploreIntent
+    data object NavigateBack : ExploreIntent
+    data object NavigateHistory : ExploreIntent
+    data object NavigateLogin : ExploreIntent
+}

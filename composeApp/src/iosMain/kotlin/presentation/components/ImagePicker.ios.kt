@@ -165,3 +165,25 @@ private fun getTopViewController(): UIViewController? {
     }
     return topController
 }
+
+@Composable
+actual fun rememberVideoPicker(onVideoPicked: (String?) -> Unit): VideoPickerLauncher {
+    // iOS animated sticker pipeline (AVFoundation + libwebp) is not implemented yet.
+    return remember {
+        object : VideoPickerLauncher {
+            override fun launch() {
+                onVideoPicked(null)
+            }
+        }
+    }
+}
+
+@Composable
+actual fun rememberStickerImagePicker(
+    onPicked: (path: String?, isAnimated: Boolean) -> Unit
+): ImagePickerLauncher {
+    // iOS: UIImagePickerController meratakan GIF jadi UIImage single frame, jadi jalur
+    // animated belum tersedia (selaras dengan stub rememberVideoPicker di iOS).
+    // Hasil pick selalu diperlakukan sebagai static image untuk sementara.
+    return rememberImagePicker { path -> onPicked(path, false) }
+}

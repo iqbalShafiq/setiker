@@ -6,13 +6,22 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
+import presentation.common.resolveOrDefault
 
 @Composable
 fun HomeScreenRoot(
     onPackClick: (String) -> Unit,
     onCreatePackClick: () -> Unit,
-    viewModel: HomeViewModel = koinInject()
+    onExploreClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    onSyncClick: () -> Unit,
+    onLoginClick: () -> Unit,
+    onVideoStickerPackClick: (String) -> Unit,
+    onAiJobsClick: () -> Unit = {},
+    onTopBarAiJobsClick: () -> Unit = {},
+    showOfflineBanner: Boolean = false,
+    viewModel: HomeViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -23,11 +32,18 @@ fun HomeScreenRoot(
                 is HomeEffect.NavigateToPackDetail -> onPackClick(effect.packId)
                 is HomeEffect.NavigateToCreatePack -> onCreatePackClick()
                 is HomeEffect.ShowError -> {
-                    snackbarHostState.showSnackbar(effect.message)
+                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
                 }
                 is HomeEffect.ShowSuccess -> {
-                    snackbarHostState.showSnackbar(effect.message)
+                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
                 }
+                is HomeEffect.NavigateToProfile -> onProfileClick()
+                is HomeEffect.NavigateToSync -> onSyncClick()
+                is HomeEffect.NavigateToExplore -> onExploreClick()
+                is HomeEffect.NavigateToLogin -> onLoginClick()
+                is HomeEffect.NavigateToVideoStickerPack -> onVideoStickerPackClick(effect.videoPath)
+                HomeEffect.NavigateToAiJobs -> onAiJobsClick()
+                HomeEffect.NavigateToAiJobsFromTopBar -> onTopBarAiJobsClick()
             }
         }
     }
@@ -36,6 +52,7 @@ fun HomeScreenRoot(
         state = state,
         onIntent = viewModel::onIntent,
         onPackClick = onPackClick,
-        snackbarHostState = snackbarHostState
+        snackbarHostState = snackbarHostState,
+        showOfflineBanner = showOfflineBanner
     )
 }

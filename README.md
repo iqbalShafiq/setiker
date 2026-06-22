@@ -4,13 +4,20 @@ A Kotlin Multiplatform app for Android and iOS to create and manage WhatsApp sti
 
 ## Features
 
-- Create and manage sticker packs
-- Add/edit/delete stickers
-- Crop images to 512x512 pixel stickers
-- Remove backgrounds from images
+- Create and manage sticker packs (local-first, optional cloud sync when signed in)
+- Crop, decorate, and remove backgrounds; animated sticker packs from video
+- AI generation, improvement, grid split, and background jobs via `stiker-api`
+- Explore public packs, share links (`shareUrl`, `deepLinkUrl`, `webFallbackUrl`)
+- Auth (login/register), profile, settings (legal links, AI daily usage, account deletion)
+- Onboarding for first-run users
 - Export sticker packs to WhatsApp
-- Material3 Design System
-- Support for both Android and iOS
+- Neubrutal Compose UI (Android + iOS)
+
+### iOS limitations
+
+- WhatsApp pack export and some on-device processing paths differ from Android
+- Unsupported operations show localized messaging instead of failing silently
+- Configure API base URL in `ApiConfig.ios.kt` for your environment
 
 ## Tech Stack
 
@@ -37,6 +44,29 @@ setiker/
 └── docs/
     ├── design/                     # Design references
     └── plans/                      # Implementation plans
+```
+
+## API dependency
+
+The app expects a compatible **stiker-api** backend (auth subcodes, refresh body, `/api/v1/ai/usage`, `/api/v1/legal/*`, share URL fields). Point `ApiConfig` at your server.
+
+## Bundled fonts
+
+Text decoration presets use these open-source fonts (see [SIL Open Font License 1.1](https://scripts.sil.org/OFL)):
+
+| Font | Preset usage | Source |
+|------|----------------|--------|
+| [Bungee](https://fonts.google.com/specimen/Bungee) | Sticker Pop | Google Fonts (OFL) |
+| [Luckiest Guy](https://fonts.google.com/specimen/Luckiest+Guy) | Bubble Red | Google Fonts (OFL) |
+| [Fredoka](https://fonts.google.com/specimen/Fredoka) | Bubble / Neon / Sunset | Google Fonts (OFL) |
+| Instrument Sans, Space Grotesk | UI / classic decoration weights | Bundled in `composeResources/font/` |
+
+Font files live in `composeApp/src/commonMain/composeResources/font/` (Compose preview) and `composeApp/src/androidMain/assets/fonts/` (Android export).
+
+## Verification
+
+```bash
+./gradlew :composeApp:testDebugUnitTest :composeApp:lint
 ```
 
 ## Getting Started

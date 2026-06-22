@@ -2,11 +2,14 @@ package presentation.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -21,9 +24,21 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.ui.tooling.preview.Preview
-import presentation.theme.NeubrutalBlack
-import presentation.theme.NeubrutalGray
-import presentation.theme.NeubrutalWhite
+import org.jetbrains.compose.resources.stringResource
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalShadowOffset
+import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalSubtleOnSurface
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
+import presentation.theme.neubrutalShadow
+import presentation.theme.neubrutalShadowColor
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.pack_name_label
+import setiker.composeapp.generated.resources.pack_name_placeholder
 
 @Composable
 fun AppTextField(
@@ -37,52 +52,84 @@ fun AppTextField(
     leadingIcon: @Composable (() -> Unit)? = null,
     trailingIcon: @Composable (() -> Unit)? = null,
     isError: Boolean = false,
-    supportingText: @Composable (() -> Unit)? = null
+    supportingText: @Composable (() -> Unit)? = null,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    imeAction: ImeAction = ImeAction.Done,
+    enabled: Boolean = true
 ) {
+    val border = neubrutalBorderColor()
+    val surface = neubrutalCardSurface()
+    val onSurface = neubrutalOnSurface()
+    val shape = RoundedCornerShape(NeubrutalCardRadius)
+
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = label,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Medium,
-            color = NeubrutalBlack,
+            color = onSurface,
             modifier = Modifier.padding(bottom = 6.dp)
         )
 
-        BasicTextField(
-            value = value,
-            onValueChange = onValueChange,
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(NeubrutalWhite)
-                .border(
-                    width = 2.dp,
-                    color = if (isError) presentation.theme.ErrorRed else NeubrutalBlack,
-                    shape = RoundedCornerShape(12.dp)
+                .neubrutalShadow(
+                    offsetX = NeubrutalShadowOffset,
+                    offsetY = NeubrutalShadowOffset,
+                    cornerRadius = NeubrutalCardRadius,
+                    color = neubrutalShadowColor()
                 )
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            singleLine = singleLine,
-            maxLines = maxLines,
-            textStyle = TextStyle(
-                color = NeubrutalBlack,
-                fontSize = MaterialTheme.typography.bodyLarge.fontSize,
-                fontWeight = FontWeight.Normal
-            ),
-            keyboardOptions = KeyboardOptions(
-                imeAction = ImeAction.Done,
-                keyboardType = KeyboardType.Text
-            ),
-            decorationBox = { innerTextField ->
-                if (value.isEmpty() && placeholder.isNotEmpty()) {
-                    Text(
-                        text = placeholder,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = NeubrutalGray.copy(alpha = 0.6f)
-                    )
-                }
-                innerTextField()
+                .clip(shape)
+                .background(surface)
+                .neubrutalBorderWithGloss(
+                    color = if (isError) presentation.theme.ErrorRed else border,
+                    cornerRadius = NeubrutalCardRadius,
+                    highlightColor = neubrutalGlossyHighlightColor()
+                )
+                .padding(horizontal = 16.dp, vertical = 14.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                leadingIcon?.invoke()
+                BasicTextField(
+                    value = value,
+                    onValueChange = { if (enabled) onValueChange(it) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(
+                            start = if (leadingIcon != null) 8.dp else 0.dp,
+                            end = if (trailingIcon != null) 4.dp else 0.dp
+                        ),
+                    singleLine = singleLine,
+                    maxLines = maxLines,
+                    enabled = enabled,
+                    textStyle = TextStyle(
+                        color = if (enabled) onSurface else onSurface.copy(alpha = 0.45f),
+                        fontSize = MaterialTheme.typography.bodyLarge.fontSize,
+                        fontWeight = FontWeight.Normal
+                    ),
+                    cursorBrush = androidx.compose.ui.graphics.SolidColor(onSurface),
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = imeAction,
+                        keyboardType = keyboardType
+                    ),
+                    decorationBox = { innerTextField ->
+                        if (value.isEmpty() && placeholder.isNotEmpty()) {
+                            Text(
+                                text = placeholder,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = neubrutalSubtleOnSurface()
+                            )
+                        }
+                        innerTextField()
+                    }
+                )
+                trailingIcon?.invoke()
             }
-        )
+        }
 
         if (isError && supportingText != null) {
             Spacer(modifier = Modifier.height(4.dp))
@@ -100,8 +147,8 @@ private fun AppTextFieldPreview() {
         AppTextField(
             value = "My Sticker Pack",
             onValueChange = {},
-            label = "Pack Name",
-            placeholder = "Enter pack name"
+            label = stringResource(Res.string.pack_name_label),
+            placeholder = stringResource(Res.string.pack_name_placeholder)
         )
     }
 }
@@ -113,8 +160,8 @@ private fun AppTextFieldEmptyPreview() {
         AppTextField(
             value = "",
             onValueChange = {},
-            label = "Pack Name",
-            placeholder = "Enter pack name"
+            label = stringResource(Res.string.pack_name_label),
+            placeholder = stringResource(Res.string.pack_name_placeholder)
         )
     }
 }

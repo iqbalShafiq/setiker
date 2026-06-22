@@ -1,16 +1,20 @@
 package presentation.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
@@ -18,10 +22,47 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import org.jetbrains.compose.ui.tooling.preview.Preview
-import presentation.theme.NeubrutalBlack
-import presentation.theme.NeubrutalGray
-import presentation.theme.NeubrutalWhite
+import org.jetbrains.compose.resources.stringResource
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalDialogRadius
+import presentation.theme.NeubrutalLargeShadowOffset
+import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalMutedOnSurface
+import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
+import presentation.theme.neubrutalShadowColor
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.cancel
+import setiker.composeapp.generated.resources.delete
+import setiker.composeapp.generated.resources.delete_pack_dialog_message
+import setiker.composeapp.generated.resources.delete_pack_dialog_title
+
+/** Material-style dialog width: near full-bleed on phones, capped on large screens. */
+private val AppDialogMaxWidth = 560.dp
+private val AppDialogHorizontalMargin = 6.dp
+
+@Composable
+fun AppDialogWidthContainer(
+    modifier: Modifier = Modifier,
+    content: @Composable BoxScope.() -> Unit
+) {
+    BoxWithConstraints(
+        modifier = modifier.fillMaxWidth(),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        val dialogWidth = minOf(
+            maxWidth - AppDialogHorizontalMargin * 2,
+            AppDialogMaxWidth
+        )
+        Box(
+            modifier = Modifier.width(dialogWidth),
+            content = content
+        )
+    }
+}
 
 @Composable
 fun AppDialog(
@@ -31,33 +72,40 @@ fun AppDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
-    dismissText: String = "Cancel",
-    isDanger: Boolean = true
+    dismissText: String? = null,
+    isDanger: Boolean = true,
+    confirmEnabled: Boolean = true
 ) {
+    val resolvedDismissText = dismissText ?: stringResource(Res.string.cancel)
+    val border = neubrutalBorderColor()
+    val shadow = neubrutalShadowColor()
+    val shape = RoundedCornerShape(NeubrutalDialogRadius)
+
     Dialog(onDismissRequest = onDismiss) {
-        Column(
-            modifier = modifier
-                .fillMaxWidth()
-                .neubrutalShadow(
-                    offsetX = 6.dp,
-                    offsetY = 6.dp,
-                    cornerRadius = 24.dp,
-                    color = NeubrutalBlack
-                )
-                .clip(RoundedCornerShape(24.dp))
-                .background(NeubrutalWhite)
-                .border(
-                    width = 2.dp,
-                    color = NeubrutalBlack,
-                    shape = RoundedCornerShape(24.dp)
-                )
-                .padding(28.dp)
-        ) {
+        AppDialogWidthContainer {
+            Column(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .neubrutalShadow(
+                        offsetX = NeubrutalLargeShadowOffset,
+                        offsetY = NeubrutalLargeShadowOffset,
+                        cornerRadius = NeubrutalDialogRadius,
+                        color = shadow
+                    )
+                    .clip(shape)
+                    .background(neubrutalCardSurface())
+                    .neubrutalBorderWithGloss(
+                        color = border,
+                        cornerRadius = NeubrutalDialogRadius,
+                        highlightColor = neubrutalGlossyHighlightColor()
+                    )
+                    .padding(28.dp)
+            ) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                color = NeubrutalBlack
+                color = neubrutalOnSurface()
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -65,7 +113,7 @@ fun AppDialog(
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
-                color = NeubrutalGray,
+                color = neubrutalMutedOnSurface(),
                 textAlign = TextAlign.Start
             )
 
@@ -74,16 +122,18 @@ fun AppDialog(
             AppPrimaryButton(
                 text = confirmText,
                 onClick = onConfirm,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                enabled = confirmEnabled
             )
 
             Spacer(modifier = Modifier.height(10.dp))
 
             AppSecondaryButton(
-                text = dismissText,
+                text = resolvedDismissText,
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth()
             )
+        }
         }
     }
 }
@@ -95,9 +145,9 @@ fun AppDialog(
 private fun AppDialogPreview() {
     MaterialTheme {
         AppDialog(
-            title = "Delete Pack",
-            message = "Are you sure you want to delete this pack? This action cannot be undone.",
-            confirmText = "Delete",
+            title = stringResource(Res.string.delete_pack_dialog_title),
+            message = stringResource(Res.string.delete_pack_dialog_message, "Sample Pack"),
+            confirmText = stringResource(Res.string.delete),
             onConfirm = {},
             onDismiss = {}
         )

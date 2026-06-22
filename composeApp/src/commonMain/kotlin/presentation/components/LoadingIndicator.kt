@@ -6,11 +6,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -22,24 +26,50 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import presentation.theme.AccentCoral
-import presentation.theme.NeubrutalBlack
+import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalSmallRadius
+import presentation.theme.NeubrutalSmallShadowOffset
+import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalMutedOnSurface
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
+import presentation.theme.neubrutalShadowColor
 import androidx.compose.animation.core.Animatable
 
 @Composable
 fun LoadingIndicator(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    label: String? = null,
+    illustration: AppIllustration? = null
 ) {
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            repeat(3) { index ->
-                NeubrutalBouncingDot(index = index)
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            if (illustration != null) {
+                AppIllustrationImage(
+                    illustration = illustration,
+                    modifier = Modifier.height(180.dp)
+                )
+                Spacer(modifier = Modifier.height(18.dp))
+            }
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                repeat(3) { index ->
+                    NeubrutalBouncingDot(index = index)
+                }
+            }
+            if (!label.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(14.dp))
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = neubrutalMutedOnSurface()
+                )
             }
         }
     }
@@ -49,6 +79,8 @@ fun LoadingIndicator(
 private fun NeubrutalBouncingDot(index: Int) {
     val delayMs = index * 150
     val animatable = remember { Animatable(1f) }
+    val border = neubrutalBorderColor()
+    val shadow = neubrutalShadowColor()
 
     LaunchedEffect(Unit) {
         delay(delayMs.toLong())
@@ -69,18 +101,19 @@ private fun NeubrutalBouncingDot(index: Int) {
         modifier = Modifier
             .size(14.dp)
             .scale(animatable.value)
+            .neubrutalShadow(
+                offsetX = NeubrutalSmallShadowOffset,
+                offsetY = NeubrutalSmallShadowOffset,
+                cornerRadius = NeubrutalSmallRadius,
+                color = shadow
+            )
             .clip(CircleShape)
             .background(AccentCoral)
-            .border(
-                width = 2.dp,
-                color = NeubrutalBlack,
-                shape = CircleShape
-            )
-            .neubrutalShadow(
-                offsetX = 2.dp,
-                offsetY = 2.dp,
-                cornerRadius = 7.dp,
-                color = NeubrutalBlack
+            .neubrutalBorderWithGloss(
+                color = border,
+                cornerRadius = NeubrutalSmallRadius,
+                shape = CircleShape,
+                highlightColor = neubrutalGlossyHighlightColor(onFilledSurface = true)
             )
     )
 }

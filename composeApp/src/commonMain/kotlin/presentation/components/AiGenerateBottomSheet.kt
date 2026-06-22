@@ -1,0 +1,295 @@
+package presentation.components
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
+import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
+import org.jetbrains.compose.resources.stringResource
+import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalMutedOnSurface
+import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalScreenBackground
+import presentation.theme.neubrutalSubtleOnSurface
+import presentation.theme.NeubrutalCardRadius
+import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalGlossyHighlightColor
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.cancel
+import setiker.composeapp.generated.resources.close
+import setiker.composeapp.generated.resources.generate
+import setiker.composeapp.generated.resources.generate_ai_sheet_title
+import setiker.composeapp.generated.resources.generate_clear_image
+import setiker.composeapp.generated.resources.generate_grid_hint
+import setiker.composeapp.generated.resources.generate_input_image_default_hint
+import setiker.composeapp.generated.resources.generate_input_image_hint
+import setiker.composeapp.generated.resources.generate_input_image_label
+import setiker.composeapp.generated.resources.generate_pick_image
+import setiker.composeapp.generated.resources.generate_replace_image
+import setiker.composeapp.generated.resources.generate_tip
+import setiker.composeapp.generated.resources.generating
+import setiker.composeapp.generated.resources.prompt_label
+import setiker.composeapp.generated.resources.prompt_placeholder
+import domain.model.AiQuotaOperation
+import domain.model.AiUsage
+
+/**
+ * Shared bottom sheet for hitting `/api/v1/generate`. Used by:
+ *   - Pack editor (`CreatePackScreen`): bulk generate stickers, optional reference image.
+ *   - Single sticker editor (`EditorScreen`): generate a replacement for one sticker, default
+ *     reference image is the sticker being edited.
+ *
+ * The same state shape lives in both screens to keep the contract identical:
+ *   - `prompt` maps to API text input.
+ *   - `inputImagePath` is the optional `image` multipart field. The callers decide the default.
+ *
+ * @param hasContextualDefault true when the input image already represents something meaningful
+ *   to the user (e.g. the current sticker). When true, the hint text emphasises that the
+ *   default is the related image and a "remove" button is shown; when false, the slot reads as
+ *   a generic optional reference uploader. Pack editor passes `false`, sticker editor passes
+ *   `true`.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AiGenerateBottomSheet(
+    prompt: String,
+    onPromptChange: (String) -> Unit,
+    inputImagePath: String?,
+    onPickInputImage: () -> Unit,
+    onClearInputImage: () -> Unit,
+    hasContextualDefault: Boolean,
+    isGenerating: Boolean,
+    onGenerate: () -> Unit,
+    onDismiss: () -> Unit,
+    aiUsage: AiUsage? = null,
+    isLoadingQuota: Boolean = false,
+    quotaLoadFailed: Boolean = false,
+    quotaOperation: AiQuotaOperation = AiQuotaOperation.GENERATE,
+    onOpenPresets: (() -> Unit)? = null
+) {
+    val canAffordQuota = aiUsage == null || aiUsage.pointsRemaining >= aiUsage.costFor(quotaOperation)
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = neubrutalScreenBackground(),
+        scrimColor = Color.Black.copy(alpha = 0.45f),
+        contentWindowInsets = { zeroBottomSheetWindowInsets() }
+    ) {
+        BottomSheetScrollColumn {
+            Text(
+                text = stringResource(Res.string.generate_ai_sheet_title),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = neubrutalOnSurface()
+            )
+            if (aiUsage != null || isLoadingQuota || quotaLoadFailed) {
+                Spacer(modifier = Modifier.height(4.dp))
+                AiQuotaSummary(
+                    usage = aiUsage,
+                    isLoading = isLoadingQuota,
+                    hasError = quotaLoadFailed,
+                    highlightOperation = quotaOperation
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Optional reference image. Default value (sticker image vs none) is decided by the
+            // caller; this composable just renders whatever is in `inputImagePath`.
+            Text(
+                text = stringResource(Res.string.generate_input_image_label),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = neubrutalOnSurface()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val path = inputImagePath
+                val pickContentDescription = stringResource(
+                    if (!path.isNullOrBlank()) {
+                        Res.string.generate_replace_image
+                    } else {
+                        Res.string.generate_pick_image
+                    }
+                )
+                Box(
+                    modifier = Modifier
+                        .size(96.dp)
+                        .clip(RoundedCornerShape(NeubrutalCardRadius))
+                        .combinedClickable(
+                            onClick = onPickInputImage,
+                            onLongClickLabel = if (!path.isNullOrBlank()) {
+                                stringResource(Res.string.generate_clear_image)
+                            } else {
+                                null
+                            },
+                            onLongClick = if (!path.isNullOrBlank()) onClearInputImage else null
+                        )
+                        .background(neubrutalCardSurface())
+                        .neubrutalBorderWithGloss(
+                            color = neubrutalBorderColor(),
+                            cornerRadius = NeubrutalCardRadius,
+                            highlightColor = neubrutalGlossyHighlightColor()
+                        )
+                        .padding(4.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (!path.isNullOrBlank()) {
+                        AsyncImage(
+                            model = path,
+                            contentDescription = pickContentDescription,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        androidx.compose.material3.Icon(
+                            imageVector = Icons.Filled.Image,
+                            contentDescription = pickContentDescription,
+                            tint = neubrutalSubtleOnSurface()
+                        )
+                    }
+                }
+                Text(
+                    modifier = Modifier.weight(1f),
+                    text = stringResource(
+                        if (hasContextualDefault) {
+                            Res.string.generate_input_image_hint
+                        } else {
+                            Res.string.generate_input_image_default_hint
+                        }
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = neubrutalMutedOnSurface(),
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            AppTextField(
+                value = prompt,
+                onValueChange = onPromptChange,
+                label = stringResource(Res.string.prompt_label),
+                placeholder = stringResource(Res.string.prompt_placeholder),
+                trailingIcon = onOpenPresets?.let { openPresets ->
+                    { PromptPresetsTrailingIcon(onClick = openPresets) }
+                }
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(Res.string.generate_tip),
+                style = MaterialTheme.typography.bodySmall,
+                color = neubrutalMutedOnSurface()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            val generateLabel = if (isGenerating) {
+                stringResource(Res.string.generating)
+            } else {
+                val cost = aiUsage?.costFor(quotaOperation) ?: 0
+                if (cost > 0) "${stringResource(Res.string.generate)} (−$cost)" else stringResource(Res.string.generate)
+            }
+            AppPrimaryButton(
+                text = generateLabel,
+                enabled = !isGenerating && prompt.isNotBlank() && canAffordQuota,
+                onClick = onGenerate
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            AppSecondaryButton(
+                text = stringResource(Res.string.close),
+                onClick = onDismiss
+            )
+        }
+    }
+}
+
+// MARK: - Previews
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview
+@Composable
+private fun AiGenerateBottomSheetPreview() {
+    MaterialTheme {
+        AiGenerateBottomSheet(
+            prompt = "A cute cat sticker",
+            onPromptChange = {},
+            inputImagePath = null,
+            onPickInputImage = {},
+            onClearInputImage = {},
+            hasContextualDefault = false,
+            isGenerating = false,
+            onGenerate = {},
+            onDismiss = {}
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview
+@Composable
+private fun AiGenerateBottomSheetGridPreview() {
+    MaterialTheme {
+        AiGenerateBottomSheet(
+            prompt = "A cute cat sticker",
+            onPromptChange = {},
+            inputImagePath = null,
+            onPickInputImage = {},
+            onClearInputImage = {},
+            hasContextualDefault = false,
+            isGenerating = false,
+            onGenerate = {},
+            onDismiss = {}
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview
+@Composable
+private fun AiGenerateBottomSheetGeneratingPreview() {
+    MaterialTheme {
+        AiGenerateBottomSheet(
+            prompt = "A cute cat sticker",
+            onPromptChange = {},
+            inputImagePath = null,
+            onPickInputImage = {},
+            onClearInputImage = {},
+            hasContextualDefault = false,
+            isGenerating = true,
+            onGenerate = {},
+            onDismiss = {}
+        )
+    }
+}

@@ -31,7 +31,7 @@ private val LightColorScheme = lightColorScheme(
 
 private val DarkColorScheme = darkColorScheme(
     primary = AccentCoral,
-    onPrimary = NeubrutalDark,
+    onPrimary = NeubrutalWhite,
     primaryContainer = AccentCoral.copy(alpha = 0.3f),
     onPrimaryContainer = AccentCoralLight,
     secondary = PastelMint,
@@ -40,15 +40,15 @@ private val DarkColorScheme = darkColorScheme(
     onSecondaryContainer = PastelMint,
     tertiary = WarningYellow,
     onTertiary = NeubrutalDark,
-    background = NeubrutalDark,
+    background = Color(0xFF161616),
     onBackground = NeubrutalWhite,
-    surface = Color(0xFF3A3A3A),
+    surface = Color(0xFF242424),
     onSurface = NeubrutalWhite,
-    surfaceVariant = Color(0xFF454545),
-    onSurfaceVariant = NeubrutalGray,
+    surfaceVariant = Color(0xFF2D2D2D),
+    onSurfaceVariant = Color(0xFFB8B8B8),
     error = ErrorRed,
     onError = NeubrutalWhite,
-    outline = NeubrutalWhite.copy(alpha = 0.5f)
+    outline = NeubrutalWhite
 )
 
 @Composable
@@ -63,7 +63,13 @@ fun SetikerTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = AppTypography,
-        content = content
-    )
+        typography = appTypography(),
+    ) {
+        ConfigureSystemBars(
+            statusBarColor = if (darkTheme) AppBarCoralDark else AccentCoralLight,
+            navigationBarColor = if (darkTheme) AppBarCoralDark else AccentCoralLight,
+            darkTheme = darkTheme
+        )
+        content()
+    }
 }

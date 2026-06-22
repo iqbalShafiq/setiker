@@ -22,7 +22,16 @@ data class StickerEntity(
     val id: String,
     val packId: String,
     val imageFile: String,
+    val sourceImageFile: String? = null,
     val emojis: String,
     val accessibilityText: String?,
-    val sortOrder: Int
+    val decorationsJson: String? = null,
+    val isAnimated: Boolean = false,
+    val sourceVideoFile: String? = null,
+    val frameDecorationsJson: String? = null,
+    val sortOrder: Int,
+    val cloudId: String? = null,
+    val syncState: String = "LOCAL_ONLY",
+    val lastSyncAt: Long? = null,
+    val cloudUrl: String? = null
 )

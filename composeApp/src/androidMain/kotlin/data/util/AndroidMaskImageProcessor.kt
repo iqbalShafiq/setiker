@@ -10,7 +10,6 @@ import android.os.Build
 import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import presentation.backgroundremover.DrawPath
 import java.io.File
 import java.io.FileOutputStream
 

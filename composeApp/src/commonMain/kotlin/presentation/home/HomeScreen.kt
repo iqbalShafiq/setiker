@@ -1,31 +1,82 @@
 package presentation.home
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.filled.Workspaces
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import domain.model.Sticker
 import domain.model.StickerPack
+import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import presentation.components.AiGenerateStickerPackBottomSheet
+import presentation.components.PromptPresetPickerSheet
+import presentation.components.AppIllustration
 import presentation.components.AppTopBar
-import presentation.components.ClayFab
+import presentation.components.AppTopBarBadgedActionIcon
 import presentation.components.EmptyState
+import presentation.components.HomeBottomBar
 import presentation.components.LoadingIndicator
-import presentation.components.StickerPackCard
-import presentation.theme.NeubrutalBg
+import presentation.components.NeubrutalIconButton
+import presentation.components.OfflineBanner
+import presentation.components.ProcessingPackListCard
+import presentation.components.SortBottomSheet
+import presentation.components.StickerPackListCard
+import presentation.components.rememberImagePicker
+import presentation.components.rememberVideoPicker
+import presentation.theme.neubrutalMutedOnSurface
+import presentation.theme.neubrutalScreenBackground
+import presentation.theme.screenContentHorizontalPadding
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.cancel_search
+import setiker.composeapp.generated.resources.error_load_packs_failed
+import setiker.composeapp.generated.resources.home_ai_jobs_cd
+import setiker.composeapp.generated.resources.home_hint
+import setiker.composeapp.generated.resources.home_try_sample_pack
+import setiker.composeapp.generated.resources.my_stickers_title
+import setiker.composeapp.generated.resources.no_search_results_desc
+import setiker.composeapp.generated.resources.no_search_results_title
+import setiker.composeapp.generated.resources.no_stickers_yet_desc
+import setiker.composeapp.generated.resources.no_stickers_yet_title
+import setiker.composeapp.generated.resources.retry
+import setiker.composeapp.generated.resources.search
+import setiker.composeapp.generated.resources.search_packs_placeholder
+import setiker.composeapp.generated.resources.sort_content_description
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,63 +85,287 @@ fun HomeScreen(
     onIntent: (HomeIntent) -> Unit,
     onPackClick: (String) -> Unit,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    showOfflineBanner: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    val generateInputImagePicker = rememberImagePicker { path ->
+        path?.let { onIntent(HomeIntent.UpdateGeneratePackInputImage(it)) }
+    }
+    val videoPicker = rememberVideoPicker { path ->
+        path?.let { onIntent(HomeIntent.StartVideoStickerPack(it)) }
+    }
+
     LaunchedEffect(Unit) {
         onIntent(HomeIntent.LoadPacks)
+    }
+
+    var showSortSheet by remember { mutableStateOf(false) }
+    var isSearchExpanded by remember { mutableStateOf(false) }
+    val searchFocusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(isSearchExpanded) {
+        if (isSearchExpanded) searchFocusRequester.requestFocus()
     }
 
     Scaffold(
         topBar = {
             AppTopBar(
-                title = "My Stickers",
-                actions = {}
+                title = stringResource(Res.string.my_stickers_title),
+                titleContent = {
+                    AnimatedContent(
+                        targetState = isSearchExpanded,
+                        transitionSpec = {
+                            (fadeIn(animationSpec = tween(180)) togetherWith
+                                fadeOut(animationSpec = tween(120))).using(
+                                SizeTransform(clip = false)
+                            )
+                        },
+                        label = "home_topbar_title_transition"
+                    ) { expanded ->
+                        if (expanded) {
+                            BasicTextField(
+                                value = state.searchQuery,
+                                onValueChange = { onIntent(HomeIntent.SearchQueryChanged(it)) },
+                                singleLine = true,
+                                textStyle = MaterialTheme.typography.titleMedium.copy(
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .focusRequester(searchFocusRequester),
+                                decorationBox = { innerTextField ->
+                                    if (state.searchQuery.isEmpty()) {
+                                        Text(
+                                            text = stringResource(Res.string.search_packs_placeholder),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = neubrutalMutedOnSurface()
+                                        )
+                                    }
+                                    innerTextField()
+                                }
+                            )
+                        } else {
+                            Text(
+                                text = stringResource(Res.string.my_stickers_title),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 28.sp
+                            )
+                        }
+                    }
+                },
+                actions = {
+                    NeubrutalIconButton(
+                        icon = if (isSearchExpanded) Icons.Default.Close else Icons.Default.Search,
+                        contentDescription = stringResource(
+                            if (isSearchExpanded) Res.string.cancel_search else Res.string.search
+                        ),
+                        onClick = {
+                            if (isSearchExpanded) {
+                                isSearchExpanded = false
+                                onIntent(HomeIntent.SearchQueryChanged(""))
+                            } else {
+                                isSearchExpanded = true
+                            }
+                        }
+                    )
+                    NeubrutalIconButton(
+                        icon = Icons.Default.Sort,
+                        contentDescription = stringResource(Res.string.sort_content_description),
+                        onClick = { showSortSheet = true }
+                    )
+                    AppTopBarBadgedActionIcon(
+                        icon = Icons.Default.Workspaces,
+                        contentDescription = stringResource(Res.string.home_ai_jobs_cd),
+                        badgeCount = state.aiJobsBadgeCount,
+                        onClick = { onIntent(HomeIntent.NavigateToAiJobsFromTopBar) }
+                    )
+                }
             )
         },
-        floatingActionButton = {
-            ClayFab(onClick = { onIntent(HomeIntent.CreateNewPack) })
+        bottomBar = {
+            HomeBottomBar(
+                currentUser = state.currentUser,
+                pendingSyncCount = state.pendingSyncCount,
+                isSyncing = state.isSyncing,
+                onExploreClick = { onIntent(HomeIntent.NavigateToExplore) },
+                onProfileClick = {
+                    if (state.currentUser != null) {
+                        onIntent(HomeIntent.NavigateToProfile)
+                    } else {
+                        onIntent(HomeIntent.NavigateToLogin)
+                    }
+                },
+                onSyncClick = {
+                    if (state.currentUser != null) {
+                        if (state.activeAiJobCount > 0) {
+                            onIntent(HomeIntent.NavigateToAiJobs)
+                        } else {
+                            onIntent(HomeIntent.NavigateToSync)
+                        }
+                    } else {
+                        onIntent(HomeIntent.NavigateToLogin)
+                    }
+                },
+                onGeneratePackClick = { onIntent(HomeIntent.OpenGeneratePackSheet) },
+                onVideoPackClick = { videoPicker.launch() },
+                onAddPackClick = { onIntent(HomeIntent.CreateNewPack) }
+            )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = NeubrutalBg
+        containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         when {
             state.isLoading -> {
                 LoadingIndicator(
                     modifier = modifier
                         .fillMaxSize()
-                        .padding(innerPadding)
+                        .padding(innerPadding),
+                    illustration = AppIllustration.LoadingState
                 )
             }
-            state.packs.isEmpty() -> {
+            state.loadFailed -> {
                 EmptyState(
-                    title = "No Stickers Yet",
-                    description = "Create your first sticker pack to get started",
-                    modifier = modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                )
-            }
-            else -> {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
+                    title = stringResource(Res.string.error_load_packs_failed),
+                    description = stringResource(Res.string.no_stickers_yet_desc),
+                    illustration = AppIllustration.ErrorState,
                     modifier = modifier
                         .fillMaxSize()
                         .padding(innerPadding),
-                    contentPadding = PaddingValues(20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    items(
-                        items = state.packs,
-                        key = { it.identifier }
-                    ) { pack ->
-                        StickerPackCard(
-                            pack = pack,
-                            onClick = { onPackClick(pack.identifier) }
+                    action = {
+                        presentation.components.AppPrimaryButton(
+                            text = stringResource(Res.string.retry),
+                            onClick = { onIntent(HomeIntent.RetryLoadPacks) }
                         )
+                    }
+                )
+            }
+            !state.hasListContent -> {
+                EmptyState(
+                    title = stringResource(Res.string.no_stickers_yet_title),
+                    description = stringResource(Res.string.no_stickers_yet_desc),
+                    illustration = AppIllustration.EmptyPack,
+                    modifier = modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                    action = {
+                        presentation.components.AppPrimaryButton(
+                            text = stringResource(Res.string.home_try_sample_pack),
+                            onClick = { onIntent(HomeIntent.CreateNewPack) }
+                        )
+                    }
+                )
+            }
+            else -> {
+                Column(
+                    modifier = modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .screenContentHorizontalPadding()
+                        .padding(top = 12.dp)
+                ) {
+                    if (showOfflineBanner) {
+                        OfflineBanner(
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+
+                    Text(
+                        text = stringResource(Res.string.home_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = neubrutalMutedOnSurface(),
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(
+                            top = 0.dp,
+                            bottom = 12.dp
+                        )
+                    )
+
+                    val packsToShow = state.filteredPacks
+                    val processingPacksToShow = state.filteredProcessingPacks
+
+                    if (packsToShow.isEmpty() && processingPacksToShow.isEmpty() && state.searchQuery.isNotEmpty()) {
+                        EmptyState(
+                            title = stringResource(Res.string.no_search_results_title),
+                            description = stringResource(Res.string.no_search_results_desc),
+                            illustration = AppIllustration.SearchEmpty,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                top = 0.dp,
+                                bottom = 20.dp
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(
+                                items = processingPacksToShow,
+                                key = { "processing_${it.draftId}" }
+                            ) { pack ->
+                                ProcessingPackListCard(
+                                    pack = pack,
+                                    onClick = { onIntent(HomeIntent.NavigateToAiJobs) },
+                                    modifier = Modifier.animateItem()
+                                )
+                            }
+                            items(
+                                items = packsToShow,
+                                key = { it.identifier }
+                            ) { pack ->
+                                StickerPackListCard(
+                                    pack = pack,
+                                    onClick = { onPackClick(pack.identifier) },
+                                    modifier = Modifier.animateItem()
+                                )
+                            }
+                        }
                     }
                 }
             }
+        }
+
+        if (showSortSheet) {
+            SortBottomSheet(
+                currentSort = state.sortOrder,
+                onSortSelected = { onIntent(HomeIntent.SortOrderChanged(it)) },
+                onDismiss = { showSortSheet = false }
+            )
+        }
+
+        var presetPickerVisible by remember { mutableStateOf(false) }
+        PromptPresetPickerSheet(
+            visible = presetPickerVisible,
+            onDismiss = { presetPickerVisible = false },
+            onPresetSelected = { preset ->
+                onIntent(HomeIntent.UpdateGeneratePackPrompt(preset.prompt))
+            }
+        )
+
+        if (state.isGeneratePackSheetOpen) {
+            AiGenerateStickerPackBottomSheet(
+                packName = state.generatePackName,
+                onPackNameChange = { onIntent(HomeIntent.UpdateGeneratePackName(it)) },
+                publisher = state.generatePackPublisher,
+                onPublisherChange = { onIntent(HomeIntent.UpdateGeneratePackPublisher(it)) },
+                prompt = state.generatePackPrompt,
+                onPromptChange = { onIntent(HomeIntent.UpdateGeneratePackPrompt(it)) },
+                layout = state.generatePackLayout,
+                onLayoutChange = { onIntent(HomeIntent.UpdateGeneratePackLayout(it)) },
+                inputImagePath = state.generatePackInputImagePath,
+                onPickInputImage = { generateInputImagePicker.launch() },
+                onClearInputImage = { onIntent(HomeIntent.UpdateGeneratePackInputImage(null)) },
+                isGenerating = state.isGeneratePackLoading,
+                onGenerate = { onIntent(HomeIntent.GenerateStickerPack) },
+                onDismiss = { onIntent(HomeIntent.CloseGeneratePackSheet) },
+                aiUsage = state.aiUsage,
+                isLoadingQuota = state.isLoadingAiUsage,
+                quotaLoadFailed = state.aiUsageLoadFailed,
+                onOpenPresets = { presetPickerVisible = true }
+            )
         }
     }
 }
@@ -151,6 +426,21 @@ private fun HomeScreenWithPacksPreview() {
     MaterialTheme {
         HomeScreen(
             state = HomeState(packs = mockPacks),
+            onIntent = {},
+            onPackClick = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun HomeScreenSearchNoResultsPreview() {
+    MaterialTheme {
+        HomeScreen(
+            state = HomeState(
+                packs = mockPacks,
+                searchQuery = "xyz"
+            ),
             onIntent = {},
             onPackClick = {}
         )

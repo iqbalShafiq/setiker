@@ -20,6 +20,12 @@ kotlin {
             freeCompilerArgs.add("-Xexpect-actual-classes")
         }
     }
+
+    compilerOptions {
+        freeCompilerArgs.addAll(
+            "-Xwarning-level=DEPRECATION:disabled",
+        )
+    }
     
     listOf(
         iosX64(),
@@ -39,18 +45,28 @@ kotlin {
             implementation(libs.material3)
             implementation(libs.ui)
             implementation(libs.components.resources)
+            implementation(libs.components.ui.tooling.preview)
             implementation(libs.ui.tooling.preview)
+            implementation(libs.material.icons.extended)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.viewmodel.compose)
             implementation(libs.androidx.lifecycle.runtime.compose)
             implementation(libs.navigation.compose)
             implementation(libs.coil.compose)
+            implementation(libs.coil.network.ktor3)
             implementation(libs.koin.core)
             implementation(libs.koin.compose)
+            implementation(libs.koin.compose.viewmodel)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.room.runtime)
             implementation(libs.androidx.sqlite.bundled)
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.client.logging)
+            implementation(libs.ktor.serialization.kotlinx.json)
+            implementation(libs.kotlinx.datetime)
+            implementation(libs.androidx.datastore.preferences)
         }
         
         androidMain.dependencies {
@@ -59,10 +75,32 @@ kotlin {
             implementation(libs.koin.androidx.compose)
             implementation(libs.ui.tooling)
             implementation(libs.ui.tooling.preview)
+            implementation(libs.ktor.client.okhttp)
+            implementation(libs.androidx.media3.transformer)
+            implementation(libs.androidx.media3.exoplayer)
+            implementation(libs.androidx.media3.common)
+            implementation(libs.androidx.media3.effect)
+            implementation(libs.androidx.concurrent.futures.ktx)
+            implementation(libs.webp.android)
+            implementation(libs.coil.gif)
+            implementation(libs.androidx.security.crypto)
+            implementation(libs.androidx.work.runtime)
+            implementation(libs.androidx.core.ktx)
+            implementation(libs.androidx.core.splashscreen)
+            implementation(libs.onnxruntime.android)
+        }
+
+        iosMain.dependencies {
+            implementation(libs.ktor.client.darwin)
         }
         
         commonTest.dependencies {
             implementation(kotlin("test"))
+            implementation(libs.kotlinx.coroutines.test)
+        }
+
+        androidUnitTest.dependencies {
+            implementation(libs.mockk)
         }
     }
 }
@@ -110,5 +148,9 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
+    }
+
+    lint {
+        disable += "UnsafeOptInUsageError"
     }
 }
