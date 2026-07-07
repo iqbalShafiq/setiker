@@ -81,7 +81,8 @@ data class UserDto(
     val emailVerified: Boolean? = null,
     val createdAt: String? = null,
     val followerCount: Int? = null,
-    val followingCount: Int? = null
+    val followingCount: Int? = null,
+    val subscriptionTier: String? = null
 )
 
 @Serializable

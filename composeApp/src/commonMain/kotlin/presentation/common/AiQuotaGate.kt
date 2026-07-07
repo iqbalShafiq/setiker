@@ -15,7 +15,7 @@ object AiQuotaGate {
         val usage = quotaRepository.getUsage(forceRefresh) ?: return null
         val cost = usage.costFor(operation)
         if (cost <= 0) return null
-        if (usage.pointsRemaining < cost) {
+        if (usage.pointsRemaining < cost && usage.purchasedTokenBalance < cost) {
             return UiText.StringRes(Res.string.error_ai_quota_exceeded)
         }
         return null
@@ -25,6 +25,6 @@ object AiQuotaGate {
         if (usage == null) return true
         val cost = usage.costFor(operation)
         if (cost <= 0) return true
-        return usage.pointsRemaining >= cost
+        return usage.pointsRemaining >= cost || usage.purchasedTokenBalance >= cost
     }
 }

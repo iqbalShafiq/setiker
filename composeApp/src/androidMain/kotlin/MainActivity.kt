@@ -1,7 +1,8 @@
 package com.setiker.app
 
-import android.Manifest
 import android.content.Intent
+import android.Manifest
+import com.setiker.app.MainActivityHolder
 import android.graphics.Color
 import android.net.Uri
 import android.os.Build
@@ -33,6 +34,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
+        MainActivityHolder.current = this
         applyDeepLinkFromIntent(intent)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -69,6 +71,13 @@ class MainActivity : ComponentActivity() {
                 notificationDeepLinkVersion = notificationDeepLinkVersion
             )
         }
+    }
+
+    override fun onDestroy() {
+        if (MainActivityHolder.current === this) {
+            MainActivityHolder.current = null
+        }
+        super.onDestroy()
     }
 
     override fun onNewIntent(intent: Intent) {

@@ -98,6 +98,7 @@ import setiker.composeapp.generated.resources.profile_explore_packs
 import setiker.composeapp.generated.resources.notifications_title
 import setiker.composeapp.generated.resources.profile_guest_login_prompt
 import setiker.composeapp.generated.resources.profile_processing_history
+import setiker.composeapp.generated.resources.profile_upgrade_premium
 import setiker.composeapp.generated.resources.send_feedback
 import setiker.composeapp.generated.resources.settings
 import setiker.composeapp.generated.resources.settings_legal_section
@@ -119,6 +120,7 @@ fun ProfileScreenRoot(
     onNavigateNotifications: () -> Unit = {},
     onBackClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
+    onNavigatePaywall: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.state.collectAsState()
@@ -149,6 +151,7 @@ fun ProfileScreenRoot(
         },
         onBackClick = onBackClick,
         onSettingsClick = onSettingsClick,
+        onNavigatePaywall = onNavigatePaywall,
         modifier = modifier
     )
 }
@@ -167,6 +170,7 @@ fun ProfileScreen(
     onOpenRetention: () -> Unit = {},
     onBackClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
+    onNavigatePaywall: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val borderColor = neubrutalBorderColor()
@@ -219,6 +223,7 @@ fun ProfileScreen(
                 item {
                     ProfileCard(
                         user = state.user,
+                        showPremiumBadge = state.aiUsage?.subscriptionTier == "premium",
                         borderColor = borderColor,
                         shadowColor = shadowColor,
                         cardSurface = cardSurface,
@@ -253,6 +258,19 @@ fun ProfileScreen(
                             hasError = state.aiUsageLoadFailed,
                             operationCostsInInfoDialog = true
                         )
+                    }
+                }
+
+                if (state.aiUsage?.subscriptionTier != "premium") {
+                    item {
+                        MenuCard(borderColor = borderColor, shadowColor = shadowColor, cardSurface = cardSurface) {
+                            ProfileMenuItem(
+                                icon = Icons.Default.Star,
+                                label = stringResource(Res.string.profile_upgrade_premium),
+                                iconBackgroundColor = AccentCoralLight,
+                                onClick = onNavigatePaywall
+                            )
+                        }
                     }
                 }
 
@@ -372,6 +390,7 @@ fun ProfileScreen(
 @Composable
 private fun ProfileCard(
     user: User,
+    showPremiumBadge: Boolean,
     borderColor: androidx.compose.ui.graphics.Color,
     shadowColor: androidx.compose.ui.graphics.Color,
     cardSurface: androidx.compose.ui.graphics.Color,
@@ -440,18 +459,20 @@ private fun ProfileCard(
                 color = neubrutalMutedOnSurface()
             )
             Spacer(modifier = Modifier.height(4.dp))
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(AccentCoral)
-                    .padding(horizontal = 10.dp, vertical = 3.dp)
-            ) {
-                Text(
-                    text = stringResource(Res.string.premium_badge),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = NeubrutalWhite
-                )
+            if (showPremiumBadge) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(AccentCoral)
+                        .padding(horizontal = 10.dp, vertical = 3.dp)
+                ) {
+                    Text(
+                        text = stringResource(Res.string.premium_badge),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = NeubrutalWhite
+                    )
+                }
             }
         }
 

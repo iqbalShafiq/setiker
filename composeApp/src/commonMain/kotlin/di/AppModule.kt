@@ -9,12 +9,16 @@ import data.repository.CloudSyncedLocalDataCleaner
 import data.local.database.StickerDatabase
 import data.local.database.SyncOperationDao
 import data.preferences.UserPreferencesRepository
-import data.remote.AiUsageApiRepository
+import data.billing.BillingApiRepository
+import data.billing.BillingRepositoryImpl
+import data.billing.PlatformBillingStore
+import domain.billing.BillingRepository
 import data.repository.AiQuotaRepositoryImpl
 import domain.repository.AiQuotaRepository
 import data.remote.CloudStickerRepository
 import data.remote.ExploreApiRepository
 import data.remote.LegalApiRepository
+import data.remote.AiUsageApiRepository
 import data.remote.SetikerApiService
 import data.remote.StickerApiRepository
 import data.aijob.AiJobManager
@@ -56,6 +60,7 @@ import presentation.aijobs.AiJobsViewModel
 import presentation.onboarding.OnboardingViewModel
 import presentation.settings.SettingsViewModel
 import presentation.sharepreview.SharePreviewViewModel
+import presentation.billing.PaywallViewModel
 
 expect fun platformModule(): Module
 
@@ -79,6 +84,8 @@ val appModule = module {
     single { ExploreApiRepository(authManager = get(), authTokenRefresher = get()) }
     single { LegalApiRepository(authManager = get(), authTokenRefresher = get()) }
     single { AiUsageApiRepository(authManager = get(), authTokenRefresher = get()) }
+    single { BillingApiRepository(authManager = get(), authTokenRefresher = get()) }
+    single<BillingRepository> { BillingRepositoryImpl(get(), get(), get(), get()) }
     single<AiQuotaRepository> { AiQuotaRepositoryImpl(get()) }
     single { UserPreferencesRepository(get()) }
     // NetworkMonitor is provided by platform-specific module
@@ -132,4 +139,5 @@ val appModule = module {
     viewModelOf(::OnboardingViewModel)
     viewModelOf(::SyncViewModel)
     viewModelOf(::AiJobsViewModel)
+    viewModelOf(::PaywallViewModel)
 }

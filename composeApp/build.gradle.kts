@@ -88,6 +88,7 @@ kotlin {
             implementation(libs.androidx.core.ktx)
             implementation(libs.androidx.core.splashscreen)
             implementation(libs.onnxruntime.android)
+            implementation(libs.billing.ktx)
         }
 
         iosMain.dependencies {

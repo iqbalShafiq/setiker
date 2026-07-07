@@ -261,6 +261,10 @@
     <string name="error_cloud_delete_failed">Could not delete on the server.</string>
     <string name="error_cloud_sync_failed">Sync failed. Try again when you are back online.</string>
     <string name="error_ai_quota_exceeded">Daily AI limit reached. Try again after reset.</string>
+    <string name="quota_exceeded_sheet_title">AI quota used up</string>
+    <string name="quota_exceeded_sheet_message">Get more AI points with a token pack or upgrade to Premium for a higher daily limit.</string>
+    <string name="quota_exceeded_get_more">Get more points</string>
+    <string name="profile_upgrade_premium">Upgrade to Premium</string>
     <string name="error_network_unavailable">You are offline. Check your connection and try again.</string>
     <string name="error_load_packs_failed">Could not load your sticker packs.</string>
     <string name="error_load_explore_failed">Could not load public packs.</string>

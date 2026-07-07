@@ -5,6 +5,10 @@
     <string name="error_auth_register_failed">Akun tidak bisa dibuat. Periksa data Anda dan coba lagi.</string>
     <string name="error_auth_refresh_failed">Sesi berakhir. Silakan masuk lagi.</string>
     <string name="error_ai_quota_exceeded">Kuota AI harian habis. Coba lagi setelah reset.</string>
+    <string name="quota_exceeded_sheet_title">Kuota AI habis</string>
+    <string name="quota_exceeded_sheet_message">Dapatkan poin AI tambahan dengan paket token atau upgrade ke Premium untuk limit harian lebih tinggi.</string>
+    <string name="quota_exceeded_get_more">Dapatkan poin</string>
+    <string name="profile_upgrade_premium">Upgrade ke Premium</string>
     <string name="error_load_packs_failed">Gagal memuat paket stiker Anda.</string>
     <string name="error_load_explore_failed">Gagal memuat paket publik.</string>
     <string name="error_network_unavailable">Anda sedang offline. Periksa koneksi lalu coba lagi.</string>

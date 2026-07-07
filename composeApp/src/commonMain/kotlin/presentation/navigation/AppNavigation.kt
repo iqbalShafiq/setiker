@@ -213,6 +213,7 @@ fun AppNavigation(
                 },
                 onAiJobsClick = { navBottomUp("aiJobs") },
                 onTopBarAiJobsClick = { navTopDown("aiJobs") },
+                onPaywallClick = { navBottomUp("paywall") },
                 showOfflineBanner = !isOnline
             )
         }
@@ -274,6 +275,12 @@ fun AppNavigation(
                )
            }
   
+        composable("paywall") {
+            presentation.billing.PaywallScreenRoot(
+                onBack = { navController.navigateUp() }
+            )
+        }
+
         composable("profile") {
             val viewModel: ProfileViewModel = koinViewModel()
             ProfileScreenRoot(
@@ -313,7 +320,8 @@ fun AppNavigation(
                     } else {
                         navBottomUp("login")
                     }
-                }
+                },
+                onNavigatePaywall = { navBottomUp("paywall") }
             )
         }
 
