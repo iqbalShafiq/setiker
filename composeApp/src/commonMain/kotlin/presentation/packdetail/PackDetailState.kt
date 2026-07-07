@@ -30,7 +30,8 @@ data class PackDetailState(
     val visibilityDialog: VisibilityDialog? = null,
     val isUpdatingVisibility: Boolean = false,
     val showDuplicateDialog: Boolean = false,
-    val isDuplicating: Boolean = false
+    val isDuplicating: Boolean = false,
+    val showContentPolicySheet: Boolean = false
 )
 
 enum class VisibilityDialog {

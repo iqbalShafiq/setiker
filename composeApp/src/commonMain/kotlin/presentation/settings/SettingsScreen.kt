@@ -13,11 +13,14 @@ import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -25,8 +28,10 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveLocal
+import presentation.common.resolveOrDefault
 import presentation.components.AiQuotaSummary
 import presentation.components.AppDialog
+import presentation.components.DeleteAccountConfirmDialog
 import presentation.components.AppIllustration
 import presentation.components.AppIllustrationImage
 import presentation.components.AppPasswordTextField
@@ -64,6 +69,7 @@ fun SettingsScreenRoot(
     viewModel: SettingsViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
     val openUrl = rememberUrlLauncher()
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -72,17 +78,22 @@ fun SettingsScreenRoot(
                 SettingsEffect.NavigateToOnboarding -> onShowOnboarding()
                 is SettingsEffect.OpenUrl -> openUrl(effect.url)
                 SettingsEffect.AccountDeleted -> onAccountDeleted()
-                is SettingsEffect.ShowMessage -> Unit
+                is SettingsEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
             }
         }
     }
-    SettingsScreen(state = state, onIntent = viewModel::onIntent)
+    SettingsScreen(
+        state = state,
+        onIntent = viewModel::onIntent,
+        snackbarHostState = snackbarHostState
+    )
 }
 
 @Composable
 fun SettingsScreen(
     state: SettingsState,
-    onIntent: (SettingsIntent) -> Unit
+    onIntent: (SettingsIntent) -> Unit,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
     val canSavePassword = state.currentPassword.isNotBlank() &&
         state.newPassword.isNotBlank() &&
@@ -101,16 +112,20 @@ fun SettingsScreen(
     }
 
     if (state.showDeleteConfirm) {
-        AppDialog(
-            title = stringResource(Res.string.settings_delete_confirm_title),
-            message = stringResource(Res.string.settings_delete_confirm_message),
-            confirmText = stringResource(Res.string.settings_delete_confirm_action),
+        DeleteAccountConfirmDialog(
+            password = state.deleteConfirmPassword,
+            confirmPhrase = state.deleteConfirmPhrase,
+            onPasswordChange = { onIntent(SettingsIntent.UpdateDeleteConfirmPassword(it)) },
+            onPhraseChange = { onIntent(SettingsIntent.UpdateDeleteConfirmPhrase(it)) },
             onConfirm = { onIntent(SettingsIntent.ConfirmDeleteAccount) },
-            onDismiss = { onIntent(SettingsIntent.DismissDeleteConfirm) }
+            onDismiss = { onIntent(SettingsIntent.DismissDeleteConfirm) },
+            isLoading = state.isDeletingAccount,
+            error = state.deleteAccountError
         )
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             AppTopBar(title = stringResource(Res.string.settings_title))
         },

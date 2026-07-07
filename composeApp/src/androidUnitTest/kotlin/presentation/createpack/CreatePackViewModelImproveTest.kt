@@ -1,5 +1,6 @@
 package presentation.createpack
 
+import data.remote.ExploreApiRepository
 import data.remote.StickerApiRepository
 import data.repository.StickerPackDraftSaver
 import data.storage.StickerFileStorage
@@ -258,7 +259,8 @@ class CreatePackViewModelImproveTest {
             draftResultApplier = deps.draftResultApplier,
             jobRepository = deps.jobRepository,
             aiQuotaRepository = mockk<AiQuotaRepository>(relaxed = true),
-            authManager = mockk(relaxed = true)
+            authManager = mockk(relaxed = true),
+            exploreApiRepository = mockk<ExploreApiRepository>(relaxed = true)
         )
     }
 }

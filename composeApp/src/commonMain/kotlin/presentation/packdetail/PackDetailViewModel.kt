@@ -114,10 +114,18 @@ class PackDetailViewModel(
                 _state.update { it.copy(collaboratorInvitePermission = intent.permission) }
             }
             PackDetailIntent.RequestMakePublic -> {
-                _state.update { it.copy(visibilityDialog = VisibilityDialog.MakePublic) }
+                _state.update { it.copy(showContentPolicySheet = true) }
             }
             PackDetailIntent.RequestUnpublish -> {
                 _state.update { it.copy(visibilityDialog = VisibilityDialog.Unpublish) }
+            }
+            PackDetailIntent.AcceptContentPolicy -> {
+                _state.update {
+                    it.copy(showContentPolicySheet = false, visibilityDialog = VisibilityDialog.MakePublic)
+                }
+            }
+            PackDetailIntent.DismissContentPolicy -> {
+                _state.update { it.copy(showContentPolicySheet = false) }
             }
             PackDetailIntent.ConfirmVisibilityChange -> confirmVisibilityChange()
             PackDetailIntent.DismissVisibilityDialog -> {

@@ -1,5 +1,6 @@
 package presentation.createpack
 
+import data.remote.ExploreApiRepository
 import data.remote.StickerApiRepository
 import data.repository.StickerPackDraftSaver
 import data.storage.StickerFileStorage
@@ -72,7 +73,8 @@ class CreatePackViewModelSavePackTest {
             draftResultApplier = aiDeps.draftResultApplier,
             jobRepository = aiDeps.jobRepository,
             aiQuotaRepository = mockk<AiQuotaRepository>(relaxed = true),
-            authManager = mockk(relaxed = true)
+            authManager = mockk(relaxed = true),
+            exploreApiRepository = mockk<ExploreApiRepository>(relaxed = true)
         )
 
         viewModel.onIntent(CreatePackIntent.UpdateName("My Pack"))

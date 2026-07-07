@@ -37,6 +37,7 @@ import data.sync.SyncManagerImpl
 import domain.repository.StickerRepository
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.viewModelOf
+import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 import presentation.auth.LoginViewModel
 import presentation.auth.ProfileViewModel
@@ -59,6 +60,7 @@ import presentation.sync.SyncViewModel
 import presentation.aijobs.AiJobsViewModel
 import presentation.onboarding.OnboardingViewModel
 import presentation.settings.SettingsViewModel
+import presentation.legal.LegalDocumentViewModel
 import presentation.sharepreview.SharePreviewViewModel
 import presentation.billing.PaywallViewModel
 
@@ -140,4 +142,10 @@ val appModule = module {
     viewModelOf(::SyncViewModel)
     viewModelOf(::AiJobsViewModel)
     viewModelOf(::PaywallViewModel)
+    viewModel { params ->
+        LegalDocumentViewModel(
+            legalApiRepository = get(),
+            docTypeParam = params.get()
+        )
+    }
 }

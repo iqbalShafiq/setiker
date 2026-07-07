@@ -47,9 +47,25 @@ class SettingsViewModel(
     fun onIntent(intent: SettingsIntent) {
         when (intent) {
             SettingsIntent.Load -> load()
-            SettingsIntent.ShowDeleteConfirm -> _state.update { it.copy(showDeleteConfirm = true) }
-            SettingsIntent.DismissDeleteConfirm -> _state.update { it.copy(showDeleteConfirm = false) }
+            SettingsIntent.ShowDeleteConfirm -> _state.update {
+                it.copy(
+                    showDeleteConfirm = true,
+                    deleteConfirmPassword = "",
+                    deleteConfirmPhrase = "",
+                    deleteAccountError = null
+                )
+            }
+            SettingsIntent.DismissDeleteConfirm -> _state.update {
+                it.copy(
+                    showDeleteConfirm = false,
+                    deleteConfirmPassword = "",
+                    deleteConfirmPhrase = "",
+                    deleteAccountError = null
+                )
+            }
             SettingsIntent.ConfirmDeleteAccount -> deleteAccount()
+            is SettingsIntent.UpdateDeleteConfirmPassword -> _state.update { it.copy(deleteConfirmPassword = intent.value) }
+            is SettingsIntent.UpdateDeleteConfirmPhrase -> _state.update { it.copy(deleteConfirmPhrase = intent.value) }
             SettingsIntent.ShowOnboardingAgain -> viewModelScope.launch {
                 userPreferencesRepository.setOnboardingCompleted(false)
                 _effect.send(SettingsEffect.NavigateToOnboarding)
@@ -164,22 +180,33 @@ class SettingsViewModel(
 
     private fun deleteAccount() {
         viewModelScope.launch {
+            val current = _state.value
             val token = authManager.getValidAccessToken() ?: authManager.getAccessToken()
             if (token.isNullOrBlank()) {
                 _effect.send(SettingsEffect.ShowMessage(UiText.StringRes(Res.string.error_auth_not_authenticated)))
                 return@launch
             }
-            _state.update { it.copy(isDeletingAccount = true) }
-            runCatching { authApiService.deleteAccount(token) }
-                .onSuccess {
-                    authSessionCoordinator.endSession()
-                    _state.update { it.copy(isDeletingAccount = false, showDeleteConfirm = false) }
-                    _effect.send(SettingsEffect.AccountDeleted)
+            _state.update { it.copy(isDeletingAccount = true, deleteAccountError = null) }
+            runCatching {
+                authApiService.deleteAccount(token, current.deleteConfirmPassword)
+            }.onSuccess {
+                authSessionCoordinator.endSession()
+                _state.update {
+                    it.copy(
+                        isDeletingAccount = false,
+                        showDeleteConfirm = false,
+                        deleteConfirmPassword = "",
+                        deleteConfirmPhrase = ""
+                    )
                 }
-                .onFailure { error ->
-                    _state.update { it.copy(isDeletingAccount = false, showDeleteConfirm = false) }
-                    _effect.send(SettingsEffect.ShowMessage(error.toUiText(Res.string.error_cloud_delete_failed)))
+                _effect.send(SettingsEffect.AccountDeleted)
+            }.onFailure { error ->
+                val message = when (error) {
+                    is ApiException -> error.toUiText(Res.string.error_cloud_delete_failed)
+                    else -> error.toUiText(Res.string.error_cloud_delete_failed)
                 }
+                _state.update { it.copy(isDeletingAccount = false, deleteAccountError = message) }
+            }
         }
     }
 }

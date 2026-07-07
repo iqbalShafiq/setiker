@@ -23,6 +23,8 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TextButton
@@ -51,6 +53,8 @@ import presentation.components.LoadingIndicator
 import presentation.components.AppTopBar
 import presentation.components.FollowPackBottomBarIconButton
 import presentation.components.InteractionBlockedBox
+import presentation.components.BlockCreatorConfirmDialog
+import presentation.components.ReportContentBottomSheet
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
@@ -82,7 +86,9 @@ import setiker.composeapp.generated.resources.public_pack_import_body
 import setiker.composeapp.generated.resources.public_pack_import_cancel
 import setiker.composeapp.generated.resources.public_pack_import_confirm
 import setiker.composeapp.generated.resources.public_pack_import_owner_credit
+import setiker.composeapp.generated.resources.public_pack_block_creator
 import setiker.composeapp.generated.resources.public_pack_import_title
+import setiker.composeapp.generated.resources.public_pack_report
 import setiker.composeapp.generated.resources.creator_follow
 import setiker.composeapp.generated.resources.creator_following
 import setiker.composeapp.generated.resources.retry
@@ -132,6 +138,18 @@ fun PublicPackDetailScreen(
                         iconTint = if (state.isSaved) AccentCoral else neubrutalOnSurface()
                     )
                     if (!state.isOwnPack) {
+                        PackBottomBarIconButton(
+                            icon = Icons.Outlined.Flag,
+                            contentDescription = stringResource(Res.string.public_pack_report),
+                            onClick = { onIntent(PublicPackDetailIntent.ShowReportSheet) },
+                            enabled = !state.isImporting
+                        )
+                        PackBottomBarIconButton(
+                            icon = Icons.Outlined.Block,
+                            contentDescription = stringResource(Res.string.public_pack_block_creator),
+                            onClick = { onIntent(PublicPackDetailIntent.ShowBlockCreatorConfirm) },
+                            enabled = !state.isImporting
+                        )
                         FollowPackBottomBarIconButton(
                             isFollowing = state.isFollowingCreator,
                             onClick = {
@@ -344,6 +362,25 @@ fun PublicPackDetailScreen(
                     Text(stringResource(Res.string.public_pack_import_cancel))
                 }
             }
+        )
+    }
+
+    ReportContentBottomSheet(
+        visible = state.showReportSheet,
+        selectedReason = state.reportReason,
+        details = state.reportDetails,
+        isSubmitting = state.isSubmittingReport,
+        onReasonSelected = { onIntent(PublicPackDetailIntent.SelectReportReason(it)) },
+        onDetailsChange = { onIntent(PublicPackDetailIntent.UpdateReportDetails(it)) },
+        onSubmit = { onIntent(PublicPackDetailIntent.SubmitReport) },
+        onDismiss = { onIntent(PublicPackDetailIntent.DismissReportSheet) }
+    )
+
+    if (state.showBlockCreatorConfirm) {
+        BlockCreatorConfirmDialog(
+            onConfirm = { onIntent(PublicPackDetailIntent.ConfirmBlockCreator) },
+            onDismiss = { onIntent(PublicPackDetailIntent.DismissBlockCreatorConfirm) },
+            isLoading = state.isBlockingCreator
         )
     }
 }

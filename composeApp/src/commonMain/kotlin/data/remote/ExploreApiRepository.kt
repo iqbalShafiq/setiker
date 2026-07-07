@@ -20,6 +20,7 @@ import data.remote.model.ProcessingHistoryItem
 import data.remote.model.PromptPresetDto
 import domain.model.PromptPreset
 import data.remote.model.PublicUserProfile
+import data.remote.model.ReportContentRequest
 import data.remote.model.SharePackWithUserRequest
 import kotlinx.serialization.Serializable
 import data.remote.model.UserNotificationItem
@@ -583,6 +584,43 @@ class ExploreApiRepository(
             throw ApiException(code = AppErrorCode.CloudDeleteFailed, message = extractMessage(bodyText))
         }
         return json.decodeFromString<ApiSuccessEnvelope<DeleteCountData>>(bodyText).data?.deletedCount ?: 0
+    }
+
+    suspend fun reportPack(packId: String, reason: String, details: String? = null) {
+        val response = withRequiredAuthRetry { authHeader ->
+            client.post("$baseUrl/api/v1/sticker-packs/$packId/report") {
+                header(HttpHeaders.Authorization, authHeader)
+                contentType(ContentType.Application.Json)
+                setBody(ReportContentRequest(reason = reason, details = details))
+            }
+        }
+        if (!response.status.isSuccess()) {
+            throw ApiException(code = AppErrorCode.CloudFetchFailed, message = extractMessage(response.bodyAsText()))
+        }
+    }
+
+    suspend fun reportProcessingHistory(historyId: String, reason: String, details: String? = null) {
+        val response = withRequiredAuthRetry { authHeader ->
+            client.post("$baseUrl/api/v1/processing-history/$historyId/report") {
+                header(HttpHeaders.Authorization, authHeader)
+                contentType(ContentType.Application.Json)
+                setBody(ReportContentRequest(reason = reason, details = details))
+            }
+        }
+        if (!response.status.isSuccess()) {
+            throw ApiException(code = AppErrorCode.CloudFetchFailed, message = extractMessage(response.bodyAsText()))
+        }
+    }
+
+    suspend fun blockUser(userId: String) {
+        val response = withRequiredAuthRetry { authHeader ->
+            client.post("$baseUrl/api/v1/users/$userId/block") {
+                header(HttpHeaders.Authorization, authHeader)
+            }
+        }
+        if (!response.status.isSuccess()) {
+            throw ApiException(code = AppErrorCode.CloudFetchFailed, message = extractMessage(response.bodyAsText()))
+        }
     }
 }
 

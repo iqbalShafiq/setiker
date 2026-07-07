@@ -56,7 +56,12 @@ data class CreatePackState(
     val aiUsageLoadFailed: Boolean = false,
     val cloudId: String? = null,
     val isPublishing: Boolean = false,
-    val presetPickerVisible: Boolean = false
+    val presetPickerVisible: Boolean = false,
+    val showContentPolicySheet: Boolean = false,
+    val showAiOutputReportSheet: Boolean = false,
+    val aiOutputReportReason: String? = null,
+    val aiOutputReportDetails: String = "",
+    val isSubmittingAiOutputReport: Boolean = false
 ) {
     val canPublishToExplore: Boolean
         get() = name.isNotBlank() &&

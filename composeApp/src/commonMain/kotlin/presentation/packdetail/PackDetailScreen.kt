@@ -67,6 +67,7 @@ import presentation.components.AppSecondaryButton
 import presentation.components.AppTopBar
 import presentation.components.AppTopBarActionIcon
 import presentation.components.BottomSheetScrollColumn
+import presentation.components.ContentPolicyBottomSheet
 import presentation.components.zeroBottomSheetWindowInsets
 import presentation.components.DuplicatePackConfirmDialog
 import presentation.components.EmptyState
@@ -272,6 +273,12 @@ fun PackDetailScreen(
             confirmEnabled = !state.isUpdatingVisibility
         )
     }
+
+    ContentPolicyBottomSheet(
+        visible = state.showContentPolicySheet,
+        onDismiss = { onIntent(PackDetailIntent.DismissContentPolicy) },
+        onAccept = { onIntent(PackDetailIntent.AcceptContentPolicy) }
+    )
 
     if (state.showDuplicateDialog) {
         DuplicatePackConfirmDialog(

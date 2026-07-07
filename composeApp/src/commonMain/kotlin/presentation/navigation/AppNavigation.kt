@@ -45,6 +45,7 @@ import presentation.sync.SyncScreenRoot
 import presentation.sync.SyncViewModel
 import presentation.onboarding.OnboardingScreenRoot
 import presentation.settings.SettingsScreenRoot
+import presentation.legal.LegalDocumentScreenRoot
 import presentation.sharepreview.SharePreviewScreenRoot
 import presentation.videocrop.VideoCropScreenRoot
 import presentation.videostickerpack.VideoStickerPackScreenRoot
@@ -188,6 +189,17 @@ fun AppNavigation(
             )
         }
 
+        composable(
+            route = "legal/{docType}",
+            arguments = listOf(navArgument("docType") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val docType = backStackEntry.arguments?.getString("docType") ?: "PRIVACY"
+            LegalDocumentScreenRoot(
+                docType = docType,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
         composable("home") {
             HomeScreenRoot(
                 onPackClick = { packId ->
@@ -321,7 +333,11 @@ fun AppNavigation(
                         navBottomUp("login")
                     }
                 },
-                onNavigatePaywall = { navBottomUp("paywall") }
+                onNavigatePaywall = { navBottomUp("paywall") },
+                onOpenPrivacy = { navBottomUp("legal/PRIVACY") },
+                onOpenTerms = { navBottomUp("legal/TERMS") },
+                onOpenRetention = { navBottomUp("legal/RETENTION") },
+                onOpenPermissions = { navBottomUp("legal/PERMISSIONS") }
             )
         }
 

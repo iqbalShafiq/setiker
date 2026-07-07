@@ -74,6 +74,7 @@ import presentation.components.AiGenerateBottomSheet
 import presentation.components.PromptPresetPickerSheet
 import presentation.components.ImproveConfirmDialog
 import presentation.components.RemoveBackgroundConfirmDialog
+import presentation.components.ReportContentBottomSheet
 import presentation.components.BottomSheetScrollColumn
 import presentation.components.zeroBottomSheetWindowInsets
 import presentation.components.AppPrimaryButton
@@ -141,6 +142,7 @@ import setiker.composeapp.generated.resources.generate_ai
 import setiker.composeapp.generated.resources.generate_pick_result
 import setiker.composeapp.generated.resources.generate_replace_sticker_subtitle
 import setiker.composeapp.generated.resources.generate_replace_sticker_title
+import setiker.composeapp.generated.resources.history_report_output
 import setiker.composeapp.generated.resources.improve_confirm_message_sticker
 import setiker.composeapp.generated.resources.improve_sticker
 import setiker.composeapp.generated.resources.remove_background_title
@@ -614,6 +616,17 @@ fun EditorScreen(
         )
     }
 
+    ReportContentBottomSheet(
+        visible = state.showAiOutputReportSheet,
+        selectedReason = state.aiOutputReportReason,
+        details = state.aiOutputReportDetails,
+        isSubmitting = state.isSubmittingAiOutputReport,
+        onReasonSelected = { onIntent(EditorIntent.SelectAiOutputReportReason(it)) },
+        onDetailsChange = { onIntent(EditorIntent.UpdateAiOutputReportDetails(it)) },
+        onSubmit = { onIntent(EditorIntent.SubmitAiOutputReport) },
+        onDismiss = { onIntent(EditorIntent.DismissAiOutputReport) }
+    )
+
     var presetPickerVisible by remember { mutableStateOf(false) }
     PromptPresetPickerSheet(
         visible = presetPickerVisible,
@@ -694,6 +707,12 @@ fun EditorScreen(
                 AppSecondaryButton(
                     text = stringResource(Res.string.cancel),
                     onClick = { onIntent(EditorIntent.CancelGeneratedResults) },
+                    enabled = !isOperationInProgress
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                AppSecondaryButton(
+                    text = stringResource(Res.string.history_report_output),
+                    onClick = { onIntent(EditorIntent.ShowAiOutputReport) },
                     enabled = !isOperationInProgress
                 )
             }

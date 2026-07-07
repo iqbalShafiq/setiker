@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +41,7 @@ import presentation.components.LoadingIndicator
 import presentation.components.NeubrutalSelectableChip
 import presentation.components.AppTopBar
 import presentation.components.InteractionBlockedBox
+import presentation.components.ReportContentBottomSheet
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
@@ -66,6 +68,7 @@ import setiker.composeapp.generated.resources.history_filter_grid
 import setiker.composeapp.generated.resources.history_none_desc
 import setiker.composeapp.generated.resources.history_none_title
 import setiker.composeapp.generated.resources.history_outputs
+import setiker.composeapp.generated.resources.history_report_output
 import setiker.composeapp.generated.resources.history_refresh
 import setiker.composeapp.generated.resources.history_subtitle
 import setiker.composeapp.generated.resources.history_offline_banner
@@ -248,6 +251,11 @@ fun ProcessingHistoryScreen(
                                         )
                                     }
                                     PackBottomBarIconButton(
+                                        icon = Icons.Outlined.Flag,
+                                        contentDescription = stringResource(Res.string.history_report_output),
+                                        onClick = { onIntent(ProcessingHistoryIntent.ShowReport(item.id)) }
+                                    )
+                                    PackBottomBarIconButton(
                                         icon = Icons.Default.Delete,
                                         contentDescription = "Delete",
                                         onClick = { onIntent(ProcessingHistoryIntent.DeleteItem(item.id)) }
@@ -261,4 +269,15 @@ fun ProcessingHistoryScreen(
             }
         }
     }
+
+    ReportContentBottomSheet(
+        visible = state.showReportSheet,
+        selectedReason = state.reportReason,
+        details = state.reportDetails,
+        isSubmitting = state.isSubmittingReport,
+        onReasonSelected = { onIntent(ProcessingHistoryIntent.SelectReportReason(it)) },
+        onDetailsChange = { onIntent(ProcessingHistoryIntent.UpdateReportDetails(it)) },
+        onSubmit = { onIntent(ProcessingHistoryIntent.SubmitReport) },
+        onDismiss = { onIntent(ProcessingHistoryIntent.DismissReport) }
+    )
 }

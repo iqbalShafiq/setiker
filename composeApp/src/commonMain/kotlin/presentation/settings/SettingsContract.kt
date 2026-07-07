@@ -12,6 +12,9 @@ data class SettingsState(
     val usageError: Boolean = false,
     val isDeletingAccount: Boolean = false,
     val showDeleteConfirm: Boolean = false,
+    val deleteConfirmPassword: String = "",
+    val deleteConfirmPhrase: String = "",
+    val deleteAccountError: UiText? = null,
     val showChangePassword: Boolean = false,
     val currentPassword: String = "",
     val newPassword: String = "",
@@ -27,6 +30,8 @@ sealed interface SettingsIntent {
     data object ShowDeleteConfirm : SettingsIntent
     data object DismissDeleteConfirm : SettingsIntent
     data object ConfirmDeleteAccount : SettingsIntent
+    data class UpdateDeleteConfirmPassword(val value: String) : SettingsIntent
+    data class UpdateDeleteConfirmPhrase(val value: String) : SettingsIntent
     data object ShowOnboardingAgain : SettingsIntent
     data object NavigateBack : SettingsIntent
     data object OpenPrivacy : SettingsIntent

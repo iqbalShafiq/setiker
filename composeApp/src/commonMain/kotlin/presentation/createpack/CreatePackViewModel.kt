@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import data.auth.AuthManager
 import data.aijob.AiJobManager
+import data.remote.ExploreApiRepository
 import data.remote.StickerApiRepository
 import data.repository.StickerPackDraftSaver
 import domain.model.AiQuotaOperation
@@ -30,6 +31,7 @@ import presentation.aijob.DraftResultApplier
 import presentation.aijob.WorkspaceDraftFactory
 import presentation.aijob.toDraftSticker
 import presentation.aijob.toSnapshot
+import presentation.moderation.AiOutputReportSupport
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.channels.Channel
@@ -70,7 +72,8 @@ class CreatePackViewModel(
     private val draftResultApplier: DraftResultApplier,
     private val jobRepository: AiJobRepository,
     private val aiQuotaRepository: AiQuotaRepository,
-    private val authManager: AuthManager
+    private val authManager: AuthManager,
+    private val exploreApiRepository: ExploreApiRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CreatePackState())
@@ -286,12 +289,46 @@ class CreatePackViewModel(
                 _state.update { it.copy(pendingTrayGalleryPath = null) }
             }
             is CreatePackIntent.RestoreWorkspaceDraft -> restoreWorkspaceDraft(intent.draftId)
-            CreatePackIntent.PublishToExplore -> publishToExplore()
+            CreatePackIntent.PublishToExplore -> _state.update { it.copy(showContentPolicySheet = true) }
+            CreatePackIntent.AcceptContentPolicy -> {
+                _state.update { it.copy(showContentPolicySheet = false) }
+                publishToExplore()
+            }
+            CreatePackIntent.DismissContentPolicy -> {
+                _state.update { it.copy(showContentPolicySheet = false) }
+            }
             CreatePackIntent.OpenPresetPicker -> {
                 _state.update { it.copy(presetPickerVisible = true) }
             }
             CreatePackIntent.DismissPresetPicker -> {
                 _state.update { it.copy(presetPickerVisible = false) }
+            }
+            CreatePackIntent.ShowAiOutputReport -> _state.update {
+                it.copy(showAiOutputReportSheet = true, aiOutputReportReason = null, aiOutputReportDetails = "")
+            }
+            CreatePackIntent.DismissAiOutputReport -> _state.update { it.copy(showAiOutputReportSheet = false) }
+            is CreatePackIntent.SelectAiOutputReportReason -> _state.update { it.copy(aiOutputReportReason = intent.reason) }
+            is CreatePackIntent.UpdateAiOutputReportDetails -> _state.update { it.copy(aiOutputReportDetails = intent.value) }
+            CreatePackIntent.SubmitAiOutputReport -> submitAiOutputReport()
+        }
+    }
+
+    private fun submitAiOutputReport() {
+        val reason = _state.value.aiOutputReportReason ?: return
+        viewModelScope.launch {
+            _state.update { it.copy(isSubmittingAiOutputReport = true) }
+            runCatching {
+                AiOutputReportSupport.submitLatest(
+                    exploreApiRepository = exploreApiRepository,
+                    reason = reason,
+                    details = _state.value.aiOutputReportDetails.takeIf { it.isNotBlank() },
+                )
+            }.onSuccess {
+                _state.update { it.copy(isSubmittingAiOutputReport = false, showAiOutputReportSheet = false) }
+                _effect.send(CreatePackEffect.ShowSuccess("Report submitted. Thank you."))
+            }.onFailure { error ->
+                _state.update { it.copy(isSubmittingAiOutputReport = false) }
+                _effect.send(CreatePackEffect.ShowError(error.toUiText(Res.string.error_failed_generate_sticker)))
             }
         }
     }

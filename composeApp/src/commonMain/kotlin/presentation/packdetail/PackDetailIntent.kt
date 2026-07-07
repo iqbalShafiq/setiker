@@ -32,6 +32,8 @@ sealed interface PackDetailIntent {
     data class CollaboratorPermissionChanged(val permission: String) : PackDetailIntent
     data object RequestMakePublic : PackDetailIntent
     data object RequestUnpublish : PackDetailIntent
+    data object AcceptContentPolicy : PackDetailIntent
+    data object DismissContentPolicy : PackDetailIntent
     data object ConfirmVisibilityChange : PackDetailIntent
     data object DismissVisibilityDialog : PackDetailIntent
 }

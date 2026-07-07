@@ -43,5 +43,9 @@ data class EditorState(
     val isLoadingAiUsage: Boolean = false,
     val aiUsageLoadFailed: Boolean = false,
     val canUndo: Boolean = false,
-    val canRedo: Boolean = false
+    val canRedo: Boolean = false,
+    val showAiOutputReportSheet: Boolean = false,
+    val aiOutputReportReason: String? = null,
+    val aiOutputReportDetails: String = "",
+    val isSubmittingAiOutputReport: Boolean = false
 )

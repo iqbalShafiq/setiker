@@ -39,6 +39,13 @@ sealed interface CreatePackIntent {
     data object DismissTrayGalleryCropPrompt : CreatePackIntent
     data class RestoreWorkspaceDraft(val draftId: String) : CreatePackIntent
     data object PublishToExplore : CreatePackIntent
+    data object AcceptContentPolicy : CreatePackIntent
+    data object DismissContentPolicy : CreatePackIntent
     data object OpenPresetPicker : CreatePackIntent
     data object DismissPresetPicker : CreatePackIntent
+    data object ShowAiOutputReport : CreatePackIntent
+    data object DismissAiOutputReport : CreatePackIntent
+    data class SelectAiOutputReportReason(val reason: String) : CreatePackIntent
+    data class UpdateAiOutputReportDetails(val value: String) : CreatePackIntent
+    data object SubmitAiOutputReport : CreatePackIntent
 }

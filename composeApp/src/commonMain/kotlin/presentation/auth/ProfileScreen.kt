@@ -103,12 +103,11 @@ import setiker.composeapp.generated.resources.send_feedback
 import setiker.composeapp.generated.resources.settings
 import setiker.composeapp.generated.resources.settings_legal_section
 import setiker.composeapp.generated.resources.settings_privacy
+import setiker.composeapp.generated.resources.settings_permissions
 import setiker.composeapp.generated.resources.settings_retention
 import setiker.composeapp.generated.resources.settings_terms
 import setiker.composeapp.generated.resources.stickers_label
 import setiker.composeapp.generated.resources.support_section
-import util.rememberUrlLauncher
-
 @Composable
 fun ProfileScreenRoot(
     viewModel: ProfileViewModel,
@@ -121,10 +120,13 @@ fun ProfileScreenRoot(
     onBackClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onNavigatePaywall: () -> Unit = {},
+    onOpenPrivacy: () -> Unit = {},
+    onOpenTerms: () -> Unit = {},
+    onOpenRetention: () -> Unit = {},
+    onOpenPermissions: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.state.collectAsState()
-    val openUrl = rememberUrlLauncher()
 
     LifecycleResumeEffect(Unit) {
         viewModel.refresh()
@@ -142,13 +144,10 @@ fun ProfileScreenRoot(
         onNavigateHistory = onNavigateHistory,
         onNavigateAiJobs = onNavigateAiJobs,
         onNavigateNotifications = onNavigateNotifications,
-        onOpenPrivacy = { state.legalSummary?.privacyUrl?.let(openUrl) },
-        onOpenTerms = { state.legalSummary?.termsUrl?.let(openUrl) },
-        onOpenRetention = {
-            state.legalSummary?.let { summary ->
-                openUrl(summary.retentionUrl ?: summary.privacyUrl)
-            }
-        },
+        onOpenPrivacy = onOpenPrivacy,
+        onOpenTerms = onOpenTerms,
+        onOpenRetention = onOpenRetention,
+        onOpenPermissions = onOpenPermissions,
         onBackClick = onBackClick,
         onSettingsClick = onSettingsClick,
         onNavigatePaywall = onNavigatePaywall,
@@ -168,6 +167,7 @@ fun ProfileScreen(
     onOpenPrivacy: () -> Unit = {},
     onOpenTerms: () -> Unit = {},
     onOpenRetention: () -> Unit = {},
+    onOpenPermissions: () -> Unit = {},
     onBackClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onNavigatePaywall: () -> Unit = {},
@@ -346,6 +346,13 @@ fun ProfileScreen(
                                 label = stringResource(Res.string.settings_retention),
                                 iconBackgroundColor = PastelBlue,
                                 onClick = onOpenRetention
+                            )
+                            MenuDivider()
+                            ProfileMenuItem(
+                                icon = Icons.Default.Feedback,
+                                label = stringResource(Res.string.settings_permissions),
+                                iconBackgroundColor = PastelPurple,
+                                onClick = onOpenPermissions
                             )
                         }
                     }
