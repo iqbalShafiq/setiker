@@ -8,14 +8,29 @@ A Kotlin Multiplatform app for Android and iOS to create and manage WhatsApp sti
 - Crop, decorate, and remove backgrounds; animated sticker packs from video
 - AI generation, improvement, grid split, and background jobs via `stiker-api`
 - Explore public packs, share links (`shareUrl`, `deepLinkUrl`, `webFallbackUrl`)
-- Auth (login/register), profile, settings (legal links, AI daily usage, account deletion)
+- Auth (login/register/Google Sign-In on Android), profile, settings (legal links, AI daily usage, account deletion)
 - Onboarding for first-run users
 - Export sticker packs to WhatsApp
 - Neubrutal Compose UI (Android + iOS)
 
+### Sign in with Google (Android)
+
+1. Create Web + Android OAuth clients in Google Cloud Console (package `com.setiker.app`, debug and Play App Signing SHA-1).
+2. Copy [`local.properties.example`](local.properties.example) → `local.properties` and set:
+
+```properties
+GOOGLE_WEB_CLIENT_ID=your-web-client-id.apps.googleusercontent.com
+```
+
+(`sdk.dir` is usually filled by Android Studio.)
+
+3. Set the same Web client ID (and optional Android client ID) on the API as `GOOGLE_CLIENT_IDS`.
+4. See `stiker-api` README for server verification and account-linking rules.
+
 ### iOS limitations
 
 - WhatsApp pack export and some on-device processing paths differ from Android
+- Google Sign-In is not available on iOS in this phase (`GoogleSignInGateway` stub)
 - Unsupported operations show localized messaging instead of failing silently
 - Configure API base URL in `ApiConfig.ios.kt` for your environment
 

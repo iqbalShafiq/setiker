@@ -38,10 +38,11 @@ fun DeleteAccountConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
     isLoading: Boolean = false,
-    error: UiText? = null
+    error: UiText? = null,
+    requirePassword: Boolean = true
 ) {
     val phraseMatches = confirmPhrase == DELETE_ACCOUNT_PHRASE
-    val canConfirm = password.isNotBlank() && phraseMatches && !isLoading
+    val canConfirm = phraseMatches && !isLoading && (!requirePassword || password.isNotBlank())
 
     Dialog(onDismissRequest = { if (!isLoading) onDismiss() }) {
         AppDialogWidthContainer {
@@ -63,14 +64,16 @@ fun DeleteAccountConfirmDialog(
                     color = neubrutalMutedOnSurface()
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                AppPasswordTextField(
-                    value = password,
-                    onValueChange = onPasswordChange,
-                    label = stringResource(Res.string.settings_delete_password_label),
-                    placeholder = stringResource(Res.string.settings_delete_password_label),
-                    enabled = !isLoading
-                )
-                Spacer(modifier = Modifier.height(12.dp))
+                if (requirePassword) {
+                    AppPasswordTextField(
+                        value = password,
+                        onValueChange = onPasswordChange,
+                        label = stringResource(Res.string.settings_delete_password_label),
+                        placeholder = stringResource(Res.string.settings_delete_password_label),
+                        enabled = !isLoading
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
                 AppTextField(
                     value = confirmPhrase,
                     onValueChange = onPhraseChange,

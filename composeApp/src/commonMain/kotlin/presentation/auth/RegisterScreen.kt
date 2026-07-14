@@ -45,6 +45,7 @@ import setiker.composeapp.generated.resources.login_email_placeholder
 import setiker.composeapp.generated.resources.login_password_invalid
 import setiker.composeapp.generated.resources.login_password_label
 import setiker.composeapp.generated.resources.login_password_placeholder
+import setiker.composeapp.generated.resources.login_google
 import setiker.composeapp.generated.resources.register_confirm_password_label
 import setiker.composeapp.generated.resources.register_confirm_password_placeholder
 import setiker.composeapp.generated.resources.register_creating_account
@@ -128,6 +129,19 @@ fun RegisterScreen(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
+            }
+
+            if (state.googleAvailable) {
+                androidx.compose.material3.OutlinedButton(
+                    onClick = { onIntent(RegisterIntent.SignInWithGoogle) },
+                    enabled = !state.isLoading,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                ) {
+                    Text(text = stringResource(Res.string.login_google))
+                }
+                Spacer(modifier = Modifier.height(12.dp))
             }
 
             Column(

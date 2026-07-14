@@ -38,6 +38,23 @@ data class UpdateProfileRequest(
     val username: String? = null
 )
 
+@Serializable
+data class GoogleIdTokenRequest(
+    val idToken: String
+)
+
+@Serializable
+data class LinkGoogleWithPasswordRequest(
+    val idToken: String,
+    val email: String,
+    val password: String
+)
+
+@Serializable
+data class SetPasswordRequest(
+    val newPassword: String
+)
+
 /**
  * Actual API response structure (from real implementation):
  * Login/Register:
@@ -85,6 +102,8 @@ data class UserDto(
     val role: String? = null,
     val isActive: Boolean? = null,
     val emailVerified: Boolean? = null,
+    val hasPassword: Boolean? = null,
+    val authProviders: List<String>? = null,
     val createdAt: String? = null,
     val followerCount: Int? = null,
     val followingCount: Int? = null,

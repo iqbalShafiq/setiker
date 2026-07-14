@@ -1,6 +1,7 @@
 @file:OptIn(ExperimentalKotlinGradlePluginApi::class)
 @file:Suppress("UnstableApiUsage")
 
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -90,6 +91,9 @@ kotlin {
             implementation(libs.androidx.core.splashscreen)
             implementation(libs.onnxruntime.android)
             implementation(libs.billing.ktx)
+            implementation(libs.androidx.credentials)
+            implementation(libs.androidx.credentials.play.services.auth)
+            implementation(libs.googleid)
         }
 
         iosMain.dependencies {
@@ -118,6 +122,16 @@ android {
     sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
     sourceSets["main"].res.srcDirs("src/androidMain/res")
     sourceSets["main"].resources.srcDirs("src/commonMain/resources")
+
+    val localProperties = Properties().apply {
+        val file = rootProject.file("local.properties")
+        if (file.exists()) {
+            file.inputStream().use { load(it) }
+        }
+    }
+    val googleWebClientId = localProperties.getProperty("GOOGLE_WEB_CLIENT_ID")
+        ?: (project.findProperty("GOOGLE_WEB_CLIENT_ID") as String?)
+        ?: ""
     
     defaultConfig {
         applicationId = "com.setiker.app"
@@ -125,10 +139,12 @@ android {
         targetSdk = 37
         versionCode = 1
         versionName = "1.0"
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
     }
     
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     
     composeOptions {

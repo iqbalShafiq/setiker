@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,7 +17,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -42,6 +45,11 @@ import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.login_email_invalid
 import setiker.composeapp.generated.resources.login_email_label
 import setiker.composeapp.generated.resources.login_email_placeholder
+import setiker.composeapp.generated.resources.login_google
+import setiker.composeapp.generated.resources.login_google_or
+import setiker.composeapp.generated.resources.login_link_google_confirm
+import setiker.composeapp.generated.resources.login_link_google_message
+import setiker.composeapp.generated.resources.login_link_google_title
 import setiker.composeapp.generated.resources.login_password_invalid
 import setiker.composeapp.generated.resources.login_password_label
 import setiker.composeapp.generated.resources.login_password_placeholder
@@ -50,6 +58,7 @@ import setiker.composeapp.generated.resources.login_signing_in
 import setiker.composeapp.generated.resources.login_submit
 import setiker.composeapp.generated.resources.login_welcome_subtitle
 import setiker.composeapp.generated.resources.login_welcome_title
+import setiker.composeapp.generated.resources.cancel
 
 @Composable
 fun LoginScreenRoot(
@@ -122,6 +131,30 @@ fun LoginScreen(
                 )
             }
 
+            if (state.googleAvailable) {
+                OutlinedButton(
+                    onClick = { onIntent(LoginIntent.SignInWithGoogle) },
+                    enabled = !state.isLoading,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                ) {
+                    Text(text = stringResource(Res.string.login_google))
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = stringResource(Res.string.login_google_or),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = neubrutalSubtleOnSurface()
+                    )
+                }
+            }
+
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -172,6 +205,53 @@ fun LoginScreen(
             }
 
         Spacer(modifier = Modifier.height(24.dp))
+    }
+
+    if (state.showLinkGoogleDialog) {
+        androidx.compose.ui.window.Dialog(onDismissRequest = { onIntent(LoginIntent.DismissLinkGoogleDialog) }) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = stringResource(Res.string.login_link_google_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = stringResource(Res.string.login_link_google_message),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    text = state.linkEmail,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = neubrutalSubtleOnSurface()
+                )
+                AppPasswordTextField(
+                    value = state.linkPassword,
+                    onValueChange = { onIntent(LoginIntent.UpdateLinkPassword(it)) },
+                    label = stringResource(Res.string.login_password_label),
+                    placeholder = stringResource(Res.string.login_password_placeholder),
+                    enabled = !state.isLoading,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedButton(
+                    onClick = { onIntent(LoginIntent.ConfirmLinkGoogle) },
+                    enabled = state.linkPassword.isNotBlank() && !state.isLoading,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(Res.string.login_link_google_confirm))
+                }
+                TextButton(
+                    onClick = { onIntent(LoginIntent.DismissLinkGoogleDialog) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(Res.string.cancel))
+                }
+            }
+        }
     }
 }
 

@@ -8,12 +8,17 @@ import org.jetbrains.compose.resources.StringResource
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_ai_quota_exceeded
 import setiker.composeapp.generated.resources.error_auth_account_deactivated
+import setiker.composeapp.generated.resources.error_auth_account_exists_password
+import setiker.composeapp.generated.resources.error_auth_cannot_unlink_sole
 import setiker.composeapp.generated.resources.error_auth_change_password_failed
+import setiker.composeapp.generated.resources.error_auth_google_failed
 import setiker.composeapp.generated.resources.error_auth_login_failed
+import setiker.composeapp.generated.resources.error_auth_no_password_set
 import setiker.composeapp.generated.resources.error_auth_not_authenticated
 import setiker.composeapp.generated.resources.error_auth_profile_failed
 import setiker.composeapp.generated.resources.error_auth_refresh_failed
 import setiker.composeapp.generated.resources.error_auth_register_failed
+import setiker.composeapp.generated.resources.error_auth_use_google_sign_in
 import setiker.composeapp.generated.resources.error_edit_profile_failed
 import setiker.composeapp.generated.resources.error_username_taken
 import setiker.composeapp.generated.resources.error_background_remove_request_failed
@@ -63,6 +68,11 @@ private fun AppErrorCode.toStringResource(): StringResource {
         AppErrorCode.AuthChangePasswordFailed -> Res.string.error_auth_change_password_failed
         AppErrorCode.AuthAccountDeactivated -> Res.string.error_auth_account_deactivated
         AppErrorCode.AuthNotAuthenticated -> Res.string.error_auth_not_authenticated
+        AppErrorCode.AuthGoogleFailed -> Res.string.error_auth_google_failed
+        AppErrorCode.AuthUseGoogleSignIn -> Res.string.error_auth_use_google_sign_in
+        AppErrorCode.AuthAccountExistsPassword -> Res.string.error_auth_account_exists_password
+        AppErrorCode.AuthNoPasswordSet -> Res.string.error_auth_no_password_set
+        AppErrorCode.AuthCannotUnlinkSoleAuth -> Res.string.error_auth_cannot_unlink_sole
         AppErrorCode.AiQuotaExceeded -> Res.string.error_ai_quota_exceeded
         AppErrorCode.CloudFetchFailed -> Res.string.error_cloud_fetch_failed
         AppErrorCode.CloudCreateFailed -> Res.string.error_cloud_create_failed

@@ -74,7 +74,7 @@ val appModule = module {
 
     // Repository
     single { CloudSyncedLocalDataCleaner(get(), get(), get(), get(), get()) }
-    single { AuthSessionCoordinator(get(), get()) }
+    single { AuthSessionCoordinator(get(), get(), get()) }
     single<StickerRepository> { StickerRepositoryImpl(get(), get(), get(), get(), get(), get()) }
     single { SetikerApiService(authManager = get(), authTokenRefresher = get()) }
     single { StickerApiRepository(api = get(), fileStorage = get(), onDeviceImageProcessor = get()) }

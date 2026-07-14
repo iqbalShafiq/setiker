@@ -21,6 +21,8 @@ import domain.actions.PackActions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import data.billing.PlatformBillingStore
+import data.auth.GoogleSignInGateway
+import data.auth.UnavailableGoogleSignInGateway
 import org.koin.core.module.Module
 import org.koin.dsl.module
 import platform.Foundation.NSDocumentDirectory
@@ -57,4 +59,5 @@ actual fun platformModule(): Module = module {
     single { NetworkMonitor() }
     single { AiBackgroundScheduler() }
     single { PlatformBillingStore() }
+    single<GoogleSignInGateway> { UnavailableGoogleSignInGateway() }
 }

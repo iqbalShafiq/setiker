@@ -22,6 +22,8 @@ import data.util.OnDeviceImageProcessor
 import domain.actions.AndroidPackActions
 import domain.actions.PackActions
 import data.billing.PlatformBillingStore
+import data.auth.AndroidGoogleSignInGateway
+import data.auth.GoogleSignInGateway
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.Module
 import org.koin.dsl.module
@@ -61,4 +63,5 @@ actual fun platformModule(): Module = module {
     single { AiBackgroundScheduler(androidContext()) }
     single { AiNotificationHelper(androidContext()) }
     single { PlatformBillingStore { MainActivityHolder.current } }
+    single<GoogleSignInGateway> { AndroidGoogleSignInGateway() }
 }
