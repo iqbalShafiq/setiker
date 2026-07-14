@@ -1,13 +1,17 @@
 package data.auth
 
+import data.auth.model.AppleIdTokenRequest
 import data.auth.model.AuthResponse
 import data.auth.model.ChangePasswordRequest
 import data.auth.model.DeleteAccountRequest
+import data.auth.model.ForgotPasswordRequest
 import data.auth.model.GoogleIdTokenRequest
+import data.auth.model.LinkAppleWithPasswordRequest
 import data.auth.model.LinkGoogleWithPasswordRequest
 import data.auth.model.LoginRequest
 import data.auth.model.RefreshTokenRequest
 import data.auth.model.RegisterRequest
+import data.auth.model.ResetPasswordRequest
 import data.auth.model.SetPasswordRequest
 import data.auth.model.UpdateProfileRequest
 import data.auth.model.UserProfileResponse
@@ -137,6 +141,82 @@ class AuthApiService(
             throwApiError(bodyText, AppErrorCode.AuthGoogleFailed)
         }
         return json.decodeFromString(bodyText)
+    }
+
+    suspend fun loginWithApple(idToken: String): AuthResponse {
+        val response = client.post("$baseUrl/api/v1/auth/apple") {
+            contentType(ContentType.Application.Json)
+            setBody(AppleIdTokenRequest(idToken = idToken))
+        }
+        val bodyText = response.bodyAsText()
+        if (!response.status.isSuccess()) {
+            throwApiError(bodyText, AppErrorCode.AuthAppleFailed)
+        }
+        return json.decodeFromString(bodyText)
+    }
+
+    suspend fun linkAppleWithPassword(idToken: String, email: String, password: String): AuthResponse {
+        val response = client.post("$baseUrl/api/v1/auth/apple/link-with-password") {
+            contentType(ContentType.Application.Json)
+            setBody(
+                LinkAppleWithPasswordRequest(
+                    idToken = idToken,
+                    email = email,
+                    password = password
+                )
+            )
+        }
+        val bodyText = response.bodyAsText()
+        if (!response.status.isSuccess()) {
+            throwApiError(bodyText, AppErrorCode.AuthAppleFailed)
+        }
+        return json.decodeFromString(bodyText)
+    }
+
+    suspend fun linkApple(token: String, idToken: String): UserProfileResponse {
+        val response = client.post("$baseUrl/api/v1/auth/apple/link") {
+            contentType(ContentType.Application.Json)
+            header(HttpHeaders.Authorization, "Bearer $token")
+            setBody(AppleIdTokenRequest(idToken = idToken))
+        }
+        val bodyText = response.bodyAsText()
+        if (!response.status.isSuccess()) {
+            throwApiError(bodyText, AppErrorCode.AuthAppleFailed)
+        }
+        return json.decodeFromString(bodyText)
+    }
+
+    suspend fun unlinkApple(token: String): UserProfileResponse {
+        val response = client.delete("$baseUrl/api/v1/auth/apple") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+        val bodyText = response.bodyAsText()
+        if (!response.status.isSuccess()) {
+            throwApiError(bodyText, AppErrorCode.AuthAppleFailed)
+        }
+        return json.decodeFromString(bodyText)
+    }
+
+    suspend fun forgotPassword(email: String) {
+        val response = client.post("$baseUrl/api/v1/auth/forgot-password") {
+            contentType(ContentType.Application.Json)
+            setBody(ForgotPasswordRequest(email = email))
+        }
+        if (!response.status.isSuccess()) {
+            val bodyText = response.bodyAsText()
+            throwApiError(bodyText, AppErrorCode.AuthPasswordResetFailed)
+        }
+    }
+
+    suspend fun resetPassword(token: String, newPassword: String) {
+        val response = client.post("$baseUrl/api/v1/auth/reset-password") {
+            contentType(ContentType.Application.Json)
+            setBody(ResetPasswordRequest(token = token, newPassword = newPassword))
+        }
+        if (!response.status.isSuccess()) {
+            val bodyText = response.bodyAsText()
+            throwApiError(bodyText, AppErrorCode.AuthInvalidPasswordResetToken)
+        }
     }
 
     suspend fun setPassword(token: String, newPassword: String) {

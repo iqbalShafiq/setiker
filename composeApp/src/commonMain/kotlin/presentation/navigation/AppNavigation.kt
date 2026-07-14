@@ -24,12 +24,14 @@ import data.sync.NetworkMonitor
 import presentation.animatededitor.AnimatedEditorEffect
 import presentation.animatededitor.AnimatedEditorScreenRoot
 import presentation.auth.EditProfileScreenRoot
+import presentation.auth.ForgotPasswordScreenRoot
 import presentation.auth.LoginScreenRoot
 import presentation.auth.LoginViewModel
 import presentation.auth.ProfileScreenRoot
 import presentation.auth.ProfileViewModel
 import presentation.auth.RegisterScreenRoot
 import presentation.auth.RegisterViewModel
+import presentation.auth.ResetPasswordScreenRoot
 import presentation.blocked.BlockedUsersScreenRoot
 import presentation.createpack.CreatePackScreenRoot
 import presentation.createpack.DraftSticker
@@ -272,9 +274,41 @@ fun AppNavigation(
                  },
                  onNavigateToRegister = {
                      navBottomUp("register")
+                 },
+                 onNavigateToForgotPassword = {
+                     navBottomUp("forgotPassword")
                  }
              )
          }
+
+        composable("forgotPassword") {
+            ForgotPasswordScreenRoot(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = "resetPassword?token={token}",
+            arguments = listOf(
+                navArgument("token") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                }
+            ),
+            deepLinks = listOf(
+                navDeepLink { uriPattern = "setiker://auth/reset-password?token={token}" }
+            )
+        ) { entry ->
+            val token = entry.arguments?.getString("token").orEmpty()
+            ResetPasswordScreenRoot(
+                token = token,
+                onDone = {
+                    navBottomUp("login") {
+                        popUpTo("home") { inclusive = false }
+                    }
+                }
+            )
+        }
  
         composable("register") {
                val viewModel: RegisterViewModel = koinViewModel()

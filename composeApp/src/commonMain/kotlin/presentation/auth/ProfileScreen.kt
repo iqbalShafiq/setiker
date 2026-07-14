@@ -57,8 +57,11 @@ import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import presentation.common.ContentStateAnimations
 import presentation.common.DetailLoadPhase
+import presentation.common.resolveLocal
 import presentation.components.AiQuotaSummary
 import presentation.components.AppIllustration
+import presentation.components.AppPasswordTextField
+import presentation.components.AppPrimaryButton
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
 import presentation.components.AppTopBar
@@ -115,8 +118,13 @@ import setiker.composeapp.generated.resources.settings_privacy
 import setiker.composeapp.generated.resources.settings_permissions
 import setiker.composeapp.generated.resources.settings_retention
 import setiker.composeapp.generated.resources.settings_terms
+import setiker.composeapp.generated.resources.settings_set_password
+import setiker.composeapp.generated.resources.settings_set_password_message
+import setiker.composeapp.generated.resources.settings_set_password_title
+import setiker.composeapp.generated.resources.reset_password_confirm_label
 import setiker.composeapp.generated.resources.stickers_label
 import setiker.composeapp.generated.resources.support_section
+
 @Composable
 fun ProfileScreenRoot(
     viewModel: ProfileViewModel,
@@ -166,6 +174,15 @@ fun ProfileScreenRoot(
         onEditProfile = onEditProfile,
         onBlockedUsers = onBlockedUsers,
         onOpenAccountDeletion = onOpenAccountDeletion,
+        onLinkGoogle = viewModel::linkGoogle,
+        onUnlinkGoogle = viewModel::unlinkGoogle,
+        onLinkApple = viewModel::linkApple,
+        onUnlinkApple = viewModel::unlinkApple,
+        onShowSetPassword = viewModel::showSetPassword,
+        onDismissSetPassword = viewModel::dismissSetPassword,
+        onUpdateNewPassword = viewModel::updateNewPassword,
+        onUpdateConfirmPassword = viewModel::updateConfirmPassword,
+        onSubmitSetPassword = viewModel::submitSetPassword,
         modifier = modifier
     )
 }
@@ -189,6 +206,15 @@ fun ProfileScreen(
     onEditProfile: () -> Unit = {},
     onBlockedUsers: () -> Unit = {},
     onOpenAccountDeletion: () -> Unit = {},
+    onLinkGoogle: () -> Unit = {},
+    onUnlinkGoogle: () -> Unit = {},
+    onLinkApple: () -> Unit = {},
+    onUnlinkApple: () -> Unit = {},
+    onShowSetPassword: () -> Unit = {},
+    onDismissSetPassword: () -> Unit = {},
+    onUpdateNewPassword: (String) -> Unit = {},
+    onUpdateConfirmPassword: (String) -> Unit = {},
+    onSubmitSetPassword: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val borderColor = neubrutalBorderColor()
@@ -363,6 +389,26 @@ fun ProfileScreen(
                             }
                         }
 
+                        if (state.user != null) {
+                            item {
+                                ConnectedAccountsSection(
+                                    state = ConnectedAccountsUiState(
+                                        hasPassword = state.user.hasPassword,
+                                        hasGoogle = state.user.hasGoogle,
+                                        hasApple = state.user.hasApple,
+                                        googleAvailable = state.googleAvailable,
+                                        appleAvailable = state.appleAvailable,
+                                        isBusy = state.isLinkingAuth
+                                    ),
+                                    onLinkGoogle = onLinkGoogle,
+                                    onUnlinkGoogle = onUnlinkGoogle,
+                                    onLinkApple = onLinkApple,
+                                    onUnlinkApple = onUnlinkApple,
+                                    onSetPassword = onShowSetPassword
+                                )
+                            }
+                        }
+
                         item {
                             Column {
                                 SectionTitle(text = stringResource(Res.string.settings_legal_section))
@@ -439,6 +485,57 @@ fun ProfileScreen(
                         item { Spacer(modifier = Modifier.height(24.dp)) }
                     }
                 }
+            }
+        }
+    }
+
+    if (state.showSetPassword) {
+        androidx.compose.ui.window.Dialog(onDismissRequest = onDismissSetPassword) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = stringResource(Res.string.settings_set_password_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = stringResource(Res.string.settings_set_password_message),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                AppPasswordTextField(
+                    value = state.newPassword,
+                    onValueChange = onUpdateNewPassword,
+                    label = stringResource(Res.string.settings_set_password),
+                    placeholder = stringResource(Res.string.settings_set_password),
+                    enabled = !state.isLinkingAuth,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                AppPasswordTextField(
+                    value = state.confirmPassword,
+                    onValueChange = onUpdateConfirmPassword,
+                    label = stringResource(Res.string.reset_password_confirm_label),
+                    placeholder = stringResource(Res.string.settings_set_password),
+                    enabled = !state.isLinkingAuth,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                state.setPasswordError?.let {
+                    Text(
+                        text = it.resolveLocal(),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+                AppPrimaryButton(
+                    text = stringResource(Res.string.settings_set_password),
+                    onClick = onSubmitSetPassword,
+                    enabled = !state.isLinkingAuth &&
+                        state.newPassword.isNotBlank() &&
+                        state.confirmPassword.isNotBlank(),
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
     }

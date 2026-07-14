@@ -2,9 +2,11 @@ package presentation.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import data.auth.AppleSignInGateway
 import data.auth.AuthApiService
 import data.auth.AuthManager
 import data.auth.GoogleSignInGateway
+import data.auth.GoogleSignInMode
 import data.auth.model.LoginRequest
 import data.auth.model.toDomainModel
 import data.remote.ApiException
@@ -22,11 +24,15 @@ import setiker.composeapp.generated.resources.error_auth_login_failed
 class LoginViewModel(
     private val authApiService: AuthApiService,
     private val authManager: AuthManager,
-    private val googleSignInGateway: GoogleSignInGateway
+    private val googleSignInGateway: GoogleSignInGateway,
+    private val appleSignInGateway: AppleSignInGateway
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(
-        LoginState(googleAvailable = googleSignInGateway.isAvailable())
+        LoginState(
+            googleAvailable = googleSignInGateway.isAvailable(),
+            appleAvailable = appleSignInGateway.isAvailable()
+        )
     )
     val state: StateFlow<LoginState> = _state.asStateFlow()
 
@@ -42,9 +48,14 @@ class LoginViewModel(
                 it.copy(password = intent.password, isPasswordValid = true, error = null)
             }
             is LoginIntent.Submit -> login()
-            is LoginIntent.SignInWithGoogle -> signInWithGoogle()
+            is LoginIntent.SignInWithGoogle -> signInWithGoogle(GoogleSignInMode.Button)
+            is LoginIntent.SignInWithApple -> signInWithApple()
+            is LoginIntent.TryOneTap -> tryOneTap()
             is LoginIntent.NavigateToRegister -> {
                 _effect.value = LoginEffect.NavigateToRegister
+            }
+            is LoginIntent.NavigateToForgotPassword -> {
+                _effect.value = LoginEffect.NavigateToForgotPassword
             }
             is LoginIntent.DismissError -> _state.update { it.copy(error = null) }
             is LoginIntent.DismissLinkGoogleDialog -> _state.update {
@@ -55,8 +66,32 @@ class LoginViewModel(
                     isLoading = false
                 )
             }
+            is LoginIntent.DismissLinkAppleDialog -> _state.update {
+                it.copy(
+                    showLinkAppleDialog = false,
+                    pendingAppleIdToken = null,
+                    linkPassword = "",
+                    isLoading = false
+                )
+            }
             is LoginIntent.UpdateLinkPassword -> _state.update { it.copy(linkPassword = intent.password) }
             is LoginIntent.ConfirmLinkGoogle -> confirmLinkGoogle()
+            is LoginIntent.ConfirmLinkApple -> confirmLinkApple()
+        }
+    }
+
+    private fun tryOneTap() {
+        if (!googleSignInGateway.isAvailable() || _state.value.oneTapAttempted) return
+        _state.update { it.copy(oneTapAttempted = true) }
+        viewModelScope.launch {
+            val tokenResult = googleSignInGateway.signIn(GoogleSignInMode.OneTap)
+            tokenResult.onFailure {
+                // Cancel / no credential: silent for One Tap
+                return@launch
+            }
+            val idToken = tokenResult.getOrNull()?.idToken ?: return@launch
+            _state.update { it.copy(isLoading = true, error = null) }
+            completeGoogleAuth(idToken)
         }
     }
 
@@ -85,11 +120,68 @@ class LoginViewModel(
         }
     }
 
-    private fun signInWithGoogle() {
+    private fun signInWithGoogle(mode: GoogleSignInMode) {
         if (!googleSignInGateway.isAvailable()) return
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            val tokenResult = googleSignInGateway.signIn()
+            val tokenResult = googleSignInGateway.signIn(mode)
+            tokenResult.onFailure { error ->
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        error = error.toUiText(Res.string.error_auth_login_failed)
+                    )
+                }
+                return@launch
+            }
+            val idToken = tokenResult.getOrNull()?.idToken ?: return@launch
+            completeGoogleAuth(idToken)
+        }
+    }
+
+    private suspend fun completeGoogleAuth(idToken: String) {
+        try {
+            val response = authApiService.loginWithGoogle(idToken)
+            persistAuth(response)
+        } catch (e: Exception) {
+            if (e is ApiException &&
+                (e.code == AppErrorCode.AuthAccountExistsPassword ||
+                    e.subcode == "ACCOUNT_EXISTS_PASSWORD")
+            ) {
+                val googleEmail = decodeEmailFromJwt(idToken).orEmpty()
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        showLinkGoogleDialog = true,
+                        pendingGoogleIdToken = idToken,
+                        linkEmail = googleEmail.ifBlank { it.email },
+                        email = googleEmail.ifBlank { it.email },
+                        error = e.toUiText(Res.string.error_auth_login_failed)
+                    )
+                }
+            } else if (e is ApiException &&
+                (e.code == AppErrorCode.AuthAccountExistsOtherProvider ||
+                    e.subcode == "ACCOUNT_EXISTS_OTHER_PROVIDER")
+            ) {
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        error = e.toUiText(Res.string.error_auth_login_failed)
+                    )
+                }
+            } else {
+                _state.update {
+                    it.copy(isLoading = false, error = e.toUiText(Res.string.error_auth_login_failed))
+                }
+            }
+        }
+    }
+
+    private fun signInWithApple() {
+        if (!appleSignInGateway.isAvailable()) return
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null) }
+            val tokenResult = appleSignInGateway.signIn()
             tokenResult.onFailure { error ->
                 _state.update {
                     it.copy(
@@ -101,21 +193,21 @@ class LoginViewModel(
             }
             val idToken = tokenResult.getOrNull()?.idToken ?: return@launch
             try {
-                val response = authApiService.loginWithGoogle(idToken)
+                val response = authApiService.loginWithApple(idToken)
                 persistAuth(response)
             } catch (e: Exception) {
                 if (e is ApiException &&
                     (e.code == AppErrorCode.AuthAccountExistsPassword ||
                         e.subcode == "ACCOUNT_EXISTS_PASSWORD")
                 ) {
-                    val googleEmail = decodeEmailFromJwt(idToken).orEmpty()
+                    val appleEmail = decodeEmailFromJwt(idToken).orEmpty()
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            showLinkGoogleDialog = true,
-                            pendingGoogleIdToken = idToken,
-                            linkEmail = googleEmail.ifBlank { it.email },
-                            email = googleEmail.ifBlank { it.email },
+                            showLinkAppleDialog = true,
+                            pendingAppleIdToken = idToken,
+                            linkEmail = appleEmail.ifBlank { it.email },
+                            email = appleEmail.ifBlank { it.email },
                             error = e.toUiText(Res.string.error_auth_login_failed)
                         )
                     }
@@ -180,6 +272,36 @@ class LoginViewModel(
                     it.copy(
                         showLinkGoogleDialog = false,
                         pendingGoogleIdToken = null,
+                        linkPassword = ""
+                    )
+                }
+                persistAuth(response)
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(isLoading = false, error = e.toUiText(Res.string.error_auth_login_failed))
+                }
+            }
+        }
+    }
+
+    private fun confirmLinkApple() {
+        val current = _state.value
+        val idToken = current.pendingAppleIdToken ?: return
+        val email = current.linkEmail.ifBlank { current.email }
+        if (email.isBlank() || current.linkPassword.isBlank()) return
+
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null) }
+            try {
+                val response = authApiService.linkAppleWithPassword(
+                    idToken = idToken,
+                    email = email,
+                    password = current.linkPassword
+                )
+                _state.update {
+                    it.copy(
+                        showLinkAppleDialog = false,
+                        pendingAppleIdToken = null,
                         linkPassword = ""
                     )
                 }

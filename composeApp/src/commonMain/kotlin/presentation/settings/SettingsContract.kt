@@ -22,12 +22,15 @@ data class SettingsState(
     val username: String = "",
     val hasPassword: Boolean = true,
     val hasGoogle: Boolean = false,
+    val hasApple: Boolean = false,
     val googleAvailable: Boolean = false,
+    val appleAvailable: Boolean = false,
     val isChangingPassword: Boolean = false,
     val changePasswordError: UiText? = null,
     val showSavePasswordConfirm: Boolean = false,
     val showSetPassword: Boolean = false,
     val isLinkingGoogle: Boolean = false,
+    val isLinkingApple: Boolean = false,
     val isSettingPassword: Boolean = false
 )
 
@@ -54,6 +57,8 @@ sealed interface SettingsIntent {
     data object DismissSavePasswordConfirm : SettingsIntent
     data object LinkGoogle : SettingsIntent
     data object UnlinkGoogle : SettingsIntent
+    data object LinkApple : SettingsIntent
+    data object UnlinkApple : SettingsIntent
     data object ShowSetPassword : SettingsIntent
     data object DismissSetPassword : SettingsIntent
     data object SubmitSetPassword : SettingsIntent

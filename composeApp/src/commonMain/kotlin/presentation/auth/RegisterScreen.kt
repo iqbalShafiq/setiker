@@ -45,6 +45,7 @@ import setiker.composeapp.generated.resources.login_email_placeholder
 import setiker.composeapp.generated.resources.login_password_invalid
 import setiker.composeapp.generated.resources.login_password_label
 import setiker.composeapp.generated.resources.login_password_placeholder
+import setiker.composeapp.generated.resources.login_apple
 import setiker.composeapp.generated.resources.login_google
 import setiker.composeapp.generated.resources.register_confirm_password_label
 import setiker.composeapp.generated.resources.register_confirm_password_placeholder
@@ -69,6 +70,10 @@ fun RegisterScreenRoot(
 ) {
     val state by viewModel.state.collectAsState()
     val effect by viewModel.effect.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.onIntent(RegisterIntent.TryOneTap)
+    }
 
     LaunchedEffect(effect) {
         when (effect) {
@@ -129,6 +134,19 @@ fun RegisterScreen(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
+            }
+
+            if (state.appleAvailable) {
+                androidx.compose.material3.OutlinedButton(
+                    onClick = { onIntent(RegisterIntent.SignInWithApple) },
+                    enabled = !state.isLoading,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                ) {
+                    Text(text = stringResource(Res.string.login_apple))
+                }
+                Spacer(modifier = Modifier.height(8.dp))
             }
 
             if (state.googleAvailable) {

@@ -2,10 +2,12 @@ package presentation.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import data.auth.AppleSignInGateway
 import data.auth.AuthApiService
 import data.auth.AuthManager
 import data.auth.AuthSessionCoordinator
 import data.auth.GoogleSignInGateway
+import data.auth.GoogleSignInMode
 import data.auth.model.ChangePasswordRequest
 import data.auth.model.toDomainModel
 import data.remote.ApiException
@@ -24,6 +26,8 @@ import presentation.common.toUiText
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_auth_not_authenticated
 import setiker.composeapp.generated.resources.error_cloud_delete_failed
+import setiker.composeapp.generated.resources.settings_apple_linked
+import setiker.composeapp.generated.resources.settings_apple_unlinked
 import setiker.composeapp.generated.resources.settings_google_linked
 import setiker.composeapp.generated.resources.settings_google_unlinked
 import setiker.composeapp.generated.resources.settings_password_changed
@@ -38,10 +42,14 @@ class SettingsViewModel(
     private val authApiService: AuthApiService,
     private val authSessionCoordinator: AuthSessionCoordinator,
     private val userPreferencesRepository: UserPreferencesRepository,
-    private val googleSignInGateway: GoogleSignInGateway
+    private val googleSignInGateway: GoogleSignInGateway,
+    private val appleSignInGateway: AppleSignInGateway
 ) : ViewModel() {
     private val _state = MutableStateFlow(
-        SettingsState(googleAvailable = googleSignInGateway.isAvailable())
+        SettingsState(
+            googleAvailable = googleSignInGateway.isAvailable(),
+            appleAvailable = appleSignInGateway.isAvailable()
+        )
     )
     val state: StateFlow<SettingsState> = _state.asStateFlow()
 
@@ -105,6 +113,8 @@ class SettingsViewModel(
             SettingsIntent.DismissSavePasswordConfirm -> _state.update { it.copy(showSavePasswordConfirm = false) }
             SettingsIntent.LinkGoogle -> linkGoogle()
             SettingsIntent.UnlinkGoogle -> unlinkGoogle()
+            SettingsIntent.LinkApple -> linkApple()
+            SettingsIntent.UnlinkApple -> unlinkApple()
             SettingsIntent.ShowSetPassword -> _state.update {
                 it.copy(showSetPassword = true, changePasswordError = null, newPassword = "", confirmPassword = "")
             }
@@ -207,7 +217,7 @@ class SettingsViewModel(
                 return@launch
             }
             _state.update { it.copy(isLinkingGoogle = true) }
-            val idTokenResult = googleSignInGateway.signIn()
+            val idTokenResult = googleSignInGateway.signIn(GoogleSignInMode.Button)
             idTokenResult.onFailure { error ->
                 _state.update { it.copy(isLinkingGoogle = false) }
                 _effect.send(SettingsEffect.ShowMessage(error.toUiText(Res.string.error_auth_change_password_failed)))
@@ -223,6 +233,7 @@ class SettingsViewModel(
                     it.copy(
                         isLinkingGoogle = false,
                         hasGoogle = user?.hasGoogle == true,
+                        hasApple = user?.hasApple == true,
                         hasPassword = user?.hasPassword ?: it.hasPassword
                     )
                 }
@@ -251,12 +262,79 @@ class SettingsViewModel(
                     it.copy(
                         isLinkingGoogle = false,
                         hasGoogle = user?.hasGoogle == true,
+                        hasApple = user?.hasApple == true,
                         hasPassword = user?.hasPassword ?: it.hasPassword
                     )
                 }
                 _effect.send(SettingsEffect.ShowMessage(UiText.StringRes(Res.string.settings_google_unlinked)))
             }.onFailure { error ->
                 _state.update { it.copy(isLinkingGoogle = false) }
+                _effect.send(SettingsEffect.ShowMessage(error.toUiText(Res.string.error_auth_change_password_failed)))
+            }
+        }
+    }
+
+    private fun linkApple() {
+        if (!appleSignInGateway.isAvailable()) return
+        viewModelScope.launch {
+            val token = authManager.getValidAccessToken() ?: authManager.getAccessToken()
+            if (token.isNullOrBlank()) {
+                _effect.send(SettingsEffect.ShowMessage(UiText.StringRes(Res.string.error_auth_not_authenticated)))
+                return@launch
+            }
+            _state.update { it.copy(isLinkingApple = true) }
+            val idTokenResult = appleSignInGateway.signIn()
+            idTokenResult.onFailure { error ->
+                _state.update { it.copy(isLinkingApple = false) }
+                _effect.send(SettingsEffect.ShowMessage(error.toUiText(Res.string.error_auth_change_password_failed)))
+                return@launch
+            }
+            val idToken = idTokenResult.getOrNull()?.idToken ?: return@launch
+            runCatching {
+                authApiService.linkApple(token, idToken)
+            }.onSuccess { response ->
+                val user = response.data?.toDomainModel()
+                if (user != null) authManager.saveUser(user)
+                _state.update {
+                    it.copy(
+                        isLinkingApple = false,
+                        hasGoogle = user?.hasGoogle == true,
+                        hasApple = user?.hasApple == true,
+                        hasPassword = user?.hasPassword ?: it.hasPassword
+                    )
+                }
+                _effect.send(SettingsEffect.ShowMessage(UiText.StringRes(Res.string.settings_apple_linked)))
+            }.onFailure { error ->
+                _state.update { it.copy(isLinkingApple = false) }
+                _effect.send(SettingsEffect.ShowMessage(error.toUiText(Res.string.error_auth_change_password_failed)))
+            }
+        }
+    }
+
+    private fun unlinkApple() {
+        viewModelScope.launch {
+            val token = authManager.getValidAccessToken() ?: authManager.getAccessToken()
+            if (token.isNullOrBlank()) {
+                _effect.send(SettingsEffect.ShowMessage(UiText.StringRes(Res.string.error_auth_not_authenticated)))
+                return@launch
+            }
+            _state.update { it.copy(isLinkingApple = true) }
+            runCatching {
+                authApiService.unlinkApple(token)
+            }.onSuccess { response ->
+                val user = response.data?.toDomainModel()
+                if (user != null) authManager.saveUser(user)
+                _state.update {
+                    it.copy(
+                        isLinkingApple = false,
+                        hasGoogle = user?.hasGoogle == true,
+                        hasApple = user?.hasApple == true,
+                        hasPassword = user?.hasPassword ?: it.hasPassword
+                    )
+                }
+                _effect.send(SettingsEffect.ShowMessage(UiText.StringRes(Res.string.settings_apple_unlinked)))
+            }.onFailure { error ->
+                _state.update { it.copy(isLinkingApple = false) }
                 _effect.send(SettingsEffect.ShowMessage(error.toUiText(Res.string.error_auth_change_password_failed)))
             }
         }
@@ -270,7 +348,9 @@ class SettingsViewModel(
                     username = user?.username.orEmpty(),
                     hasPassword = user?.hasPassword ?: true,
                     hasGoogle = user?.hasGoogle == true,
+                    hasApple = user?.hasApple == true,
                     googleAvailable = googleSignInGateway.isAvailable(),
+                    appleAvailable = appleSignInGateway.isAvailable(),
                     isLoadingLegal = true,
                     isLoadingUsage = true,
                     usageError = false
@@ -294,7 +374,8 @@ class SettingsViewModel(
                                     it.copy(
                                         username = profile.username,
                                         hasPassword = profile.hasPassword,
-                                        hasGoogle = profile.hasGoogle
+                                        hasGoogle = profile.hasGoogle,
+                                        hasApple = profile.hasApple
                                     )
                                 }
                             }

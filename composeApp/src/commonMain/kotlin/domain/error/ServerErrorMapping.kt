@@ -14,12 +14,17 @@ fun serverSubcodeToAppErrorCode(subcode: String?): AppErrorCode? {
         "USERNAME_ALREADY_IN_USE" -> AppErrorCode.AuthUsernameTaken
         "CURRENT_PASSWORD_INCORRECT" -> AppErrorCode.AuthChangePasswordFailed
         "INVALID_GOOGLE_TOKEN" -> AppErrorCode.AuthGoogleFailed
+        "INVALID_APPLE_TOKEN" -> AppErrorCode.AuthAppleFailed
         "EMAIL_NOT_VERIFIED" -> AppErrorCode.AuthGoogleFailed
         "ACCOUNT_EXISTS_PASSWORD" -> AppErrorCode.AuthAccountExistsPassword
-        "USE_GOOGLE_SIGN_IN" -> AppErrorCode.AuthUseGoogleSignIn
+        "ACCOUNT_EXISTS_OTHER_PROVIDER" -> AppErrorCode.AuthAccountExistsOtherProvider
+        "USE_GOOGLE_SIGN_IN" -> AppErrorCode.AuthUseOauthOrSetPassword
+        "USE_OAUTH_OR_SET_PASSWORD" -> AppErrorCode.AuthUseOauthOrSetPassword
         "GOOGLE_ALREADY_LINKED" -> AppErrorCode.AuthGoogleFailed
+        "APPLE_ALREADY_LINKED" -> AppErrorCode.AuthAppleFailed
         "NO_PASSWORD_SET" -> AppErrorCode.AuthNoPasswordSet
         "CANNOT_UNLINK_SOLE_AUTH" -> AppErrorCode.AuthCannotUnlinkSoleAuth
+        "INVALID_PASSWORD_RESET_TOKEN" -> AppErrorCode.AuthInvalidPasswordResetToken
         "AI_DAILY_QUOTA_EXCEEDED" -> AppErrorCode.AiQuotaExceeded
         "RATE_LIMITED" -> AppErrorCode.AiQuotaExceeded
         else -> null

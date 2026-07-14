@@ -11,6 +11,7 @@ import domain.error.AppErrorCode
 import domain.model.LegalSummary
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -145,6 +146,12 @@ class SettingsViewModelDeleteAccountTest {
         authApiService: AuthApiService = mockk(relaxed = true),
         authSessionCoordinator: AuthSessionCoordinator = mockk(relaxed = true),
         userPreferencesRepository: UserPreferencesRepository = mockk(relaxed = true),
+        googleSignInGateway: data.auth.GoogleSignInGateway = mockk(relaxed = true) {
+            every { isAvailable() } returns false
+        },
+        appleSignInGateway: data.auth.AppleSignInGateway = mockk(relaxed = true) {
+            every { isAvailable() } returns false
+        },
     ): SettingsViewModel = SettingsViewModel(
         legalApiRepository = legalApiRepository,
         aiUsageApiRepository = aiUsageApiRepository,
@@ -152,6 +159,8 @@ class SettingsViewModelDeleteAccountTest {
         authApiService = authApiService,
         authSessionCoordinator = authSessionCoordinator,
         userPreferencesRepository = userPreferencesRepository,
+        googleSignInGateway = googleSignInGateway,
+        appleSignInGateway = appleSignInGateway,
     )
 
     private fun legalSummary(): LegalSummary = LegalSummary(

@@ -40,9 +40,11 @@ import org.koin.core.module.dsl.viewModelOf
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 import presentation.auth.EditProfileViewModel
+import presentation.auth.ForgotPasswordViewModel
 import presentation.auth.LoginViewModel
 import presentation.auth.ProfileViewModel
 import presentation.auth.RegisterViewModel
+import presentation.auth.ResetPasswordViewModel
 import presentation.blocked.BlockedUsersViewModel
 import presentation.purchasehistory.PurchaseHistoryViewModel
 import presentation.creator.CreatorProfileViewModel
@@ -139,6 +141,8 @@ val appModule = module {
     viewModelOf(::AnimatedEditorViewModel)
     viewModelOf(::LoginViewModel)
     viewModelOf(::RegisterViewModel)
+    viewModelOf(::ForgotPasswordViewModel)
+    viewModelOf(::ResetPasswordViewModel)
     viewModelOf(::ProfileViewModel)
     viewModelOf(::EditProfileViewModel)
     viewModelOf(::BlockedUsersViewModel)

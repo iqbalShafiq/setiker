@@ -28,7 +28,9 @@ data class RegisterState(
     val isEmailValid: Boolean = true,
     val isPasswordValid: Boolean = true,
     val isUsernameValid: Boolean = true,
-    val googleAvailable: Boolean = false
+    val googleAvailable: Boolean = false,
+    val appleAvailable: Boolean = false,
+    val oneTapAttempted: Boolean = false
 )
 
 sealed class RegisterIntent {
@@ -39,6 +41,8 @@ sealed class RegisterIntent {
     data class UpdateConfirmPassword(val confirmPassword: String) : RegisterIntent()
     data object Submit : RegisterIntent()
     data object SignInWithGoogle : RegisterIntent()
+    data object SignInWithApple : RegisterIntent()
+    data object TryOneTap : RegisterIntent()
     data object NavigateToLogin : RegisterIntent()
 }
 
@@ -50,10 +54,16 @@ sealed class RegisterEffect {
 class RegisterViewModel(
     private val authApiService: AuthApiService,
     private val authManager: AuthManager,
-    private val googleSignInGateway: data.auth.GoogleSignInGateway
+    private val googleSignInGateway: data.auth.GoogleSignInGateway,
+    private val appleSignInGateway: data.auth.AppleSignInGateway
 ) : ViewModel() {
     
-    private val _state = MutableStateFlow(RegisterState(googleAvailable = googleSignInGateway.isAvailable()))
+    private val _state = MutableStateFlow(
+        RegisterState(
+            googleAvailable = googleSignInGateway.isAvailable(),
+            appleAvailable = appleSignInGateway.isAvailable()
+        )
+    )
     val state: StateFlow<RegisterState> = _state.asStateFlow()
     private val _effect = MutableStateFlow<RegisterEffect?>(null)
     val effect: StateFlow<RegisterEffect?> = _effect
@@ -66,16 +76,57 @@ class RegisterViewModel(
             is RegisterIntent.UpdatePassword -> _state.update { it.copy(password = intent.password, error = null, isPasswordValid = true) }
             is RegisterIntent.UpdateConfirmPassword -> _state.update { it.copy(confirmPassword = intent.confirmPassword, error = null) }
             is RegisterIntent.Submit -> register()
-            is RegisterIntent.SignInWithGoogle -> signInWithGoogle()
+            is RegisterIntent.SignInWithGoogle -> signInWithGoogle(data.auth.GoogleSignInMode.Button)
+            is RegisterIntent.SignInWithApple -> signInWithApple()
+            is RegisterIntent.TryOneTap -> tryOneTap()
             is RegisterIntent.NavigateToLogin -> _effect.value = RegisterEffect.NavigateToLogin
         }
     }
 
-    private fun signInWithGoogle() {
+    private fun tryOneTap() {
+        if (!googleSignInGateway.isAvailable() || _state.value.oneTapAttempted) return
+        _state.update { it.copy(oneTapAttempted = true) }
+        viewModelScope.launch {
+            val tokenResult = googleSignInGateway.signIn(data.auth.GoogleSignInMode.OneTap)
+            tokenResult.onFailure { return@launch }
+            val idToken = tokenResult.getOrNull()?.idToken ?: return@launch
+            _state.update { it.copy(isLoading = true, error = null) }
+            completeOAuthGoogle(idToken)
+        }
+    }
+
+    private fun signInWithGoogle(mode: data.auth.GoogleSignInMode) {
         if (!googleSignInGateway.isAvailable()) return
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            val tokenResult = googleSignInGateway.signIn()
+            val tokenResult = googleSignInGateway.signIn(mode)
+            tokenResult.onFailure { error ->
+                _state.update {
+                    it.copy(isLoading = false, error = error.toUiText(Res.string.error_auth_register_failed))
+                }
+                return@launch
+            }
+            val idToken = tokenResult.getOrNull()?.idToken ?: return@launch
+            completeOAuthGoogle(idToken)
+        }
+    }
+
+    private suspend fun completeOAuthGoogle(idToken: String) {
+        try {
+            val response = authApiService.loginWithGoogle(idToken)
+            persistAuth(response)
+        } catch (e: Exception) {
+            _state.update {
+                it.copy(isLoading = false, error = e.toUiText(Res.string.error_auth_register_failed))
+            }
+        }
+    }
+
+    private fun signInWithApple() {
+        if (!appleSignInGateway.isAvailable()) return
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null) }
+            val tokenResult = appleSignInGateway.signIn()
             tokenResult.onFailure { error ->
                 _state.update {
                     it.copy(isLoading = false, error = error.toUiText(Res.string.error_auth_register_failed))
@@ -84,24 +135,29 @@ class RegisterViewModel(
             }
             val idToken = tokenResult.getOrNull()?.idToken ?: return@launch
             try {
-                val response = authApiService.loginWithGoogle(idToken)
-                val data = response.data
-                val user = data?.user
-                val accessToken = data?.accessToken
-                val refreshToken = authApiService.getRefreshToken()
-                if (accessToken != null && user != null) {
-                    authManager.saveTokens(accessToken, refreshToken ?: "", (data.expiresIn ?: 3600).toLong())
-                    authManager.saveUser(user.toDomainModel())
-                    _effect.value = RegisterEffect.NavigateToHome
-                } else {
-                    _state.update {
-                        it.copy(isLoading = false, error = UiText.StringRes(Res.string.error_auth_register_failed))
-                    }
-                }
+                val response = authApiService.loginWithApple(idToken)
+                persistAuth(response)
             } catch (e: Exception) {
                 _state.update {
                     it.copy(isLoading = false, error = e.toUiText(Res.string.error_auth_register_failed))
                 }
+            }
+        }
+    }
+
+    private suspend fun persistAuth(response: data.auth.model.AuthResponse) {
+        val data = response.data
+        val user = data?.user
+        val accessToken = data?.accessToken
+        val refreshToken = authApiService.getRefreshToken()
+        if (accessToken != null && user != null) {
+            authManager.saveTokens(accessToken, refreshToken ?: "", (data.expiresIn ?: 3600).toLong())
+            authManager.saveUser(user.toDomainModel())
+            _state.update { it.copy(isLoading = false) }
+            _effect.value = RegisterEffect.NavigateToHome
+        } else {
+            _state.update {
+                it.copy(isLoading = false, error = UiText.StringRes(Res.string.error_auth_register_failed))
             }
         }
     }

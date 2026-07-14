@@ -19,6 +19,7 @@ data class User(
     val authProviders: List<String> = emptyList()
 ) {
     val hasGoogle: Boolean get() = authProviders.any { it.equals("GOOGLE", ignoreCase = true) }
+    val hasApple: Boolean get() = authProviders.any { it.equals("APPLE", ignoreCase = true) }
 }
 
 @Serializable

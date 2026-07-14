@@ -44,6 +44,11 @@ data class GoogleIdTokenRequest(
 )
 
 @Serializable
+data class AppleIdTokenRequest(
+    val idToken: String
+)
+
+@Serializable
 data class LinkGoogleWithPasswordRequest(
     val idToken: String,
     val email: String,
@@ -51,7 +56,25 @@ data class LinkGoogleWithPasswordRequest(
 )
 
 @Serializable
+data class LinkAppleWithPasswordRequest(
+    val idToken: String,
+    val email: String,
+    val password: String
+)
+
+@Serializable
 data class SetPasswordRequest(
+    val newPassword: String
+)
+
+@Serializable
+data class ForgotPasswordRequest(
+    val email: String
+)
+
+@Serializable
+data class ResetPasswordRequest(
+    val token: String,
     val newPassword: String
 )
 

@@ -51,12 +51,8 @@ import setiker.composeapp.generated.resources.settings_ai_usage_section
 import setiker.composeapp.generated.resources.settings_change_password
 import setiker.composeapp.generated.resources.settings_change_password_title
 import setiker.composeapp.generated.resources.settings_confirm_password
-import setiker.composeapp.generated.resources.settings_connected_accounts
 import setiker.composeapp.generated.resources.settings_current_password
 import setiker.composeapp.generated.resources.settings_delete_account
-import setiker.composeapp.generated.resources.settings_google_connected
-import setiker.composeapp.generated.resources.settings_google_not_connected
-import setiker.composeapp.generated.resources.settings_link_google
 import setiker.composeapp.generated.resources.settings_new_password
 import setiker.composeapp.generated.resources.settings_save_password_confirm_message
 import setiker.composeapp.generated.resources.settings_set_password
@@ -64,7 +60,6 @@ import setiker.composeapp.generated.resources.settings_set_password_message
 import setiker.composeapp.generated.resources.settings_set_password_title
 import setiker.composeapp.generated.resources.settings_show_onboarding
 import setiker.composeapp.generated.resources.settings_title
-import setiker.composeapp.generated.resources.settings_unlink_google
 import setiker.composeapp.generated.resources.settings_username
 import util.rememberUrlLauncher
 
@@ -225,49 +220,21 @@ fun SettingsScreen(
                 )
             }
             item {
-                Text(
-                    text = stringResource(Res.string.settings_connected_accounts),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = neubrutalOnSurface()
+                presentation.auth.ConnectedAccountsSection(
+                    state = presentation.auth.ConnectedAccountsUiState(
+                        hasPassword = state.hasPassword,
+                        hasGoogle = state.hasGoogle,
+                        hasApple = state.hasApple,
+                        googleAvailable = state.googleAvailable,
+                        appleAvailable = state.appleAvailable,
+                        isBusy = state.isLinkingGoogle || state.isLinkingApple || state.isSettingPassword
+                    ),
+                    onLinkGoogle = { onIntent(SettingsIntent.LinkGoogle) },
+                    onUnlinkGoogle = { onIntent(SettingsIntent.UnlinkGoogle) },
+                    onLinkApple = { onIntent(SettingsIntent.LinkApple) },
+                    onUnlinkApple = { onIntent(SettingsIntent.UnlinkApple) },
+                    onSetPassword = { onIntent(SettingsIntent.ShowSetPassword) }
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = if (state.hasGoogle) {
-                        stringResource(Res.string.settings_google_connected)
-                    } else {
-                        stringResource(Res.string.settings_google_not_connected)
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = neubrutalMutedOnSurface()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                if (state.googleAvailable) {
-                    if (state.hasGoogle) {
-                        AppPrimaryButton(
-                            text = stringResource(Res.string.settings_unlink_google),
-                            onClick = { onIntent(SettingsIntent.UnlinkGoogle) },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !state.isLinkingGoogle && state.hasPassword
-                        )
-                    } else {
-                        AppPrimaryButton(
-                            text = stringResource(Res.string.settings_link_google),
-                            onClick = { onIntent(SettingsIntent.LinkGoogle) },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !state.isLinkingGoogle
-                        )
-                    }
-                }
-                if (!state.hasPassword) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    AppPrimaryButton(
-                        text = stringResource(Res.string.settings_set_password),
-                        onClick = { onIntent(SettingsIntent.ShowSetPassword) },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !state.isSettingPassword
-                    )
-                }
             }
             if (state.hasPassword) {
                 item {

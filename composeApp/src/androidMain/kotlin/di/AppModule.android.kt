@@ -64,4 +64,5 @@ actual fun platformModule(): Module = module {
     single { AiNotificationHelper(androidContext()) }
     single { PlatformBillingStore { MainActivityHolder.current } }
     single<GoogleSignInGateway> { AndroidGoogleSignInGateway() }
+    single<data.auth.AppleSignInGateway> { data.auth.UnavailableAppleSignInGateway() }
 }
