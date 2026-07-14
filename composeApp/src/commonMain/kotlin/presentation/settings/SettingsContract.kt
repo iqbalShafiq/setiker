@@ -37,6 +37,7 @@ sealed interface SettingsIntent {
     data object OpenPrivacy : SettingsIntent
     data object OpenTerms : SettingsIntent
     data object OpenRetention : SettingsIntent
+    data object OpenPurchaseHistory : SettingsIntent
     data object ShowChangePassword : SettingsIntent
     data object DismissChangePassword : SettingsIntent
     data class UpdateCurrentPassword(val value: String) : SettingsIntent
@@ -50,6 +51,7 @@ sealed interface SettingsIntent {
 sealed interface SettingsEffect {
     data object NavigateBack : SettingsEffect
     data object NavigateToOnboarding : SettingsEffect
+    data object NavigateToPurchaseHistory : SettingsEffect
     data class OpenUrl(val url: String) : SettingsEffect
     data class ShowMessage(val message: UiText) : SettingsEffect
     data object AccountDeleted : SettingsEffect

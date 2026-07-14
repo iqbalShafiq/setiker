@@ -14,6 +14,8 @@ import setiker.composeapp.generated.resources.error_auth_not_authenticated
 import setiker.composeapp.generated.resources.error_auth_profile_failed
 import setiker.composeapp.generated.resources.error_auth_refresh_failed
 import setiker.composeapp.generated.resources.error_auth_register_failed
+import setiker.composeapp.generated.resources.error_edit_profile_failed
+import setiker.composeapp.generated.resources.error_username_taken
 import setiker.composeapp.generated.resources.error_background_remove_request_failed
 import setiker.composeapp.generated.resources.error_cloud_create_failed
 import setiker.composeapp.generated.resources.error_cloud_delete_failed
@@ -56,6 +58,8 @@ private fun AppErrorCode.toStringResource(): StringResource {
         AppErrorCode.AuthRegisterFailed -> Res.string.error_auth_register_failed
         AppErrorCode.AuthRefreshFailed -> Res.string.error_auth_refresh_failed
         AppErrorCode.AuthProfileFailed -> Res.string.error_auth_profile_failed
+        AppErrorCode.AuthUpdateProfileFailed -> Res.string.error_edit_profile_failed
+        AppErrorCode.AuthUsernameTaken -> Res.string.error_username_taken
         AppErrorCode.AuthChangePasswordFailed -> Res.string.error_auth_change_password_failed
         AppErrorCode.AuthAccountDeactivated -> Res.string.error_auth_account_deactivated
         AppErrorCode.AuthNotAuthenticated -> Res.string.error_auth_not_authenticated

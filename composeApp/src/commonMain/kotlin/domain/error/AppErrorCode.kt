@@ -14,6 +14,8 @@ enum class AppErrorCode {
     AuthRegisterFailed("AUTH_REGISTER_FAILED"),
     AuthRefreshFailed("AUTH_REFRESH_FAILED"),
     AuthProfileFailed("AUTH_PROFILE_FAILED"),
+    AuthUpdateProfileFailed("AUTH_UPDATE_PROFILE_FAILED"),
+    AuthUsernameTaken("AUTH_USERNAME_TAKEN"),
     AuthChangePasswordFailed("AUTH_CHANGE_PASSWORD_FAILED"),
     AuthAccountDeactivated("AUTH_ACCOUNT_DEACTIVATED"),
     AuthNotAuthenticated("AUTH_NOT_AUTHENTICATED"),

@@ -17,6 +17,7 @@ import kotlinx.datetime.Instant
          isActive = isActive ?: true,
          createdAt = createdAt?.let { runCatching { Instant.parse(it).toEpochMilliseconds() }.getOrDefault(0L) } ?: 0L,
          followerCount = followerCount ?: 0,
-         followingCount = followingCount ?: 0
+         followingCount = followingCount ?: 0,
+         totalPackDownloads = totalPackDownloads ?: 0
      )
  }

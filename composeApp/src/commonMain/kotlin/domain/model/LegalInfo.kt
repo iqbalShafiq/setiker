@@ -28,5 +28,6 @@ enum class LegalDocType {
     PRIVACY,
     TERMS,
     RETENTION,
-    PERMISSIONS
+    PERMISSIONS,
+    ACCOUNT_DELETION
 }

@@ -23,12 +23,14 @@ import data.preferences.UserPreferencesRepository
 import data.sync.NetworkMonitor
 import presentation.animatededitor.AnimatedEditorEffect
 import presentation.animatededitor.AnimatedEditorScreenRoot
+import presentation.auth.EditProfileScreenRoot
 import presentation.auth.LoginScreenRoot
 import presentation.auth.LoginViewModel
 import presentation.auth.ProfileScreenRoot
 import presentation.auth.ProfileViewModel
 import presentation.auth.RegisterScreenRoot
 import presentation.auth.RegisterViewModel
+import presentation.blocked.BlockedUsersScreenRoot
 import presentation.createpack.CreatePackScreenRoot
 import presentation.createpack.DraftSticker
 import presentation.crop.CropScreenRoot
@@ -41,6 +43,7 @@ import presentation.history.ProcessingHistoryScreenRoot
 import presentation.home.HomeScreenRoot
 import presentation.packdetail.PackDetailScreenRoot
 import presentation.publicpack.PublicPackDetailScreenRoot
+import presentation.purchasehistory.PurchaseHistoryScreenRoot
 import presentation.sync.SyncScreenRoot
 import presentation.sync.SyncViewModel
 import presentation.onboarding.OnboardingScreenRoot
@@ -185,7 +188,8 @@ fun AppNavigation(
                     navBottomUp("onboarding") {
                         launchSingleTop = true
                     }
-                }
+                },
+                onPurchaseHistory = { navBottomUp("purchaseHistory") }
             )
         }
 
@@ -289,7 +293,26 @@ fun AppNavigation(
   
         composable("paywall") {
             presentation.billing.PaywallScreenRoot(
-                onBack = { navController.navigateUp() }
+                onBack = { navController.navigateUp() },
+                onNavigateToPurchaseHistory = { navBottomUp("purchaseHistory") }
+            )
+        }
+
+        composable("purchaseHistory") {
+            PurchaseHistoryScreenRoot(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("editProfile") {
+            EditProfileScreenRoot(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("blockedUsers") {
+            BlockedUsersScreenRoot(
+                onBack = { navController.popBackStack() }
             )
         }
 
@@ -337,7 +360,10 @@ fun AppNavigation(
                 onOpenPrivacy = { navBottomUp("legal/PRIVACY") },
                 onOpenTerms = { navBottomUp("legal/TERMS") },
                 onOpenRetention = { navBottomUp("legal/RETENTION") },
-                onOpenPermissions = { navBottomUp("legal/PERMISSIONS") }
+                onOpenPermissions = { navBottomUp("legal/PERMISSIONS") },
+                onEditProfile = { navBottomUp("editProfile") },
+                onBlockedUsers = { navBottomUp("blockedUsers") },
+                onOpenAccountDeletion = { navBottomUp("legal/ACCOUNT_DELETION") }
             )
         }
 

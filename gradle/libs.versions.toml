@@ -32,6 +32,7 @@ androidx-core-splashscreen = "1.2.0"
 onnxruntimeAndroid = "1.25.1"
 mockk = "1.13.12"
 billing = "7.1.1"
+reorderable = "3.1.0"
 
 [libraries]
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqliteBundled" }
@@ -83,6 +84,7 @@ onnxruntime-android = { module = "com.microsoft.onnxruntime:onnxruntime-android"
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 billing-ktx = { module = "com.android.billingclient:billing-ktx", version.ref = "billing" }
+reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

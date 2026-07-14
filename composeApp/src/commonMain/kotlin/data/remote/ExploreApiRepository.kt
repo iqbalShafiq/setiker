@@ -7,8 +7,10 @@ import data.remote.model.AcceptSharedStickerData
 import data.remote.model.ApiErrorEnvelope
 import data.remote.model.ApiPaginatedSuccessEnvelope
 import data.remote.model.ApiSuccessEnvelope
+import data.remote.model.BlockedUsersData
 import data.remote.model.CloudStickerPack
 import data.remote.model.CloudStickerPackShareLink
+import data.remote.model.CloudStickerShareLink
 import data.remote.model.CloudSticker
 import data.remote.model.CreateStickerPackLinkRequest
 import data.remote.model.DeleteCountData
@@ -621,6 +623,114 @@ class ExploreApiRepository(
         if (!response.status.isSuccess()) {
             throw ApiException(code = AppErrorCode.CloudFetchFailed, message = extractMessage(response.bodyAsText()))
         }
+    }
+
+    suspend fun listBlockedUsers(): BlockedUsersData {
+        val response = withRequiredAuthRetry { authHeader ->
+            client.get("$baseUrl/api/v1/users/blocked") {
+                header(HttpHeaders.Authorization, authHeader)
+            }
+        }
+        val bodyText = response.bodyAsText()
+        if (!response.status.isSuccess()) {
+            throw ApiException(code = AppErrorCode.CloudFetchFailed, message = extractMessage(bodyText))
+        }
+        return json.decodeFromString<ApiSuccessEnvelope<BlockedUsersData>>(bodyText).data
+            ?: BlockedUsersData()
+    }
+
+    suspend fun unblockUser(userId: String) {
+        val response = withRequiredAuthRetry { authHeader ->
+            client.delete("$baseUrl/api/v1/users/$userId/block") {
+                header(HttpHeaders.Authorization, authHeader)
+            }
+        }
+        if (!response.status.isSuccess()) {
+            throw ApiException(code = AppErrorCode.CloudDeleteFailed, message = extractMessage(response.bodyAsText()))
+        }
+    }
+
+    suspend fun getStickerLinks(stickerId: String): List<CloudStickerShareLink> {
+        val response = withRequiredAuthRetry { authHeader ->
+            client.get("$baseUrl/api/v1/stickers/$stickerId/links") {
+                header(HttpHeaders.Authorization, authHeader)
+            }
+        }
+        val bodyText = response.bodyAsText()
+        if (!response.status.isSuccess()) {
+            throw ApiException(code = AppErrorCode.CloudFetchFailed, message = extractMessage(bodyText))
+        }
+        return json.decodeFromString<ApiSuccessEnvelope<List<CloudStickerShareLink>>>(bodyText).data.orEmpty()
+    }
+
+    suspend fun createStickerLink(stickerId: String, request: CreateStickerPackLinkRequest): CloudStickerShareLink {
+        val response = withRequiredAuthRetry { authHeader ->
+            client.post("$baseUrl/api/v1/stickers/$stickerId/link") {
+                header(HttpHeaders.Authorization, authHeader)
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }
+        }
+        val bodyText = response.bodyAsText()
+        if (!response.status.isSuccess()) {
+            throw ApiException(code = AppErrorCode.CloudCreateFailed, message = extractMessage(bodyText))
+        }
+        return json.decodeFromString<ApiSuccessEnvelope<CloudStickerShareLink>>(bodyText).data
+            ?: throw ApiException(code = AppErrorCode.CloudCreateFailed)
+    }
+
+    suspend fun revokeStickerLink(stickerId: String, linkId: String) {
+        val response = withRequiredAuthRetry { authHeader ->
+            client.delete("$baseUrl/api/v1/stickers/$stickerId/link/$linkId") {
+                header(HttpHeaders.Authorization, authHeader)
+            }
+        }
+        val bodyText = response.bodyAsText()
+        if (!response.status.isSuccess()) {
+            throw ApiException(code = AppErrorCode.CloudDeleteFailed, message = extractMessage(bodyText))
+        }
+    }
+
+    suspend fun shareStickerWithUser(stickerId: String, request: SharePackWithUserRequest) {
+        val response = withRequiredAuthRetry { authHeader ->
+            client.post("$baseUrl/api/v1/stickers/$stickerId/share") {
+                header(HttpHeaders.Authorization, authHeader)
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }
+        }
+        val bodyText = response.bodyAsText()
+        if (!response.status.isSuccess()) {
+            throw ApiException(code = AppErrorCode.CloudCreateFailed, message = extractMessage(bodyText))
+        }
+    }
+
+    suspend fun removeStickerShare(stickerId: String, userId: String) {
+        val response = withRequiredAuthRetry { authHeader ->
+            client.delete("$baseUrl/api/v1/stickers/$stickerId/share") {
+                header(HttpHeaders.Authorization, authHeader)
+                contentType(ContentType.Application.Json)
+                setBody(RemovePackShareBody(userId))
+            }
+        }
+        val bodyText = response.bodyAsText()
+        if (!response.status.isSuccess()) {
+            throw ApiException(code = AppErrorCode.CloudDeleteFailed, message = extractMessage(bodyText))
+        }
+    }
+
+    suspend fun listStickerCollaborators(stickerId: String): List<data.remote.model.StickerCollaborator> {
+        val response = withRequiredAuthRetry { authHeader ->
+            client.get("$baseUrl/api/v1/stickers/$stickerId/collaborators") {
+                header(HttpHeaders.Authorization, authHeader)
+            }
+        }
+        val bodyText = response.bodyAsText()
+        if (!response.status.isSuccess()) {
+            throw ApiException(code = AppErrorCode.CloudFetchFailed, message = extractMessage(bodyText))
+        }
+        return json.decodeFromString<ApiSuccessEnvelope<List<data.remote.model.StickerCollaborator>>>(bodyText)
+            .data.orEmpty()
     }
 }
 

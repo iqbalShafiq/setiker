@@ -179,6 +179,8 @@ class CreatePackViewModel(
                     it.copy(stickers = it.stickers.filterIndexed { index, _ -> index != intent.index })
                 }
             }
+            is CreatePackIntent.MoveStickerUp -> moveSticker(intent.index, intent.index - 1)
+            is CreatePackIntent.MoveStickerDown -> moveSticker(intent.index, intent.index + 1)
             is CreatePackIntent.UpdateGeneratePrompt -> {
                 _state.update { it.copy(generatePrompt = intent.prompt) }
             }
@@ -595,6 +597,18 @@ class CreatePackViewModel(
                     )
                 )
             }
+        }
+    }
+
+    private fun moveSticker(fromIndex: Int, toIndex: Int) {
+        _state.update { current ->
+            if (fromIndex !in current.stickers.indices || toIndex !in current.stickers.indices) {
+                return@update current
+            }
+            val reordered = current.stickers.toMutableList()
+            val item = reordered.removeAt(fromIndex)
+            reordered.add(toIndex, item)
+            current.copy(stickers = reordered)
         }
     }
 

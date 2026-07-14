@@ -17,11 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
-import presentation.components.AppIllustration
-import presentation.components.AppPrimaryButton
 import presentation.components.AppTopBar
-import presentation.components.EmptyState
-import presentation.components.LoadingIndicator
+import presentation.components.ContentLoadLayout
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
@@ -31,7 +28,6 @@ import setiker.composeapp.generated.resources.notifications_empty_title
 import setiker.composeapp.generated.resources.notifications_load_failed
 import setiker.composeapp.generated.resources.notifications_mark_all_read
 import setiker.composeapp.generated.resources.notifications_title
-import setiker.composeapp.generated.resources.retry
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,61 +68,44 @@ fun NotificationsScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            when {
-                state.isLoading && state.items.isEmpty() -> {
-                    LoadingIndicator(Modifier.fillMaxSize())
-                }
-                state.loadFailed -> {
-                    EmptyState(
-                        title = stringResource(Res.string.notifications_load_failed),
-                        description = "",
-                        illustration = AppIllustration.ErrorState,
-                        modifier = Modifier.fillMaxSize(),
-                        action = {
-                            AppPrimaryButton(
-                                text = stringResource(Res.string.retry),
-                                onClick = onRefresh
-                            )
-                        }
-                    )
-                }
-                state.items.isEmpty() -> {
-                    EmptyState(
-                        title = stringResource(Res.string.notifications_empty_title),
-                        description = stringResource(Res.string.notifications_empty_desc),
-                        illustration = AppIllustration.SearchEmpty,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 20.dp)
-                    ) {
-                        items(state.items, key = { it.id }) { item ->
-                            val unread = item.readAt == null
+            ContentLoadLayout(
+                isLoading = state.isLoading,
+                loadFailed = state.loadFailed,
+                isEmpty = state.items.isEmpty(),
+                emptyTitle = stringResource(Res.string.notifications_empty_title),
+                emptyDescription = stringResource(Res.string.notifications_empty_desc),
+                errorTitle = stringResource(Res.string.notifications_load_failed),
+                onRetry = onRefresh,
+                hasContent = state.items.isNotEmpty(),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 20.dp)
+                ) {
+                    items(state.items, key = { it.id }) { item ->
+                        val unread = item.readAt == null
+                        Text(
+                            text = item.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = if (unread) FontWeight.Bold else FontWeight.Normal,
+                            color = neubrutalOnSurface(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onItemClick(item) }
+                                .padding(vertical = 10.dp)
+                        )
+                        item.body?.let { body ->
                             Text(
-                                text = item.title,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = if (unread) FontWeight.Bold else FontWeight.Normal,
-                                color = neubrutalOnSurface(),
+                                text = body,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = neubrutalMutedOnSurface(),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable { onItemClick(item) }
-                                    .padding(vertical = 10.dp)
+                                    .padding(bottom = 8.dp)
                             )
-                            item.body?.let { body ->
-                                Text(
-                                    text = body,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = neubrutalMutedOnSurface(),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { onItemClick(item) }
-                                        .padding(bottom = 8.dp)
-                                )
-                            }
                         }
                     }
                 }

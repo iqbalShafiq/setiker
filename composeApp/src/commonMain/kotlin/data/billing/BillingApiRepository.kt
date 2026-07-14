@@ -1,16 +1,8 @@
 package data.billing
 
-import data.auth.AuthManager
-import data.auth.AuthTokenRefresher
-import data.remote.ApiConfig
-import data.remote.model.ApiSuccessEnvelope
-import domain.billing.EntitlementSnapshot
-import domain.billing.PurchaseVerificationResult
-import domain.billing.RestorePurchasesResult
-import io.ktor.client.HttpClient
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
@@ -22,6 +14,12 @@ import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import data.remote.model.ApiSuccessEnvelope
+import data.auth.AuthManager
+import data.auth.AuthTokenRefresher
+import data.remote.ApiConfig
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 
 @Serializable
 data class BillingProductDto(
@@ -90,6 +88,31 @@ data class SubscriptionSnapshotDto(
     val cancelAtPeriodEnd: Boolean = false
 )
 
+@Serializable
+data class PurchaseHistoryItemDto(
+    val id: String,
+    val productCode: String,
+    val productName: String? = null,
+    val status: String,
+    val type: String,
+    val tokenAmount: Int? = null,
+    val provider: String,
+    val createdAt: String
+)
+
+@Serializable
+data class PurchasesListResponseDto(
+    val purchases: List<PurchaseHistoryItemDto> = emptyList(),
+    val limit: Int = 20,
+    val offset: Int = 0,
+    val hasMore: Boolean = false
+)
+
+data class PurchasesPageResult(
+    val purchases: List<PurchaseHistoryItemDto>,
+    val hasMore: Boolean
+)
+
 class BillingApiRepository(
     private val authManager: AuthManager,
     private val authTokenRefresher: AuthTokenRefresher? = null,
@@ -104,9 +127,31 @@ class BillingApiRepository(
     suspend fun fetchProducts(): List<BillingProductDto> {
         val response = client.get("$baseUrl/api/v1/billing/products")
         val body = response.bodyAsText()
-        if (!response.status.isSuccess()) return emptyList()
+        if (!response.status.isSuccess()) {
+            throw BillingApiException("Failed to load products: ${response.status}")
+        }
         return json.decodeFromString<ApiSuccessEnvelope<BillingProductsResponseDto>>(body)
             .data?.products.orEmpty()
+    }
+
+    suspend fun listPurchases(limit: Int = 20, offset: Int = 0): PurchasesPageResult {
+        val response = withAuthRetry { token ->
+            client.get("$baseUrl/api/v1/billing/purchases") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+                parameter("limit", limit)
+                parameter("offset", offset)
+            }
+        }
+        val body = response.bodyAsText()
+        if (!response.status.isSuccess()) {
+            throw BillingApiException("Failed to load purchases: ${response.status}")
+        }
+        val data = json.decodeFromString<ApiSuccessEnvelope<PurchasesListResponseDto>>(body).data
+            ?: PurchasesListResponseDto()
+        return PurchasesPageResult(
+            purchases = data.purchases,
+            hasMore = data.hasMore
+        )
     }
 
     suspend fun verifyGooglePlayPurchase(

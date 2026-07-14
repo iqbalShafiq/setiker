@@ -39,9 +39,12 @@ import org.koin.core.module.Module
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
+import presentation.auth.EditProfileViewModel
 import presentation.auth.LoginViewModel
 import presentation.auth.ProfileViewModel
 import presentation.auth.RegisterViewModel
+import presentation.blocked.BlockedUsersViewModel
+import presentation.purchasehistory.PurchaseHistoryViewModel
 import presentation.creator.CreatorProfileViewModel
 import presentation.explore.ExploreViewModel
 import presentation.notifications.NotificationsViewModel
@@ -137,6 +140,9 @@ val appModule = module {
     viewModelOf(::LoginViewModel)
     viewModelOf(::RegisterViewModel)
     viewModelOf(::ProfileViewModel)
+    viewModelOf(::EditProfileViewModel)
+    viewModelOf(::BlockedUsersViewModel)
+    viewModelOf(::PurchaseHistoryViewModel)
     viewModelOf(::SettingsViewModel)
     viewModelOf(::OnboardingViewModel)
     viewModelOf(::SyncViewModel)
@@ -145,6 +151,7 @@ val appModule = module {
     viewModel { params ->
         LegalDocumentViewModel(
             legalApiRepository = get(),
+            authManager = get(),
             docTypeParam = params.get()
         )
     }

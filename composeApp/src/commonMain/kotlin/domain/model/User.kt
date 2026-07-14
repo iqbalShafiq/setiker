@@ -12,7 +12,8 @@ data class User(
     val isActive: Boolean,
     val createdAt: Long,
     val followerCount: Int = 0,
-    val followingCount: Int = 0
+    val followingCount: Int = 0,
+    val totalPackDownloads: Int = 0
 )
 
 @Serializable

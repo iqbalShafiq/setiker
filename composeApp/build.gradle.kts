@@ -67,6 +67,7 @@ kotlin {
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.kotlinx.datetime)
             implementation(libs.androidx.datastore.preferences)
+            implementation(libs.reorderable)
         }
         
         androidMain.dependencies {

@@ -9,5 +9,7 @@ data class CreatorProfileState(
     val profile: PublicUserProfile? = null,
     val packs: List<CloudStickerPack> = emptyList(),
     val sort: ExploreSort = ExploreSort.RECENT,
-    val loadFailed: Boolean = false
+    val loadFailed: Boolean = false,
+    val showBlockCreatorConfirm: Boolean = false,
+    val isBlockingCreator: Boolean = false
 )

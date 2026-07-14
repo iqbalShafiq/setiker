@@ -74,6 +74,9 @@ class SettingsViewModel(
             SettingsIntent.OpenPrivacy -> openLegalUrl { it.privacyUrl }
             SettingsIntent.OpenTerms -> openLegalUrl { it.termsUrl }
             SettingsIntent.OpenRetention -> openLegalUrl { it.retentionUrl ?: it.privacyUrl }
+            SettingsIntent.OpenPurchaseHistory -> viewModelScope.launch {
+                _effect.send(SettingsEffect.NavigateToPurchaseHistory)
+            }
             SettingsIntent.ShowChangePassword -> _state.update {
                 it.copy(showChangePassword = true, changePasswordError = null)
             }

@@ -269,10 +269,34 @@ data class PackCollaborator(
 )
 
 @Serializable
+data class StickerCollaborator(
+    val id: String,
+    val stickerId: String,
+    val sharedWithId: String,
+    val permission: String,
+    val createdAt: String,
+    val expiresAt: String? = null,
+    val sharedWith: CloudOwner? = null
+)
+
+@Serializable
 data class SharePackWithUserRequest(
     val userId: String,
     val permission: String = "view",
     val expiresAt: String? = null
+)
+
+@Serializable
+data class BlockedUserItem(
+    val id: String,
+    val username: String,
+    val displayName: String? = null
+)
+
+@Serializable
+data class BlockedUsersData(
+    val users: List<BlockedUserItem> = emptyList(),
+    val blockedUserIds: List<String> = emptyList()
 )
 
 @Serializable

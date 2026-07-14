@@ -33,10 +33,27 @@ data class EntitlementSnapshot(
     val subscriptionActive: Boolean
 )
 
+data class PurchaseHistoryItem(
+    val id: String,
+    val productCode: String,
+    val productName: String?,
+    val status: String,
+    val type: String,
+    val tokenAmount: Int?,
+    val provider: String,
+    val createdAt: String
+)
+
+data class PurchaseHistoryPage(
+    val purchases: List<PurchaseHistoryItem>,
+    val hasMore: Boolean
+)
+
 interface BillingRepository {
     suspend fun getProducts(productCodes: List<String> = emptyList()): List<BillingProductUiModel>
     suspend fun purchase(productCode: String): PurchaseVerificationResult
     suspend fun restorePurchases(): RestorePurchasesResult
     suspend fun getCurrentEntitlement(): EntitlementSnapshot
     suspend fun recoverPendingPurchases()
+    suspend fun getPurchaseHistory(limit: Int = 20, offset: Int = 0): PurchaseHistoryPage
 }

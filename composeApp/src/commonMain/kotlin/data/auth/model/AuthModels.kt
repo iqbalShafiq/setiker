@@ -32,6 +32,12 @@ data class DeleteAccountRequest(
     val currentPassword: String? = null
 )
 
+@Serializable
+data class UpdateProfileRequest(
+    val displayName: String? = null,
+    val username: String? = null
+)
+
 /**
  * Actual API response structure (from real implementation):
  * Login/Register:
@@ -82,7 +88,8 @@ data class UserDto(
     val createdAt: String? = null,
     val followerCount: Int? = null,
     val followingCount: Int? = null,
-    val subscriptionTier: String? = null
+    val subscriptionTier: String? = null,
+    val totalPackDownloads: Int? = null
 )
 
 @Serializable

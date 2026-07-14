@@ -80,6 +80,25 @@ fun createDeleteStickerSyncOperation(
     createdAt = createdAt,
 )
 
+fun createReorderStickersSyncOperation(
+    cloudPackId: String,
+    stickerOrders: List<data.remote.model.StickerOrderItem>,
+    id: String,
+    createdAt: Long,
+): SyncOperation = SyncOperation(
+    id = id,
+    type = SyncOperationType.REORDER_STICKERS,
+    targetId = cloudPackId,
+    payload = Json.encodeToString(
+        data.remote.model.ReorderStickersSyncPayload(
+            stickerPackId = cloudPackId,
+            stickerOrders = stickerOrders,
+        )
+    ),
+    status = SyncOperationStatus.PENDING,
+    createdAt = createdAt,
+)
+
 fun operationIsPackVisibilityUpdate(operation: SyncOperation): Boolean =
     operation.type == SyncOperationType.UPDATE_PACK_VISIBILITY
 
@@ -130,6 +149,8 @@ fun operationBelongsToPack(
             val payload = Json.decodeFromString<DeleteStickerSyncPayload>(operation.payload)
             payload.stickerPackId == cloudPackId
         }
+        SyncOperationType.REORDER_STICKERS ->
+            !cloudPackId.isNullOrBlank() && operation.targetId == cloudPackId
         else -> false
     }
 }

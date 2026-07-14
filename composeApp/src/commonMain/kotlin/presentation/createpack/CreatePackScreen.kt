@@ -26,6 +26,8 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -129,6 +131,8 @@ import setiker.composeapp.generated.resources.publisher_placeholder
 import setiker.composeapp.generated.resources.improve_confirm_message_pack
 import setiker.composeapp.generated.resources.improve_stickers
 import setiker.composeapp.generated.resources.remove_sticker
+import setiker.composeapp.generated.resources.reorder_move_down
+import setiker.composeapp.generated.resources.reorder_move_up
 import setiker.composeapp.generated.resources.replace_stickers
 import setiker.composeapp.generated.resources.save_pack
 import setiker.composeapp.generated.resources.saving
@@ -784,14 +788,46 @@ fun CreatePackScreen(
                         ) {
                             rowItems.forEachIndexed { itemIndex, stickerDraft ->
                                 val stickerIndex = (rowIndex * 4) + itemIndex
-                                StickerPreviewItem(
-                                    sticker = stickerDraft,
-                                    onRemove = { onIntent(CreatePackIntent.RemoveSticker(stickerIndex)) },
-                                    enabled = !isOperationInProgress,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .aspectRatio(1f)
-                                )
+                                Column(modifier = Modifier.weight(1f)) {
+                                    StickerPreviewItem(
+                                        sticker = stickerDraft,
+                                        onRemove = { onIntent(CreatePackIntent.RemoveSticker(stickerIndex)) },
+                                        enabled = !isOperationInProgress,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .aspectRatio(1f)
+                                    )
+                                    if (state.stickers.size > 1) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceEvenly
+                                        ) {
+                                            IconButton(
+                                                onClick = {
+                                                    onIntent(CreatePackIntent.MoveStickerUp(stickerIndex))
+                                                },
+                                                enabled = !isOperationInProgress && stickerIndex > 0
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.KeyboardArrowUp,
+                                                    contentDescription = stringResource(Res.string.reorder_move_up)
+                                                )
+                                            }
+                                            IconButton(
+                                                onClick = {
+                                                    onIntent(CreatePackIntent.MoveStickerDown(stickerIndex))
+                                                },
+                                                enabled = !isOperationInProgress &&
+                                                    stickerIndex < state.stickers.lastIndex
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.KeyboardArrowDown,
+                                                    contentDescription = stringResource(Res.string.reorder_move_down)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
                             }
                             repeat(4 - rowItems.size) {
                                 Spacer(

@@ -15,11 +15,29 @@ import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+
+@Serializable
+private data class AccountDeletionRequestDto(
+    val email: String,
+    val reason: String? = null,
+    val confirmed: Boolean = true
+)
+
+@Serializable
+private data class AccountDeletionRequestResultDto(
+    val message: String? = null,
+    val requestId: String? = null
+)
 
 class LegalApiRepository(
     private val authManager: AuthManager,
@@ -49,6 +67,9 @@ class LegalApiRepository(
     suspend fun getPrivacyDocument(): LegalDocument = fetchDocument("/api/v1/legal/privacy").toDomain()
 
     suspend fun getTermsDocument(): LegalDocument = fetchDocument("/api/v1/legal/terms").toDomain()
+
+    suspend fun getAccountDeletionDocument(): LegalDocument =
+        fetchDocument("/api/v1/legal/account-deletion").toDomain()
 
     suspend fun getRetentionDocument(): LegalDocument {
         val bodyText = fetchPublic("/api/v1/legal/retention")
@@ -82,6 +103,38 @@ class LegalApiRepository(
                 )
             }
         )
+    }
+
+    /**
+     * Public soft-deletion request (Play Console / web flow). Auth is optional.
+     */
+    suspend fun requestAccountDeletion(
+        email: String,
+        reason: String? = null,
+        confirmed: Boolean = true
+    ): String {
+        val response = client.post("$baseUrl/api/v1/legal/account-deletion/request") {
+            contentType(ContentType.Application.Json)
+            resolveAccessToken()?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+            setBody(
+                AccountDeletionRequestDto(
+                    email = email.trim(),
+                    reason = reason?.trim()?.takeIf { it.isNotEmpty() },
+                    confirmed = confirmed
+                )
+            )
+        }
+        val bodyText = response.bodyAsText()
+        if (!response.status.isSuccess()) {
+            val parsed = ApiErrorParser.parse(bodyText)
+            throw ApiException(
+                code = parsed?.code ?: AppErrorCode.CloudCreateFailed,
+                message = parsed?.message
+            )
+        }
+        val data = json.decodeFromString<ApiSuccessEnvelope<AccountDeletionRequestResultDto>>(bodyText).data
+        return data?.message?.takeIf { it.isNotBlank() }
+            ?: "Request received. We will process your deletion request by email."
     }
 
     private suspend fun fetchDocument(path: String): LegalDocumentDto {

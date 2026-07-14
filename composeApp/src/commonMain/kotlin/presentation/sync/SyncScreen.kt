@@ -1,7 +1,7 @@
 package presentation.sync
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -37,13 +37,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import domain.model.SyncOperation
 import domain.model.SyncOperationStatus
 import domain.model.SyncOperationType
 import domain.model.SyncReport
 import domain.model.SyncResult
 import domain.model.SyncStage
+import presentation.common.ContentStateAnimations
+import presentation.common.ListLoadPhase
 import presentation.components.AppTopBar
 import presentation.components.AppIllustration
 import presentation.components.EmptyState
@@ -58,6 +59,41 @@ import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import org.jetbrains.compose.resources.stringResource
 import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.back
+import setiker.composeapp.generated.resources.cancel
+import setiker.composeapp.generated.resources.retry
+import setiker.composeapp.generated.resources.sync_already_running
+import setiker.composeapp.generated.resources.sync_another_in_progress
+import setiker.composeapp.generated.resources.sync_clear_done
+import setiker.composeapp.generated.resources.sync_detail_download_issues
+import setiker.composeapp.generated.resources.sync_detail_downloaded_packs
+import setiker.composeapp.generated.resources.sync_detail_downloaded_stickers
+import setiker.composeapp.generated.resources.sync_detail_removed
+import setiker.composeapp.generated.resources.sync_detail_uploaded
+import setiker.composeapp.generated.resources.sync_empty_desc
+import setiker.composeapp.generated.resources.sync_empty_title
+import setiker.composeapp.generated.resources.sync_last_sync
+import setiker.composeapp.generated.resources.sync_login_to_sync
+import setiker.composeapp.generated.resources.sync_now
+import setiker.composeapp.generated.resources.sync_operation_status
+import setiker.composeapp.generated.resources.sync_operation_target
+import setiker.composeapp.generated.resources.sync_operations_count
+import setiker.composeapp.generated.resources.sync_pending_count
+import setiker.composeapp.generated.resources.sync_ready
+import setiker.composeapp.generated.resources.sync_remove
+import setiker.composeapp.generated.resources.sync_resume_when_online
+import setiker.composeapp.generated.resources.sync_sign_in_required
+import setiker.composeapp.generated.resources.sync_stage_pulling_remote
+import setiker.composeapp.generated.resources.sync_stage_pushing_local
+import setiker.composeapp.generated.resources.sync_synced_with_warnings
+import setiker.composeapp.generated.resources.sync_syncing
+import setiker.composeapp.generated.resources.sync_timestamp_days_ago
+import setiker.composeapp.generated.resources.sync_timestamp_hours_ago
+import setiker.composeapp.generated.resources.sync_timestamp_just_now
+import setiker.composeapp.generated.resources.sync_timestamp_minutes_ago
+import setiker.composeapp.generated.resources.sync_title
+import setiker.composeapp.generated.resources.sync_up_to_date
+import setiker.composeapp.generated.resources.sync_waiting_internet
 import setiker.composeapp.generated.resources.syncing
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -88,7 +124,7 @@ fun SyncScreen(
     Scaffold(
         topBar = {
             AppTopBar(
-                title = "Sync Status"
+                title = stringResource(Res.string.sync_title)
             )
         },
         bottomBar = {
@@ -97,13 +133,13 @@ fun SyncScreen(
                 actions = {
                     PackBottomBarIconButton(
                         icon = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(Res.string.back),
                         onClick = onBackClick,
                         enabled = !state.isSyncing
                     )
                     PackBottomBarIconButton(
                         icon = Icons.Default.DoneAll,
-                        contentDescription = "Clear done",
+                        contentDescription = stringResource(Res.string.sync_clear_done),
                         onClick = { onIntent(SyncIntent.ClearCompleted) },
                         enabled = !state.isSyncing && state.operations.any { it.status == SyncOperationStatus.SUCCESS }
                     )
@@ -111,7 +147,7 @@ fun SyncScreen(
                 floatingActionButton = {
                     PackBottomBarFab(
                         icon = Icons.Default.Refresh,
-                        contentDescription = "Sync now",
+                        contentDescription = stringResource(Res.string.sync_now),
                         onClick = { onIntent(SyncIntent.SyncNow) },
                         enabled = !state.isSyncing,
                         isLoading = state.isSyncing
@@ -142,7 +178,7 @@ fun SyncScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "Operations (${state.operations.size})",
+                text = stringResource(Res.string.sync_operations_count, state.operations.size),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = neubrutalOnSurface()
@@ -150,29 +186,40 @@ fun SyncScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            if (state.isLoading) {
-                LoadingIndicator(
-                    modifier = Modifier.fillMaxSize(),
-                    illustration = AppIllustration.LoadingState
-                )
-            } else if (state.operations.isEmpty()) {
-                EmptyState(
-                    title = "All synced",
-                    description = "No local changes. Cloud sync will run automatically when you are online.",
-                    illustration = AppIllustration.SuccessSync,
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(state.operations) { operation ->
-                        SyncOperationItem(
-                            operation = operation,
-                            onRetry = { onIntent(SyncIntent.RetryOperation(operation.id)) },
-                            onCancel = { onIntent(SyncIntent.CancelOperation(operation.id)) }
-                        )
+            val opsPhase = when {
+                state.isLoading -> ListLoadPhase.Loading
+                state.operations.isEmpty() -> ListLoadPhase.Empty
+                else -> ListLoadPhase.Content
+            }
+            AnimatedContent(
+                targetState = opsPhase,
+                transitionSpec = { ContentStateAnimations.fadeOnly() },
+                label = "sync_ops_phase",
+                modifier = Modifier.fillMaxSize()
+            ) { current ->
+                when (current) {
+                    ListLoadPhase.Loading -> LoadingIndicator(
+                        modifier = Modifier.fillMaxSize(),
+                        illustration = AppIllustration.LoadingState
+                    )
+                    ListLoadPhase.Empty -> EmptyState(
+                        title = stringResource(Res.string.sync_empty_title),
+                        description = stringResource(Res.string.sync_empty_desc),
+                        illustration = AppIllustration.SuccessSync,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    ListLoadPhase.Error -> Unit
+                    ListLoadPhase.Content -> LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(state.operations) { operation ->
+                            SyncOperationItem(
+                                operation = operation,
+                                onRetry = { onIntent(SyncIntent.RetryOperation(operation.id)) },
+                                onCancel = { onIntent(SyncIntent.CancelOperation(operation.id)) }
+                            )
+                        }
                     }
                 }
             }
@@ -224,7 +271,10 @@ private fun SyncStatusCard(
                     )
                     lastReport?.let {
                         Text(
-                            text = "Last sync: ${formatTimestamp(it.timestamp)}",
+                            text = stringResource(
+                                Res.string.sync_last_sync,
+                                formatTimestamp(it.timestamp)
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -235,6 +285,7 @@ private fun SyncStatusCard(
     }
 }
 
+@Composable
 private fun syncTitle(
     isSyncing: Boolean,
     syncStage: SyncStage,
@@ -243,36 +294,41 @@ private fun syncTitle(
 ): String {
     if (isSyncing) {
         return when (syncStage) {
-            SyncStage.PUSHING_LOCAL -> "Syncing local changes"
-            SyncStage.PULLING_REMOTE -> "Downloading cloud changes"
-            SyncStage.WAITING_FOR_INTERNET -> "Waiting for internet"
-            SyncStage.SIGN_IN_REQUIRED -> "Sign in to sync"
-            SyncStage.IDLE -> "Syncing"
+            SyncStage.PUSHING_LOCAL -> stringResource(Res.string.sync_stage_pushing_local)
+            SyncStage.PULLING_REMOTE -> stringResource(Res.string.sync_stage_pulling_remote)
+            SyncStage.WAITING_FOR_INTERNET -> stringResource(Res.string.sync_waiting_internet)
+            SyncStage.SIGN_IN_REQUIRED -> stringResource(Res.string.sync_sign_in_required)
+            SyncStage.IDLE -> stringResource(Res.string.sync_syncing)
         }
     }
     return when {
-        lastReport?.result is SyncResult.SkippedOffline -> "Waiting for internet"
-        lastReport?.result is SyncResult.SkippedNotAuthenticated -> "Sign in to sync"
-        lastReport?.result is SyncResult.SkippedInProgress -> "Sync already running"
-        lastReport?.remoteDownloadFailures?.let { it > 0 } == true -> "Synced with warnings"
-        pendingCount > 0 -> "$pendingCount pending"
-        else -> "Up to date"
+        lastReport?.result is SyncResult.SkippedOffline -> stringResource(Res.string.sync_waiting_internet)
+        lastReport?.result is SyncResult.SkippedNotAuthenticated -> stringResource(Res.string.sync_sign_in_required)
+        lastReport?.result is SyncResult.SkippedInProgress -> stringResource(Res.string.sync_already_running)
+        lastReport?.remoteDownloadFailures?.let { it > 0 } == true -> stringResource(Res.string.sync_synced_with_warnings)
+        pendingCount > 0 -> stringResource(Res.string.sync_pending_count, pendingCount)
+        else -> stringResource(Res.string.sync_up_to_date)
     }
 }
 
+@Composable
 private fun syncDetail(lastReport: SyncReport?): String {
-    val report = lastReport ?: return "Manual and background sync are ready."
+    val report = lastReport ?: return stringResource(Res.string.sync_ready)
     return when (val result = report.result) {
         is SyncResult.Failed -> result.error
-        SyncResult.SkippedOffline -> "Sync will resume automatically when your phone is online."
-        SyncResult.SkippedNotAuthenticated -> "Log in to upload local changes and download cloud packs."
-        SyncResult.SkippedInProgress -> "Another sync is already in progress."
+        SyncResult.SkippedOffline -> stringResource(Res.string.sync_resume_when_online)
+        SyncResult.SkippedNotAuthenticated -> stringResource(Res.string.sync_login_to_sync)
+        SyncResult.SkippedInProgress -> stringResource(Res.string.sync_another_in_progress)
         SyncResult.Success -> buildString {
-            append("Uploaded ${report.operationsSucceeded}/${report.operationsProcessed}")
-            append(" - Downloaded ${report.remotePacksDownloaded} packs")
-            append(" and ${report.remoteStickersDownloaded} stickers")
-            if (report.remoteItemsDeleted > 0) append(" - Removed ${report.remoteItemsDeleted}")
-            if (report.remoteDownloadFailures > 0) append(" - ${report.remoteDownloadFailures} download issues")
+            append(stringResource(Res.string.sync_detail_uploaded, report.operationsSucceeded, report.operationsProcessed))
+            append(stringResource(Res.string.sync_detail_downloaded_packs, report.remotePacksDownloaded))
+            append(stringResource(Res.string.sync_detail_downloaded_stickers, report.remoteStickersDownloaded))
+            if (report.remoteItemsDeleted > 0) {
+                append(stringResource(Res.string.sync_detail_removed, report.remoteItemsDeleted))
+            }
+            if (report.remoteDownloadFailures > 0) {
+                append(stringResource(Res.string.sync_detail_download_issues, report.remoteDownloadFailures))
+            }
         }
     }
 }
@@ -298,13 +354,17 @@ private fun SyncOperationItem(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "${operation.type.name}: ${operation.targetId}",
+                        text = stringResource(
+                            Res.string.sync_operation_target,
+                            operation.type.name,
+                            operation.targetId
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
                         color = neubrutalOnSurface()
                     )
                     Text(
-                        text = "Status: ${operation.status.name}",
+                        text = stringResource(Res.string.sync_operation_status, operation.status.name),
                         style = MaterialTheme.typography.bodySmall,
                         color = when (operation.status) {
                             SyncOperationStatus.PENDING -> MaterialTheme.colorScheme.onSurfaceVariant
@@ -326,17 +386,17 @@ private fun SyncOperationItem(
                     SyncOperationStatus.FAILED -> {
                         Row {
                             TextButton(onClick = onRetry) {
-                                Text("Retry", color = MaterialTheme.colorScheme.primary)
+                                Text(stringResource(Res.string.retry), color = MaterialTheme.colorScheme.primary)
                             }
                             TextButton(onClick = onCancel) {
-                                Text("Remove", color = MaterialTheme.colorScheme.error)
+                                Text(stringResource(Res.string.sync_remove), color = MaterialTheme.colorScheme.error)
                             }
                         }
                     }
 
                     SyncOperationStatus.PENDING -> {
                         TextButton(onClick = onCancel) {
-                            Text("Cancel", color = MaterialTheme.colorScheme.error)
+                            Text(stringResource(Res.string.cancel), color = MaterialTheme.colorScheme.error)
                         }
                     }
 
@@ -428,12 +488,13 @@ private fun SyncScreenSyncingPreview() {
     }
 }
 
+@Composable
 private fun formatTimestamp(timestamp: Long): String {
     val diff = Clock.System.now().toEpochMilliseconds() - timestamp
     return when {
-        diff < 60_000 -> "Just now"
-        diff < 3600_000 -> "${diff / 60_000}m ago"
-        diff < 86400_000 -> "${diff / 3600_000}h ago"
-        else -> "${diff / 86400_000}d ago"
+        diff < 60_000 -> stringResource(Res.string.sync_timestamp_just_now)
+        diff < 3600_000 -> stringResource(Res.string.sync_timestamp_minutes_ago, diff / 60_000)
+        diff < 86400_000 -> stringResource(Res.string.sync_timestamp_hours_ago, diff / 3600_000)
+        else -> stringResource(Res.string.sync_timestamp_days_ago, diff / 86400_000)
     }
 }

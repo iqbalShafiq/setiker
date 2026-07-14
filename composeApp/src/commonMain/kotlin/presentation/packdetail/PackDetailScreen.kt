@@ -1,5 +1,6 @@
 package presentation.packdetail
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,14 +17,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -38,6 +43,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,20 +53,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import data.remote.model.CloudStickerPackShareLink
 import domain.model.Sticker
 import domain.model.StickerPack
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
-import presentation.common.rememberShareTextAction
+import presentation.common.ContentStateAnimations
+import presentation.common.DetailLoadPhase
+import presentation.common.toShareLinkUi
 import presentation.components.AppIllustration
-import presentation.components.AppIllustrationImage
 import presentation.components.AppDialog
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
@@ -73,9 +77,13 @@ import presentation.components.DuplicatePackConfirmDialog
 import presentation.components.EmptyState
 import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
+import presentation.components.NeubrutalSelectableChip
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
+import presentation.components.ShareCollaboratorUi
+import presentation.components.ShareLinksSheet
+import presentation.components.ShareWithUsersSheet
 import presentation.components.StickerCard
 import presentation.components.SyncStatusIndicator
 import presentation.components.rememberMultipleImagePicker
@@ -95,13 +103,6 @@ import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.add_to_whatsapp
 import setiker.composeapp.generated.resources.back
 import setiker.composeapp.generated.resources.cancel
-import setiker.composeapp.generated.resources.cloud_links_copy
-import setiker.composeapp.generated.resources.cloud_links_create
-import setiker.composeapp.generated.resources.cloud_links_empty
-import setiker.composeapp.generated.resources.cloud_links_refresh
-import setiker.composeapp.generated.resources.cloud_links_revoke
-import setiker.composeapp.generated.resources.cloud_links_share
-import setiker.composeapp.generated.resources.cloud_links_title
 import setiker.composeapp.generated.resources.delete
 import setiker.composeapp.generated.resources.delete_pack
 import setiker.composeapp.generated.resources.pack_collaborators
@@ -135,12 +136,19 @@ import setiker.composeapp.generated.resources.pack_not_found_desc
 import setiker.composeapp.generated.resources.pack_not_found_title
 import setiker.composeapp.generated.resources.pack_stickers_hint
 import setiker.composeapp.generated.resources.processing
+import setiker.composeapp.generated.resources.reorder_drag_handle
+import setiker.composeapp.generated.resources.reorder_move_down
+import setiker.composeapp.generated.resources.reorder_move_up
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyGridState
 import setiker.composeapp.generated.resources.share_pack
+import setiker.composeapp.generated.resources.sticker_links_title
+import setiker.composeapp.generated.resources.sticker_share_tab_links
+import setiker.composeapp.generated.resources.sticker_share_tab_people
 import setiker.composeapp.generated.resources.sticker_preview_content_description
 import setiker.composeapp.generated.resources.stickers_title
 import setiker.composeapp.generated.resources.stickers_with_count
 import setiker.composeapp.generated.resources.tray_icon_content_description
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PackDetailScreen(
@@ -155,7 +163,7 @@ fun PackDetailScreen(
     modifier: Modifier = Modifier
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
-    var deleteStickerIndex by remember { mutableStateOf(-1) }
+    var deleteStickerImageFile by remember { mutableStateOf<String?>(null) }
     val isOperationInProgress = state.isDeleting ||
         state.cloudShareLinksLoading ||
         state.isDuplicating ||
@@ -319,9 +327,9 @@ fun PackDetailScreen(
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             containerColor = neubrutalScreenBackground()
         ) {
-            CloudShareLinksSheet(
+            ShareLinksSheet(
                 isLoading = state.cloudShareLinksLoading,
-                links = state.cloudShareLinks,
+                links = state.cloudShareLinks.map { it.toShareLinkUi() },
                 enabled = !state.cloudShareLinksLoading,
                 onRefresh = { onIntent(PackDetailIntent.RefreshCloudShareLinks) },
                 onCreate = { onIntent(PackDetailIntent.CreateCloudShareLink) },
@@ -331,6 +339,80 @@ fun PackDetailScreen(
                     .padding(horizontal = 20.dp, vertical = 8.dp)
                     .padding(bottom = 24.dp)
             )
+        }
+    }
+
+    if (state.stickerShareSheetOpen) {
+        ModalBottomSheet(
+            onDismissRequest = { onIntent(PackDetailIntent.DismissStickerShareSheet) },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = neubrutalScreenBackground()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 8.dp)
+                    .padding(bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    NeubrutalSelectableChip(
+                        label = stringResource(Res.string.sticker_share_tab_links),
+                        selected = state.stickerShareTab == StickerShareTab.Links,
+                        onClick = {
+                            onIntent(PackDetailIntent.StickerShareTabChanged(StickerShareTab.Links))
+                        }
+                    )
+                    NeubrutalSelectableChip(
+                        label = stringResource(Res.string.sticker_share_tab_people),
+                        selected = state.stickerShareTab == StickerShareTab.People,
+                        onClick = {
+                            onIntent(PackDetailIntent.StickerShareTabChanged(StickerShareTab.People))
+                        }
+                    )
+                }
+                when (state.stickerShareTab) {
+                    StickerShareTab.Links -> {
+                        ShareLinksSheet(
+                            isLoading = state.stickerShareLinksLoading,
+                            links = state.stickerShareLinks.map { it.toShareLinkUi() },
+                            enabled = !state.stickerShareLinksLoading,
+                            onRefresh = { onIntent(PackDetailIntent.RefreshStickerShareLinks) },
+                            onCreate = { onIntent(PackDetailIntent.CreateStickerShareLink) },
+                            onRevoke = { onIntent(PackDetailIntent.RevokeStickerShareLink(it)) },
+                            title = stringResource(Res.string.sticker_links_title),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    StickerShareTab.People -> {
+                        ShareWithUsersSheet(
+                            searchQuery = state.stickerCollaboratorSearchQuery,
+                            onSearchQueryChange = {
+                                onIntent(PackDetailIntent.StickerCollaboratorSearchChanged(it))
+                            },
+                            searchResults = state.stickerCollaboratorSearchResults,
+                            collaborators = state.stickerCollaborators.map { collab ->
+                                ShareCollaboratorUi(
+                                    userId = collab.sharedWithId,
+                                    displayLabel = collab.sharedWith?.displayName
+                                        ?: collab.sharedWith?.username
+                                        ?: collab.sharedWithId,
+                                    permission = collab.permission
+                                )
+                            },
+                            isLoading = state.stickerCollaboratorsLoading,
+                            invitePermission = state.stickerCollaboratorInvitePermission,
+                            onInvitePermissionChange = {
+                                onIntent(PackDetailIntent.StickerCollaboratorPermissionChanged(it))
+                            },
+                            onInvite = { onIntent(PackDetailIntent.InviteStickerCollaborator(it)) },
+                            onRemove = { onIntent(PackDetailIntent.RemoveStickerCollaborator(it)) },
+                            onRefresh = { onIntent(PackDetailIntent.RefreshStickerCollaborators) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -415,41 +497,51 @@ fun PackDetailScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
-        when {
-            state.isLoading -> {
-                LoadingIndicator(
-                    modifier = modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    label = stringResource(Res.string.loading_pack),
-                    illustration = AppIllustration.LoadingState
-                )
-            }
-            state.pack == null -> {
-                EmptyState(
-                    title = stringResource(Res.string.pack_not_found_title),
-                    description = stringResource(Res.string.pack_not_found_desc),
-                    illustration = AppIllustration.ErrorState,
-                    modifier = modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                )
-            }
-            else -> {
-                InteractionBlockedBox(
-                    blocked = isOperationInProgress,
-                    modifier = modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                ) {
-                    PackDetailContent(
-                        pack = state.pack,
-                        enabled = !isOperationInProgress,
-                        onIntent = onIntent,
-                        onEditSticker = onEditSticker,
-                        onDeleteSticker = { deleteStickerIndex = it },
+        val phase = when {
+            state.isLoading -> DetailLoadPhase.Loading
+            state.pack == null -> DetailLoadPhase.Failed
+            else -> DetailLoadPhase.Ready
+        }
+        AnimatedContent(
+            targetState = phase,
+            transitionSpec = { with(ContentStateAnimations) { detailReveal() } },
+            label = "pack_detail_phase",
+            modifier = modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) { current ->
+            when (current) {
+                DetailLoadPhase.Loading -> {
+                    LoadingIndicator(
+                        modifier = Modifier.fillMaxSize(),
+                        label = stringResource(Res.string.loading_pack),
+                        illustration = AppIllustration.LoadingState
+                    )
+                }
+                DetailLoadPhase.Failed -> {
+                    EmptyState(
+                        title = stringResource(Res.string.pack_not_found_title),
+                        description = stringResource(Res.string.pack_not_found_desc),
+                        illustration = AppIllustration.ErrorState,
                         modifier = Modifier.fillMaxSize()
                     )
+                }
+                DetailLoadPhase.GuestEmpty -> Unit
+                DetailLoadPhase.Ready -> {
+                    val pack = state.pack ?: return@AnimatedContent
+                    InteractionBlockedBox(
+                        blocked = isOperationInProgress,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        PackDetailContent(
+                            pack = pack,
+                            enabled = !isOperationInProgress,
+                            onIntent = onIntent,
+                            onEditSticker = onEditSticker,
+                            onDeleteSticker = { deleteStickerImageFile = it },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
                 }
             }
         }
@@ -470,16 +562,19 @@ fun PackDetailScreen(
         )
     }
 
-    if (deleteStickerIndex >= 0) {
+    deleteStickerImageFile?.let { imageFile ->
         AppDialog(
             title = stringResource(Res.string.delete_sticker_dialog_title),
             message = stringResource(Res.string.delete_sticker_dialog_message),
             confirmText = stringResource(Res.string.delete),
             onConfirm = {
-                onIntent(PackDetailIntent.DeleteSticker(deleteStickerIndex))
-                deleteStickerIndex = -1
+                val index = state.pack?.stickers?.indexOfFirst { it.imageFile == imageFile } ?: -1
+                if (index >= 0) {
+                    onIntent(PackDetailIntent.DeleteSticker(index))
+                }
+                deleteStickerImageFile = null
             },
-            onDismiss = { deleteStickerIndex = -1 }
+            onDismiss = { deleteStickerImageFile = null }
         )
     }
 }
@@ -490,7 +585,7 @@ private fun PackDetailContent(
     enabled: Boolean,
     onIntent: (PackDetailIntent) -> Unit,
     onEditSticker: (Int) -> Unit,
-    onDeleteSticker: (Int) -> Unit,
+    onDeleteSticker: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -623,142 +718,111 @@ private fun PackDetailContent(
                 modifier = Modifier.fillMaxWidth()
             )
         } else {
+            var orderedStickers by remember { mutableStateOf(pack.stickers) }
+            LaunchedEffect(pack.stickers) {
+                orderedStickers = pack.stickers
+            }
+            fun indexInPack(imageFile: String): Int =
+                pack.stickers.indexOfFirst { it.imageFile == imageFile }
+            val lazyGridState = rememberLazyGridState()
+            val reorderableLazyGridState = rememberReorderableLazyGridState(lazyGridState) { from, to ->
+                if (!enabled || from.index == to.index) return@rememberReorderableLazyGridState
+                orderedStickers = orderedStickers.toMutableList().apply {
+                    add(to.index, removeAt(from.index))
+                }
+                onIntent(PackDetailIntent.ReorderSticker(from.index, to.index))
+            }
             LazyVerticalGrid(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f, fill = true)
                     .graphicsLayer { clip = false },
+                state = lazyGridState,
                 columns = GridCells.Fixed(3),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 contentPadding = PaddingValues(top = 10.dp, bottom = 16.dp)
             ) {
                 itemsIndexed(
-                    items = pack.stickers,
+                    items = orderedStickers,
                     key = { _, sticker -> sticker.imageFile }
                 ) { index, sticker ->
-                    StickerCard(
-                        sticker = sticker,
-                        onClick = { onEditSticker(index) },
-                        onDeleteClick = if (enabled) {
-                            { onDeleteSticker(index) }
-                        } else {
-                            null
-                        },
-                        showDecorations = false,
-                        modifier = Modifier.animateItem()
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CloudShareLinksSheet(
-    isLoading: Boolean,
-    links: List<CloudStickerPackShareLink>,
-    enabled: Boolean,
-    onRefresh: () -> Unit,
-    onCreate: () -> Unit,
-    onRevoke: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val clipboard = LocalClipboardManager.current
-    val shareText = rememberShareTextAction()
-    Column(modifier = modifier) {
-        Text(
-            text = stringResource(Res.string.cloud_links_title),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = neubrutalOnSurface()
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        AppPrimaryButton(
-            text = stringResource(Res.string.cloud_links_create),
-            onClick = onCreate,
-            enabled = enabled
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        AppSecondaryButton(
-            text = stringResource(Res.string.cloud_links_refresh),
-            onClick = onRefresh,
-            enabled = enabled
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        if (isLoading) {
-            LoadingIndicator(
-                label = "Loading links",
-                illustration = AppIllustration.LoadingState
-            )
-            return
-        }
-        if (links.isEmpty()) {
-            AppIllustrationImage(
-                illustration = AppIllustration.SuccessSync,
-                modifier = Modifier.height(140.dp)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = stringResource(Res.string.cloud_links_empty),
-                style = MaterialTheme.typography.bodyMedium,
-                color = neubrutalMutedOnSurface()
-            )
-            return
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            links.forEach { link ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(NeubrutalCardRadius))
-                        .background(neubrutalCardSurface())
-                        .neubrutalBorderWithGloss(
-                            color = neubrutalBorderColor(),
-                            cornerRadius = NeubrutalCardRadius,
-                            highlightColor = neubrutalGlossyHighlightColor()
-                        )
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = link.shareUrl ?: link.token,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = neubrutalOnSurface(),
-                        modifier = Modifier.weight(1f)
-                    )
-                    IconButton(
-                        onClick = {
-                        val value = link.shareUrl ?: link.token
-                        clipboard.setText(AnnotatedString(value))
-                        },
-                        enabled = enabled
+                    ReorderableItem(
+                        reorderableLazyGridState,
+                        key = sticker.imageFile,
+                        enabled = enabled && orderedStickers.size > 1
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = stringResource(Res.string.cloud_links_copy)
-                        )
-                    }
-                    IconButton(
-                        onClick = {
-                        val value = link.shareUrl ?: link.token
-                        shareText(value)
-                        },
-                        enabled = enabled
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = stringResource(Res.string.cloud_links_share)
-                        )
-                    }
-                    IconButton(
-                        onClick = { onRevoke(link.id) },
-                        enabled = enabled
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = stringResource(Res.string.cloud_links_revoke)
-                        )
+                        Column {
+                            StickerCard(
+                                sticker = sticker,
+                                onClick = {
+                                    val packIndex = indexInPack(sticker.imageFile)
+                                    if (packIndex >= 0) onEditSticker(packIndex)
+                                },
+                                onLongClick = if (enabled) {
+                                    {
+                                        val packIndex = indexInPack(sticker.imageFile)
+                                        if (packIndex >= 0) {
+                                            onIntent(PackDetailIntent.OpenStickerShareSheet(packIndex))
+                                        }
+                                    }
+                                } else {
+                                    null
+                                },
+                                onDeleteClick = if (enabled) {
+                                    { onDeleteSticker(sticker.imageFile) }
+                                } else {
+                                    null
+                                },
+                                showDecorations = false,
+                                modifier = Modifier.animateItem()
+                            )
+                            if (enabled && orderedStickers.size > 1) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceEvenly,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    IconButton(
+                                        onClick = {
+                                            val packIndex = indexInPack(sticker.imageFile)
+                                            if (packIndex > 0) {
+                                                onIntent(PackDetailIntent.MoveStickerUp(packIndex))
+                                            }
+                                        },
+                                        enabled = index > 0
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.KeyboardArrowUp,
+                                            contentDescription = stringResource(Res.string.reorder_move_up)
+                                        )
+                                    }
+                                    IconButton(
+                                        modifier = Modifier.draggableHandle(),
+                                        onClick = {}
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.DragHandle,
+                                            contentDescription = stringResource(Res.string.reorder_drag_handle)
+                                        )
+                                    }
+                                    IconButton(
+                                        onClick = {
+                                            val packIndex = indexInPack(sticker.imageFile)
+                                            if (packIndex >= 0 && packIndex < pack.stickers.lastIndex) {
+                                                onIntent(PackDetailIntent.MoveStickerDown(packIndex))
+                                            }
+                                        },
+                                        enabled = index < orderedStickers.lastIndex
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.KeyboardArrowDown,
+                                            contentDescription = stringResource(Res.string.reorder_move_down)
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

@@ -1,5 +1,6 @@
 package presentation.publicpack
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -11,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -47,7 +47,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import data.remote.resolveApiUrl
+import presentation.common.ContentStateAnimations
+import presentation.common.DetailLoadPhase
 import presentation.components.AppIllustration
+import presentation.components.AppPrimaryButton
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
 import presentation.components.AppTopBar
@@ -183,117 +186,126 @@ fun PublicPackDetailScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
-        when {
-            state.isLoading -> LoadingIndicator(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                illustration = AppIllustration.LoadingState
-            )
-            state.pack == null -> EmptyState(
-                title = stringResource(Res.string.explore_pack_not_found_title),
-                description = state.error ?: stringResource(Res.string.explore_pack_not_found_desc),
-                illustration = AppIllustration.ErrorState,
-                modifier = modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                action = if (state.loadFailed) {
-                    {
-                        presentation.components.AppPrimaryButton(
-                            text = stringResource(Res.string.retry),
-                            onClick = { onIntent(PublicPackDetailIntent.Load(packId)) }
-                        )
-                    }
-                } else {
-                    null
-                }
-            )
-            else -> {
-                val pack = state.pack
-                InteractionBlockedBox(
-                    blocked = state.isImporting,
-                    modifier = modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .screenContentHorizontalPadding()
-                            .padding(vertical = 16.dp)
-                    ) {
-                    val creatorName = pack.owner?.displayName ?: pack.owner?.username ?: "Creator"
-                    val creatorId = pack.owner?.id
-                    Text(
-                        text = stringResource(Res.string.public_pack_by, creatorName),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = neubrutalOnSurface(),
-                        modifier = if (creatorId != null) {
-                            Modifier.clickable { onIntent(PublicPackDetailIntent.OpenCreator(creatorId)) }
-                        } else {
-                            Modifier
+        val phase = when {
+            state.isLoading -> DetailLoadPhase.Loading
+            state.pack == null -> DetailLoadPhase.Failed
+            else -> DetailLoadPhase.Ready
+        }
+        AnimatedContent(
+            targetState = phase,
+            transitionSpec = { with(ContentStateAnimations) { detailReveal() } },
+            label = "public_pack_detail_phase",
+            modifier = modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) { current ->
+            when (current) {
+                DetailLoadPhase.Loading -> LoadingIndicator(
+                    modifier = Modifier.fillMaxSize(),
+                    illustration = AppIllustration.LoadingState
+                )
+                DetailLoadPhase.Failed -> EmptyState(
+                    title = stringResource(Res.string.explore_pack_not_found_title),
+                    description = state.error ?: stringResource(Res.string.explore_pack_not_found_desc),
+                    illustration = AppIllustration.ErrorState,
+                    modifier = Modifier.fillMaxSize(),
+                    action = if (state.loadFailed) {
+                        {
+                            AppPrimaryButton(
+                                text = stringResource(Res.string.retry),
+                                onClick = { onIntent(PublicPackDetailIntent.Load(packId)) }
+                            )
                         }
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = stringResource(Res.string.social_counts, pack.likeCount, pack.saveCount, pack.downloadCount),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = neubrutalMutedOnSurface()
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    ScreenSectionTitle(
-                        text = stringResource(Res.string.stickers_title),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 4.dp)
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    LazyVerticalGrid(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f, fill = true)
-                            .graphicsLayer { clip = false },
-                        columns = GridCells.Fixed(3),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                        contentPadding = PaddingValues(
-                            bottom = NeubrutalSmallShadowOffset + 14.dp
-                        )
+                    } else {
+                        null
+                    }
+                )
+                DetailLoadPhase.GuestEmpty -> Unit
+                DetailLoadPhase.Ready -> {
+                    val pack = state.pack ?: return@AnimatedContent
+                    InteractionBlockedBox(
+                        blocked = state.isImporting,
+                        modifier = Modifier.fillMaxSize()
                     ) {
-                        items(pack.stickers, key = { it.id ?: it.stickerId }) { relation ->
-                            val sticker = relation.sticker
-                            Row(
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .screenContentHorizontalPadding()
+                                .padding(vertical = 16.dp)
+                        ) {
+                            val creatorName = pack.owner?.displayName ?: pack.owner?.username ?: "Creator"
+                            val creatorId = pack.owner?.id
+                            Text(
+                                text = stringResource(Res.string.public_pack_by, creatorName),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = neubrutalOnSurface(),
+                                modifier = if (creatorId != null) {
+                                    Modifier.clickable { onIntent(PublicPackDetailIntent.OpenCreator(creatorId)) }
+                                } else {
+                                    Modifier
+                                }
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = stringResource(Res.string.social_counts, pack.likeCount, pack.saveCount, pack.downloadCount),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = neubrutalMutedOnSurface()
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            ScreenSectionTitle(
+                                text = stringResource(Res.string.stickers_title),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .neubrutalShadow(
-                                        offsetX = NeubrutalSmallShadowOffset,
-                                        offsetY = NeubrutalSmallShadowOffset,
-                                        cornerRadius = NeubrutalCardRadius,
-                                        color = neubrutalShadowColor()
-                                    )
-                                    .clip(RoundedCornerShape(NeubrutalCardRadius))
-                                    .background(neubrutalCardSurface())
-                                    .neubrutalBorderWithGloss(
-                                        color = neubrutalBorderColor(),
-                                        cornerRadius = NeubrutalCardRadius,
-                                        highlightColor = neubrutalGlossyHighlightColor()
-                                    )
-                                    .padding(6.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                AsyncImage(
-                                    model = resolveApiUrl(sticker?.url),
-                                    contentDescription = sticker?.name ?: "Sticker",
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(neubrutalScreenBackground()),
-                                    contentScale = ContentScale.Crop
+                                    .padding(top = 4.dp)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            LazyVerticalGrid(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f, fill = true)
+                                    .graphicsLayer { clip = false },
+                                columns = GridCells.Fixed(3),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                                contentPadding = PaddingValues(
+                                    bottom = NeubrutalSmallShadowOffset + 14.dp
                                 )
+                            ) {
+                                items(pack.stickers, key = { it.id ?: it.stickerId }) { relation ->
+                                    val sticker = relation.sticker
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .neubrutalShadow(
+                                                offsetX = NeubrutalSmallShadowOffset,
+                                                offsetY = NeubrutalSmallShadowOffset,
+                                                cornerRadius = NeubrutalCardRadius,
+                                                color = neubrutalShadowColor()
+                                            )
+                                            .clip(RoundedCornerShape(NeubrutalCardRadius))
+                                            .background(neubrutalCardSurface())
+                                            .neubrutalBorderWithGloss(
+                                                color = neubrutalBorderColor(),
+                                                cornerRadius = NeubrutalCardRadius,
+                                                highlightColor = neubrutalGlossyHighlightColor()
+                                            )
+                                            .padding(6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        AsyncImage(
+                                            model = resolveApiUrl(sticker?.url),
+                                            contentDescription = sticker?.name ?: "Sticker",
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(10.dp))
+                                                .background(neubrutalScreenBackground()),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    }
+                                }
                             }
                         }
-                    }
                     }
                 }
             }

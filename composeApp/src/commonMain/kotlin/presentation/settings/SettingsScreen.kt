@@ -31,6 +31,7 @@ import presentation.common.resolveLocal
 import presentation.common.resolveOrDefault
 import presentation.components.AiQuotaSummary
 import presentation.components.AppDialog
+import presentation.components.AppPrimaryButton
 import presentation.components.DeleteAccountConfirmDialog
 import presentation.components.AppIllustration
 import presentation.components.AppIllustrationImage
@@ -45,6 +46,7 @@ import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.back_content_description
+import setiker.composeapp.generated.resources.paywall_purchase_history
 import setiker.composeapp.generated.resources.settings_ai_usage_section
 import setiker.composeapp.generated.resources.settings_change_password
 import setiker.composeapp.generated.resources.settings_change_password_title
@@ -66,6 +68,7 @@ fun SettingsScreenRoot(
     onBack: () -> Unit,
     onAccountDeleted: () -> Unit,
     onShowOnboarding: () -> Unit,
+    onPurchaseHistory: () -> Unit = {},
     viewModel: SettingsViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -76,6 +79,7 @@ fun SettingsScreenRoot(
             when (effect) {
                 SettingsEffect.NavigateBack -> onBack()
                 SettingsEffect.NavigateToOnboarding -> onShowOnboarding()
+                SettingsEffect.NavigateToPurchaseHistory -> onPurchaseHistory()
                 is SettingsEffect.OpenUrl -> openUrl(effect.url)
                 SettingsEffect.AccountDeleted -> onAccountDeleted()
                 is SettingsEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
@@ -202,6 +206,14 @@ fun SettingsScreen(
                     isLoading = state.isLoadingUsage,
                     hasError = state.usageError,
                     showIllustration = true
+                )
+            }
+            item {
+                AppPrimaryButton(
+                    text = stringResource(Res.string.paywall_purchase_history),
+                    onClick = { onIntent(SettingsIntent.OpenPurchaseHistory) },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !state.isChangingPassword && !state.isDeletingAccount
                 )
             }
             item {

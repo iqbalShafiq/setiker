@@ -2,17 +2,17 @@ package data.auth
 
 import data.auth.model.AuthResponse
 import data.auth.model.ChangePasswordRequest
-import data.auth.model.LoginRequest
-import data.auth.model.RegisterRequest
-import data.auth.model.UserProfileResponse
 import data.auth.model.DeleteAccountRequest
+import data.auth.model.LoginRequest
 import data.auth.model.RefreshTokenRequest
+import data.auth.model.RegisterRequest
+import data.auth.model.UpdateProfileRequest
+import data.auth.model.UserProfileResponse
 import data.remote.ApiConfig
 import data.remote.ApiErrorParser
 import data.remote.ApiException
 import domain.error.AppErrorCode
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.cookies.CookiesStorage
 import io.ktor.client.plugins.cookies.HttpCookies
@@ -20,12 +20,12 @@ import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.Cookie
 import io.ktor.http.HttpHeaders
-import io.ktor.http.URLProtocol
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
@@ -109,6 +109,19 @@ class AuthApiService(
         val bodyText = response.bodyAsText()
         if (!response.status.isSuccess()) {
             throw ApiException(code = AppErrorCode.AuthProfileFailed, message = "Failed to get profile")
+        }
+        return json.decodeFromString(bodyText)
+    }
+
+    suspend fun updateProfile(token: String, request: UpdateProfileRequest): UserProfileResponse {
+        val response = client.put("$baseUrl/api/v1/auth/me") {
+            contentType(ContentType.Application.Json)
+            header(HttpHeaders.Authorization, "Bearer $token")
+            setBody(request)
+        }
+        val bodyText = response.bodyAsText()
+        if (!response.status.isSuccess()) {
+            throwApiError(bodyText, AppErrorCode.AuthUpdateProfileFailed)
         }
         return json.decodeFromString(bodyText)
     }

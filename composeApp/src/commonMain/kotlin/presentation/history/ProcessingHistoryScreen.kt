@@ -1,11 +1,11 @@
 package presentation.history
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.PaddingValues
@@ -35,7 +35,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import data.remote.resolveApiUrl
+import presentation.common.ContentStateAnimations
+import presentation.common.ListLoadPhase
 import presentation.components.AppIllustration
+import presentation.components.AppPrimaryButton
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
 import presentation.components.NeubrutalSelectableChip
@@ -58,19 +61,20 @@ import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import org.jetbrains.compose.resources.stringResource
 import setiker.composeapp.generated.resources.Res
-import setiker.composeapp.generated.resources.back_content_description
 import setiker.composeapp.generated.resources.deleting
 import setiker.composeapp.generated.resources.history_clear_all
 import setiker.composeapp.generated.resources.history_filter_all
 import setiker.composeapp.generated.resources.history_filter_background
 import setiker.composeapp.generated.resources.history_filter_generate
 import setiker.composeapp.generated.resources.history_filter_grid
+import setiker.composeapp.generated.resources.history_filter_improve
+import setiker.composeapp.generated.resources.history_filter_pack
+import setiker.composeapp.generated.resources.history_filter_video
 import setiker.composeapp.generated.resources.history_none_desc
 import setiker.composeapp.generated.resources.history_none_title
 import setiker.composeapp.generated.resources.history_outputs
 import setiker.composeapp.generated.resources.history_report_output
 import setiker.composeapp.generated.resources.history_refresh
-import setiker.composeapp.generated.resources.history_subtitle
 import setiker.composeapp.generated.resources.history_offline_banner
 import setiker.composeapp.generated.resources.history_title
 import setiker.composeapp.generated.resources.retry
@@ -121,89 +125,97 @@ fun ProcessingHistoryScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
-        when {
-            state.isLoading -> LoadingIndicator(
+        InteractionBlockedBox(
+            blocked = state.isClearing,
+            modifier = modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding),
-                illustration = AppIllustration.LoadingState
-            )
-            else -> {
-                InteractionBlockedBox(
-                    blocked = state.isClearing,
-                    modifier = modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
+                    .padding(horizontal = 20.dp)
+                    .padding(top = 12.dp)
+            ) {
+                if (state.isShowingCachedData) {
+                    Text(
+                        text = stringResource(Res.string.history_offline_banner),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = neubrutalMutedOnSurface(),
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 20.dp)
-                            .padding(top = 12.dp)
-                    ) {
-                    if (state.isShowingCachedData) {
-                        Text(
-                            text = stringResource(Res.string.history_offline_banner),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = neubrutalMutedOnSurface(),
-                            modifier = Modifier.padding(bottom = 8.dp)
+                    listOf(
+                        null,
+                        "generate",
+                        "grid-split",
+                        "background-remove",
+                        "improve",
+                        "video-sticker-pack",
+                        "sticker-pack"
+                    ).forEach { filter ->
+                        NeubrutalSelectableChip(
+                            label = when (filter) {
+                                null -> stringResource(Res.string.history_filter_all)
+                                "generate" -> stringResource(Res.string.history_filter_generate)
+                                "grid-split" -> stringResource(Res.string.history_filter_grid)
+                                "background-remove" -> stringResource(Res.string.history_filter_background)
+                                "improve" -> stringResource(Res.string.history_filter_improve)
+                                "video-sticker-pack" -> stringResource(Res.string.history_filter_video)
+                                "sticker-pack" -> stringResource(Res.string.history_filter_pack)
+                                else -> filter
+                            },
+                            selected = state.typeFilter == filter,
+                            onClick = { onIntent(ProcessingHistoryIntent.ChangeFilter(filter)) }
                         )
                     }
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        listOf(
-                            null,
-                            "generate",
-                            "grid-split",
-                            "background-remove",
-                            "improve",
-                            "video-sticker-pack",
-                            "sticker-pack"
-                        ).forEach { filter ->
-                            NeubrutalSelectableChip(
-                                label = when (filter) {
-                                    null -> stringResource(Res.string.history_filter_all)
-                                    "generate" -> stringResource(Res.string.history_filter_generate)
-                                    "grid-split" -> stringResource(Res.string.history_filter_grid)
-                                    "background-remove" -> stringResource(Res.string.history_filter_background)
-                                    "improve" -> "Improve"
-                                    "video-sticker-pack" -> "Video"
-                                    "sticker-pack" -> "Pack"
-                                    else -> filter ?: "All"
-                                },
-                                selected = state.typeFilter == filter,
-                                onClick = { onIntent(ProcessingHistoryIntent.ChangeFilter(filter)) }
-                            )
-                        }
-                    }
-                    if (state.items.isEmpty()) {
-                        EmptyState(
+                }
+
+                val resultsPhase = when {
+                    state.isLoading -> ListLoadPhase.Loading
+                    state.items.isEmpty() && state.error != null -> ListLoadPhase.Error
+                    state.items.isEmpty() -> ListLoadPhase.Empty
+                    else -> ListLoadPhase.Content
+                }
+                AnimatedContent(
+                    targetState = resultsPhase,
+                    transitionSpec = { with(ContentStateAnimations) { listLoad() } },
+                    label = "history_results_phase",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = 12.dp)
+                ) { current ->
+                    when (current) {
+                        ListLoadPhase.Loading -> LoadingIndicator(
+                            modifier = Modifier.fillMaxSize(),
+                            illustration = AppIllustration.LoadingState
+                        )
+                        ListLoadPhase.Error -> EmptyState(
                             title = stringResource(Res.string.history_none_title),
                             description = state.error ?: stringResource(Res.string.history_none_desc),
-                            illustration = if (state.error != null) AppIllustration.ErrorState else AppIllustration.SuccessSync,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(top = 12.dp),
-                            action = if (state.error != null) {
-                                {
-                                    presentation.components.AppPrimaryButton(
-                                        text = stringResource(Res.string.retry),
-                                        onClick = { onIntent(ProcessingHistoryIntent.Load) }
-                                    )
-                                }
-                            } else {
-                                null
+                            illustration = AppIllustration.ErrorState,
+                            modifier = Modifier.fillMaxSize(),
+                            action = {
+                                AppPrimaryButton(
+                                    text = stringResource(Res.string.retry),
+                                    onClick = { onIntent(ProcessingHistoryIntent.Load) }
+                                )
                             }
                         )
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(top = 12.dp),
+                        ListLoadPhase.Empty -> EmptyState(
+                            title = stringResource(Res.string.history_none_title),
+                            description = stringResource(Res.string.history_none_desc),
+                            illustration = AppIllustration.SuccessSync,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        ListLoadPhase.Content -> LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(bottom = 16.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
@@ -263,7 +275,6 @@ fun ProcessingHistoryScreen(
                                 }
                             }
                         }
-                    }
                     }
                 }
             }

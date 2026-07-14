@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import data.auth.AuthManager
 import data.auth.AuthSessionCoordinator
+import data.auth.model.toDomainModel
 import data.remote.ExploreApiRepository
 import data.remote.LegalApiRepository
 import domain.model.AiUsage
@@ -35,7 +36,8 @@ class ProfileViewModel(
     private val stickerRepository: StickerRepository,
     private val aiQuotaRepository: AiQuotaRepository,
     private val legalApiRepository: LegalApiRepository,
-    private val exploreApiRepository: ExploreApiRepository
+    private val exploreApiRepository: ExploreApiRepository,
+    private val authApiService: data.auth.AuthApiService
 ) : ViewModel() {
     
     private val _state = MutableStateFlow(ProfileState())
@@ -47,7 +49,15 @@ class ProfileViewModel(
     
     private fun loadUser() {
         viewModelScope.launch {
-            val user = authManager.getUser()
+            val cached = authManager.getUser()
+            val token = authManager.getValidAccessToken()
+            val user = if (token != null) {
+                runCatching {
+                    authApiService.getProfile(token).data?.toDomainModel()?.also { authManager.saveUser(it) }
+                }.getOrNull() ?: cached
+            } else {
+                cached
+            }
             val packs = runCatching { stickerRepository.getAllPacks() }.getOrDefault(emptyList())
             val stickersCount = packs.sumOf { it.stickers.size }
             val usage = if (user != null) {
@@ -68,7 +78,7 @@ class ProfileViewModel(
                 isLoading = false,
                 stickersCount = stickersCount,
                 packsCount = packs.size,
-                downloadsCount = 0,
+                downloadsCount = user?.totalPackDownloads ?: 0,
                 aiUsage = usage,
                 isLoadingAiUsage = false,
                 aiUsageLoadFailed = user != null && usage == null,

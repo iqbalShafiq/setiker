@@ -21,6 +21,9 @@ interface StickerRepository {
     suspend fun addStickerToPack(packId: String, sticker: Sticker)
     suspend fun updateStickerInPack(packId: String, index: Int, sticker: Sticker)
     suspend fun removeStickerFromPack(packId: String, index: Int)
+    suspend fun reorderStickers(packId: String, fromIndex: Int, toIndex: Int)
+    /** Persist absolute sticker order by imageFile paths (preferred after drag reorder). */
+    suspend fun applyStickerOrder(packId: String, orderedImageFiles: List<String>)
     suspend fun updatePackVisibility(packId: String, visibility: String)
     suspend fun syncAll(): SyncReport
     suspend fun syncPack(packId: String): SyncReport

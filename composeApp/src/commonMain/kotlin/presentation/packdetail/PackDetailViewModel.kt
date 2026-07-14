@@ -18,8 +18,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.time.Clock
 import presentation.common.preferredShareText
+import presentation.common.toShareLinkUi
 import presentation.common.UiText
 import presentation.common.toUiText
 import setiker.composeapp.generated.resources.Res
@@ -28,6 +31,8 @@ import setiker.composeapp.generated.resources.error_failed_add_stickers
 import setiker.composeapp.generated.resources.error_failed_delete_pack
 import setiker.composeapp.generated.resources.pack_collaborators_sync_required
 import setiker.composeapp.generated.resources.error_failed_delete_sticker
+import setiker.composeapp.generated.resources.reorder_failed
+import setiker.composeapp.generated.resources.sticker_links_need_sync
 import setiker.composeapp.generated.resources.error_pack_min_stickers_whatsapp
 import setiker.composeapp.generated.resources.error_tray_icon_required_whatsapp
 import setiker.composeapp.generated.resources.pack_duplicate_success
@@ -44,6 +49,8 @@ class PackDetailViewModel(
 
     private val _effect = Channel<PackDetailEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
+
+    private val reorderMutex = Mutex()
 
     fun onIntent(intent: PackDetailIntent) {
         when (intent) {
@@ -79,6 +86,39 @@ class PackDetailViewModel(
             PackDetailIntent.RefreshCloudShareLinks -> refreshCloudShareLinks()
             PackDetailIntent.CreateCloudShareLink -> createCloudShareLink()
             is PackDetailIntent.RevokeCloudShareLink -> revokeCloudShareLink(intent.linkId)
+            is PackDetailIntent.MoveStickerUp -> reorderSticker(intent.index, intent.index - 1)
+            is PackDetailIntent.MoveStickerDown -> reorderSticker(intent.index, intent.index + 1)
+            is PackDetailIntent.ReorderSticker -> reorderSticker(intent.fromIndex, intent.toIndex)
+            is PackDetailIntent.OpenStickerShareSheet -> openStickerShareSheet(intent.index)
+            PackDetailIntent.DismissStickerShareSheet -> {
+                _state.update {
+                    it.copy(
+                        stickerShareSheetOpen = false,
+                        stickerShareIndex = null,
+                        stickerShareTab = StickerShareTab.Links,
+                        stickerShareLinks = emptyList(),
+                        stickerCollaborators = emptyList(),
+                        stickerCollaboratorSearchQuery = "",
+                        stickerCollaboratorSearchResults = emptyList()
+                    )
+                }
+            }
+            is PackDetailIntent.StickerShareTabChanged -> {
+                _state.update { it.copy(stickerShareTab = intent.tab) }
+                if (intent.tab == StickerShareTab.People) {
+                    refreshStickerCollaborators()
+                }
+            }
+            PackDetailIntent.RefreshStickerShareLinks -> refreshStickerShareLinks()
+            PackDetailIntent.CreateStickerShareLink -> createStickerShareLink()
+            is PackDetailIntent.RevokeStickerShareLink -> revokeStickerShareLink(intent.linkId)
+            PackDetailIntent.RefreshStickerCollaborators -> refreshStickerCollaborators()
+            is PackDetailIntent.StickerCollaboratorSearchChanged -> onStickerCollaboratorSearch(intent.query)
+            is PackDetailIntent.InviteStickerCollaborator -> inviteStickerCollaborator(intent.userId)
+            is PackDetailIntent.RemoveStickerCollaborator -> removeStickerCollaborator(intent.userId)
+            is PackDetailIntent.StickerCollaboratorPermissionChanged -> {
+                _state.update { it.copy(stickerCollaboratorInvitePermission = intent.permission) }
+            }
             PackDetailIntent.RequestDuplicate -> {
                 _state.update { it.copy(showDuplicateDialog = true) }
             }
@@ -393,6 +433,218 @@ class PackDetailViewModel(
                 _state.update { it.copy(cloudShareLinksLoading = false) }
                 _effect.send(PackDetailEffect.ShowError(UiText.DynamicString(error.message ?: "Failed to revoke link")))
             }
+        }
+    }
+
+    private fun reorderSticker(fromIndex: Int, toIndex: Int) {
+        val pack = _state.value.pack ?: return
+        if (fromIndex !in pack.stickers.indices || toIndex !in pack.stickers.indices || fromIndex == toIndex) {
+            return
+        }
+        val reordered = pack.stickers.toMutableList().apply {
+            add(toIndex, removeAt(fromIndex))
+        }
+        _state.update { it.copy(pack = pack.copy(stickers = reordered)) }
+        viewModelScope.launch {
+            reorderMutex.withLock {
+                val current = _state.value.pack ?: return@withLock
+                runCatching {
+                    repository.applyStickerOrder(
+                        current.identifier,
+                        current.stickers.map { it.imageFile }
+                    )
+                    repository.getPack(current.identifier)
+                }.onSuccess { updated ->
+                    _state.update { state ->
+                        val optimisticFiles = state.pack?.stickers?.map { it.imageFile }
+                        val persistedFiles = updated.stickers.map { it.imageFile }
+                        if (optimisticFiles != null && optimisticFiles != persistedFiles) {
+                            state
+                        } else {
+                            state.copy(pack = updated)
+                        }
+                    }
+                }.onFailure { error ->
+                    val restored = runCatching { repository.getPack(current.identifier) }.getOrNull()
+                    if (restored != null) {
+                        _state.update { it.copy(pack = restored) }
+                    }
+                    _effect.send(
+                        PackDetailEffect.ShowError(
+                            error.toUiText(Res.string.reorder_failed)
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    private fun openStickerShareSheet(index: Int) {
+        val pack = _state.value.pack ?: return
+        val sticker = pack.stickers.getOrNull(index) ?: return
+        val cloudId = sticker.cloudId
+        if (cloudId.isNullOrBlank()) {
+            viewModelScope.launch {
+                _effect.send(
+                    PackDetailEffect.ShowError(UiText.StringRes(Res.string.sticker_links_need_sync))
+                )
+            }
+            return
+        }
+        _state.update {
+            it.copy(
+                stickerShareSheetOpen = true,
+                stickerShareIndex = index,
+                stickerShareLinks = emptyList()
+            )
+        }
+        refreshStickerShareLinks()
+    }
+
+    private fun currentStickerCloudId(): String? {
+        val index = _state.value.stickerShareIndex ?: return null
+        return _state.value.pack?.stickers?.getOrNull(index)?.cloudId
+    }
+
+    private fun refreshStickerShareLinks() {
+        viewModelScope.launch {
+            val stickerId = currentStickerCloudId()
+            if (stickerId.isNullOrBlank()) {
+                _effect.send(PackDetailEffect.ShowError(UiText.StringRes(Res.string.sticker_links_need_sync)))
+                return@launch
+            }
+            _state.update { it.copy(stickerShareLinksLoading = true) }
+            runCatching { exploreApiRepository.getStickerLinks(stickerId) }
+                .onSuccess { links ->
+                    _state.update { it.copy(stickerShareLinksLoading = false, stickerShareLinks = links) }
+                }
+                .onFailure { error ->
+                    _state.update { it.copy(stickerShareLinksLoading = false) }
+                    _effect.send(PackDetailEffect.ShowError(UiText.DynamicString(error.message ?: "Failed")))
+                }
+        }
+    }
+
+    private fun createStickerShareLink() {
+        viewModelScope.launch {
+            val stickerId = currentStickerCloudId()
+            if (stickerId.isNullOrBlank()) {
+                _effect.send(PackDetailEffect.ShowError(UiText.StringRes(Res.string.sticker_links_need_sync)))
+                return@launch
+            }
+            _state.update { it.copy(stickerShareLinksLoading = true) }
+            runCatching {
+                exploreApiRepository.createStickerLink(stickerId, CreateStickerPackLinkRequest())
+            }.onSuccess { link ->
+                _state.update {
+                    it.copy(
+                        stickerShareLinksLoading = false,
+                        stickerShareLinks = listOf(link) + it.stickerShareLinks
+                    )
+                }
+                _effect.send(PackDetailEffect.ShareText(link.toShareLinkUi().let { ui ->
+                    ui.deepLinkUrl?.takeIf { it.isNotBlank() }
+                        ?: ui.webFallbackUrl?.takeIf { it.isNotBlank() }
+                        ?: ui.shareUrl?.takeIf { it.isNotBlank() }
+                        ?: ui.token
+                }))
+            }.onFailure { error ->
+                _state.update { it.copy(stickerShareLinksLoading = false) }
+                _effect.send(PackDetailEffect.ShowError(UiText.DynamicString(error.message ?: "Failed")))
+            }
+        }
+    }
+
+    private fun revokeStickerShareLink(linkId: String) {
+        viewModelScope.launch {
+            val stickerId = currentStickerCloudId()
+            if (stickerId.isNullOrBlank()) return@launch
+            _state.update { it.copy(stickerShareLinksLoading = true) }
+            runCatching { exploreApiRepository.revokeStickerLink(stickerId, linkId) }
+                .onSuccess {
+                    _state.update {
+                        it.copy(
+                            stickerShareLinksLoading = false,
+                            stickerShareLinks = it.stickerShareLinks.filterNot { link -> link.id == linkId }
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    _state.update { it.copy(stickerShareLinksLoading = false) }
+                    _effect.send(PackDetailEffect.ShowError(UiText.DynamicString(error.message ?: "Failed")))
+                }
+        }
+    }
+
+    private var stickerCollaboratorSearchJob: Job? = null
+
+    private fun onStickerCollaboratorSearch(query: String) {
+        _state.update { it.copy(stickerCollaboratorSearchQuery = query) }
+        stickerCollaboratorSearchJob?.cancel()
+        if (query.trim().length < 2) {
+            _state.update { it.copy(stickerCollaboratorSearchResults = emptyList()) }
+            return
+        }
+        stickerCollaboratorSearchJob = viewModelScope.launch {
+            delay(300)
+            runCatching { exploreApiRepository.searchUsers(query) }
+                .onSuccess { results ->
+                    _state.update { it.copy(stickerCollaboratorSearchResults = results) }
+                }
+        }
+    }
+
+    private fun refreshStickerCollaborators() {
+        viewModelScope.launch {
+            val stickerId = currentStickerCloudId()
+            if (stickerId.isNullOrBlank()) {
+                _effect.send(PackDetailEffect.ShowError(UiText.StringRes(Res.string.sticker_links_need_sync)))
+                return@launch
+            }
+            _state.update { it.copy(stickerCollaboratorsLoading = true) }
+            runCatching { exploreApiRepository.listStickerCollaborators(stickerId) }
+                .onSuccess { list ->
+                    _state.update {
+                        it.copy(stickerCollaboratorsLoading = false, stickerCollaborators = list)
+                    }
+                }
+                .onFailure { error ->
+                    _state.update { it.copy(stickerCollaboratorsLoading = false) }
+                    _effect.send(PackDetailEffect.ShowError(UiText.DynamicString(error.message ?: "Failed")))
+                }
+        }
+    }
+
+    private fun inviteStickerCollaborator(userId: String) {
+        viewModelScope.launch {
+            val stickerId = currentStickerCloudId()
+            if (stickerId.isNullOrBlank()) {
+                _effect.send(PackDetailEffect.ShowError(UiText.StringRes(Res.string.sticker_links_need_sync)))
+                return@launch
+            }
+            val permission = _state.value.stickerCollaboratorInvitePermission
+            runCatching {
+                exploreApiRepository.shareStickerWithUser(
+                    stickerId,
+                    SharePackWithUserRequest(userId = userId, permission = permission)
+                )
+            }.onSuccess {
+                refreshStickerCollaborators()
+            }.onFailure { error ->
+                _effect.send(PackDetailEffect.ShowError(UiText.DynamicString(error.message ?: "Failed")))
+            }
+        }
+    }
+
+    private fun removeStickerCollaborator(userId: String) {
+        viewModelScope.launch {
+            val stickerId = currentStickerCloudId()
+            if (stickerId.isNullOrBlank()) return@launch
+            runCatching { exploreApiRepository.removeStickerShare(stickerId, userId) }
+                .onSuccess { refreshStickerCollaborators() }
+                .onFailure { error ->
+                    _effect.send(PackDetailEffect.ShowError(UiText.DynamicString(error.message ?: "Failed")))
+                }
         }
     }
 

@@ -8,6 +8,8 @@ sealed interface CreatePackIntent {
     data class AddSticker(val imagePath: String) : CreatePackIntent
     data class AddAnimatedDraft(val draft: DraftSticker) : CreatePackIntent
     data class RemoveSticker(val index: Int) : CreatePackIntent
+    data class MoveStickerUp(val index: Int) : CreatePackIntent
+    data class MoveStickerDown(val index: Int) : CreatePackIntent
     data class UpdateGeneratePrompt(val prompt: String) : CreatePackIntent
     data class UpdateGenerateInputImage(val path: String?) : CreatePackIntent
     data class UpdateGridSplitSource(val path: String) : CreatePackIntent

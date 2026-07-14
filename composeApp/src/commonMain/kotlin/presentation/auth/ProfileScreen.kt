@@ -1,5 +1,6 @@
 package presentation.auth
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,8 +19,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Feedback
@@ -51,6 +55,8 @@ import domain.model.User
 import domain.model.UserRole
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import presentation.common.ContentStateAnimations
+import presentation.common.DetailLoadPhase
 import presentation.components.AiQuotaSummary
 import presentation.components.AppIllustration
 import presentation.components.EmptyState
@@ -84,6 +90,7 @@ import setiker.composeapp.generated.resources.profile_ai_quota_section
 import setiker.composeapp.generated.resources.account_section
 import setiker.composeapp.generated.resources.downloaded_packs
 import setiker.composeapp.generated.resources.downloads_label
+import setiker.composeapp.generated.resources.edit_profile_title
 import setiker.composeapp.generated.resources.following
 import setiker.composeapp.generated.resources.help_center
 import setiker.composeapp.generated.resources.liked_stickers
@@ -94,6 +101,7 @@ import setiker.composeapp.generated.resources.my_stickers_title
 import setiker.composeapp.generated.resources.packs_label
 import setiker.composeapp.generated.resources.premium_badge
 import setiker.composeapp.generated.resources.profile_ai_jobs_menu
+import setiker.composeapp.generated.resources.profile_blocked_users_menu
 import setiker.composeapp.generated.resources.profile_explore_packs
 import setiker.composeapp.generated.resources.notifications_title
 import setiker.composeapp.generated.resources.profile_guest_login_prompt
@@ -101,6 +109,7 @@ import setiker.composeapp.generated.resources.profile_processing_history
 import setiker.composeapp.generated.resources.profile_upgrade_premium
 import setiker.composeapp.generated.resources.send_feedback
 import setiker.composeapp.generated.resources.settings
+import setiker.composeapp.generated.resources.settings_account_deletion
 import setiker.composeapp.generated.resources.settings_legal_section
 import setiker.composeapp.generated.resources.settings_privacy
 import setiker.composeapp.generated.resources.settings_permissions
@@ -124,6 +133,9 @@ fun ProfileScreenRoot(
     onOpenTerms: () -> Unit = {},
     onOpenRetention: () -> Unit = {},
     onOpenPermissions: () -> Unit = {},
+    onEditProfile: () -> Unit = {},
+    onBlockedUsers: () -> Unit = {},
+    onOpenAccountDeletion: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.state.collectAsState()
@@ -151,6 +163,9 @@ fun ProfileScreenRoot(
         onBackClick = onBackClick,
         onSettingsClick = onSettingsClick,
         onNavigatePaywall = onNavigatePaywall,
+        onEditProfile = onEditProfile,
+        onBlockedUsers = onBlockedUsers,
+        onOpenAccountDeletion = onOpenAccountDeletion,
         modifier = modifier
     )
 }
@@ -171,6 +186,9 @@ fun ProfileScreen(
     onBackClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onNavigatePaywall: () -> Unit = {},
+    onEditProfile: () -> Unit = {},
+    onBlockedUsers: () -> Unit = {},
+    onOpenAccountDeletion: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val borderColor = neubrutalBorderColor()
@@ -193,202 +211,234 @@ fun ProfileScreen(
         },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
-        if (state.isLoading) {
-            LoadingIndicator(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                illustration = AppIllustration.AuthCloud
-            )
-        } else if (state.user == null) {
-            EmptyState(
-                title = stringResource(Res.string.profile_guest_login_prompt),
-                description = stringResource(Res.string.login_welcome_subtitle),
-                illustration = AppIllustration.AuthCloud,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            )
-        } else {
-            LazyColumn(
-                modifier = modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(horizontal = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                item { Spacer(modifier = Modifier.height(4.dp)) }
+        val phase = when {
+            state.isLoading -> DetailLoadPhase.Loading
+            state.user == null -> DetailLoadPhase.GuestEmpty
+            else -> DetailLoadPhase.Ready
+        }
+        AnimatedContent(
+            targetState = phase,
+            transitionSpec = { with(ContentStateAnimations) { detailReveal() } },
+            label = "profile_phase",
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) { current ->
+            when (current) {
+                DetailLoadPhase.Loading -> LoadingIndicator(
+                    modifier = Modifier.fillMaxSize(),
+                    illustration = AppIllustration.AuthCloud
+                )
+                DetailLoadPhase.GuestEmpty -> EmptyState(
+                    title = stringResource(Res.string.profile_guest_login_prompt),
+                    description = stringResource(Res.string.login_welcome_subtitle),
+                    illustration = AppIllustration.AuthCloud,
+                    modifier = Modifier.fillMaxSize()
+                )
+                DetailLoadPhase.Failed -> Unit
+                DetailLoadPhase.Ready -> {
+                    val user = state.user ?: return@AnimatedContent
+                    LazyColumn(
+                        modifier = modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 20.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        item { Spacer(modifier = Modifier.height(4.dp)) }
 
-                // Profile Card
-                item {
-                    ProfileCard(
-                        user = state.user,
-                        showPremiumBadge = state.aiUsage?.subscriptionTier == "premium",
-                        borderColor = borderColor,
-                        shadowColor = shadowColor,
-                        cardSurface = cardSurface,
-                        onClick = onSettingsClick
-                    )
-                }
-
-                // Stats Card
-                item {
-                    StatsCard(
-                        stickersCount = state.stickersCount,
-                        packsCount = state.packsCount,
-                        downloadsCount = state.downloadsCount,
-                        borderColor = borderColor,
-                        shadowColor = shadowColor,
-                        cardSurface = cardSurface
-                    )
-                }
-
-                item {
-                    Column {
-                        Text(
-                            text = stringResource(Res.string.profile_ai_quota_section),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = neubrutalOnSurface(),
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                        AiQuotaSummary(
-                            usage = state.aiUsage,
-                            isLoading = state.isLoadingAiUsage,
-                            hasError = state.aiUsageLoadFailed,
-                            operationCostsInInfoDialog = true
-                        )
-                    }
-                }
-
-                if (state.aiUsage?.subscriptionTier != "premium") {
-                    item {
-                        MenuCard(borderColor = borderColor, shadowColor = shadowColor, cardSurface = cardSurface) {
-                            ProfileMenuItem(
-                                icon = Icons.Default.Star,
-                                label = stringResource(Res.string.profile_upgrade_premium),
-                                iconBackgroundColor = AccentCoralLight,
-                                onClick = onNavigatePaywall
+                        // Profile Card
+                        item {
+                            ProfileCard(
+                                user = user,
+                                showPremiumBadge = state.aiUsage?.subscriptionTier == "premium",
+                                borderColor = borderColor,
+                                shadowColor = shadowColor,
+                                cardSurface = cardSurface,
+                                onClick = onSettingsClick
                             )
                         }
-                    }
-                }
 
-                // Account Section
-                item {
-                    Column {
-                        SectionTitle(text = stringResource(Res.string.account_section))
-                        Spacer(modifier = Modifier.height(8.dp))
-                        MenuCard(borderColor = borderColor, shadowColor = shadowColor, cardSurface = cardSurface) {
-                            ProfileMenuItem(
-                                icon = Icons.Default.Image,
-                                label = stringResource(Res.string.my_stickers_title),
-                                iconBackgroundColor = PastelYellow,
-                                onClick = onNavigateHome
-                            )
-                            MenuDivider()
-                            ProfileMenuItem(
-                                icon = Icons.Default.Favorite,
-                                label = stringResource(Res.string.profile_explore_packs),
-                                iconBackgroundColor = PastelPink,
-                                onClick = onNavigateExplore
-                            )
-                            MenuDivider()
-                            ProfileMenuItem(
-                                icon = Icons.Default.Download,
-                                label = stringResource(Res.string.profile_processing_history),
-                                iconBackgroundColor = PastelBlue,
-                                onClick = onNavigateHistory
-                            )
-                            MenuDivider()
-                            ProfileMenuItem(
-                                icon = Icons.Default.Star,
-                                label = stringResource(Res.string.profile_ai_jobs_menu),
-                                iconBackgroundColor = PastelPurple,
-                                onClick = onNavigateAiJobs
-                            )
-                            MenuDivider()
-                            ProfileMenuItem(
-                                icon = Icons.Default.Notifications,
-                                label = if (state.notificationUnreadCount > 0) {
-                                    "${stringResource(Res.string.notifications_title)} (${state.notificationUnreadCount})"
-                                } else {
-                                    stringResource(Res.string.notifications_title)
-                                },
-                                iconBackgroundColor = PastelYellow,
-                                onClick = onNavigateNotifications
+                        // Stats Card
+                        item {
+                            StatsCard(
+                                stickersCount = state.stickersCount,
+                                packsCount = state.packsCount,
+                                downloadsCount = state.downloadsCount,
+                                borderColor = borderColor,
+                                shadowColor = shadowColor,
+                                cardSurface = cardSurface
                             )
                         }
-                    }
-                }
 
-                item {
-                    Column {
-                        SectionTitle(text = stringResource(Res.string.settings_legal_section))
-                        Spacer(modifier = Modifier.height(8.dp))
-                        MenuCard(borderColor = borderColor, shadowColor = shadowColor, cardSurface = cardSurface) {
-                            ProfileMenuItem(
-                                icon = Icons.Default.Description,
-                                label = stringResource(Res.string.settings_privacy),
-                                iconBackgroundColor = PastelMint,
-                                onClick = onOpenPrivacy
-                            )
-                            MenuDivider()
-                            ProfileMenuItem(
-                                icon = Icons.Default.Info,
-                                label = stringResource(Res.string.settings_terms),
-                                iconBackgroundColor = PastelYellow,
-                                onClick = onOpenTerms
-                            )
-                            MenuDivider()
-                            ProfileMenuItem(
-                                icon = Icons.Default.Storage,
-                                label = stringResource(Res.string.settings_retention),
-                                iconBackgroundColor = PastelBlue,
-                                onClick = onOpenRetention
-                            )
-                            MenuDivider()
-                            ProfileMenuItem(
-                                icon = Icons.Default.Feedback,
-                                label = stringResource(Res.string.settings_permissions),
-                                iconBackgroundColor = PastelPurple,
-                                onClick = onOpenPermissions
-                            )
+                        item {
+                            Column {
+                                Text(
+                                    text = stringResource(Res.string.profile_ai_quota_section),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = neubrutalOnSurface(),
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+                                AiQuotaSummary(
+                                    usage = state.aiUsage,
+                                    isLoading = state.isLoadingAiUsage,
+                                    hasError = state.aiUsageLoadFailed,
+                                    operationCostsInInfoDialog = true
+                                )
+                            }
                         }
-                    }
-                }
 
-                // Support Section
-                item {
-                    Column {
-                        SectionTitle(text = stringResource(Res.string.support_section))
-                        Spacer(modifier = Modifier.height(8.dp))
-                        MenuCard(borderColor = borderColor, shadowColor = shadowColor, cardSurface = cardSurface) {
-                            ProfileMenuItem(
-                                icon = Icons.Default.Help,
-                                label = stringResource(Res.string.help_center),
-                                iconBackgroundColor = PastelMint,
-                                onClick = {}
-                            )
-                            MenuDivider()
-                            ProfileMenuItem(
-                                icon = Icons.Default.Feedback,
-                                label = stringResource(Res.string.send_feedback),
-                                iconBackgroundColor = PastelYellow,
-                                onClick = {}
-                            )
-                            MenuDivider()
-                            ProfileMenuItem(
-                                icon = Icons.Default.Info,
-                                label = stringResource(Res.string.about_app),
-                                iconBackgroundColor = PastelBlue,
-                                onClick = {}
-                            )
+                        if (state.aiUsage?.subscriptionTier != "premium") {
+                            item {
+                                MenuCard(borderColor = borderColor, shadowColor = shadowColor, cardSurface = cardSurface) {
+                                    ProfileMenuItem(
+                                        icon = Icons.Default.Star,
+                                        label = stringResource(Res.string.profile_upgrade_premium),
+                                        iconBackgroundColor = AccentCoralLight,
+                                        onClick = onNavigatePaywall
+                                    )
+                                }
+                            }
                         }
+
+                        // Account Section
+                        item {
+                            Column {
+                                SectionTitle(text = stringResource(Res.string.account_section))
+                                Spacer(modifier = Modifier.height(8.dp))
+                                MenuCard(borderColor = borderColor, shadowColor = shadowColor, cardSurface = cardSurface) {
+                                    ProfileMenuItem(
+                                        icon = Icons.Default.Edit,
+                                        label = stringResource(Res.string.edit_profile_title),
+                                        iconBackgroundColor = PastelPurple,
+                                        onClick = onEditProfile
+                                    )
+                                    MenuDivider()
+                                    ProfileMenuItem(
+                                        icon = Icons.Default.Image,
+                                        label = stringResource(Res.string.my_stickers_title),
+                                        iconBackgroundColor = PastelYellow,
+                                        onClick = onNavigateHome
+                                    )
+                                    MenuDivider()
+                                    ProfileMenuItem(
+                                        icon = Icons.Default.Favorite,
+                                        label = stringResource(Res.string.profile_explore_packs),
+                                        iconBackgroundColor = PastelPink,
+                                        onClick = onNavigateExplore
+                                    )
+                                    MenuDivider()
+                                    ProfileMenuItem(
+                                        icon = Icons.Default.Download,
+                                        label = stringResource(Res.string.profile_processing_history),
+                                        iconBackgroundColor = PastelBlue,
+                                        onClick = onNavigateHistory
+                                    )
+                                    MenuDivider()
+                                    ProfileMenuItem(
+                                        icon = Icons.Default.Star,
+                                        label = stringResource(Res.string.profile_ai_jobs_menu),
+                                        iconBackgroundColor = PastelPurple,
+                                        onClick = onNavigateAiJobs
+                                    )
+                                    MenuDivider()
+                                    ProfileMenuItem(
+                                        icon = Icons.Default.Notifications,
+                                        label = if (state.notificationUnreadCount > 0) {
+                                            "${stringResource(Res.string.notifications_title)} (${state.notificationUnreadCount})"
+                                        } else {
+                                            stringResource(Res.string.notifications_title)
+                                        },
+                                        iconBackgroundColor = PastelYellow,
+                                        onClick = onNavigateNotifications
+                                    )
+                                    MenuDivider()
+                                    ProfileMenuItem(
+                                        icon = Icons.Default.Block,
+                                        label = stringResource(Res.string.profile_blocked_users_menu),
+                                        iconBackgroundColor = PastelMint,
+                                        onClick = onBlockedUsers
+                                    )
+                                }
+                            }
+                        }
+
+                        item {
+                            Column {
+                                SectionTitle(text = stringResource(Res.string.settings_legal_section))
+                                Spacer(modifier = Modifier.height(8.dp))
+                                MenuCard(borderColor = borderColor, shadowColor = shadowColor, cardSurface = cardSurface) {
+                                    ProfileMenuItem(
+                                        icon = Icons.Default.Description,
+                                        label = stringResource(Res.string.settings_privacy),
+                                        iconBackgroundColor = PastelMint,
+                                        onClick = onOpenPrivacy
+                                    )
+                                    MenuDivider()
+                                    ProfileMenuItem(
+                                        icon = Icons.Default.Info,
+                                        label = stringResource(Res.string.settings_terms),
+                                        iconBackgroundColor = PastelYellow,
+                                        onClick = onOpenTerms
+                                    )
+                                    MenuDivider()
+                                    ProfileMenuItem(
+                                        icon = Icons.Default.Storage,
+                                        label = stringResource(Res.string.settings_retention),
+                                        iconBackgroundColor = PastelBlue,
+                                        onClick = onOpenRetention
+                                    )
+                                    MenuDivider()
+                                    ProfileMenuItem(
+                                        icon = Icons.Default.Feedback,
+                                        label = stringResource(Res.string.settings_permissions),
+                                        iconBackgroundColor = PastelPurple,
+                                        onClick = onOpenPermissions
+                                    )
+                                    MenuDivider()
+                                    ProfileMenuItem(
+                                        icon = Icons.Default.DeleteForever,
+                                        label = stringResource(Res.string.settings_account_deletion),
+                                        iconBackgroundColor = PastelPink,
+                                        onClick = onOpenAccountDeletion
+                                    )
+                                }
+                            }
+                        }
+
+                        // Support Section
+                        item {
+                            Column {
+                                SectionTitle(text = stringResource(Res.string.support_section))
+                                Spacer(modifier = Modifier.height(8.dp))
+                                MenuCard(borderColor = borderColor, shadowColor = shadowColor, cardSurface = cardSurface) {
+                                    ProfileMenuItem(
+                                        icon = Icons.Default.Help,
+                                        label = stringResource(Res.string.help_center),
+                                        iconBackgroundColor = PastelMint,
+                                        onClick = {}
+                                    )
+                                    MenuDivider()
+                                    ProfileMenuItem(
+                                        icon = Icons.Default.Feedback,
+                                        label = stringResource(Res.string.send_feedback),
+                                        iconBackgroundColor = PastelYellow,
+                                        onClick = {}
+                                    )
+                                    MenuDivider()
+                                    ProfileMenuItem(
+                                        icon = Icons.Default.Info,
+                                        label = stringResource(Res.string.about_app),
+                                        iconBackgroundColor = PastelBlue,
+                                        onClick = {}
+                                    )
+                                }
+                            }
+                        }
+
+                        item { Spacer(modifier = Modifier.height(24.dp)) }
                     }
                 }
-
-                item { Spacer(modifier = Modifier.height(24.dp)) }
             }
         }
     }

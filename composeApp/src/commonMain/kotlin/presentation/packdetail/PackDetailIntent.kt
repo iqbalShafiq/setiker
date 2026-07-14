@@ -20,6 +20,20 @@ sealed interface PackDetailIntent {
     data object RefreshCloudShareLinks : PackDetailIntent
     data object CreateCloudShareLink : PackDetailIntent
     data class RevokeCloudShareLink(val linkId: String) : PackDetailIntent
+    data class MoveStickerUp(val index: Int) : PackDetailIntent
+    data class MoveStickerDown(val index: Int) : PackDetailIntent
+    data class ReorderSticker(val fromIndex: Int, val toIndex: Int) : PackDetailIntent
+    data class OpenStickerShareSheet(val index: Int) : PackDetailIntent
+    data object DismissStickerShareSheet : PackDetailIntent
+    data class StickerShareTabChanged(val tab: StickerShareTab) : PackDetailIntent
+    data object RefreshStickerShareLinks : PackDetailIntent
+    data object CreateStickerShareLink : PackDetailIntent
+    data class RevokeStickerShareLink(val linkId: String) : PackDetailIntent
+    data object RefreshStickerCollaborators : PackDetailIntent
+    data class StickerCollaboratorSearchChanged(val query: String) : PackDetailIntent
+    data class InviteStickerCollaborator(val userId: String) : PackDetailIntent
+    data class RemoveStickerCollaborator(val userId: String) : PackDetailIntent
+    data class StickerCollaboratorPermissionChanged(val permission: String) : PackDetailIntent
     data object RequestDuplicate : PackDetailIntent
     data object ConfirmDuplicate : PackDetailIntent
     data object DismissDuplicateDialog : PackDetailIntent
