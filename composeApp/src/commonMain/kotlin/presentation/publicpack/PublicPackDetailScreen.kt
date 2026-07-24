@@ -21,18 +21,20 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.HowToReg
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
-import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Block
+import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,25 +53,25 @@ import presentation.common.ContentStateAnimations
 import presentation.common.DetailLoadPhase
 import presentation.components.AppIllustration
 import presentation.components.AppPrimaryButton
-import presentation.components.EmptyState
-import presentation.components.LoadingIndicator
 import presentation.components.AppTopBar
-import presentation.components.FollowPackBottomBarIconButton
-import presentation.components.InteractionBlockedBox
+import presentation.components.AppTopBarActionIcon
 import presentation.components.BlockCreatorConfirmDialog
-import presentation.components.ReportContentBottomSheet
+import presentation.components.EmptyState
+import presentation.components.InteractionBlockedBox
+import presentation.components.LoadingIndicator
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
+import presentation.components.ReportContentBottomSheet
 import presentation.components.ScreenSectionTitle
 import presentation.components.UnfollowConfirmDialog
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalCardRadius
-import presentation.theme.neubrutalBorderWithGloss
-import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
@@ -109,11 +111,48 @@ fun PublicPackDetailScreen(
 ) {
     var showUnfollowDialog by remember { mutableStateOf(false) }
 
+    val topBarActionsEnabled = !state.isImporting
+
     Scaffold(
         topBar = {
             AppTopBar(
                 title = state.pack?.name ?: "",
-                onBackClick = null
+                onBackClick = null,
+                actions = if (!state.isOwnPack) {
+                    {
+                        AppTopBarActionIcon(
+                            icon = Icons.Outlined.Flag,
+                            contentDescription = stringResource(Res.string.public_pack_report),
+                            onClick = { onIntent(PublicPackDetailIntent.ShowReportSheet) },
+                            enabled = topBarActionsEnabled
+                        )
+                        AppTopBarActionIcon(
+                            icon = Icons.Outlined.Block,
+                            contentDescription = stringResource(Res.string.public_pack_block_creator),
+                            onClick = { onIntent(PublicPackDetailIntent.ShowBlockCreatorConfirm) },
+                            enabled = topBarActionsEnabled
+                        )
+                        AppTopBarActionIcon(
+                            icon = if (state.isFollowingCreator) Icons.Filled.HowToReg else Icons.Default.PersonAdd,
+                            contentDescription = if (state.isFollowingCreator) {
+                                stringResource(Res.string.creator_following)
+                            } else {
+                                stringResource(Res.string.creator_follow)
+                            },
+                            onClick = {
+                                if (state.isFollowingCreator) {
+                                    showUnfollowDialog = true
+                                } else {
+                                    onIntent(PublicPackDetailIntent.ToggleFollowCreator)
+                                }
+                            },
+                            enabled = topBarActionsEnabled,
+                            iconTint = if (state.isFollowingCreator) AccentCoral else neubrutalOnSurface()
+                        )
+                    }
+                } else {
+                    null
+                }
             )
         },
         bottomBar = {
@@ -140,33 +179,6 @@ fun PublicPackDetailScreen(
                         enabled = !state.isImporting,
                         iconTint = if (state.isSaved) AccentCoral else neubrutalOnSurface()
                     )
-                    if (!state.isOwnPack) {
-                        PackBottomBarIconButton(
-                            icon = Icons.Outlined.Flag,
-                            contentDescription = stringResource(Res.string.public_pack_report),
-                            onClick = { onIntent(PublicPackDetailIntent.ShowReportSheet) },
-                            enabled = !state.isImporting
-                        )
-                        PackBottomBarIconButton(
-                            icon = Icons.Outlined.Block,
-                            contentDescription = stringResource(Res.string.public_pack_block_creator),
-                            onClick = { onIntent(PublicPackDetailIntent.ShowBlockCreatorConfirm) },
-                            enabled = !state.isImporting
-                        )
-                        FollowPackBottomBarIconButton(
-                            isFollowing = state.isFollowingCreator,
-                            onClick = {
-                                if (state.isFollowingCreator) {
-                                    showUnfollowDialog = true
-                                } else {
-                                    onIntent(PublicPackDetailIntent.ToggleFollowCreator)
-                                }
-                            },
-                            enabled = !state.isImporting,
-                            followContentDescription = stringResource(Res.string.creator_follow),
-                            unfollowContentDescription = stringResource(Res.string.creator_following)
-                        )
-                    }
                 },
                 floatingActionButton = if (!state.isOwnPack) {
                     {
