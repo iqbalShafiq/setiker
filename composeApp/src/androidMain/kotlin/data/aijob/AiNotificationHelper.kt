@@ -62,43 +62,53 @@ class AiNotificationHelper(private val context: Context) {
     }
 
     fun showCompleted(job: AiJob, title: String, draftId: String) {
-        val notification = childBuilder(job, title)
+        // Terminal notifications are ungrouped so they always heads-up / stay after FGS stops.
+        // Grouped children can be suppressed or cleared with the foreground progress notification.
+        val notification = terminalBuilder()
             .setContentTitle(title)
             .setContentText("Selesai — ketuk untuk melihat hasil")
             .setStyle(
                 NotificationCompat.BigTextStyle()
                     .bigText("Selesai — ketuk untuk melihat hasil")
             )
+            .setSubText(jobTypeLabel(job.type))
             .setAutoCancel(true)
             .setOngoing(false)
             .setOnlyAlertOnce(false)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(createPendingIntent(draftId, job.id))
             .build()
-        notify(job.id.hashCode(), notification)
+        notify(terminalNotificationId(job.id), notification)
+        // Drop any leftover progress entry for this job id (non-FGS path).
+        notificationManager.cancel(job.id.hashCode())
     }
 
     fun showFailed(job: AiJob, title: String, draftId: String) {
         val message = job.failureMessage ?: "Processing failed"
-        val isRetryable = job.status == AiJobStatus.FAILED_RETRYABLE
+        val isRetryable = job.status == AiJobStatus.FAILED_RETRYABLE ||
+            job.status == AiJobStatus.QUEUED
         val body = if (isRetryable) {
             "$message\nKetuk untuk mencoba lagi dari AI Jobs."
         } else {
             message
         }
-        val notification = childBuilder(job, title)
+        val notification = terminalBuilder()
             .setContentTitle("$title — gagal")
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setSubText(jobTypeLabel(job.type))
             .setAutoCancel(true)
             .setOngoing(false)
             .setOnlyAlertOnce(false)
             .setCategory(NotificationCompat.CATEGORY_ERROR)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(createPendingIntent(draftId, job.id))
             .build()
-        notify(job.id.hashCode(), notification)
+        notify(terminalNotificationId(job.id), notification)
+        notificationManager.cancel(job.id.hashCode())
     }
 
     /**
@@ -147,12 +157,16 @@ class AiNotificationHelper(private val context: Context) {
     fun cancel(jobId: String) {
         if (!canPostNotifications()) return
         notificationManager.cancel(jobId.hashCode())
+        notificationManager.cancel(terminalNotificationId(jobId))
     }
 
     private fun childBuilder(job: AiJob, title: String): NotificationCompat.Builder =
         baseBuilder()
             .setGroup(GROUP_KEY)
             .setSubText(jobTypeLabel(job.type))
+
+    /** Standalone builder for success/fail so OS does not fold/suppress with the FGS group. */
+    private fun terminalBuilder(): NotificationCompat.Builder = baseBuilder()
 
     private fun summaryLineFor(job: AiJob, title: String): String {
         val fraction = (job.progress?.fraction ?: 0f).coerceIn(0f, 1f)
@@ -253,6 +267,9 @@ class AiNotificationHelper(private val context: Context) {
         )
     }
 
+    fun terminalNotificationId(jobId: String): Int =
+        TERMINAL_NOTIFICATION_ID_BASE xor jobId.hashCode()
+
     companion object {
         const val CHANNEL_ID = "ai_processing_high"
         private const val LEGACY_CHANNEL_ID = "ai_processing"
@@ -264,6 +281,8 @@ class AiNotificationHelper(private val context: Context) {
         const val GROUP_SUMMARY_NOTIFICATION_ID = 7100
         private const val AI_JOBS_PENDING_INTENT_REQUEST_CODE = 7102
         private const val INBOX_LINE_LIMIT = 5
+        /** Distinct from FGS progress id (7101) and per-job progress hashCodes. */
+        private const val TERMINAL_NOTIFICATION_ID_BASE = 0x5E71_0000
         const val TERMINAL_GROUPING_WINDOW_MS = 5 * 60 * 1000L
     }
 }

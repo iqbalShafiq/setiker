@@ -33,6 +33,12 @@ object AiJobFailureClassifier {
                 message.contains("background") && message.contains("processor") ->
                 AiJobFailureKind.LOCAL_PROCESSOR to false
 
+            // Foreground-only decoration render used to fail when the user left the app;
+            // keep classified as local so retries are possible after headless fallback.
+            message.contains("no foreground activity") ||
+                message.contains("cannot render sticker decorations") ->
+                AiJobFailureKind.LOCAL_PROCESSOR to true
+
             message.contains("401") ||
                 message.contains("403") ||
                 message.contains("400") ||

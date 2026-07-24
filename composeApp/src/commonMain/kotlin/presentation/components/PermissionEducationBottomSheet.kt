@@ -19,9 +19,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalSubtleOnSurface
 import setiker.composeapp.generated.resources.Res
-import setiker.composeapp.generated.resources.cancel
 import setiker.composeapp.generated.resources.permission_education_allow
 import setiker.composeapp.generated.resources.permission_education_message
 import setiker.composeapp.generated.resources.permission_education_not_now
@@ -39,6 +39,8 @@ fun PermissionEducationBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
+        containerColor = neubrutalScreenBackground(),
+        contentColor = neubrutalOnSurface(),
         contentWindowInsets = { zeroBottomSheetWindowInsets() }
     ) {
         Column(

@@ -90,17 +90,42 @@ class AiJobProcessorWorker(
             }
 
             val latest = jobRepository.getById(jobId) ?: continue
-            when (latest.status) {
-                AiJobStatus.COMPLETED -> notificationHelper.showCompleted(latest, title, job.workspaceDraftId)
-                AiJobStatus.FAILED_FINAL,
-                AiJobStatus.FAILED_RETRYABLE -> notificationHelper.showFailed(latest, title, job.workspaceDraftId)
-                AiJobStatus.CANCELLED -> notificationHelper.cancel(jobId)
-                else -> Unit
+            // Retryable failures are immediately re-queued (status → QUEUED) by AiJobRunner
+            // while keeping failureMessage. Always notify based on run outcome, not status alone.
+            when {
+                success || latest.status == AiJobStatus.COMPLETED -> {
+                    notificationHelper.showCompleted(
+                        job = if (latest.status == AiJobStatus.COMPLETED) {
+                            latest
+                        } else {
+                            latest.copy(status = AiJobStatus.COMPLETED)
+                        },
+                        title = title,
+                        draftId = job.workspaceDraftId
+                    )
+                }
+                latest.status == AiJobStatus.CANCELLED -> {
+                    notificationHelper.cancel(jobId)
+                }
+                else -> {
+                    val failedForNotify = when (latest.status) {
+                        AiJobStatus.FAILED_FINAL,
+                        AiJobStatus.FAILED_RETRYABLE -> latest
+                        else -> latest.copy(
+                            status = AiJobStatus.FAILED_RETRYABLE,
+                            failureMessage = latest.failureMessage
+                                ?: "Processing failed"
+                        )
+                    }
+                    notificationHelper.showFailed(failedForNotify, title, job.workspaceDraftId)
+                    if (latest.status == AiJobStatus.FAILED_RETRYABLE ||
+                        latest.status == AiJobStatus.QUEUED
+                    ) {
+                        shouldRetry = true
+                    }
+                }
             }
             refreshNotificationGroup()
-            if (!success && latest.status == AiJobStatus.FAILED_RETRYABLE) {
-                shouldRetry = true
-            }
         }
         if (shouldRetry) Result.retry() else Result.success()
     }
