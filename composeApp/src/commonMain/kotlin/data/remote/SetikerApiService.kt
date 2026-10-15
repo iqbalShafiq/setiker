@@ -74,7 +74,7 @@ class SetikerApiService(
         }
         install(HttpTimeout) {
             requestTimeoutMillis = 600_000
-            connectTimeoutMillis = 600_000
+            connectTimeoutMillis = 30_000
             socketTimeoutMillis = 600_000
         }
         if (ApiConfig.isDebugLoggingEnabled) {
