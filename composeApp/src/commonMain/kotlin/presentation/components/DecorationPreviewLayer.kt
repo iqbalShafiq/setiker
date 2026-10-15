@@ -45,7 +45,10 @@ import domain.model.StickerDecoration
 import domain.model.TextDecoration
 import domain.model.resolveEmojiStyle
 import kotlin.math.roundToInt
+import presentation.theme.AccentCoral
+import presentation.theme.ErrorRed
 import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalGlossyHighlightColor
 
@@ -151,7 +154,9 @@ fun DecorationPreviewLayer(
                     .then(
                         Modifier.border(
                             width = NeubrutalBorderWidth,
-                            color = if (selectedDecorationId == decoration.id) Color.Black else Color.Transparent,
+                            // Accent rather than plain black/white: the outline sits on top of arbitrary
+                            // artwork, where a theme-dependent stroke is invisible on one of the two.
+                            color = if (selectedDecorationId == decoration.id) AccentCoral else Color.Transparent,
                             shape = RoundedCornerShape(8.dp)
                         )
                     )
@@ -202,9 +207,9 @@ fun DecorationPreviewLayer(
                             .offset(x = (-2).dp, y = 2.dp)
                             .size(18.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFE53935))
+                            .background(ErrorRed)
                             .neubrutalBorderWithGloss(
-                                color = Color.Black,
+                                color = neubrutalBorderColor(),
                                 cornerRadius = 9.dp,
                                 shape = CircleShape,
                                 highlightColor = neubrutalGlossyHighlightColor(onFilledSurface = true)

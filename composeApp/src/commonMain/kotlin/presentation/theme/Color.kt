@@ -39,6 +39,9 @@ val ErrorRed = Color(0xFFFF6B6B)
 val SuccessGreen = Color(0xFF34D399)
 val WarningYellow = Color(0xFFFFD166)
 
+/** Dimming layer painted behind modal bottom sheets, dialogs and pickers. */
+val NeubrutalScrim = Color.Black.copy(alpha = 0.45f)
+
 // ============================================
 // Legacy Clay Colors (kept for compatibility)
 // ============================================

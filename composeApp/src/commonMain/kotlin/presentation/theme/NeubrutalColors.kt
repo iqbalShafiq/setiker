@@ -72,6 +72,15 @@ fun neubrutalSubtleOnSurface(): Color =
 fun neubrutalOnPrimary(): Color = MaterialTheme.colorScheme.onPrimary
 
 /**
+ * Transparency checkerboard painted behind sticker previews. Both squares are theme surfaces so a
+ * dark-mode preview does not flash a white board.
+ */
+@Composable
+@ReadOnlyComposable
+fun neubrutalCheckerSquare(): Color =
+    if (isSystemInDarkTheme()) Color(0xFF4A4A4A) else Color(0xFFE6E6E6)
+
+/**
  * Fill color for the top/left glossy bevel band (solid L-shape inside the border).
  *
  * @param onFilledSurface true for saturated fills (primary buttons, FAB, danger buttons).

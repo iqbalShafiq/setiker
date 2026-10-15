@@ -104,6 +104,7 @@ import presentation.components.StickerEmojiTagChip
 import presentation.components.rememberImagePicker
 import presentation.createpack.DraftSticker
 import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalScrim
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalGlossyHighlightColor
@@ -667,7 +668,7 @@ fun EditorScreen(
             onDismissRequest = { onIntent(EditorIntent.DismissGeneratedResultsSheet) },
             sheetState = sheetState,
             containerColor = neubrutalScreenBackground(),
-            scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f),
+            scrimColor = NeubrutalScrim,
             contentWindowInsets = { zeroBottomSheetWindowInsets() }
         ) {
             BottomSheetScrollColumn {
@@ -725,7 +726,7 @@ fun EditorScreen(
             onDismissRequest = { onIntent(EditorIntent.DismissBackgroundRemoverSheet) },
             sheetState = bgRemovalSheetState,
             containerColor = neubrutalScreenBackground(),
-            scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
+            scrimColor = NeubrutalScrim
         ) {
             Column(
                 modifier = Modifier

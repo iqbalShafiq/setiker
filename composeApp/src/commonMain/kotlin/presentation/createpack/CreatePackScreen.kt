@@ -84,6 +84,7 @@ import presentation.theme.AccentCoralLight
 import presentation.theme.ErrorRed
 import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalScrim
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalSmallRadius
 import presentation.theme.NeubrutalSmallShadowOffset
@@ -273,7 +274,7 @@ fun CreatePackScreen(
             onDismissRequest = { onIntent(CreatePackIntent.DismissGeneratedResultsSheet) },
             sheetState = generatedSheetState,
             containerColor = neubrutalScreenBackground(),
-            scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f),
+            scrimColor = NeubrutalScrim,
             contentWindowInsets = { zeroBottomSheetWindowInsets() }
         ) {
             BottomSheetScrollColumn {
@@ -350,7 +351,7 @@ fun CreatePackScreen(
             onDismissRequest = { onIntent(CreatePackIntent.DismissGridSheet) },
             sheetState = gridSheetState,
             containerColor = neubrutalScreenBackground(),
-            scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f),
+            scrimColor = NeubrutalScrim,
             contentWindowInsets = { zeroBottomSheetWindowInsets() }
         ) {
             BottomSheetScrollColumn {
@@ -459,7 +460,7 @@ fun CreatePackScreen(
             onDismissRequest = { onIntent(CreatePackIntent.DismissStickerGalleryCropPrompt) },
             sheetState = stickerImportSheetState,
             containerColor = neubrutalScreenBackground(),
-            scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
+            scrimColor = NeubrutalScrim
         ) {
             Column(
                 modifier = Modifier
@@ -522,7 +523,7 @@ fun CreatePackScreen(
             onDismissRequest = { onIntent(CreatePackIntent.DismissTrayGalleryCropPrompt) },
             sheetState = trayImportSheetState,
             containerColor = neubrutalScreenBackground(),
-            scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
+            scrimColor = NeubrutalScrim
         ) {
             Column(
                 modifier = Modifier

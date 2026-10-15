@@ -33,6 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import org.jetbrains.compose.resources.stringResource
+import presentation.theme.NeubrutalScrim
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalMutedOnSurface
@@ -101,7 +102,7 @@ fun AiGenerateBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = neubrutalScreenBackground(),
-        scrimColor = Color.Black.copy(alpha = 0.45f),
+        scrimColor = NeubrutalScrim,
         contentWindowInsets = { zeroBottomSheetWindowInsets() }
     ) {
         BottomSheetScrollColumn {

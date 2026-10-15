@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import domain.model.SortOrder
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import presentation.theme.NeubrutalScrim
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import setiker.composeapp.generated.resources.Res
@@ -43,7 +44,7 @@ fun SortBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = neubrutalScreenBackground(),
-        scrimColor = Color.Black.copy(alpha = 0.45f),
+        scrimColor = NeubrutalScrim,
         contentWindowInsets = { zeroBottomSheetWindowInsets() }
     ) {
         BottomSheetScrollColumn {

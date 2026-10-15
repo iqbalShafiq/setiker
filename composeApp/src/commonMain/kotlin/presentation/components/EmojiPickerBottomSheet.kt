@@ -35,6 +35,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import presentation.theme.AccentCoral
+import presentation.theme.NeubrutalScrim
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalMutedOnSurface
@@ -84,7 +85,7 @@ fun EmojiPickerBottomSheet(
         modifier = modifier,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         containerColor = bg,
-        scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f)
+        scrimColor = NeubrutalScrim
     ) {
         Column(
             modifier = Modifier

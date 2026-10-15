@@ -89,6 +89,7 @@ import presentation.components.StickerCard
 import presentation.components.SyncStatusIndicator
 import presentation.components.rememberMultipleImagePicker
 import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalScrim
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.NeubrutalShadowOffset
@@ -193,7 +194,7 @@ fun PackDetailScreen(
             onDismissRequest = { onIntent(PackDetailIntent.DismissStickerImportSheet) },
             sheetState = stickerImportSheetState,
             containerColor = neubrutalScreenBackground(),
-            scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
+            scrimColor = NeubrutalScrim
         ) {
             Column(
                 modifier = Modifier

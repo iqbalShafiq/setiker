@@ -40,6 +40,7 @@ import domain.model.DecorationFontWeight
 import domain.model.TextDecorationLayout
 import domain.model.TextDecorationStyle
 import org.jetbrains.compose.resources.stringResource
+import presentation.theme.NeubrutalScrim
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalOnSurface
@@ -78,7 +79,7 @@ fun AddTextDecorationBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = neubrutalScreenBackground(),
-        scrimColor = Color.Black.copy(alpha = 0.45f),
+        scrimColor = NeubrutalScrim,
         contentWindowInsets = { zeroBottomSheetWindowInsets() }
     ) {
         BottomSheetScrollColumn {
@@ -125,7 +126,7 @@ fun EditTextDecorationBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = neubrutalScreenBackground(),
-        scrimColor = Color.Black.copy(alpha = 0.45f),
+        scrimColor = NeubrutalScrim,
         contentWindowInsets = { zeroBottomSheetWindowInsets() }
     ) {
         BottomSheetScrollColumn {
@@ -170,7 +171,7 @@ fun StylePickerBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = neubrutalScreenBackground(),
-        scrimColor = Color.Black.copy(alpha = 0.45f)
+        scrimColor = NeubrutalScrim
     ) {
         Column(
             modifier = Modifier
@@ -316,7 +317,7 @@ fun ColorPickerBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = neubrutalScreenBackground(),
-        scrimColor = Color.Black.copy(alpha = 0.45f)
+        scrimColor = NeubrutalScrim
     ) {
         Column(
             modifier = Modifier
@@ -416,7 +417,7 @@ fun BorderStyleBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = neubrutalScreenBackground(),
-        scrimColor = Color.Black.copy(alpha = 0.45f)
+        scrimColor = NeubrutalScrim
     ) {
         Column(
             modifier = Modifier

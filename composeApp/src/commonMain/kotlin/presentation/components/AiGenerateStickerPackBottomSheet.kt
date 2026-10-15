@@ -34,6 +34,7 @@ import domain.model.AiQuotaOperation
 import domain.model.AiUsage
 import org.jetbrains.compose.resources.stringResource
 import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalScrim
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
@@ -88,7 +89,7 @@ fun AiGenerateStickerPackBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = neubrutalScreenBackground(),
-        scrimColor = Color.Black.copy(alpha = 0.45f),
+        scrimColor = NeubrutalScrim,
         contentWindowInsets = { zeroBottomSheetWindowInsets() }
     ) {
         BottomSheetScrollColumn {
