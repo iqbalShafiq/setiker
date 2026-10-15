@@ -50,6 +50,7 @@ import presentation.common.PackIdentifierSanitizer
 import presentation.common.AiQuotaGate
 import presentation.common.UiText
 import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.animated_error_decode_failed
 import setiker.composeapp.generated.resources.error_failed_generate_video_sticker_pack
 
 @OptIn(ExperimentalUuidApi::class)
@@ -171,6 +172,7 @@ class VideoStickerPackViewModel(
             VideoStickerPackIntent.Generate -> generate(extractFreshCandidates = true)
             VideoStickerPackIntent.Regenerate -> generate(extractFreshCandidates = false)
             VideoStickerPackIntent.SavePack -> savePack()
+            VideoStickerPackIntent.RetryPreview -> reschedulePreviewExtraction(immediate = true)
         }
     }
 
@@ -265,6 +267,7 @@ class VideoStickerPackViewModel(
             val current = _state.value
             if (current.videoPath.isBlank()) return@launch
             if (current.selectedEndMs <= current.selectedStartMs) return@launch
+            _state.update { it.copy(previewUnavailable = false) }
             extractPreviewFramesForRange(
                 videoPath = current.videoPath,
                 startMs = current.selectedStartMs,
@@ -299,6 +302,16 @@ class VideoStickerPackViewModel(
                     )
                 }
             }
+        }
+        // Reached only when the extraction ran to completion (a cancelled job exits by exception),
+        // so an empty result really means the device could not read this source.
+        _state.update { it.copy(previewUnavailable = frames.isEmpty()) }
+        if (frames.isEmpty()) {
+            _effect.trySend(
+                VideoStickerPackEffect.ShowError(
+                    UiText.StringRes(Res.string.animated_error_decode_failed)
+                )
+            )
         }
     }
 

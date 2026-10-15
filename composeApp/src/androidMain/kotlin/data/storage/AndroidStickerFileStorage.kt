@@ -251,7 +251,14 @@ actual class StickerFileStorage(private val context: Context) {
                 rawFrame.recycle()
             }
             outFile.absolutePath
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            // The preview screens surface a failure with a retry when nothing can be extracted;
+            // swallowing the reason here made that impossible to diagnose from a bug report.
+            android.util.Log.w(
+                "StickerFileStorage",
+                "extractVideoFrameToFile failed for $videoPath at ${atMs}ms",
+                e
+            )
             null
         } finally {
             try {
@@ -289,7 +296,9 @@ actual class StickerFileStorage(private val context: Context) {
             retriever.setDataSource(videoPath)
             retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)
                 ?.toLongOrNull() ?: -1L
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            // A duration we cannot read silently becomes the 10 s default upstream, so log why.
+            android.util.Log.w("StickerFileStorage", "getVideoDurationMs failed for $videoPath", e)
             -1L
         } finally {
             try {

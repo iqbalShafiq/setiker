@@ -79,6 +79,7 @@ import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalSubtleOnSurface
 import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.animated_error_decode_failed
 import setiker.composeapp.generated.resources.back
 import setiker.composeapp.generated.resources.loading_frames
 import setiker.composeapp.generated.resources.pack_name_label
@@ -87,6 +88,7 @@ import setiker.composeapp.generated.resources.pause_preview
 import setiker.composeapp.generated.resources.play_preview
 import setiker.composeapp.generated.resources.publisher_label
 import setiker.composeapp.generated.resources.publisher_placeholder
+import setiker.composeapp.generated.resources.retry
 import setiker.composeapp.generated.resources.video_pack_ask_ai
 import setiker.composeapp.generated.resources.video_pack_ask_ai_hint
 import setiker.composeapp.generated.resources.video_pack_build_grids
@@ -308,7 +310,9 @@ private fun VideoPreviewSection(
     VideoSourcePreview(
         previewBitmap = previewBitmap,
         previewLabelMs = relativePreviewMs,
-        isLoading = state.isLoadingVideo || (state.currentPreviewPathResolved != null && previewBitmap == null)
+        isLoading = state.isLoadingVideo || (state.currentPreviewPathResolved != null && previewBitmap == null),
+        retryUnavailable = state.previewUnavailable,
+        onRetry = { onIntent(VideoStickerPackIntent.RetryPreview) }
     )
 
     LabeledSliderSection(
@@ -348,6 +352,8 @@ private fun VideoSourcePreview(
     previewBitmap: ImageBitmap?,
     previewLabelMs: Long,
     isLoading: Boolean,
+    retryUnavailable: Boolean,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     NeubrutalStickerPreviewFrame(
@@ -388,6 +394,29 @@ private fun VideoSourcePreview(
                         text = stringResource(Res.string.loading_frames),
                         style = MaterialTheme.typography.bodySmall,
                         color = neubrutalSubtleOnSurface()
+                    )
+                }
+            }
+
+            retryUnavailable -> {
+                // The device could not read a single frame from this source; without this branch the
+                // placeholder below would animate forever.
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = stringResource(Res.string.animated_error_decode_failed),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = neubrutalSubtleOnSurface()
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = stringResource(Res.string.retry),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = NeubrutalWhite,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(NeubrutalBlack)
+                            .clickable(onClick = onRetry)
+                            .padding(horizontal = 14.dp, vertical = 8.dp)
                     )
                 }
             }
