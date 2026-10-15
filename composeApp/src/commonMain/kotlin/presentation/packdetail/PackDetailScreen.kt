@@ -70,6 +70,7 @@ import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
 import presentation.components.AppTopBar
 import presentation.components.AppTopBarActionIcon
+import presentation.components.ReorderIconButton
 import presentation.components.BottomSheetScrollColumn
 import presentation.components.ContentPolicyBottomSheet
 import presentation.components.zeroBottomSheetWindowInsets
@@ -780,46 +781,41 @@ private fun PackDetailContent(
                             if (enabled && orderedStickers.size > 1) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceEvenly,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    IconButton(
+                                    ReorderIconButton(
+                                        icon = Icons.Default.KeyboardArrowUp,
+                                        contentDescription = stringResource(Res.string.reorder_move_up),
                                         onClick = {
                                             val packIndex = indexInPack(sticker.imageFile)
                                             if (packIndex > 0) {
                                                 onIntent(PackDetailIntent.MoveStickerUp(packIndex))
                                             }
                                         },
-                                        enabled = index > 0
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.KeyboardArrowUp,
-                                            contentDescription = stringResource(Res.string.reorder_move_up)
-                                        )
-                                    }
-                                    IconButton(
-                                        modifier = Modifier.draggableHandle(),
-                                        onClick = {}
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.DragHandle,
-                                            contentDescription = stringResource(Res.string.reorder_drag_handle)
-                                        )
-                                    }
-                                    IconButton(
+                                        enabled = index > 0,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    ReorderIconButton(
+                                        icon = Icons.Default.DragHandle,
+                                        contentDescription = stringResource(Res.string.reorder_drag_handle),
+                                        onClick = {},
+                                        enabled = true,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .draggableHandle()
+                                    )
+                                    ReorderIconButton(
+                                        icon = Icons.Default.KeyboardArrowDown,
+                                        contentDescription = stringResource(Res.string.reorder_move_down),
                                         onClick = {
                                             val packIndex = indexInPack(sticker.imageFile)
                                             if (packIndex >= 0 && packIndex < pack.stickers.lastIndex) {
                                                 onIntent(PackDetailIntent.MoveStickerDown(packIndex))
                                             }
                                         },
-                                        enabled = index < orderedStickers.lastIndex
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.KeyboardArrowDown,
-                                            contentDescription = stringResource(Res.string.reorder_move_down)
-                                        )
-                                    }
+                                        enabled = index < orderedStickers.lastIndex,
+                                        modifier = Modifier.weight(1f)
+                                    )
                                 }
                             }
                         }

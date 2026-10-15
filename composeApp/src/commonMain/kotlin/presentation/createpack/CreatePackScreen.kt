@@ -61,6 +61,7 @@ import presentation.components.AppTopBar
 import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
 import presentation.components.PackBottomBar
+import presentation.components.ReorderIconButton
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
 import presentation.components.SelectableStickerGrid
@@ -800,31 +801,27 @@ fun CreatePackScreen(
                                     if (state.stickers.size > 1) {
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceEvenly
+                                            verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            IconButton(
+                                            ReorderIconButton(
+                                                icon = Icons.Default.KeyboardArrowUp,
+                                                contentDescription = stringResource(Res.string.reorder_move_up),
                                                 onClick = {
                                                     onIntent(CreatePackIntent.MoveStickerUp(stickerIndex))
                                                 },
-                                                enabled = !isOperationInProgress && stickerIndex > 0
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.KeyboardArrowUp,
-                                                    contentDescription = stringResource(Res.string.reorder_move_up)
-                                                )
-                                            }
-                                            IconButton(
+                                                enabled = !isOperationInProgress && stickerIndex > 0,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            ReorderIconButton(
+                                                icon = Icons.Default.KeyboardArrowDown,
+                                                contentDescription = stringResource(Res.string.reorder_move_down),
                                                 onClick = {
                                                     onIntent(CreatePackIntent.MoveStickerDown(stickerIndex))
                                                 },
                                                 enabled = !isOperationInProgress &&
-                                                    stickerIndex < state.stickers.lastIndex
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.KeyboardArrowDown,
-                                                    contentDescription = stringResource(Res.string.reorder_move_down)
-                                                )
-                                            }
+                                                    stickerIndex < state.stickers.lastIndex,
+                                                modifier = Modifier.weight(1f)
+                                            )
                                         }
                                     }
                                 }
