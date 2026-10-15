@@ -1,5 +1,6 @@
 package di
 
+import com.setiker.app.MainActivityHolder
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -20,6 +21,9 @@ import data.util.AndroidOnDeviceImageProcessor
 import data.util.OnDeviceImageProcessor
 import domain.actions.AndroidPackActions
 import domain.actions.PackActions
+import data.billing.PlatformBillingStore
+import data.auth.AndroidGoogleSignInGateway
+import data.auth.GoogleSignInGateway
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.Module
 import org.koin.dsl.module
@@ -58,4 +62,7 @@ actual fun platformModule(): Module = module {
     single { NetworkMonitor(androidContext()) }
     single { AiBackgroundScheduler(androidContext()) }
     single { AiNotificationHelper(androidContext()) }
+    single { PlatformBillingStore { MainActivityHolder.current } }
+    single<GoogleSignInGateway> { AndroidGoogleSignInGateway() }
+    single<data.auth.AppleSignInGateway> { data.auth.UnavailableAppleSignInGateway() }
 }

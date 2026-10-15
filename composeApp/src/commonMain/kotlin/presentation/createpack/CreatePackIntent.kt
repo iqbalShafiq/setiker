@@ -8,6 +8,8 @@ sealed interface CreatePackIntent {
     data class AddSticker(val imagePath: String) : CreatePackIntent
     data class AddAnimatedDraft(val draft: DraftSticker) : CreatePackIntent
     data class RemoveSticker(val index: Int) : CreatePackIntent
+    data class MoveStickerUp(val index: Int) : CreatePackIntent
+    data class MoveStickerDown(val index: Int) : CreatePackIntent
     data class UpdateGeneratePrompt(val prompt: String) : CreatePackIntent
     data class UpdateGenerateInputImage(val path: String?) : CreatePackIntent
     data class UpdateGridSplitSource(val path: String) : CreatePackIntent
@@ -39,6 +41,13 @@ sealed interface CreatePackIntent {
     data object DismissTrayGalleryCropPrompt : CreatePackIntent
     data class RestoreWorkspaceDraft(val draftId: String) : CreatePackIntent
     data object PublishToExplore : CreatePackIntent
+    data object AcceptContentPolicy : CreatePackIntent
+    data object DismissContentPolicy : CreatePackIntent
     data object OpenPresetPicker : CreatePackIntent
     data object DismissPresetPicker : CreatePackIntent
+    data object ShowAiOutputReport : CreatePackIntent
+    data object DismissAiOutputReport : CreatePackIntent
+    data class SelectAiOutputReportReason(val reason: String) : CreatePackIntent
+    data class UpdateAiOutputReportDetails(val value: String) : CreatePackIntent
+    data object SubmitAiOutputReport : CreatePackIntent
 }

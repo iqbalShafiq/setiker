@@ -37,4 +37,18 @@ class AiJobJsonTest {
         assertTrue(retryable)
         assertEquals(domain.model.aijob.AiJobFailureKind.NETWORK, kind)
     }
+
+    @Test
+    fun failureClassifierTreatsServerConfigErrorsAsServerFailures() {
+        val (seedKind, seedRetryable) = AiJobFailureClassifier.classify(
+            IllegalStateException("AiModel row for role 'agent' is missing — run `prisma db seed` first.")
+        )
+        assertEquals(domain.model.aijob.AiJobFailureKind.SERVER, seedKind)
+        assertTrue(seedRetryable)
+
+        val (keyKind, _) = AiJobFailureClassifier.classify(
+            IllegalStateException("AGENT_API_KEY is required for AI features")
+        )
+        assertEquals(domain.model.aijob.AiJobFailureKind.SERVER, keyKind)
+    }
 }

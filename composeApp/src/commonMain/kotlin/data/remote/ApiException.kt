@@ -5,5 +5,6 @@ import domain.error.AppException
 
 class ApiException(
     code: AppErrorCode,
-    message: String? = null
+    message: String? = null,
+    val subcode: String? = null
 ) : AppException(code, message)

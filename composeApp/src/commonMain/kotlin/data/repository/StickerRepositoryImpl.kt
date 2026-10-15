@@ -11,6 +11,7 @@ import data.sync.SyncManager
 import data.sync.createDeleteStickerSyncOperation
 import data.sync.createPackSyncOperation
 import data.sync.createPackVisibilitySyncOperation
+import data.sync.createReorderStickersSyncOperation
 import data.sync.normalizePackVisibilityForStorage
 import data.sync.resolvePackSaveSyncTarget
 import data.sync.shouldSyncPackWithCloud
@@ -258,6 +259,64 @@ class StickerRepositoryImpl(
         syncManager?.pushPackOperations(packId, cloudPackId)
     }
 
+    override suspend fun reorderStickers(packId: String, fromIndex: Int, toIndex: Int) = withContext(Dispatchers.Default) {
+        if (fromIndex == toIndex) return@withContext
+        val stickers = stickerDao.getByPackId(packId).sortedBy { it.sortOrder }.toMutableList()
+        if (fromIndex !in stickers.indices || toIndex !in stickers.indices) return@withContext
+        val moved = stickers.removeAt(fromIndex)
+        stickers.add(toIndex, moved)
+        applyOrderedStickerEntities(packId, stickers)
+    }
+
+    override suspend fun applyStickerOrder(packId: String, orderedImageFiles: List<String>) =
+        withContext(Dispatchers.Default) {
+            if (orderedImageFiles.isEmpty()) return@withContext
+            val byFile = stickerDao.getByPackId(packId).associateBy { it.imageFile }
+            val ordered = orderedImageFiles.mapNotNull { byFile[it] }
+            if (ordered.size != orderedImageFiles.size) return@withContext
+            applyOrderedStickerEntities(packId, ordered)
+        }
+
+    private suspend fun applyOrderedStickerEntities(
+        packId: String,
+        ordered: List<StickerEntity>
+    ) {
+        ordered.forEachIndexed { index, sticker ->
+            if (sticker.sortOrder != index) {
+                stickerDao.insert(sticker.copy(sortOrder = index))
+            }
+        }
+        val pack = packDao.getById(packId) ?: return
+        val now = Clock.System.now().toEpochMilliseconds()
+        packDao.update(pack.copy(updatedAt = now))
+
+        if (authManager?.isAuthenticated() != true) return
+        val cloudPackId = pack.cloudId
+        if (cloudPackId.isNullOrBlank() || !shouldSyncPackWithCloud(pack, authManager.getUser()?.id)) {
+            return
+        }
+        val reordered = stickerDao.getByPackId(packId).sortedBy { it.sortOrder }
+        if (reordered.any { it.cloudId.isNullOrBlank() }) {
+            markPackDirty(pack)
+            syncManager?.pushPackOperations(packId, cloudPackId)
+            return
+        }
+        syncManager?.enqueue(
+            createReorderStickersSyncOperation(
+                cloudPackId = cloudPackId,
+                stickerOrders = reordered.mapIndexed { index, sticker ->
+                    data.remote.model.StickerOrderItem(
+                        stickerId = sticker.cloudId!!,
+                        order = index
+                    )
+                },
+                id = Uuid.random().toString(),
+                createdAt = now,
+            )
+        )
+        syncManager?.pushPackOperations(packId, cloudPackId)
+    }
+
     private suspend fun markPackDirty(pack: StickerPackEntity) {
         packDao.update(
             pack.copy(
@@ -290,7 +349,8 @@ class StickerRepositoryImpl(
         decorations = parseDecorations(decorationsJson),
         isAnimated = isAnimated,
         sourceVideoFile = sourceVideoFile,
-        frameDecorations = parseFrameDecorations(frameDecorationsJson)
+        frameDecorations = parseFrameDecorations(frameDecorationsJson),
+        cloudId = cloudId
     )
 
     private fun parseDecorations(raw: String?): List<StickerDecoration> {

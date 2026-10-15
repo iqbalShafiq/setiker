@@ -1,5 +1,6 @@
 package presentation.explore
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,7 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -54,6 +54,8 @@ import data.remote.model.userHasLiked
 import data.remote.model.userHasSaved
 import data.remote.resolveApiUrl
 import org.jetbrains.compose.resources.stringResource
+import presentation.common.ContentStateAnimations
+import presentation.common.ExploreBodyPhase
 import presentation.components.AppIllustration
 import presentation.components.AppPrimaryButton
 import presentation.components.AppTopBar
@@ -219,10 +221,23 @@ fun ExploreScreen(
                         )
                     }
                 }
-                when {
-                    state.requiresLogin -> {
-                        item("sign_in") {
-                            EmptyState(
+                item("list_body") {
+                    val bodyPhase = when {
+                        state.requiresLogin -> ExploreBodyPhase.SignIn
+                        state.isLoading && state.packs.isEmpty() -> ExploreBodyPhase.Loading
+                        state.loadFailed -> ExploreBodyPhase.Error
+                        state.listPacks.isEmpty() && !state.isLoading && !state.showFeaturedSection ->
+                            ExploreBodyPhase.Empty
+                        else -> ExploreBodyPhase.Content
+                    }
+                    AnimatedContent(
+                        targetState = bodyPhase,
+                        transitionSpec = { with(ContentStateAnimations) { exploreBody() } },
+                        label = "explore_body_phase",
+                        modifier = Modifier.fillMaxWidth()
+                    ) { current ->
+                        when (current) {
+                            ExploreBodyPhase.SignIn -> EmptyState(
                                 title = stringResource(Res.string.explore_sign_in_title),
                                 description = stringResource(Res.string.explore_sign_in_desc),
                                 illustration = AppIllustration.SearchEmpty,
@@ -234,21 +249,13 @@ fun ExploreScreen(
                                     )
                                 }
                             )
-                        }
-                    }
-                    state.isLoading && state.packs.isEmpty() -> {
-                        item("loading") {
-                            LoadingIndicator(
+                            ExploreBodyPhase.Loading -> LoadingIndicator(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(240.dp),
                                 illustration = AppIllustration.LoadingState
                             )
-                        }
-                    }
-                    state.loadFailed -> {
-                        item("error") {
-                            EmptyState(
+                            ExploreBodyPhase.Error -> EmptyState(
                                 title = stringResource(Res.string.error_load_explore_failed),
                                 description = stringResource(Res.string.no_search_results_desc),
                                 illustration = AppIllustration.ErrorState,
@@ -260,62 +267,59 @@ fun ExploreScreen(
                                     )
                                 }
                             )
-                        }
-                    }
-                    state.listPacks.isEmpty() && !state.isLoading && !state.showFeaturedSection -> {
-                        item("empty") {
-                            val (title, desc) = emptyStateForFeed(state.feed)
-                            EmptyState(
-                                title = title,
-                                description = desc,
-                                illustration = AppIllustration.SearchEmpty,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    }
-                    else -> {
-                        if (state.showFeaturedSection && state.listPacks.isNotEmpty()) {
-                            item("packs_section_title") {
-                                ScreenSectionTitle(
-                                    text = stringResource(Res.string.explore_section_more_packs),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 4.dp)
+                            ExploreBodyPhase.Empty -> {
+                                val (title, desc) = emptyStateForFeed(state.feed)
+                                EmptyState(
+                                    title = title,
+                                    description = desc,
+                                    illustration = AppIllustration.SearchEmpty,
+                                    modifier = Modifier.fillMaxWidth()
                                 )
                             }
-                        }
-                        items(state.listPacks, key = { it.id }) { pack ->
-                            PublicPackCard(
-                                pack = pack,
-                                showSocialActions = state.isAuthenticated,
-                                onClick = { onIntent(ExploreIntent.OpenPack(pack.id)) },
-                                onCreatorClick = pack.owner?.id?.let { ownerId ->
-                                    { onIntent(ExploreIntent.OpenCreator(ownerId)) }
-                                },
-                                onToggleLike = { onIntent(ExploreIntent.ToggleLike(pack.id)) },
-                                onToggleSave = { onIntent(ExploreIntent.ToggleSave(pack.id)) },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                        if (state.isLoadingMore) {
-                            item("pagination_loader") {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 12.dp),
-                                    horizontalArrangement = Arrangement.Center
+                            ExploreBodyPhase.Content -> {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(22.dp),
-                                        strokeWidth = 2.dp,
-                                        color = AccentCoral
-                                    )
-                                }
-                            }
-                        } else if (state.canLoadMore) {
-                            item("pagination_trigger") {
-                                LaunchedEffect(state.page, state.sort, state.feed) {
-                                    onIntent(ExploreIntent.LoadMore)
+                                    if (state.showFeaturedSection && state.listPacks.isNotEmpty()) {
+                                        ScreenSectionTitle(
+                                            text = stringResource(Res.string.explore_section_more_packs),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(top = 4.dp)
+                                        )
+                                    }
+                                    state.listPacks.forEach { pack ->
+                                        PublicPackCard(
+                                            pack = pack,
+                                            showSocialActions = state.isAuthenticated,
+                                            onClick = { onIntent(ExploreIntent.OpenPack(pack.id)) },
+                                            onCreatorClick = pack.owner?.id?.let { ownerId ->
+                                                { onIntent(ExploreIntent.OpenCreator(ownerId)) }
+                                            },
+                                            onToggleLike = { onIntent(ExploreIntent.ToggleLike(pack.id)) },
+                                            onToggleSave = { onIntent(ExploreIntent.ToggleSave(pack.id)) },
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
+                                    if (state.isLoadingMore) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 12.dp),
+                                            horizontalArrangement = Arrangement.Center
+                                        ) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(22.dp),
+                                                strokeWidth = 2.dp,
+                                                color = AccentCoral
+                                            )
+                                        }
+                                    } else if (state.canLoadMore) {
+                                        LaunchedEffect(state.page, state.sort, state.feed) {
+                                            onIntent(ExploreIntent.LoadMore)
+                                        }
+                                    }
                                 }
                             }
                         }

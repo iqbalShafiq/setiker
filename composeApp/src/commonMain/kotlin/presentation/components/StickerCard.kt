@@ -1,8 +1,10 @@
 package presentation.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -40,11 +42,13 @@ import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.delete_sticker
 import setiker.composeapp.generated.resources.sticker_fallback
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun StickerCard(
     sticker: Sticker,
     onClick: () -> Unit,
     onDeleteClick: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
     showDecorations: Boolean = false,
     modifier: Modifier = Modifier
 ) {
@@ -68,7 +72,13 @@ fun StickerCard(
                 cornerRadius = NeubrutalCardRadius,
                 highlightColor = neubrutalGlossyHighlightColor()
             )
-            .clickable(onClick = onClick)
+            .then(
+                if (onLongClick != null) {
+                    Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick)
+                } else {
+                    Modifier.clickable(onClick = onClick)
+                }
+            )
             .padding(4.dp)
     ) {
         AsyncImage(

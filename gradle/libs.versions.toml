@@ -31,6 +31,10 @@ androidx-core = "1.15.0"
 androidx-core-splashscreen = "1.2.0"
 onnxruntimeAndroid = "1.25.1"
 mockk = "1.13.12"
+billing = "7.1.1"
+reorderable = "3.1.0"
+credentials = "1.5.0"
+googleid = "1.1.1"
 
 [libraries]
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqliteBundled" }
@@ -81,6 +85,11 @@ androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", versi
 onnxruntime-android = { module = "com.microsoft.onnxruntime:onnxruntime-android", version.ref = "onnxruntimeAndroid" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+billing-ktx = { module = "com.android.billingclient:billing-ktx", version.ref = "billing" }
+reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
+androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
+androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
+googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

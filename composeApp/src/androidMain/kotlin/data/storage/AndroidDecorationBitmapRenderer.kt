@@ -25,7 +25,9 @@ import kotlin.coroutines.resume
 
 /**
  * Renders [decorations] with the same Compose stack as the editor overlay
- * ([ReadOnlyDecorationOverlay]) into a transparent ARGB bitmap.
+ * ([ReadOnlyDecorationOverlay]) into a transparent ARGB bitmap when a live Activity
+ * window is available; otherwise falls back to a headless Canvas path so background
+ * AI jobs (WorkManager) can finish after the user leaves the app.
  */
 internal object AndroidDecorationBitmapRenderer {
 
@@ -36,14 +38,37 @@ internal object AndroidDecorationBitmapRenderer {
         decorations: List<StickerDecoration>
     ): Bitmap {
         require(width > 0 && height > 0)
-        val activity = ForegroundActivityProvider.current()
-            ?: context.findActivity()
-            ?: error(
-                "Cannot render sticker decorations: no foreground Activity. " +
-                    "Open the editor and try saving again."
-            )
+        if (decorations.isEmpty()) {
+            return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        }
 
+        val activity = ForegroundActivityProvider.current()
+            ?: ForegroundActivityProvider.lastAlive()
+            ?: context.findActivity()
+
+        if (activity != null && !activity.isFinishing && !activity.isDestroyed) {
+            runCatching {
+                return renderWithCompose(activity, width, height, decorations)
+            }
+            // Fall through to headless if window attach / preDraw fails (backgrounded Activity).
+        }
+
+        return AndroidHeadlessDecorationRenderer.render(
+            context = context.applicationContext,
+            width = width,
+            height = height,
+            decorations = decorations
+        )
+    }
+
+    private suspend fun renderWithCompose(
+        activity: Activity,
+        width: Int,
+        height: Int,
+        decorations: List<StickerDecoration>
+    ): Bitmap {
         val contentRoot = activity.findViewById<ViewGroup>(android.R.id.content)
+            ?: error("Activity content root missing")
         val composeView = ComposeView(activity).apply {
             visibility = View.INVISIBLE
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS

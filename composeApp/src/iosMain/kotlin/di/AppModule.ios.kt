@@ -20,6 +20,11 @@ import domain.actions.IosPackActions
 import domain.actions.PackActions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import data.billing.PlatformBillingStore
+import data.auth.AppleSignInGateway
+import data.auth.GoogleSignInGateway
+import data.auth.IosAppleSignInGateway
+import data.auth.IosGoogleSignInGateway
 import org.koin.core.module.Module
 import org.koin.dsl.module
 import platform.Foundation.NSDocumentDirectory
@@ -55,4 +60,7 @@ actual fun platformModule(): Module = module {
     single<DataStore<Preferences>> { createIOSDataStore() }
     single { NetworkMonitor() }
     single { AiBackgroundScheduler() }
+    single { PlatformBillingStore() }
+    single<GoogleSignInGateway> { IosGoogleSignInGateway() }
+    single<AppleSignInGateway> { IosAppleSignInGateway() }
 }

@@ -28,10 +28,25 @@ object AiJobFailureClassifier {
             message.contains("not found") && message.contains("file") ->
                 AiJobFailureKind.MISSING_FILE to false
 
+            // Server-side AI configuration problems (missing gateway key or model
+            // catalog row) arrive with actionable messages; they must not be
+            // mistaken for local ONNX/model failures below.
+            message.contains("prisma db seed") ||
+                message.contains("ai_not_configured") ||
+                message.contains("ai_model_not_configured") ||
+                message.contains("agent_api_key") ->
+                AiJobFailureKind.SERVER to true
+
             message.contains("onnx") ||
                 message.contains("model") ||
                 message.contains("background") && message.contains("processor") ->
                 AiJobFailureKind.LOCAL_PROCESSOR to false
+
+            // Foreground-only decoration render used to fail when the user left the app;
+            // keep classified as local so retries are possible after headless fallback.
+            message.contains("no foreground activity") ||
+                message.contains("cannot render sticker decorations") ->
+                AiJobFailureKind.LOCAL_PROCESSOR to true
 
             message.contains("401") ||
                 message.contains("403") ||

@@ -21,6 +21,16 @@ data class PackDetailState(
     val cloudShareSheetOpen: Boolean = false,
     val cloudShareLinksLoading: Boolean = false,
     val cloudShareLinks: List<CloudStickerPackShareLink> = emptyList(),
+    val stickerShareSheetOpen: Boolean = false,
+    val stickerShareIndex: Int? = null,
+    val stickerShareTab: StickerShareTab = StickerShareTab.Links,
+    val stickerShareLinksLoading: Boolean = false,
+    val stickerShareLinks: List<data.remote.model.CloudStickerShareLink> = emptyList(),
+    val stickerCollaboratorsLoading: Boolean = false,
+    val stickerCollaborators: List<data.remote.model.StickerCollaborator> = emptyList(),
+    val stickerCollaboratorSearchQuery: String = "",
+    val stickerCollaboratorSearchResults: List<UserSearchResult> = emptyList(),
+    val stickerCollaboratorInvitePermission: String = "view",
     val collaboratorsSheetOpen: Boolean = false,
     val collaboratorsLoading: Boolean = false,
     val collaborators: List<PackCollaborator> = emptyList(),
@@ -30,10 +40,16 @@ data class PackDetailState(
     val visibilityDialog: VisibilityDialog? = null,
     val isUpdatingVisibility: Boolean = false,
     val showDuplicateDialog: Boolean = false,
-    val isDuplicating: Boolean = false
+    val isDuplicating: Boolean = false,
+    val showContentPolicySheet: Boolean = false
 )
 
 enum class VisibilityDialog {
     MakePublic,
     Unpublish
+}
+
+enum class StickerShareTab {
+    Links,
+    People
 }

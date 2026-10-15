@@ -3,6 +3,7 @@ package presentation.editor
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import data.aijob.AiJobManager
+import data.remote.ExploreApiRepository
 import data.remote.StickerApiRepository
 import data.storage.StickerFileStorage
 import domain.model.aijob.AiJobOrigin
@@ -21,6 +22,7 @@ import presentation.aijob.AiJobEnqueueHelper
 import presentation.aijob.DraftResultApplier
 import presentation.aijob.WorkspaceDraftFactory
 import presentation.aijob.toSnapshot
+import presentation.moderation.AiOutputReportSupport
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 import data.util.EmojiPreferences
@@ -62,6 +64,7 @@ import setiker.composeapp.generated.resources.error_failed_save_sticker
 import setiker.composeapp.generated.resources.error_pack_id_missing
 import setiker.composeapp.generated.resources.error_prompt_required
 import setiker.composeapp.generated.resources.error_select_image
+import setiker.composeapp.generated.resources.report_submitted
 
 @OptIn(ExperimentalUuidApi::class)
 class EditorViewModel(
@@ -73,7 +76,8 @@ class EditorViewModel(
     private val aiJobManager: AiJobManager,
     private val enqueueHelper: AiJobEnqueueHelper,
     private val draftResultApplier: DraftResultApplier,
-    private val aiQuotaRepository: AiQuotaRepository
+    private val aiQuotaRepository: AiQuotaRepository,
+    private val exploreApiRepository: ExploreApiRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(EditorState())
@@ -301,6 +305,33 @@ class EditorViewModel(
                     if (it.generatedPreview.isEmpty() || it.isApiLoading) it
                     else it.copy(generatedResultsSheetVisible = true)
                 }
+            }
+            EditorIntent.ShowAiOutputReport -> _state.update {
+                it.copy(showAiOutputReportSheet = true, aiOutputReportReason = null, aiOutputReportDetails = "")
+            }
+            EditorIntent.DismissAiOutputReport -> _state.update { it.copy(showAiOutputReportSheet = false) }
+            is EditorIntent.SelectAiOutputReportReason -> _state.update { it.copy(aiOutputReportReason = intent.reason) }
+            is EditorIntent.UpdateAiOutputReportDetails -> _state.update { it.copy(aiOutputReportDetails = intent.value) }
+            EditorIntent.SubmitAiOutputReport -> submitAiOutputReport()
+        }
+    }
+
+    private fun submitAiOutputReport() {
+        val reason = _state.value.aiOutputReportReason ?: return
+        viewModelScope.launch {
+            _state.update { it.copy(isSubmittingAiOutputReport = true) }
+            runCatching {
+                AiOutputReportSupport.submitLatest(
+                    exploreApiRepository = exploreApiRepository,
+                    reason = reason,
+                    details = _state.value.aiOutputReportDetails.takeIf { it.isNotBlank() },
+                )
+            }.onSuccess {
+                _state.update { it.copy(isSubmittingAiOutputReport = false, showAiOutputReportSheet = false) }
+                _effect.send(EditorEffect.ShowMessage(UiText.StringRes(Res.string.report_submitted)))
+            }.onFailure { error ->
+                _state.update { it.copy(isSubmittingAiOutputReport = false) }
+                _effect.send(EditorEffect.ShowError(error.toUiText(Res.string.error_failed_generate_sticker)))
             }
         }
     }

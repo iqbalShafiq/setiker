@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import presentation.common.UiText
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.block_creator_success
 
 class CreatorProfileViewModel(
     private val exploreApiRepository: ExploreApiRepository
@@ -40,6 +42,13 @@ class CreatorProfileViewModel(
             CreatorProfileIntent.NavigateBack -> {
                 viewModelScope.launch { _effect.send(CreatorProfileEffect.NavigateBack) }
             }
+            CreatorProfileIntent.ShowBlockCreatorConfirm -> {
+                _state.update { it.copy(showBlockCreatorConfirm = true) }
+            }
+            CreatorProfileIntent.DismissBlockCreatorConfirm -> {
+                _state.update { it.copy(showBlockCreatorConfirm = false) }
+            }
+            CreatorProfileIntent.ConfirmBlockCreator -> blockCreator()
         }
     }
 
@@ -99,5 +108,35 @@ class CreatorProfileViewModel(
 
     private fun restoreFollowSnapshot(snapshot: CreatorProfileState) {
         _state.update { it.copy(profile = snapshot.profile) }
+    }
+
+    private fun blockCreator() {
+        val profile = _state.value.profile ?: return
+        viewModelScope.launch {
+            _state.update { it.copy(isBlockingCreator = true) }
+            runCatching {
+                exploreApiRepository.blockUser(profile.id)
+            }.onSuccess {
+                _state.update {
+                    it.copy(
+                        isBlockingCreator = false,
+                        showBlockCreatorConfirm = false
+                    )
+                }
+                _effect.send(
+                    CreatorProfileEffect.ShowMessage(
+                        UiText.StringRes(Res.string.block_creator_success)
+                    )
+                )
+                _effect.send(CreatorProfileEffect.NavigateBack)
+            }.onFailure { error ->
+                _state.update { it.copy(isBlockingCreator = false, showBlockCreatorConfirm = false) }
+                _effect.send(
+                    CreatorProfileEffect.ShowMessage(
+                        UiText.DynamicString(error.message ?: "Block failed")
+                    )
+                )
+            }
+        }
     }
 }

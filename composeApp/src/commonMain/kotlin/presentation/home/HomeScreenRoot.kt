@@ -4,9 +4,12 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import org.koin.compose.viewmodel.koinViewModel
+import presentation.common.QuotaExceededBottomSheet
 import presentation.common.resolveOrDefault
 
 @Composable
@@ -20,11 +23,13 @@ fun HomeScreenRoot(
     onVideoStickerPackClick: (String) -> Unit,
     onAiJobsClick: () -> Unit = {},
     onTopBarAiJobsClick: () -> Unit = {},
+    onPaywallClick: () -> Unit = {},
     showOfflineBanner: Boolean = false,
     viewModel: HomeViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showQuotaExceeded by remember { mutableStateOf(false) }
 
     LaunchedEffect(viewModel.effect) {
         viewModel.effect.collect { effect ->
@@ -44,9 +49,17 @@ fun HomeScreenRoot(
                 is HomeEffect.NavigateToVideoStickerPack -> onVideoStickerPackClick(effect.videoPath)
                 HomeEffect.NavigateToAiJobs -> onAiJobsClick()
                 HomeEffect.NavigateToAiJobsFromTopBar -> onTopBarAiJobsClick()
+                HomeEffect.ShowQuotaExceeded -> showQuotaExceeded = true
+                HomeEffect.NavigateToPaywall -> onPaywallClick()
             }
         }
     }
+
+    QuotaExceededBottomSheet(
+        visible = showQuotaExceeded,
+        onDismiss = { showQuotaExceeded = false },
+        onGetMore = onPaywallClick
+    )
 
     HomeScreen(
         state = state,

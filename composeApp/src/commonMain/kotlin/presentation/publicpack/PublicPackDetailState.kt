@@ -15,5 +15,11 @@ data class PublicPackDetailState(
     val showImportDialog: Boolean = false,
     val importPointCost: Int = 0,
     val pointsRemaining: Int = 0,
-    val importOwnerCredit: Int = 0
+    val importOwnerCredit: Int = 0,
+    val showReportSheet: Boolean = false,
+    val reportReason: String? = null,
+    val reportDetails: String = "",
+    val isSubmittingReport: Boolean = false,
+    val showBlockCreatorConfirm: Boolean = false,
+    val isBlockingCreator: Boolean = false
 )

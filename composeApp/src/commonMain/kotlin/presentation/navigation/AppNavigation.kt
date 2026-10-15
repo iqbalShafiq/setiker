@@ -23,12 +23,16 @@ import data.preferences.UserPreferencesRepository
 import data.sync.NetworkMonitor
 import presentation.animatededitor.AnimatedEditorEffect
 import presentation.animatededitor.AnimatedEditorScreenRoot
+import presentation.auth.EditProfileScreenRoot
+import presentation.auth.ForgotPasswordScreenRoot
 import presentation.auth.LoginScreenRoot
 import presentation.auth.LoginViewModel
 import presentation.auth.ProfileScreenRoot
 import presentation.auth.ProfileViewModel
 import presentation.auth.RegisterScreenRoot
 import presentation.auth.RegisterViewModel
+import presentation.auth.ResetPasswordScreenRoot
+import presentation.blocked.BlockedUsersScreenRoot
 import presentation.createpack.CreatePackScreenRoot
 import presentation.createpack.DraftSticker
 import presentation.crop.CropScreenRoot
@@ -41,10 +45,12 @@ import presentation.history.ProcessingHistoryScreenRoot
 import presentation.home.HomeScreenRoot
 import presentation.packdetail.PackDetailScreenRoot
 import presentation.publicpack.PublicPackDetailScreenRoot
+import presentation.purchasehistory.PurchaseHistoryScreenRoot
 import presentation.sync.SyncScreenRoot
 import presentation.sync.SyncViewModel
 import presentation.onboarding.OnboardingScreenRoot
 import presentation.settings.SettingsScreenRoot
+import presentation.legal.LegalDocumentScreenRoot
 import presentation.sharepreview.SharePreviewScreenRoot
 import presentation.videocrop.VideoCropScreenRoot
 import presentation.videostickerpack.VideoStickerPackScreenRoot
@@ -184,7 +190,19 @@ fun AppNavigation(
                     navBottomUp("onboarding") {
                         launchSingleTop = true
                     }
-                }
+                },
+                onPurchaseHistory = { navBottomUp("purchaseHistory") }
+            )
+        }
+
+        composable(
+            route = "legal/{docType}",
+            arguments = listOf(navArgument("docType") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val docType = backStackEntry.arguments?.getString("docType") ?: "PRIVACY"
+            LegalDocumentScreenRoot(
+                docType = docType,
+                onBack = { navController.popBackStack() }
             )
         }
 
@@ -213,6 +231,7 @@ fun AppNavigation(
                 },
                 onAiJobsClick = { navBottomUp("aiJobs") },
                 onTopBarAiJobsClick = { navTopDown("aiJobs") },
+                onPaywallClick = { navBottomUp("paywall") },
                 showOfflineBanner = !isOnline
             )
         }
@@ -255,9 +274,41 @@ fun AppNavigation(
                  },
                  onNavigateToRegister = {
                      navBottomUp("register")
+                 },
+                 onNavigateToForgotPassword = {
+                     navBottomUp("forgotPassword")
                  }
              )
          }
+
+        composable("forgotPassword") {
+            ForgotPasswordScreenRoot(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = "resetPassword?token={token}",
+            arguments = listOf(
+                navArgument("token") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                }
+            ),
+            deepLinks = listOf(
+                navDeepLink { uriPattern = "setiker://auth/reset-password?token={token}" }
+            )
+        ) { entry ->
+            val token = entry.arguments?.getString("token").orEmpty()
+            ResetPasswordScreenRoot(
+                token = token,
+                onDone = {
+                    navBottomUp("login") {
+                        popUpTo("home") { inclusive = false }
+                    }
+                }
+            )
+        }
  
         composable("register") {
                val viewModel: RegisterViewModel = koinViewModel()
@@ -274,6 +325,31 @@ fun AppNavigation(
                )
            }
   
+        composable("paywall") {
+            presentation.billing.PaywallScreenRoot(
+                onBack = { navController.navigateUp() },
+                onNavigateToPurchaseHistory = { navBottomUp("purchaseHistory") }
+            )
+        }
+
+        composable("purchaseHistory") {
+            PurchaseHistoryScreenRoot(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("editProfile") {
+            EditProfileScreenRoot(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("blockedUsers") {
+            BlockedUsersScreenRoot(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
         composable("profile") {
             val viewModel: ProfileViewModel = koinViewModel()
             ProfileScreenRoot(
@@ -313,7 +389,15 @@ fun AppNavigation(
                     } else {
                         navBottomUp("login")
                     }
-                }
+                },
+                onNavigatePaywall = { navBottomUp("paywall") },
+                onOpenPrivacy = { navBottomUp("legal/PRIVACY") },
+                onOpenTerms = { navBottomUp("legal/TERMS") },
+                onOpenRetention = { navBottomUp("legal/RETENTION") },
+                onOpenPermissions = { navBottomUp("legal/PERMISSIONS") },
+                onEditProfile = { navBottomUp("editProfile") },
+                onBlockedUsers = { navBottomUp("blockedUsers") },
+                onOpenAccountDeletion = { navBottomUp("legal/ACCOUNT_DELETION") }
             )
         }
 

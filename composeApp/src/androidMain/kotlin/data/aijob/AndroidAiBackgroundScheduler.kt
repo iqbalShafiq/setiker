@@ -6,6 +6,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import permission.NotificationPermissionGate
 
 actual class AiBackgroundScheduler(
     private val context: Context
@@ -13,6 +14,8 @@ actual class AiBackgroundScheduler(
     private val workManager = WorkManager.getInstance(context)
 
     actual fun scheduleJob(jobId: String, requiresNetwork: Boolean) {
+        // Only educate / request when permission is actually missing (don't spam the sheet).
+        NotificationPermissionGate.requestWithRationale(context)
         val constraints = Constraints.Builder().apply {
             if (requiresNetwork) {
                 setRequiredNetworkType(NetworkType.CONNECTED)

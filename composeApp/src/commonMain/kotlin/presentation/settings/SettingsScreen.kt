@@ -13,11 +13,14 @@ import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -25,8 +28,11 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveLocal
+import presentation.common.resolveOrDefault
 import presentation.components.AiQuotaSummary
 import presentation.components.AppDialog
+import presentation.components.AppPrimaryButton
+import presentation.components.DeleteAccountConfirmDialog
 import presentation.components.AppIllustration
 import presentation.components.AppIllustrationImage
 import presentation.components.AppPasswordTextField
@@ -40,17 +46,18 @@ import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.back_content_description
+import setiker.composeapp.generated.resources.paywall_purchase_history
 import setiker.composeapp.generated.resources.settings_ai_usage_section
 import setiker.composeapp.generated.resources.settings_change_password
 import setiker.composeapp.generated.resources.settings_change_password_title
 import setiker.composeapp.generated.resources.settings_confirm_password
 import setiker.composeapp.generated.resources.settings_current_password
 import setiker.composeapp.generated.resources.settings_delete_account
-import setiker.composeapp.generated.resources.settings_delete_confirm_action
-import setiker.composeapp.generated.resources.settings_delete_confirm_message
-import setiker.composeapp.generated.resources.settings_delete_confirm_title
 import setiker.composeapp.generated.resources.settings_new_password
 import setiker.composeapp.generated.resources.settings_save_password_confirm_message
+import setiker.composeapp.generated.resources.settings_set_password
+import setiker.composeapp.generated.resources.settings_set_password_message
+import setiker.composeapp.generated.resources.settings_set_password_title
 import setiker.composeapp.generated.resources.settings_show_onboarding
 import setiker.composeapp.generated.resources.settings_title
 import setiker.composeapp.generated.resources.settings_username
@@ -61,28 +68,36 @@ fun SettingsScreenRoot(
     onBack: () -> Unit,
     onAccountDeleted: () -> Unit,
     onShowOnboarding: () -> Unit,
+    onPurchaseHistory: () -> Unit = {},
     viewModel: SettingsViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
     val openUrl = rememberUrlLauncher()
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
                 SettingsEffect.NavigateBack -> onBack()
                 SettingsEffect.NavigateToOnboarding -> onShowOnboarding()
+                SettingsEffect.NavigateToPurchaseHistory -> onPurchaseHistory()
                 is SettingsEffect.OpenUrl -> openUrl(effect.url)
                 SettingsEffect.AccountDeleted -> onAccountDeleted()
-                is SettingsEffect.ShowMessage -> Unit
+                is SettingsEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
             }
         }
     }
-    SettingsScreen(state = state, onIntent = viewModel::onIntent)
+    SettingsScreen(
+        state = state,
+        onIntent = viewModel::onIntent,
+        snackbarHostState = snackbarHostState
+    )
 }
 
 @Composable
 fun SettingsScreen(
     state: SettingsState,
-    onIntent: (SettingsIntent) -> Unit
+    onIntent: (SettingsIntent) -> Unit,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
     val canSavePassword = state.currentPassword.isNotBlank() &&
         state.newPassword.isNotBlank() &&
@@ -101,16 +116,21 @@ fun SettingsScreen(
     }
 
     if (state.showDeleteConfirm) {
-        AppDialog(
-            title = stringResource(Res.string.settings_delete_confirm_title),
-            message = stringResource(Res.string.settings_delete_confirm_message),
-            confirmText = stringResource(Res.string.settings_delete_confirm_action),
+        DeleteAccountConfirmDialog(
+            password = state.deleteConfirmPassword,
+            confirmPhrase = state.deleteConfirmPhrase,
+            onPasswordChange = { onIntent(SettingsIntent.UpdateDeleteConfirmPassword(it)) },
+            onPhraseChange = { onIntent(SettingsIntent.UpdateDeleteConfirmPhrase(it)) },
             onConfirm = { onIntent(SettingsIntent.ConfirmDeleteAccount) },
-            onDismiss = { onIntent(SettingsIntent.DismissDeleteConfirm) }
+            onDismiss = { onIntent(SettingsIntent.DismissDeleteConfirm) },
+            isLoading = state.isDeletingAccount,
+            error = state.deleteAccountError,
+            requirePassword = state.hasPassword
         )
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             AppTopBar(title = stringResource(Res.string.settings_title))
         },
@@ -137,13 +157,15 @@ fun SettingsScreen(
                     )
                 },
                 floatingActionButton = {
-                    PackBottomBarFab(
-                        icon = Icons.Default.Save,
-                        contentDescription = stringResource(Res.string.settings_change_password),
-                        onClick = { onIntent(SettingsIntent.ShowSavePasswordConfirm) },
-                        enabled = canSavePassword,
-                        isLoading = state.isChangingPassword
-                    )
+                    if (state.hasPassword) {
+                        PackBottomBarFab(
+                            icon = Icons.Default.Save,
+                            contentDescription = stringResource(Res.string.settings_change_password),
+                            onClick = { onIntent(SettingsIntent.ShowSavePasswordConfirm) },
+                            enabled = canSavePassword,
+                            isLoading = state.isChangingPassword
+                        )
+                    }
                 }
             )
         },
@@ -190,34 +212,100 @@ fun SettingsScreen(
                 )
             }
             item {
-                AppPasswordTextField(
-                    value = state.currentPassword,
-                    onValueChange = { onIntent(SettingsIntent.UpdateCurrentPassword(it)) },
-                    label = stringResource(Res.string.settings_current_password),
-                    placeholder = stringResource(Res.string.settings_current_password),
-                    imeAction = ImeAction.Next
+                AppPrimaryButton(
+                    text = stringResource(Res.string.paywall_purchase_history),
+                    onClick = { onIntent(SettingsIntent.OpenPurchaseHistory) },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !state.isChangingPassword && !state.isDeletingAccount
                 )
             }
             item {
-                AppPasswordTextField(
-                    value = state.newPassword,
-                    onValueChange = { onIntent(SettingsIntent.UpdateNewPassword(it)) },
-                    label = stringResource(Res.string.settings_new_password),
-                    placeholder = stringResource(Res.string.settings_new_password),
-                    imeAction = ImeAction.Next
+                presentation.auth.ConnectedAccountsSection(
+                    state = presentation.auth.ConnectedAccountsUiState(
+                        hasPassword = state.hasPassword,
+                        hasGoogle = state.hasGoogle,
+                        hasApple = state.hasApple,
+                        googleAvailable = state.googleAvailable,
+                        appleAvailable = state.appleAvailable,
+                        isBusy = state.isLinkingGoogle || state.isLinkingApple || state.isSettingPassword
+                    ),
+                    onLinkGoogle = { onIntent(SettingsIntent.LinkGoogle) },
+                    onUnlinkGoogle = { onIntent(SettingsIntent.UnlinkGoogle) },
+                    onLinkApple = { onIntent(SettingsIntent.LinkApple) },
+                    onUnlinkApple = { onIntent(SettingsIntent.UnlinkApple) },
+                    onSetPassword = { onIntent(SettingsIntent.ShowSetPassword) }
                 )
             }
-            item {
-                AppPasswordTextField(
-                    value = state.confirmPassword,
-                    onValueChange = { onIntent(SettingsIntent.UpdateConfirmPassword(it)) },
-                    label = stringResource(Res.string.settings_confirm_password),
-                    placeholder = stringResource(Res.string.settings_confirm_password),
-                    isError = state.changePasswordError != null,
-                    supportingText = state.changePasswordError?.let { error ->
-                        { Text(text = error.resolveLocal()) }
-                    }
-                )
+            if (state.hasPassword) {
+                item {
+                    AppPasswordTextField(
+                        value = state.currentPassword,
+                        onValueChange = { onIntent(SettingsIntent.UpdateCurrentPassword(it)) },
+                        label = stringResource(Res.string.settings_current_password),
+                        placeholder = stringResource(Res.string.settings_current_password),
+                        imeAction = ImeAction.Next
+                    )
+                }
+                item {
+                    AppPasswordTextField(
+                        value = state.newPassword,
+                        onValueChange = { onIntent(SettingsIntent.UpdateNewPassword(it)) },
+                        label = stringResource(Res.string.settings_new_password),
+                        placeholder = stringResource(Res.string.settings_new_password),
+                        imeAction = ImeAction.Next
+                    )
+                }
+                item {
+                    AppPasswordTextField(
+                        value = state.confirmPassword,
+                        onValueChange = { onIntent(SettingsIntent.UpdateConfirmPassword(it)) },
+                        label = stringResource(Res.string.settings_confirm_password),
+                        placeholder = stringResource(Res.string.settings_confirm_password),
+                        isError = state.changePasswordError != null,
+                        supportingText = state.changePasswordError?.let { error ->
+                            { Text(text = error.resolveLocal()) }
+                        }
+                    )
+                }
+            } else if (state.showSetPassword) {
+                item {
+                    Text(
+                        text = stringResource(Res.string.settings_set_password_message),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = neubrutalMutedOnSurface()
+                    )
+                }
+                item {
+                    AppPasswordTextField(
+                        value = state.newPassword,
+                        onValueChange = { onIntent(SettingsIntent.UpdateNewPassword(it)) },
+                        label = stringResource(Res.string.settings_new_password),
+                        placeholder = stringResource(Res.string.settings_new_password),
+                        imeAction = ImeAction.Next
+                    )
+                }
+                item {
+                    AppPasswordTextField(
+                        value = state.confirmPassword,
+                        onValueChange = { onIntent(SettingsIntent.UpdateConfirmPassword(it)) },
+                        label = stringResource(Res.string.settings_confirm_password),
+                        placeholder = stringResource(Res.string.settings_confirm_password),
+                        isError = state.changePasswordError != null,
+                        supportingText = state.changePasswordError?.let { error ->
+                            { Text(text = error.resolveLocal()) }
+                        }
+                    )
+                }
+                item {
+                    AppPrimaryButton(
+                        text = stringResource(Res.string.settings_set_password),
+                        onClick = { onIntent(SettingsIntent.SubmitSetPassword) },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = state.newPassword.isNotBlank() &&
+                            state.confirmPassword.isNotBlank() &&
+                            !state.isSettingPassword
+                    )
+                }
             }
             item { Spacer(modifier = Modifier.height(16.dp)) }
         }

@@ -56,6 +56,9 @@ fun EditorScreenRoot(
                 is EditorEffect.ShowError -> {
                     snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
                 }
+                is EditorEffect.ShowMessage -> {
+                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
+                }
             }
         }
     }

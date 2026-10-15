@@ -16,6 +16,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import presentation.common.UiText
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.report_submitted
 
 class ProcessingHistoryViewModel(
     private val exploreApiRepository: ExploreApiRepository,
@@ -37,6 +39,30 @@ class ProcessingHistoryViewModel(
             is ProcessingHistoryIntent.DeleteItem -> deleteItem(intent.id)
             ProcessingHistoryIntent.ClearAll -> clearAll()
             ProcessingHistoryIntent.NavigateBack -> viewModelScope.launch { _effect.send(ProcessingHistoryEffect.NavigateBack) }
+            is ProcessingHistoryIntent.ShowReport -> _state.update {
+                it.copy(showReportSheet = true, reportTargetId = intent.id, reportReason = null, reportDetails = "")
+            }
+            ProcessingHistoryIntent.DismissReport -> _state.update { it.copy(showReportSheet = false) }
+            is ProcessingHistoryIntent.SelectReportReason -> _state.update { it.copy(reportReason = intent.reason) }
+            is ProcessingHistoryIntent.UpdateReportDetails -> _state.update { it.copy(reportDetails = intent.value) }
+            ProcessingHistoryIntent.SubmitReport -> submitReport()
+        }
+    }
+
+    private fun submitReport() {
+        val id = _state.value.reportTargetId ?: return
+        val reason = _state.value.reportReason ?: return
+        viewModelScope.launch {
+            _state.update { it.copy(isSubmittingReport = true) }
+            runCatching {
+                exploreApiRepository.reportProcessingHistory(id, reason, _state.value.reportDetails.takeIf { it.isNotBlank() })
+            }.onSuccess {
+                _state.update { it.copy(isSubmittingReport = false, showReportSheet = false) }
+                _effect.send(ProcessingHistoryEffect.ShowMessage(UiText.StringRes(Res.string.report_submitted)))
+            }.onFailure { error ->
+                _state.update { it.copy(isSubmittingReport = false) }
+                _effect.send(ProcessingHistoryEffect.ShowMessage(UiText.DynamicString(error.message ?: "Report failed")))
+            }
         }
     }
 

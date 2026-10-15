@@ -8,4 +8,7 @@ sealed interface CreatorProfileIntent {
     data object ToggleFollow : CreatorProfileIntent
     data class OpenPack(val packId: String) : CreatorProfileIntent
     data object NavigateBack : CreatorProfileIntent
+    data object ShowBlockCreatorConfirm : CreatorProfileIntent
+    data object DismissBlockCreatorConfirm : CreatorProfileIntent
+    data object ConfirmBlockCreator : CreatorProfileIntent
 }

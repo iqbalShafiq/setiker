@@ -580,6 +580,11 @@ class SyncManagerImpl(
                     cloudRepo.deleteStickerFromPack(payload.stickerPackId, payload.stickerId)
                     OperationResult.Success
                 }
+                SyncOperationType.REORDER_STICKERS -> {
+                    val payload = json.decodeFromString<data.remote.model.ReorderStickersSyncPayload>(operation.payload)
+                    cloudRepo.reorderStickers(payload.stickerPackId, payload.stickerOrders)
+                    OperationResult.Success
+                }
                 else -> OperationResult.PermanentError("Operation type ${operation.type} not implemented")
             }
         } catch (e: Exception) {

@@ -67,4 +67,9 @@ sealed interface EditorIntent {
     data object ShowGeneratedResultsSheet : EditorIntent
     data object Undo : EditorIntent
     data object Redo : EditorIntent
+    data object ShowAiOutputReport : EditorIntent
+    data object DismissAiOutputReport : EditorIntent
+    data class SelectAiOutputReportReason(val reason: String) : EditorIntent
+    data class UpdateAiOutputReportDetails(val value: String) : EditorIntent
+    data object SubmitAiOutputReport : EditorIntent
 }

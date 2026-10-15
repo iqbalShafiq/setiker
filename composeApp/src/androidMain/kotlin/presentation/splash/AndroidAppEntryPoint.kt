@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import com.setiker.app.App
 import kotlinx.coroutines.delay
 import presentation.navigation.NotificationDeepLink
+import permission.NotificationPermissionHost
 import presentation.theme.SetikerTheme
 
 /**
@@ -50,6 +51,7 @@ fun AndroidAppEntryPoint(
         }
 
         if (showMainContent) {
+            NotificationPermissionHost()
             App(
                 onAddToWhatsApp = onAddToWhatsApp,
                 notificationDeepLink = notificationDeepLink,

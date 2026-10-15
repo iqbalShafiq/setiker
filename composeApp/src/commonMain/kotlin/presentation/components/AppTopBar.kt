@@ -37,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -74,7 +75,8 @@ fun NeubrutalIconButton(
     contentDescription: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    iconTint: Color = neubrutalOnSurface()
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -122,7 +124,7 @@ fun NeubrutalIconButton(
             imageVector = icon,
             contentDescription = contentDescription,
             modifier = Modifier.size(22.dp),
-            tint = if (enabled) neubrutalOnSurface() else neubrutalOnSurface().copy(alpha = 0.4f)
+            tint = if (enabled) iconTint else iconTint.copy(alpha = 0.4f)
         )
     }
 }
@@ -216,13 +218,15 @@ fun RowScope.AppTopBarActionIcon(
     icon: ImageVector,
     contentDescription: String?,
     onClick: () -> Unit,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    iconTint: Color = neubrutalOnSurface()
 ) {
     NeubrutalIconButton(
         icon = icon,
         contentDescription = contentDescription,
         onClick = onClick,
-        enabled = enabled
+        enabled = enabled,
+        iconTint = iconTint
     )
 }
 

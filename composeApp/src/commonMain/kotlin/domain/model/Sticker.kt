@@ -11,7 +11,8 @@ data class Sticker(
     val decorations: List<StickerDecoration> = emptyList(),
     val isAnimated: Boolean = false,
     val sourceVideoFile: String? = null,
-    val frameDecorations: Map<Int, List<StickerDecoration>> = emptyMap()
+    val frameDecorations: Map<Int, List<StickerDecoration>> = emptyMap(),
+    val cloudId: String? = null
 ) {
     companion object {
         const val MAX_EMOJIS = 3

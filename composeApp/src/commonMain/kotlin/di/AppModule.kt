@@ -9,12 +9,16 @@ import data.repository.CloudSyncedLocalDataCleaner
 import data.local.database.StickerDatabase
 import data.local.database.SyncOperationDao
 import data.preferences.UserPreferencesRepository
-import data.remote.AiUsageApiRepository
+import data.billing.BillingApiRepository
+import data.billing.BillingRepositoryImpl
+import data.billing.PlatformBillingStore
+import domain.billing.BillingRepository
 import data.repository.AiQuotaRepositoryImpl
 import domain.repository.AiQuotaRepository
 import data.remote.CloudStickerRepository
 import data.remote.ExploreApiRepository
 import data.remote.LegalApiRepository
+import data.remote.AiUsageApiRepository
 import data.remote.SetikerApiService
 import data.remote.StickerApiRepository
 import data.aijob.AiJobManager
@@ -33,10 +37,16 @@ import data.sync.SyncManagerImpl
 import domain.repository.StickerRepository
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.viewModelOf
+import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
+import presentation.auth.EditProfileViewModel
+import presentation.auth.ForgotPasswordViewModel
 import presentation.auth.LoginViewModel
 import presentation.auth.ProfileViewModel
 import presentation.auth.RegisterViewModel
+import presentation.auth.ResetPasswordViewModel
+import presentation.blocked.BlockedUsersViewModel
+import presentation.purchasehistory.PurchaseHistoryViewModel
 import presentation.creator.CreatorProfileViewModel
 import presentation.explore.ExploreViewModel
 import presentation.notifications.NotificationsViewModel
@@ -55,7 +65,9 @@ import presentation.sync.SyncViewModel
 import presentation.aijobs.AiJobsViewModel
 import presentation.onboarding.OnboardingViewModel
 import presentation.settings.SettingsViewModel
+import presentation.legal.LegalDocumentViewModel
 import presentation.sharepreview.SharePreviewViewModel
+import presentation.billing.PaywallViewModel
 
 expect fun platformModule(): Module
 
@@ -64,7 +76,7 @@ val appModule = module {
 
     // Repository
     single { CloudSyncedLocalDataCleaner(get(), get(), get(), get(), get()) }
-    single { AuthSessionCoordinator(get(), get()) }
+    single { AuthSessionCoordinator(get(), get(), get()) }
     single<StickerRepository> { StickerRepositoryImpl(get(), get(), get(), get(), get(), get()) }
     single { SetikerApiService(authManager = get(), authTokenRefresher = get()) }
     single { StickerApiRepository(api = get(), fileStorage = get(), onDeviceImageProcessor = get()) }
@@ -79,6 +91,8 @@ val appModule = module {
     single { ExploreApiRepository(authManager = get(), authTokenRefresher = get()) }
     single { LegalApiRepository(authManager = get(), authTokenRefresher = get()) }
     single { AiUsageApiRepository(authManager = get(), authTokenRefresher = get()) }
+    single { BillingApiRepository(authManager = get(), authTokenRefresher = get()) }
+    single<BillingRepository> { BillingRepositoryImpl(get(), get(), get(), get()) }
     single<AiQuotaRepository> { AiQuotaRepositoryImpl(get()) }
     single { UserPreferencesRepository(get()) }
     // NetworkMonitor is provided by platform-specific module
@@ -127,9 +141,22 @@ val appModule = module {
     viewModelOf(::AnimatedEditorViewModel)
     viewModelOf(::LoginViewModel)
     viewModelOf(::RegisterViewModel)
+    viewModelOf(::ForgotPasswordViewModel)
+    viewModelOf(::ResetPasswordViewModel)
     viewModelOf(::ProfileViewModel)
+    viewModelOf(::EditProfileViewModel)
+    viewModelOf(::BlockedUsersViewModel)
+    viewModelOf(::PurchaseHistoryViewModel)
     viewModelOf(::SettingsViewModel)
     viewModelOf(::OnboardingViewModel)
     viewModelOf(::SyncViewModel)
     viewModelOf(::AiJobsViewModel)
+    viewModelOf(::PaywallViewModel)
+    viewModel { params ->
+        LegalDocumentViewModel(
+            legalApiRepository = get(),
+            authManager = get(),
+            docTypeParam = params.get()
+        )
+    }
 }

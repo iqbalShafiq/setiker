@@ -1,5 +1,6 @@
 package presentation.editor
 
+import data.remote.ExploreApiRepository
 import data.remote.StickerApiRepository
 import data.storage.StickerFileStorage
 import data.util.EmojiPreferences
@@ -104,7 +105,8 @@ class EditorViewModelStyleTest {
             aiJobManager = deps.manager,
             enqueueHelper = deps.enqueueHelper,
             draftResultApplier = deps.draftResultApplier,
-            aiQuotaRepository = mockk<AiQuotaRepository>(relaxed = true)
+            aiQuotaRepository = mockk<AiQuotaRepository>(relaxed = true),
+            exploreApiRepository = mockk<ExploreApiRepository>(relaxed = true)
         )
     }
 }

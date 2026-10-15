@@ -1,10 +1,9 @@
 package com.setiker.app
 
-import android.Manifest
 import android.content.Intent
+import com.setiker.app.MainActivityHolder
 import android.graphics.Color
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -27,16 +26,11 @@ class MainActivity : ComponentActivity() {
     private var notificationDeepLinkVersion by mutableIntStateOf(0)
     private var keepSystemSplash by mutableStateOf(true)
 
-    private val notificationPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
+        MainActivityHolder.current = this
         applyDeepLinkFromIntent(intent)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-        }
 
         whatsAppLauncher.register(this) { success, error ->
             if (!success) {
@@ -69,6 +63,13 @@ class MainActivity : ComponentActivity() {
                 notificationDeepLinkVersion = notificationDeepLinkVersion
             )
         }
+    }
+
+    override fun onDestroy() {
+        if (MainActivityHolder.current === this) {
+            MainActivityHolder.current = null
+        }
+        super.onDestroy()
     }
 
     override fun onNewIntent(intent: Intent) {

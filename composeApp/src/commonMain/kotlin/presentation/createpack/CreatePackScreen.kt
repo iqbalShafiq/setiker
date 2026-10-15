@@ -26,6 +26,8 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -59,6 +61,7 @@ import presentation.components.AppTopBar
 import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
 import presentation.components.PackBottomBar
+import presentation.components.ReorderIconButton
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
 import presentation.components.SelectableStickerGrid
@@ -67,6 +70,8 @@ import presentation.components.ScreenSectionTitle
 import presentation.aijob.AiResultSheetVisibility
 import domain.model.StickerPack
 import presentation.components.AiGenerateBottomSheet
+import presentation.components.ContentPolicyBottomSheet
+import presentation.components.ReportContentBottomSheet
 import presentation.components.PromptPresetPickerSheet
 import presentation.components.ImproveConfirmDialog
 import presentation.components.BottomSheetScrollColumn
@@ -112,6 +117,7 @@ import setiker.composeapp.generated.resources.grid_confirm_hint
 import setiker.composeapp.generated.resources.grid_confirm_title
 import setiker.composeapp.generated.resources.grid_source_content_description
 import setiker.composeapp.generated.resources.grid_split
+import setiker.composeapp.generated.resources.history_report_output
 import setiker.composeapp.generated.resources.import_crop_sheet_message_sticker
 import setiker.composeapp.generated.resources.import_crop_sheet_message_tray
 import setiker.composeapp.generated.resources.import_crop_sheet_primary
@@ -126,6 +132,8 @@ import setiker.composeapp.generated.resources.publisher_placeholder
 import setiker.composeapp.generated.resources.improve_confirm_message_pack
 import setiker.composeapp.generated.resources.improve_stickers
 import setiker.composeapp.generated.resources.remove_sticker
+import setiker.composeapp.generated.resources.reorder_move_down
+import setiker.composeapp.generated.resources.reorder_move_up
 import setiker.composeapp.generated.resources.replace_stickers
 import setiker.composeapp.generated.resources.save_pack
 import setiker.composeapp.generated.resources.saving
@@ -207,6 +215,23 @@ fun CreatePackScreen(
         onPresetSelected = { preset ->
             onIntent(CreatePackIntent.UpdateGeneratePrompt(preset.prompt))
         }
+    )
+
+    ContentPolicyBottomSheet(
+        visible = state.showContentPolicySheet,
+        onDismiss = { onIntent(CreatePackIntent.DismissContentPolicy) },
+        onAccept = { onIntent(CreatePackIntent.AcceptContentPolicy) }
+    )
+
+    ReportContentBottomSheet(
+        visible = state.showAiOutputReportSheet,
+        selectedReason = state.aiOutputReportReason,
+        details = state.aiOutputReportDetails,
+        isSubmitting = state.isSubmittingAiOutputReport,
+        onReasonSelected = { onIntent(CreatePackIntent.SelectAiOutputReportReason(it)) },
+        onDetailsChange = { onIntent(CreatePackIntent.UpdateAiOutputReportDetails(it)) },
+        onSubmit = { onIntent(CreatePackIntent.SubmitAiOutputReport) },
+        onDismiss = { onIntent(CreatePackIntent.DismissAiOutputReport) }
     )
 
     if (state.aiGenerateSheetOpen) {
@@ -310,6 +335,11 @@ fun CreatePackScreen(
                 AppSecondaryButton(
                     text = stringResource(Res.string.cancel),
                     onClick = { onIntent(CreatePackIntent.CancelGeneratedResults) }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                AppSecondaryButton(
+                    text = stringResource(Res.string.history_report_output),
+                    onClick = { onIntent(CreatePackIntent.ShowAiOutputReport) }
                 )
             }
         }
@@ -759,14 +789,42 @@ fun CreatePackScreen(
                         ) {
                             rowItems.forEachIndexed { itemIndex, stickerDraft ->
                                 val stickerIndex = (rowIndex * 4) + itemIndex
-                                StickerPreviewItem(
-                                    sticker = stickerDraft,
-                                    onRemove = { onIntent(CreatePackIntent.RemoveSticker(stickerIndex)) },
-                                    enabled = !isOperationInProgress,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .aspectRatio(1f)
-                                )
+                                Column(modifier = Modifier.weight(1f)) {
+                                    StickerPreviewItem(
+                                        sticker = stickerDraft,
+                                        onRemove = { onIntent(CreatePackIntent.RemoveSticker(stickerIndex)) },
+                                        enabled = !isOperationInProgress,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .aspectRatio(1f)
+                                    )
+                                    if (state.stickers.size > 1) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            ReorderIconButton(
+                                                icon = Icons.Default.KeyboardArrowUp,
+                                                contentDescription = stringResource(Res.string.reorder_move_up),
+                                                onClick = {
+                                                    onIntent(CreatePackIntent.MoveStickerUp(stickerIndex))
+                                                },
+                                                enabled = !isOperationInProgress && stickerIndex > 0,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            ReorderIconButton(
+                                                icon = Icons.Default.KeyboardArrowDown,
+                                                contentDescription = stringResource(Res.string.reorder_move_down),
+                                                onClick = {
+                                                    onIntent(CreatePackIntent.MoveStickerDown(stickerIndex))
+                                                },
+                                                enabled = !isOperationInProgress &&
+                                                    stickerIndex < state.stickers.lastIndex,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                        }
+                                    }
+                                }
                             }
                             repeat(4 - rowItems.size) {
                                 Spacer(

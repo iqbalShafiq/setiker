@@ -18,6 +18,23 @@ data class UpdateStickerPackRequest(
 )
 
 @Serializable
+data class ReorderStickersRequest(
+    val stickerOrders: List<StickerOrderItem>
+)
+
+@Serializable
+data class StickerOrderItem(
+    val stickerId: String,
+    val order: Int
+)
+
+@Serializable
+data class ReorderStickersSyncPayload(
+    val stickerPackId: String,
+    val stickerOrders: List<StickerOrderItem>
+)
+
+@Serializable
 data class DeleteStickerSyncPayload(
     val stickerPackId: String,
     val stickerId: String,
@@ -131,6 +148,22 @@ data class UploadData(
 data class CloudStickerPackShareLink(
     val id: String,
     val stickerPackId: String,
+    val token: String,
+    val permission: String? = null,
+    val maxUses: Int? = null,
+    val usesCount: Int = 0,
+    val isActive: Boolean = true,
+    val expiresAt: String? = null,
+    val createdAt: String,
+    val shareUrl: String? = null,
+    val deepLinkUrl: String? = null,
+    val webFallbackUrl: String? = null
+)
+
+@Serializable
+data class CloudStickerShareLink(
+    val id: String,
+    val stickerId: String,
     val token: String,
     val permission: String? = null,
     val maxUses: Int? = null,

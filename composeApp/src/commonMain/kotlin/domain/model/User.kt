@@ -12,8 +12,15 @@ data class User(
     val isActive: Boolean,
     val createdAt: Long,
     val followerCount: Int = 0,
-    val followingCount: Int = 0
-)
+    val followingCount: Int = 0,
+    val totalPackDownloads: Int = 0,
+    val emailVerified: Boolean = false,
+    val hasPassword: Boolean = true,
+    val authProviders: List<String> = emptyList()
+) {
+    val hasGoogle: Boolean get() = authProviders.any { it.equals("GOOGLE", ignoreCase = true) }
+    val hasApple: Boolean get() = authProviders.any { it.equals("APPLE", ignoreCase = true) }
+}
 
 @Serializable
 data class UserRole(

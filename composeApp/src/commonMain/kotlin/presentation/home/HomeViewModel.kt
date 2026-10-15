@@ -443,8 +443,8 @@ class HomeViewModel(
                 aiQuotaRepository,
                 AiQuotaOperation.GENERATE,
                 forceRefresh = true
-            )?.let { message ->
-                _effect.send(HomeEffect.ShowError(message))
+            )?.let {
+                _effect.send(HomeEffect.ShowQuotaExceeded)
                 return@launch
             }
             aiJobManager.upsertDraft(draft)
@@ -461,7 +461,7 @@ class HomeViewModel(
                 )
             } catch (e: ApiException) {
                 if (e.code == AppErrorCode.AiQuotaExceeded) {
-                    _effect.send(HomeEffect.ShowError(UiText.StringRes(Res.string.error_ai_quota_exceeded)))
+                    _effect.send(HomeEffect.ShowQuotaExceeded)
                 } else {
                     _effect.send(HomeEffect.ShowError(e.toUiText(Res.string.error_failed_generate_sticker_pack)))
                 }

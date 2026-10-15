@@ -14,4 +14,6 @@ sealed interface HomeEffect {
     data class NavigateToVideoStickerPack(val videoPath: String) : HomeEffect
     data object NavigateToAiJobs : HomeEffect
     data object NavigateToAiJobsFromTopBar : HomeEffect
+    data object ShowQuotaExceeded : HomeEffect
+    data object NavigateToPaywall : HomeEffect
 }

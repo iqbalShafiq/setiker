@@ -88,6 +88,7 @@ import setiker.composeapp.generated.resources.play_preview
 import setiker.composeapp.generated.resources.publisher_label
 import setiker.composeapp.generated.resources.publisher_placeholder
 import setiker.composeapp.generated.resources.video_pack_ask_ai
+import setiker.composeapp.generated.resources.video_pack_ask_ai_hint
 import setiker.composeapp.generated.resources.video_pack_build_grids
 import setiker.composeapp.generated.resources.video_pack_find_frames
 import setiker.composeapp.generated.resources.video_pack_generate
@@ -414,6 +415,16 @@ private fun VideoProcessingSection(
     if (processingLabel.isNotBlank()) {
         Text(
             text = processingLabel,
+            style = MaterialTheme.typography.bodySmall,
+            color = neubrutalSubtleOnSurface()
+        )
+    }
+    if (
+        state.backgroundJobMessage == null &&
+        state.processingStep == VideoStickerPackProcessingStep.AskingAi
+    ) {
+        Text(
+            text = stringResource(Res.string.video_pack_ask_ai_hint),
             style = MaterialTheme.typography.bodySmall,
             color = neubrutalSubtleOnSurface()
         )

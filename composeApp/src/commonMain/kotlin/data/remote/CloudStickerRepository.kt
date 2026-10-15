@@ -105,6 +105,19 @@ class CloudStickerRepository(
         return envelope.data ?: throw ApiException(code = AppErrorCode.CloudUpdateFailed)
     }
 
+    suspend fun reorderStickers(cloudPackId: String, stickerOrders: List<data.remote.model.StickerOrderItem>) {
+        val response = withAuthRetry { authHeader ->
+            client.put("$baseUrl/api/v1/sticker-packs/$cloudPackId/reorder") {
+                header(HttpHeaders.Authorization, authHeader)
+                contentType(ContentType.Application.Json)
+                setBody(data.remote.model.ReorderStickersRequest(stickerOrders = stickerOrders))
+            }
+        }
+        if (!response.status.isSuccess()) {
+            throw ApiException(code = AppErrorCode.CloudUpdateFailed, message = response.bodyAsText())
+        }
+    }
+
     suspend fun uploadPack(
         request: CreateStickerPackRequest,
         stickerPackId: String? = null,

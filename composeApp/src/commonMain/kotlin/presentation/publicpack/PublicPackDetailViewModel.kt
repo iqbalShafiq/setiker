@@ -29,6 +29,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
 import presentation.common.UiText
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.block_creator_success
+import setiker.composeapp.generated.resources.report_submitted
 
 class PublicPackDetailViewModel(
     private val exploreApiRepository: ExploreApiRepository,
@@ -61,6 +64,16 @@ class PublicPackDetailViewModel(
                 _state.update { it.copy(errorDialogMessage = null) }
             }
             PublicPackDetailIntent.NavigateBack -> viewModelScope.launch { _effect.send(PublicPackDetailEffect.NavigateBack) }
+            PublicPackDetailIntent.ShowReportSheet -> _state.update {
+                it.copy(showReportSheet = true, reportReason = null, reportDetails = "")
+            }
+            PublicPackDetailIntent.DismissReportSheet -> _state.update { it.copy(showReportSheet = false) }
+            is PublicPackDetailIntent.SelectReportReason -> _state.update { it.copy(reportReason = intent.reason) }
+            is PublicPackDetailIntent.UpdateReportDetails -> _state.update { it.copy(reportDetails = intent.value) }
+            PublicPackDetailIntent.SubmitReport -> submitReport()
+            PublicPackDetailIntent.ShowBlockCreatorConfirm -> _state.update { it.copy(showBlockCreatorConfirm = true) }
+            PublicPackDetailIntent.DismissBlockCreatorConfirm -> _state.update { it.copy(showBlockCreatorConfirm = false) }
+            PublicPackDetailIntent.ConfirmBlockCreator -> blockCreator()
             is PublicPackDetailIntent.OpenCreator -> viewModelScope.launch {
                 _effect.send(PublicPackDetailEffect.NavigateToCreator(intent.userId))
             }
@@ -314,5 +327,44 @@ class PublicPackDetailViewModel(
             visibility = "PRIVATE",
             cloudOwnerId = pack.ownerId
         )
+    }
+
+    private fun submitReport() = requireAuth {
+        val reason = _state.value.reportReason ?: return@requireAuth
+        val details = _state.value.reportDetails.takeIf { it.isNotBlank() }
+        _state.update { it.copy(isSubmittingReport = true) }
+        runCatching {
+            exploreApiRepository.reportPack(currentPackId, reason, details)
+        }.onSuccess {
+            _state.update { it.copy(isSubmittingReport = false, showReportSheet = false) }
+            _effect.send(PublicPackDetailEffect.ShowMessage(UiText.StringRes(Res.string.report_submitted)))
+        }.onFailure { error ->
+            _state.update {
+                it.copy(
+                    isSubmittingReport = false,
+                    errorDialogMessage = error.message ?: "Report failed"
+                )
+            }
+        }
+    }
+
+    private fun blockCreator() = requireAuth {
+        val ownerId = _state.value.pack?.ownerId ?: _state.value.pack?.owner?.id ?: return@requireAuth
+        if (_state.value.isOwnPack) return@requireAuth
+        _state.update { it.copy(isBlockingCreator = true) }
+        runCatching {
+            exploreApiRepository.blockUser(ownerId)
+        }.onSuccess {
+            _state.update { it.copy(isBlockingCreator = false, showBlockCreatorConfirm = false) }
+            _effect.send(PublicPackDetailEffect.ShowMessage(UiText.StringRes(Res.string.block_creator_success)))
+            _effect.send(PublicPackDetailEffect.NavigateBack)
+        }.onFailure { error ->
+            _state.update {
+                it.copy(
+                    isBlockingCreator = false,
+                    errorDialogMessage = error.message ?: "Block failed"
+                )
+            }
+        }
     }
 }
