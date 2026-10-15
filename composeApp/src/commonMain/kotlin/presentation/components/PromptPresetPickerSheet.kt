@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -49,7 +49,7 @@ fun PromptPresetsTrailingIcon(
         modifier = Modifier.size(32.dp)
     ) {
         Icon(
-            imageVector = Icons.Filled.MenuBook,
+            imageVector = Icons.AutoMirrored.Filled.MenuBook,
             contentDescription = stringResource(Res.string.prompt_presets_open),
             modifier = Modifier.size(20.dp),
             tint = neubrutalSubtleOnSurface()

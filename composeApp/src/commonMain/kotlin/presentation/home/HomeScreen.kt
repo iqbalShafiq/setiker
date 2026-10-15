@@ -20,7 +20,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Workspaces
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -43,7 +43,7 @@ import androidx.compose.ui.unit.sp
 import domain.model.Sticker
 import domain.model.StickerPack
 import org.jetbrains.compose.resources.stringResource
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
 import presentation.components.AiGenerateStickerPackBottomSheet
 import presentation.components.PromptPresetPickerSheet
 import presentation.components.AppIllustration
@@ -171,7 +171,7 @@ fun HomeScreen(
                         }
                     )
                     NeubrutalIconButton(
-                        icon = Icons.Default.Sort,
+                        icon = Icons.AutoMirrored.Filled.Sort,
                         contentDescription = stringResource(Res.string.sort_content_description),
                         onClick = { showSortSheet = true }
                     )

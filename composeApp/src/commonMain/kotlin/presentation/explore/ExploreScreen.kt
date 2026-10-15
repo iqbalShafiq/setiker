@@ -22,7 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.CircularProgressIndicator
@@ -146,7 +146,7 @@ fun ExploreScreen(
                 },
                 floatingActionButton = {
                     PackBottomBarFab(
-                        icon = Icons.Default.Sort,
+                        icon = Icons.AutoMirrored.Filled.Sort,
                         contentDescription = stringResource(Res.string.explore_sort),
                         onClick = { showSortSheet = true }
                     )

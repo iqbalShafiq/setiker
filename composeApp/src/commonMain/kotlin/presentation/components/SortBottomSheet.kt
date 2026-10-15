@@ -16,7 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import domain.model.SortOrder
 import org.jetbrains.compose.resources.stringResource
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import setiker.composeapp.generated.resources.Res

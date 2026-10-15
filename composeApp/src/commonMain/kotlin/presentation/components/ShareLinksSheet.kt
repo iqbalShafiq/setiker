@@ -26,8 +26,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import domain.model.ShareLinkUi
@@ -35,6 +33,7 @@ import domain.model.preferredShareText
 import org.jetbrains.compose.resources.stringResource
 import presentation.common.ContentStateAnimations
 import presentation.common.ShareLinksBodyPhase
+import presentation.common.rememberCopyToClipboardAction
 import presentation.common.rememberShareTextAction
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.neubrutalBorderColor
@@ -64,7 +63,7 @@ fun ShareLinksSheet(
     modifier: Modifier = Modifier,
     title: String = stringResource(Res.string.cloud_links_title)
 ) {
-    val clipboard = LocalClipboardManager.current
+    val copyToClipboard = rememberCopyToClipboardAction()
     val shareText = rememberShareTextAction()
     val bodyPhase = when {
         isLoading -> ShareLinksBodyPhase.Loading
@@ -146,7 +145,7 @@ fun ShareLinksSheet(
                                 IconButton(
                                     onClick = {
                                         val value = link.preferredShareText()
-                                        clipboard.setText(AnnotatedString(value))
+                                        copyToClipboard(value)
                                     },
                                     enabled = enabled
                                 ) {

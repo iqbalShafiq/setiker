@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Login
+import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,7 +29,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
 import presentation.common.UiText
 import presentation.common.resolveLocal
 import presentation.components.AppIllustration
@@ -105,7 +105,7 @@ fun RegisterScreen(
         primaryFabIcon = Icons.Filled.PersonAdd,
         primaryFabContentDescription = stringResource(Res.string.register_submit),
         onSecondaryAction = { onIntent(RegisterIntent.NavigateToLogin) },
-        secondaryActionIcon = Icons.Filled.Login,
+        secondaryActionIcon = Icons.AutoMirrored.Filled.Login,
         secondaryActionContentDescription = stringResource(Res.string.register_sign_in_cta)
     ) {
         AppIllustrationImage(

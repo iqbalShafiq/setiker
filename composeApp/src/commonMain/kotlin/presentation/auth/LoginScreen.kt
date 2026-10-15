@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Login
+import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -31,7 +31,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
 import presentation.common.UiText
 import presentation.common.resolveLocal
 import presentation.components.AppIllustration
@@ -110,7 +110,7 @@ fun LoginScreen(
         isLoading = state.isLoading,
         loadingStatusText = stringResource(Res.string.login_signing_in),
         onPrimaryAction = { onIntent(LoginIntent.Submit) },
-        primaryFabIcon = Icons.Filled.Login,
+        primaryFabIcon = Icons.AutoMirrored.Filled.Login,
         primaryFabContentDescription = stringResource(Res.string.login_submit),
         onSecondaryAction = { onIntent(LoginIntent.NavigateToRegister) },
         secondaryActionIcon = Icons.Filled.PersonAdd,

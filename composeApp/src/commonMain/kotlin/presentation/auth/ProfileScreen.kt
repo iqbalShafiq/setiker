@@ -27,7 +27,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Feedback
-import androidx.compose.material.icons.filled.Help
+import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.People
@@ -54,7 +54,7 @@ import androidx.compose.ui.unit.sp
 import domain.model.User
 import domain.model.UserRole
 import org.jetbrains.compose.resources.stringResource
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
 import presentation.common.ContentStateAnimations
 import presentation.common.DetailLoadPhase
 import presentation.common.resolveLocal
@@ -457,7 +457,7 @@ fun ProfileScreen(
                                 Spacer(modifier = Modifier.height(8.dp))
                                 MenuCard(borderColor = borderColor, shadowColor = shadowColor, cardSurface = cardSurface) {
                                     ProfileMenuItem(
-                                        icon = Icons.Default.Help,
+                                        icon = Icons.AutoMirrored.Filled.Help,
                                         label = stringResource(Res.string.help_center),
                                         iconBackgroundColor = PastelMint,
                                         onClick = {}

@@ -178,7 +178,6 @@ class VideoStickerPackViewModelTest {
         val repository = mockk<StickerRepository>()
         coEvery { repository.savePack(any()) } answers {
             savedPacks += firstArg<StickerPack>()
-            Unit
         }
         val saver = CapturingDraftSaver(fakePack(id = "video_pack_anim"))
         val (viewModel, deps) = createViewModel(
@@ -271,7 +270,6 @@ class VideoStickerPackViewModelTest {
         val repository = mockk<StickerRepository>()
         coEvery { repository.savePack(any()) } answers {
             savedPacks += firstArg<StickerPack>()
-            Unit
         }
         val saver = MultiCapturingDraftSaver()
         val (viewModel, deps) = createViewModel(
