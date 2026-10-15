@@ -2,14 +2,9 @@ package presentation.components
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,11 +26,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -146,27 +139,22 @@ fun PackBottomBarIconButton(
     containerColor: Color = neubrutalCardSurface(),
     iconTint: Color = neubrutalOnSurface()
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed && enabled) 0.92f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
+    val pressFeedback = rememberPressFeedback(
+        pressedScale = 0.92f,
+        enabled = enabled,
         label = "bottom_icon_scale"
     )
 
     val border = neubrutalBorderColor()
     val shadow = neubrutalShadowColor()
     val shape = RoundedCornerShape(NeubrutalSmallRadius)
-    val shadowX = if (isPressed && enabled) 1.dp else NeubrutalSmallShadowOffset
-    val shadowY = if (isPressed && enabled) 1.dp else NeubrutalSmallShadowOffset
+    val shadowX = if (pressFeedback.isPressed && enabled) 1.dp else NeubrutalSmallShadowOffset
+    val shadowY = if (pressFeedback.isPressed && enabled) 1.dp else NeubrutalSmallShadowOffset
 
     Box(
         modifier = Modifier
             .size(44.dp)
-            .scale(scale)
+            .pressScale(pressFeedback)
             .neubrutalShadow(
                 offsetX = shadowX,
                 offsetY = shadowY,
@@ -181,7 +169,7 @@ fun PackBottomBarIconButton(
                 highlightColor = neubrutalGlossyHighlightColor()
             )
             .clickable(
-                interactionSource = interactionSource,
+                interactionSource = pressFeedback.interactionSource,
                 indication = null,
                 enabled = enabled,
                 onClick = onClick
@@ -206,27 +194,22 @@ fun PackBottomBarIconButton(
     containerColor: Color = neubrutalCardSurface(),
     iconTint: Color = neubrutalOnSurface()
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed && enabled) 0.92f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
+    val pressFeedback = rememberPressFeedback(
+        pressedScale = 0.92f,
+        enabled = enabled,
         label = "bottom_painter_icon_scale"
     )
 
     val border = neubrutalBorderColor()
     val shadow = neubrutalShadowColor()
     val shape = RoundedCornerShape(NeubrutalSmallRadius)
-    val shadowX = if (isPressed && enabled) 1.dp else NeubrutalSmallShadowOffset
-    val shadowY = if (isPressed && enabled) 1.dp else NeubrutalSmallShadowOffset
+    val shadowX = if (pressFeedback.isPressed && enabled) 1.dp else NeubrutalSmallShadowOffset
+    val shadowY = if (pressFeedback.isPressed && enabled) 1.dp else NeubrutalSmallShadowOffset
 
     Box(
         modifier = Modifier
             .size(44.dp)
-            .scale(scale)
+            .pressScale(pressFeedback)
             .neubrutalShadow(
                 offsetX = shadowX,
                 offsetY = shadowY,
@@ -241,7 +224,7 @@ fun PackBottomBarIconButton(
                 highlightColor = neubrutalGlossyHighlightColor()
             )
             .clickable(
-                interactionSource = interactionSource,
+                interactionSource = pressFeedback.interactionSource,
                 indication = null,
                 enabled = enabled,
                 onClick = onClick
@@ -268,28 +251,23 @@ fun PackBottomBarFab(
     containerColor: Color = AccentCoral,
     iconTint: Color = NeubrutalWhite
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed && enabled && !isLoading) 0.95f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
+    val pressFeedback = rememberPressFeedback(
+        pressedScale = 0.95f,
+        enabled = enabled && !isLoading,
         label = "fab_scale"
     )
 
     val border = neubrutalBorderColor()
     val shadow = neubrutalShadowColor()
     val shape = RoundedCornerShape(NeubrutalButtonRadius)
-    val shadowX = if (isPressed && enabled && !isLoading) NeubrutalSmallShadowOffset else NeubrutalShadowOffset
-    val shadowY = if (isPressed && enabled && !isLoading) NeubrutalSmallShadowOffset else NeubrutalShadowOffset
+    val shadowX = if (pressFeedback.isPressed && enabled && !isLoading) NeubrutalSmallShadowOffset else NeubrutalShadowOffset
+    val shadowY = if (pressFeedback.isPressed && enabled && !isLoading) NeubrutalSmallShadowOffset else NeubrutalShadowOffset
     val isClickable = enabled && !isLoading
 
     Box(
         modifier = modifier
             .size(56.dp)
-            .scale(scale)
+            .pressScale(pressFeedback)
             .neubrutalShadow(
                 offsetX = shadowX,
                 offsetY = shadowY,
@@ -306,7 +284,7 @@ fun PackBottomBarFab(
                 highlightColor = neubrutalGlossyHighlightColor(onFilledSurface = true)
             )
             .clickable(
-                interactionSource = interactionSource,
+                interactionSource = pressFeedback.interactionSource,
                 indication = null,
                 enabled = isClickable,
                 onClick = onClick
