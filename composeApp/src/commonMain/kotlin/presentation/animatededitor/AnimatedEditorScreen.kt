@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import presentation.components.scaffoldBottomBarScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -38,7 +40,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -125,9 +127,12 @@ fun AnimatedEditorScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     modifier: Modifier = Modifier
 ) {
-    val frameBitmap: ImageBitmap? by remember(state.frames, state.currentFrameIndex) {
-        derivedStateOf {
-            state.frames.getOrNull(state.currentFrameIndex)?.bytes?.let { decodeImageBitmap(it) }
+    // Decoding a frame takes tens of milliseconds for full-size stickers, so it is done off the
+    // main thread. The previously decoded frame stays on screen until the new one is ready.
+    var frameBitmap: ImageBitmap? by remember { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(state.frames, state.currentFrameIndex) {
+        frameBitmap = state.frames.getOrNull(state.currentFrameIndex)?.bytes?.let { bytes ->
+            withContext(Dispatchers.Default) { decodeImageBitmap(bytes) }
         }
     }
 

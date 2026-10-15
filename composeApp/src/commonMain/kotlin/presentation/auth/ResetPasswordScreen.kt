@@ -8,13 +8,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import data.auth.AuthApiService
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -108,7 +108,7 @@ fun ResetPasswordScreenRoot(
     viewModel: ResetPasswordViewModel = koinViewModel()
 ) {
     LaunchedEffectToken(token, viewModel)
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     ResetPasswordScreen(
         state = state,
         onPasswordChange = viewModel::updatePassword,

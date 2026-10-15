@@ -1,8 +1,8 @@
 package presentation.notifications
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -12,7 +12,7 @@ fun NotificationsScreenRoot(
     onNavigateToCreator: (String) -> Unit,
     viewModel: NotificationsViewModel = koinViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     NotificationsScreen(
         state = state,

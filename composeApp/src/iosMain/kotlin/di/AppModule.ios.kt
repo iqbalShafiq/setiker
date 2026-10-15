@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import data.local.database.DatabaseMigrations
 import data.local.database.StickerDatabase
 import data.storage.StickerFileStorage
 import data.sync.NetworkMonitor
@@ -44,7 +45,7 @@ actual fun platformModule(): Module = module {
         )
             .setDriver(BundledSQLiteDriver())
             .setQueryCoroutineContext(Dispatchers.IO)
-            .fallbackToDestructiveMigration(dropAllTables = true)
+            .addMigrations(*DatabaseMigrations.ALL)
             .build()
     }
 

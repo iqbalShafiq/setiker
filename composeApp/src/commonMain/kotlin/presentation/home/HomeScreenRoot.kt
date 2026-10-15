@@ -7,7 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.QuotaExceededBottomSheet
 import presentation.common.resolveOrDefault
@@ -27,7 +27,7 @@ fun HomeScreenRoot(
     showOfflineBanner: Boolean = false,
     viewModel: HomeViewModel = koinViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var showQuotaExceeded by remember { mutableStateOf(false) }
 

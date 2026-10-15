@@ -6,7 +6,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavOptionsBuilder
 import androidx.navigation.NavType
@@ -83,11 +83,11 @@ fun AppNavigation(
     val authManager: AuthManager = koinInject()
     val userPreferencesRepository: UserPreferencesRepository = koinInject()
     val networkMonitor: NetworkMonitor = koinInject()
-    val onboardingCompleted by userPreferencesRepository.hasCompletedOnboarding.collectAsState(initial = true)
-    val isOnline by networkMonitor.isOnline.collectAsState()
+    val onboardingCompleted by userPreferencesRepository.hasCompletedOnboarding.collectAsStateWithLifecycle(initialValue = true)
+    val isOnline by networkMonitor.isOnline.collectAsStateWithLifecycle()
     val workspaceDraftRepository: WorkspaceDraftRepository = koinInject()
     val aiJobRepository: AiJobRepository = koinInject()
-    val authState by authManager.authState.collectAsState()
+    val authState by authManager.authState.collectAsStateWithLifecycle()
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
     val loginGuardRoutes = setOf("home", "profile", "sync", "history", "aiJobs")
