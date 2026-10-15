@@ -26,15 +26,6 @@ fun Modifier.keyboardAwareScroll(scrollState: ScrollState): Modifier =
         .verticalScroll(scrollState)
 
 /**
- * Applies [keyboardAwareInsets] and [imeNestedScroll] for [LazyColumn] bodies.
- */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun Modifier.keyboardAwareLazyList(): Modifier =
-    keyboardAwareInsets()
-        .imeNestedScroll()
-
-/**
  * Scroll/list modifiers for scaffold bodies that already include [PackBottomBar].
  *
  * The bar applies [androidx.compose.foundation.layout.imePadding]; content must not
@@ -65,29 +56,6 @@ fun ScaffoldBottomBarLazyColumn(
 ) {
     LazyColumn(
         modifier = modifier.scaffoldBottomBarLazyList(),
-        state = state,
-        contentPadding = contentPadding,
-        reverseLayout = reverseLayout,
-        verticalArrangement = verticalArrangement,
-        horizontalAlignment = horizontalAlignment,
-        content = content
-    )
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun KeyboardAwareLazyColumn(
-    modifier: Modifier = Modifier,
-    state: LazyListState = rememberLazyListState(),
-    contentPadding: PaddingValues = PaddingValues(),
-    reverseLayout: Boolean = false,
-    verticalArrangement: Arrangement.Vertical =
-        if (!reverseLayout) Arrangement.Top else Arrangement.Bottom,
-    horizontalAlignment: Alignment.Horizontal = Alignment.Start,
-    content: LazyListScope.() -> Unit
-) {
-    LazyColumn(
-        modifier = modifier.keyboardAwareLazyList(),
         state = state,
         contentPadding = contentPadding,
         reverseLayout = reverseLayout,
