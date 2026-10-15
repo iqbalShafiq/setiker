@@ -22,14 +22,7 @@ kotlin {
         }
     }
 
-    compilerOptions {
-        freeCompilerArgs.addAll(
-            "-Xwarning-level=DEPRECATION:disabled",
-        )
-    }
-    
     listOf(
-        iosX64(),
         iosArm64(),
         iosSimulatorArm64()
     ).forEach { iosTarget ->
@@ -82,10 +75,10 @@ kotlin {
             implementation(libs.androidx.media3.exoplayer)
             implementation(libs.androidx.media3.common)
             implementation(libs.androidx.media3.effect)
+            implementation(libs.androidx.media3.inspector.frame)
             implementation(libs.androidx.concurrent.futures.ktx)
             implementation(libs.webp.android)
             implementation(libs.coil.gif)
-            implementation(libs.androidx.security.crypto)
             implementation(libs.androidx.work.runtime)
             implementation(libs.androidx.core.ktx)
             implementation(libs.androidx.core.splashscreen)
@@ -145,10 +138,6 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
-    }
-    
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.10"
     }
     
     packaging {

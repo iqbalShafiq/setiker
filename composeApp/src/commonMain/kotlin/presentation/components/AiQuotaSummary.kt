@@ -26,7 +26,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import domain.model.AiQuotaOperation
 import domain.model.AiUsage
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
@@ -197,6 +197,6 @@ private fun formatQuotaResetTime(value: String): String {
     return runCatching {
         val local = Instant.parse(value).toLocalDateTime(TimeZone.currentSystemDefault())
         val minute = local.minute.toString().padStart(2, '0')
-        "${local.year}-${local.monthNumber.toString().padStart(2, '0')}-${local.dayOfMonth.toString().padStart(2, '0')} ${local.hour}:$minute"
+        "${local.date} ${local.hour}:$minute"
     }.getOrDefault(value)
 }

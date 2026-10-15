@@ -14,7 +14,7 @@ import android.text.StaticLayout
 import android.text.TextPaint
 import androidx.concurrent.futures.await
 import androidx.media3.common.MediaItem
-import androidx.media3.transformer.ExperimentalFrameExtractor
+import androidx.media3.inspector.frame.FrameExtractor
 import com.aureusapps.android.webpandroid.encoder.WebPAnimEncoder
 import com.aureusapps.android.webpandroid.encoder.WebPAnimEncoderOptions
 import com.aureusapps.android.webpandroid.encoder.WebPConfig
@@ -319,16 +319,12 @@ actual class StickerFileStorage(private val context: Context) {
 
         onProgress(0, frameCount)
 
-        // ExperimentalFrameExtractor must be created and accessed from a single application
-        // thread. We use Dispatchers.Main.immediate so the underlying ExoPlayer attaches to
-        // the main looper; getFrame() returns a future and decoding happens off-thread.
+        // FrameExtractor must be created and accessed from a single application thread.
+        // We use Dispatchers.Main.immediate so the underlying ExoPlayer attaches to the main
+        // looper; getFrame() returns a future and decoding happens off-thread.
         return withContext(Dispatchers.Main.immediate) {
-            val extractor = ExperimentalFrameExtractor(
-                context,
-                ExperimentalFrameExtractor.Configuration.Builder().build()
-            )
+            val extractor = FrameExtractor.Builder(context, mediaItem).build()
             try {
-                extractor.setMediaItem(mediaItem, /* effects = */ emptyList())
                 val out = ArrayList<DecodedFrame>(frameCount)
                 for (i in 0 until frameCount) {
                     val positionMs = if (frameCount == 1) {
@@ -354,7 +350,7 @@ actual class StickerFileStorage(private val context: Context) {
                 }
                 out
             } finally {
-                extractor.release()
+                extractor.close()
             }
         }
     }
