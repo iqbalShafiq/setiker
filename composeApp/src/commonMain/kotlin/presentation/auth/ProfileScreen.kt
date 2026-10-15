@@ -389,24 +389,22 @@ fun ProfileScreen(
                             }
                         }
 
-                        if (state.user != null) {
-                            item {
-                                ConnectedAccountsSection(
-                                    state = ConnectedAccountsUiState(
-                                        hasPassword = state.user.hasPassword,
-                                        hasGoogle = state.user.hasGoogle,
-                                        hasApple = state.user.hasApple,
-                                        googleAvailable = state.googleAvailable,
-                                        appleAvailable = state.appleAvailable,
-                                        isBusy = state.isLinkingAuth
-                                    ),
-                                    onLinkGoogle = onLinkGoogle,
-                                    onUnlinkGoogle = onUnlinkGoogle,
-                                    onLinkApple = onLinkApple,
-                                    onUnlinkApple = onUnlinkApple,
-                                    onSetPassword = onShowSetPassword
-                                )
-                            }
+                        item {
+                            ConnectedAccountsSection(
+                                state = ConnectedAccountsUiState(
+                                    hasPassword = state.user.hasPassword,
+                                    hasGoogle = state.user.hasGoogle,
+                                    hasApple = state.user.hasApple,
+                                    googleAvailable = state.googleAvailable,
+                                    appleAvailable = state.appleAvailable,
+                                    isBusy = state.isLinkingAuth
+                                ),
+                                onLinkGoogle = onLinkGoogle,
+                                onUnlinkGoogle = onUnlinkGoogle,
+                                onLinkApple = onLinkApple,
+                                onUnlinkApple = onUnlinkApple,
+                                onSetPassword = onShowSetPassword
+                            )
                         }
 
                         item {

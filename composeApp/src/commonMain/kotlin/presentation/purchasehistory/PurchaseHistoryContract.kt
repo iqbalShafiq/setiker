@@ -1,7 +1,6 @@
 package presentation.purchasehistory
 
 import domain.billing.PurchaseHistoryItem
-import presentation.common.UiText
 
 data class PurchaseHistoryState(
     val isLoading: Boolean = true,
@@ -21,5 +20,4 @@ sealed interface PurchaseHistoryIntent {
 
 sealed interface PurchaseHistoryEffect {
     data object NavigateBack : PurchaseHistoryEffect
-    data class ShowMessage(val message: UiText) : PurchaseHistoryEffect
 }

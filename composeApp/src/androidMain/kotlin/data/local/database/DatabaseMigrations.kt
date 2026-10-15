@@ -143,4 +143,19 @@ object DatabaseMigrations {
             )
         }
     }
+
+    /**
+     * Every Room instance that opens [StickerDatabase] must register this exact list,
+     * otherwise a process (e.g. StickerContentProvider for WhatsApp) may open the
+     * database with a migrator that cannot handle the current schema version.
+     */
+    val ALL: Array<Migration> = arrayOf(
+        MIGRATION_1_2,
+        MIGRATION_2_3,
+        MIGRATION_3_4,
+        MIGRATION_4_5,
+        MIGRATION_5_6,
+        MIGRATION_6_7,
+        MIGRATION_7_8,
+    )
 }

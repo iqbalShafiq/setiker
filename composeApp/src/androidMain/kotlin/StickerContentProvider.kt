@@ -64,10 +64,7 @@ class StickerContentProvider : ContentProvider() {
                 StickerDatabase::class.java,
                 StickerDatabase.DATABASE_NAME
             )
-                .addMigrations(DatabaseMigrations.MIGRATION_1_2)
-                .addMigrations(DatabaseMigrations.MIGRATION_2_3)
-                .addMigrations(DatabaseMigrations.MIGRATION_3_4)
-                .addMigrations(DatabaseMigrations.MIGRATION_4_5)
+                .addMigrations(*DatabaseMigrations.ALL)
                 .build()
         }
         return database!!

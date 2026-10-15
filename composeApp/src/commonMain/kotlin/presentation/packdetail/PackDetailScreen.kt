@@ -427,7 +427,7 @@ fun PackDetailScreen(
                         icon = Icons.Default.Group,
                         contentDescription = stringResource(Res.string.pack_collaborators),
                         onClick = { onIntent(PackDetailIntent.OpenCollaboratorsSheet) },
-                        enabled = topBarActionsEnabled && !state.pack?.cloudId.isNullOrBlank()
+                        enabled = topBarActionsEnabled && !state.pack.cloudId.isNullOrBlank()
                     )
                     AppTopBarActionIcon(
                         icon = if (isPublicPack) Icons.Default.VisibilityOff else Icons.Default.Public,

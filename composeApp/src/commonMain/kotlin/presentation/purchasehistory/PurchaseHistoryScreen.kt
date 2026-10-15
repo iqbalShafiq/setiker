@@ -59,7 +59,6 @@ fun PurchaseHistoryScreenRoot(
         viewModel.effect.collect { effect ->
             when (effect) {
                 PurchaseHistoryEffect.NavigateBack -> onBack()
-                is PurchaseHistoryEffect.ShowMessage -> Unit
             }
         }
     }

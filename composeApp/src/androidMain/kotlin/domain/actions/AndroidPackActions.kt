@@ -109,6 +109,7 @@ class AndroidPackActions(
                     putExtra("sticker_pack_id", packId)
                     putExtra("sticker_pack_authority", authority)
                     putExtra("sticker_pack_name", packName)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
 
                 context.startActivity(intent)

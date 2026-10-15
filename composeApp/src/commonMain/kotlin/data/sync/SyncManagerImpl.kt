@@ -493,7 +493,7 @@ class SyncManagerImpl(
                 syncState = syncState,
                 lastSyncAt = now,
                 updatedAt = now,
-                cloudOwnerId = remotePack.ownerId ?: existing.cloudOwnerId,
+                cloudOwnerId = remotePack.ownerId,
             )
         )
     }
