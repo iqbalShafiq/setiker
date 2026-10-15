@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
+import presentation.components.keyboardAwareInsets
 import presentation.components.zeroBottomSheetWindowInsets
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalSubtleOnSurface
@@ -43,6 +44,7 @@ fun QuotaExceededBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .keyboardAwareInsets()
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 32.dp)
         ) {

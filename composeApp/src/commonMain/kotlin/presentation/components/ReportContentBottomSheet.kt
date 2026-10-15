@@ -75,6 +75,7 @@ fun ReportContentBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .keyboardAwareInsets()
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 32.dp)
         ) {
