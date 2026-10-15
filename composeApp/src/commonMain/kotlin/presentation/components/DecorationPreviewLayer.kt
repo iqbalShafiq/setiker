@@ -20,9 +20,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,6 +70,11 @@ fun DecorationPreviewLayer(
     onSelectDecoration: (String?) -> Unit,
     onUpdateDecoration: (id: String, centerX: Float, centerY: Float, scale: Float) -> Unit,
     onDeleteDecoration: (String) -> Unit,
+    /**
+     * Called once when a move/resize gesture starts, before any transform is applied. Callers that
+     * keep undo history use it to snapshot the pre-gesture state.
+     */
+    onDecorationTransformStart: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     BoxWithConstraints(
@@ -110,19 +119,23 @@ fun DecorationPreviewLayer(
                 is TextDecoration -> textMetrics!!.heightPx
                 else -> itemSizePx
             }
-            val centerX = decoration.centerX.coerceIn(0f, 1f) * widthPx
-            val centerY = decoration.centerY.coerceIn(0f, 1f) * heightPx
-            val topLeft = Offset(
-                x = centerX - itemWidth / 2f,
-                y = centerY - itemHeight / 2f
-            )
+            // The live position is kept here and read only by the placement lambda below: a drag then
+            // re-places this one item instead of pushing a new state object through the editor (and
+            // its undo history) on every pointer event. The final value is committed on drag end.
+            var renderCenter by remember(decoration.id) {
+                mutableStateOf(Offset(decoration.centerX, decoration.centerY))
+            }
+            LaunchedEffect(decoration.centerX, decoration.centerY) {
+                renderCenter = Offset(decoration.centerX, decoration.centerY)
+            }
 
             Box(
                 modifier = Modifier
                     .offset {
+                        val center = renderCenter
                         IntOffset(
-                            topLeft.x.roundToInt(),
-                            topLeft.y.roundToInt()
+                            (center.x.coerceIn(0f, 1f) * widthPx - itemWidth / 2f).roundToInt(),
+                            (center.y.coerceIn(0f, 1f) * heightPx - itemHeight / 2f).roundToInt()
                         )
                     }
                     .size(
@@ -140,19 +153,30 @@ fun DecorationPreviewLayer(
                                 startCenterY = latestCenterY
                                 fixedScale = latestScale
                                 onSelectDecoration(decoration.id)
+                                onDecorationTransformStart(decoration.id)
+                            },
+                            onDragEnd = {
+                                // One commit per gesture: undo history gets a single entry and the
+                                // editor recomposes once instead of on every pointer event.
+                                onUpdateDecoration(
+                                    decoration.id,
+                                    startCenterX.coerceIn(0f, 1f),
+                                    startCenterY.coerceIn(0f, 1f),
+                                    fixedScale.coerceIn(
+                                        DecorationRenderSpec.MIN_SCALE,
+                                        DecorationRenderSpec.MAX_SCALE
+                                    )
+                                )
+                            },
+                            onDragCancel = {
+                                // Aborted gesture: drop the local preview, keep the state untouched.
+                                renderCenter = Offset(latestCenterX, latestCenterY)
                             }
                         ) { change, dragAmount ->
                             change.consume()
-                            startCenterX += dragAmount.x / widthPx
-                            startCenterY += dragAmount.y / heightPx
-                            val newCenterX = startCenterX.coerceIn(0f, 1f)
-                            val newCenterY = startCenterY.coerceIn(0f, 1f)
-                            onUpdateDecoration(
-                                decoration.id,
-                                newCenterX,
-                                newCenterY,
-                                fixedScale.coerceIn(DecorationRenderSpec.MIN_SCALE, DecorationRenderSpec.MAX_SCALE)
-                            )
+                            startCenterX = (startCenterX + dragAmount.x / widthPx).coerceIn(0f, 1f)
+                            startCenterY = (startCenterY + dragAmount.y / heightPx).coerceIn(0f, 1f)
+                            renderCenter = Offset(startCenterX, startCenterY)
                         }
                     }
                     .pointerInput(decoration.id) {
@@ -260,6 +284,7 @@ fun DecorationPreviewLayer(
                                         fixedCenterX = latestCenterX
                                         fixedCenterY = latestCenterY
                                         onSelectDecoration(decoration.id)
+                                        onDecorationTransformStart(decoration.id)
                                     }
                                 ) { change, dragAmount ->
                                     change.consume()

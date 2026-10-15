@@ -379,6 +379,9 @@ fun EditorScreen(
                                     onDeleteDecoration = { id ->
                                         onIntent(EditorIntent.RemoveDecoration(id))
                                     },
+                                    onDecorationTransformStart = {
+                                        onIntent(EditorIntent.BeginDecorationTransform)
+                                    },
                                     modifier = Modifier.fillMaxSize()
                                 )
                             }

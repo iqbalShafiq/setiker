@@ -33,6 +33,11 @@ sealed interface EditorIntent {
         val scale: Float
     ) : EditorIntent
     data class SelectDecoration(val id: String?) : EditorIntent
+    /**
+     * Dispatched once when a drag on a decoration starts, so the undo snapshot is taken from the
+     * state before the gesture instead of once per pointer event.
+     */
+    data object BeginDecorationTransform : EditorIntent
     data class RemoveDecoration(val id: String) : EditorIntent
     data class ShowDecorationEmojiPicker(val targetDecorationId: String? = null) : EditorIntent
     data object HideDecorationEmojiPicker : EditorIntent

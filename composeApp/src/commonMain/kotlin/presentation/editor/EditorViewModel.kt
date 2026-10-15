@@ -223,6 +223,7 @@ class EditorViewModel(
             is EditorIntent.SelectDecoration -> {
                 _state.update { it.copy(selectedDecorationId = intent.id) }
             }
+            is EditorIntent.BeginDecorationTransform -> recordHistory()
             is EditorIntent.RemoveDecoration -> {
                 recordHistory()
                 _state.update {
@@ -753,7 +754,8 @@ class EditorViewModel(
         centerY: Float,
         scale: Float
     ) {
-        recordHistory()
+        // No history here: the drag calls this once for a move (on release) and once per frame for a
+        // resize, and the snapshot is taken by BeginDecorationTransform when the gesture starts.
         _state.update { current ->
             current.copy(
                 decorations = current.decorations.map { decoration ->
