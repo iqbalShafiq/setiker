@@ -1,7 +1,7 @@
 package presentation.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -21,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import presentation.theme.AccentCoral
@@ -73,9 +74,11 @@ fun BottomSheetOptionRow(
                 cornerRadius = NeubrutalCardRadius,
                 highlightColor = neubrutalGlossyHighlightColor(onFilledSurface = selected)
             )
-            .clickable(
+            .selectable(
+                selected = selected,
                 interactionSource = pressFeedback.interactionSource,
                 indication = null,
+                role = Role.RadioButton,
                 onClick = onClick
             )
             .padding(horizontal = 14.dp, vertical = 12.dp),

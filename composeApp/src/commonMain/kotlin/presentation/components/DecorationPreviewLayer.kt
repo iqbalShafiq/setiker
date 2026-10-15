@@ -3,6 +3,7 @@ package presentation.components
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -30,6 +31,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -45,12 +48,16 @@ import domain.model.StickerDecoration
 import domain.model.TextDecoration
 import domain.model.resolveEmojiStyle
 import kotlin.math.roundToInt
+import org.jetbrains.compose.resources.stringResource
 import presentation.theme.AccentCoral
 import presentation.theme.ErrorRed
 import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalGlossyHighlightColor
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.remove_decoration
+import setiker.composeapp.generated.resources.resize_decoration
 
 @Composable
 fun DecorationPreviewLayer(
@@ -201,6 +208,10 @@ fun DecorationPreviewLayer(
                 }
 
                 if (selectedDecorationId == decoration.id) {
+                    // Both affordances sit on top of arbitrary artwork and were previously invisible to
+                    // accessibility services: the badge only had a tap detector and the handle only a
+                    // drag detector, so neither was announced or reachable.
+                    val removeLabel = stringResource(Res.string.remove_decoration)
                     Box(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
@@ -214,9 +225,8 @@ fun DecorationPreviewLayer(
                                 shape = CircleShape,
                                 highlightColor = neubrutalGlossyHighlightColor(onFilledSurface = true)
                             )
-                            .pointerInput(decoration.id) {
-                                detectTapGestures(onTap = { onDeleteDecoration(decoration.id) })
-                            }
+                            .semantics { contentDescription = removeLabel }
+                            .clickable(onClick = { onDeleteDecoration(decoration.id) })
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
@@ -226,6 +236,7 @@ fun DecorationPreviewLayer(
                         )
                     }
                     val handleSize = 20.dp
+                    val resizeLabel = stringResource(Res.string.resize_decoration)
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
@@ -238,6 +249,7 @@ fun DecorationPreviewLayer(
                                 shape = CircleShape,
                                 highlightColor = neubrutalGlossyHighlightColor()
                             )
+                            .semantics { contentDescription = resizeLabel }
                             .pointerInput(decoration.id) {
                                 var startScale = decoration.scale
                                 var fixedCenterX = decoration.centerX

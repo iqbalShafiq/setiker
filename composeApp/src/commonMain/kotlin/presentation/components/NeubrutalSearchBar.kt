@@ -36,6 +36,7 @@ import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import presentation.theme.neubrutalSubtleOnSurface
 import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.clear
 import setiker.composeapp.generated.resources.search_packs_placeholder
 
 @Composable
@@ -109,7 +110,7 @@ fun NeubrutalSearchBar(
             ) {
                 Icon(
                     imageVector = Icons.Default.Clear,
-                    contentDescription = null,
+                    contentDescription = stringResource(Res.string.clear),
                     modifier = Modifier.size(20.dp),
                     tint = neubrutalSubtleOnSurface()
                 )

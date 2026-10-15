@@ -152,6 +152,7 @@
     <string name="add_emoji">Add emoji</string>
     <string name="add_image">Add image</string>
     <string name="remove_decoration">Remove selected decoration</string>
+    <string name="resize_decoration">Resize selected decoration</string>
     <string name="text_decoration">Text decoration</string>
     <string name="text_decoration_placeholder">Type text for your sticker</string>
     <string name="add_decoration">Add decoration</string>
@@ -352,6 +353,7 @@
     <string name="splash_presented_by">Presented by Ratmo.co</string>
     <string name="onboarding_next">Next</string>
     <string name="onboarding_done">Get started</string>
+    <string name="page_indicator_cd">Page %1$d of %2$d</string>
     <string name="onboarding_page1_title">Create sticker packs</string>
     <string name="onboarding_page1_desc">Organize stickers with tray icons and get them ready for WhatsApp.</string>
     <string name="onboarding_page2_title">Crop and polish</string>
