@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import data.remote.model.BlockedUserItem
@@ -228,5 +229,17 @@ private fun BlockedUserRow(
                 color = AccentCoral
             )
         }
+    }
+}
+
+@Preview
+@Composable
+private fun BlockedUsersScreenPreview() {
+    MaterialTheme {
+        BlockedUsersScreen(
+            state = BlockedUsersState(),
+            onIntent = {},
+            onBack = {}
+        )
     }
 }

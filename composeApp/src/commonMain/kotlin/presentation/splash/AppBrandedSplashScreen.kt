@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import presentation.components.AppLogoMark
@@ -64,5 +65,13 @@ fun AppBrandedSplashScreen(
             )
             Spacer(modifier = Modifier.height(4.dp))
         }
+    }
+}
+
+@Preview
+@Composable
+private fun AppBrandedSplashScreenPreview() {
+    MaterialTheme {
+        AppBrandedSplashScreen()
     }
 }

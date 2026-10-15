@@ -12,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -192,5 +193,19 @@ fun ResetPasswordScreen(
                 modifier = Modifier.fillMaxWidth()
             )
         }
+    }
+}
+
+@Preview
+@Composable
+private fun ResetPasswordScreenPreview() {
+    MaterialTheme {
+        ResetPasswordScreen(
+            state = ResetPasswordState(),
+            onPasswordChange = {},
+            onConfirmChange = {},
+            onSubmit = {},
+            onDone = {}
+        )
     }
 }

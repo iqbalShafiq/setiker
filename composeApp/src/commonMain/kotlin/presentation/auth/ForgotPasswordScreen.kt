@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -163,5 +164,18 @@ fun ForgotPasswordScreen(
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
+    }
+}
+
+@Preview
+@Composable
+private fun ForgotPasswordScreenPreview() {
+    MaterialTheme {
+        ForgotPasswordScreen(
+            state = ForgotPasswordState(),
+            onEmailChange = {},
+            onSubmit = {},
+            onBack = {}
+        )
     }
 }

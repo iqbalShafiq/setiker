@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 
 import androidx.compose.ui.text.font.FontWeight
 
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -589,4 +590,17 @@ private fun groupDrafts(
 
     }
 
+}
+
+@Preview
+@Composable
+private fun AiJobsScreenPreview() {
+    MaterialTheme {
+        AiJobsScreen(
+            state = AiJobsState(),
+            onIntent = {},
+            onBackClick = {},
+            snackbarHostState = SnackbarHostState()
+        )
+    }
 }

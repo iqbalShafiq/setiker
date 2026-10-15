@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.tooling.preview.Preview
 import presentation.components.scaffoldBottomBarScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -704,4 +705,16 @@ private fun VideoStickerPackProcessingStep.toUiLabel(): String {
         VideoStickerPackProcessingStep.Saving -> Res.string.video_pack_save
     }
     return stringResource(resId)
+}
+
+@Preview
+@Composable
+private fun VideoStickerPackScreenPreview() {
+    MaterialTheme {
+        VideoStickerPackScreen(
+            state = VideoStickerPackState(),
+            onIntent = {},
+            onBackClick = {}
+        )
+    }
 }

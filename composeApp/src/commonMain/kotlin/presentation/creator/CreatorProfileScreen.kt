@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import data.remote.ExploreSort
@@ -357,4 +358,17 @@ private fun ExploreSort.chipLabel(): String = when (this) {
     ExploreSort.DOWNLOADS -> stringResource(Res.string.explore_sort_downloads)
     ExploreSort.LIKES -> stringResource(Res.string.explore_sort_likes)
     ExploreSort.SAVES -> stringResource(Res.string.explore_sort_saves)
+}
+
+@Preview
+@Composable
+private fun CreatorProfileScreenPreview() {
+    MaterialTheme {
+        CreatorProfileScreen(
+            state = CreatorProfileState(),
+            userId = "",
+            onIntent = {},
+            snackbarHostState = SnackbarHostState()
+        )
+    }
 }

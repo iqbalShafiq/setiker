@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import data.remote.resolveApiUrl
@@ -291,4 +292,16 @@ fun ProcessingHistoryScreen(
         onSubmit = { onIntent(ProcessingHistoryIntent.SubmitReport) },
         onDismiss = { onIntent(ProcessingHistoryIntent.DismissReport) }
     )
+}
+
+@Preview
+@Composable
+private fun ProcessingHistoryScreenPreview() {
+    MaterialTheme {
+        ProcessingHistoryScreen(
+            state = ProcessingHistoryState(),
+            onIntent = {},
+            snackbarHostState = SnackbarHostState()
+        )
+    }
 }

@@ -46,6 +46,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import data.remote.resolveApiUrl
@@ -405,6 +406,19 @@ fun PublicPackDetailScreen(
             onConfirm = { onIntent(PublicPackDetailIntent.ConfirmBlockCreator) },
             onDismiss = { onIntent(PublicPackDetailIntent.DismissBlockCreatorConfirm) },
             isLoading = state.isBlockingCreator
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun PublicPackDetailScreenPreview() {
+    MaterialTheme {
+        PublicPackDetailScreen(
+            state = PublicPackDetailState(),
+            packId = "",
+            onIntent = {},
+            snackbarHostState = SnackbarHostState()
         )
     }
 }

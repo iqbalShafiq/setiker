@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
@@ -309,5 +310,16 @@ fun SettingsScreen(
             }
             item { Spacer(modifier = Modifier.height(16.dp)) }
         }
+    }
+}
+
+@Preview
+@Composable
+private fun SettingsScreenPreview() {
+    MaterialTheme {
+        SettingsScreen(
+            state = SettingsState(),
+            onIntent = {}
+        )
     }
 }
