@@ -5,6 +5,8 @@
     <string name="error_auth_register_failed">Akun tidak bisa dibuat. Periksa data Anda dan coba lagi.</string>
     <string name="error_auth_refresh_failed">Sesi berakhir. Silakan masuk lagi.</string>
     <string name="error_ai_quota_exceeded">Kuota AI harian habis. Coba lagi setelah reset.</string>
+    <string name="error_ai_service_unavailable">Layanan AI sedang tidak tersedia. Coba lagi nanti.</string>
+    <string name="video_pack_ask_ai_hint">Perencanaan AI bisa memakan waktu hingga 2 menit. Anda boleh keluar dari aplikasi; kami akan memberi tahu saat sudah siap.</string>
     <string name="quota_exceeded_sheet_title">Kuota AI habis</string>
     <string name="quota_exceeded_sheet_message">Dapatkan poin AI tambahan dengan paket token atau upgrade ke Premium untuk limit harian lebih tinggi.</string>
     <string name="quota_exceeded_get_more">Dapatkan poin</string>

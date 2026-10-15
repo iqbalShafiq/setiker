@@ -30,6 +30,7 @@ enum class AppErrorCode {
     AuthPasswordResetFailed("AUTH_PASSWORD_RESET_FAILED"),
     AuthInvalidPasswordResetToken("AUTH_INVALID_PASSWORD_RESET_TOKEN"),
     AiQuotaExceeded("AI_QUOTA_EXCEEDED"),
+    AiServiceUnavailable("AI_SERVICE_UNAVAILABLE"),
     CloudFetchFailed("CLOUD_FETCH_FAILED"),
     CloudCreateFailed("CLOUD_CREATE_FAILED"),
     CloudUpdateFailed("CLOUD_UPDATE_FAILED"),

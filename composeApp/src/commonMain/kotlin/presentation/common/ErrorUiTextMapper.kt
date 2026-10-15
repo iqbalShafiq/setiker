@@ -7,6 +7,7 @@ import domain.error.serverSubcodeToAppErrorCode
 import org.jetbrains.compose.resources.StringResource
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_ai_quota_exceeded
+import setiker.composeapp.generated.resources.error_ai_service_unavailable
 import setiker.composeapp.generated.resources.error_auth_account_deactivated
 import setiker.composeapp.generated.resources.error_auth_account_exists_password
 import setiker.composeapp.generated.resources.error_auth_account_exists_other_provider
@@ -83,6 +84,7 @@ private fun AppErrorCode.toStringResource(): StringResource {
         AppErrorCode.AuthPasswordResetFailed -> Res.string.error_auth_password_reset_failed
         AppErrorCode.AuthInvalidPasswordResetToken -> Res.string.error_auth_invalid_reset_token
         AppErrorCode.AiQuotaExceeded -> Res.string.error_ai_quota_exceeded
+        AppErrorCode.AiServiceUnavailable -> Res.string.error_ai_service_unavailable
         AppErrorCode.CloudFetchFailed -> Res.string.error_cloud_fetch_failed
         AppErrorCode.CloudCreateFailed -> Res.string.error_cloud_create_failed
         AppErrorCode.CloudUpdateFailed -> Res.string.error_cloud_update_failed

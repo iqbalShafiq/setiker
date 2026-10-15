@@ -311,6 +311,7 @@
     <string name="error_cloud_delete_failed">Could not delete on the server.</string>
     <string name="error_cloud_sync_failed">Sync failed. Try again when you are back online.</string>
     <string name="error_ai_quota_exceeded">Daily AI limit reached. Try again after reset.</string>
+    <string name="error_ai_service_unavailable">The AI service is temporarily unavailable. Please try again later.</string>
     <string name="quota_exceeded_sheet_title">AI quota used up</string>
     <string name="quota_exceeded_sheet_message">Get more AI points with a token pack or upgrade to Premium for a higher daily limit.</string>
     <string name="quota_exceeded_get_more">Get more points</string>
@@ -676,6 +677,7 @@
     <string name="video_pack_find_frames">Finding clear frames</string>
     <string name="video_pack_build_grids">Building candidate grids</string>
     <string name="video_pack_ask_ai">Asking AI Agent</string>
+    <string name="video_pack_ask_ai_hint">AI planning can take up to 2 minutes. You can leave the app; we will notify you when it is ready.</string>
     <string name="video_pack_prepare_preview">Preparing preview</string>
     <string name="video_pack_prompt_label">Style prompt (optional)</string>
     <string name="video_pack_prompt_placeholder">e.g. funny reactions, bold captions</string>

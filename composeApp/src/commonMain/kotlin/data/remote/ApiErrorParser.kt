@@ -21,6 +21,8 @@ object ApiErrorParser {
                 "RATE_LIMITED" -> AppErrorCode.AiQuotaExceeded
                 "UNAUTHORIZED" -> AppErrorCode.AuthNotAuthenticated
                 "CONFLICT" -> AppErrorCode.AuthRegisterFailed
+                "AI_NOT_CONFIGURED",
+                "AI_MODEL_NOT_CONFIGURED" -> AppErrorCode.AiServiceUnavailable
                 else -> null
             }
         return ParsedApiError(
