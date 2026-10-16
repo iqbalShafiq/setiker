@@ -1,6 +1,8 @@
 # P3a — KMP Module Split: `:androidApp` + Android KMP Library `:composeApp`
 
-Status: SPEC (implementation not started)
+Status: DONE — implemented on `audit/android-modernization`. Gate results and the deviations
+from this spec (resource-based BuildConfig transport, no codegen) are recorded in
+`docs/plans/2026-10-16-p3a-kmp-module-split.md`.
 Scope: Gradle/module topology only. No application behavior change.
 Target toolchain: AGP 9.4.1, Gradle 9.6.0, Kotlin 2.4.21, KSP 2.3.12, Compose Multiplatform 1.12.1, Room 2.8.5, JDK 21.
 
