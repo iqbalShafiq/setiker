@@ -11,8 +11,8 @@ import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
-import com.setiker.app.BuildConfig
 import com.setiker.app.MainActivityHolder
+import com.setiker.app.SetikerRuntimeConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -21,13 +21,13 @@ class AndroidGoogleSignInGateway(
 ) : GoogleSignInGateway {
 
     override fun isAvailable(): Boolean =
-        BuildConfig.GOOGLE_WEB_CLIENT_ID.isNotBlank()
+        SetikerRuntimeConfig.googleWebClientId.isNotBlank()
 
     override suspend fun signIn(mode: GoogleSignInMode): Result<GoogleIdTokenResult> =
         withContext(Dispatchers.Main) {
             val activity = activityProvider()
                 ?: return@withContext Result.failure(IllegalStateException("No activity for Google Sign-In"))
-            val serverClientId = BuildConfig.GOOGLE_WEB_CLIENT_ID
+            val serverClientId = SetikerRuntimeConfig.googleWebClientId
             if (serverClientId.isBlank()) {
                 return@withContext Result.failure(
                     IllegalStateException("GOOGLE_WEB_CLIENT_ID is not configured in local.properties")

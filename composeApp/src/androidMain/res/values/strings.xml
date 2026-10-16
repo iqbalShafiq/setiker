@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">setiker</string>
+    <!--
+        Overridden by :androidApp (resValue) with the GOOGLE_WEB_CLIENT_ID from local.properties.
+        The library keeps an empty default so it can be used standalone.
+    -->
+    <string name="google_web_client_id" translatable="false"></string>
 </resources>

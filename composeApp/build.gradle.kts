@@ -1,13 +1,12 @@
 @file:OptIn(ExperimentalKotlinGradlePluginApi::class)
 @file:Suppress("UnstableApiUsage")
 
-import java.util.Properties
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidApplication)
+    alias(libs.plugins.androidKmpLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
@@ -15,10 +14,27 @@ plugins {
 }
 
 kotlin {
-    androidTarget {
+    android {
+        namespace = "com.setiker.app"
+        compileSdk = 37
+        minSdk = 24
+
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_21)
             freeCompilerArgs.add("-Xexpect-actual-classes")
+        }
+
+        // Android resources are opt-in with the KMP Android library plugin.
+        // src/androidMain/res must be packaged into the AAR: the app manifest references
+        // @style/@mipmap/@string/@xml resources that live here.
+        androidResources {
+            enable = true
+        }
+
+        withHostTest {}
+
+        lint {
+            disable += "UnsafeOptInUsageError"
         }
     }
 
@@ -31,7 +47,7 @@ kotlin {
             isStatic = true
         }
     }
-    
+
     sourceSets {
         commonMain.dependencies {
             implementation(libs.runtime)
@@ -63,12 +79,11 @@ kotlin {
             implementation(libs.androidx.datastore.preferences)
             implementation(libs.reorderable)
         }
-        
+
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)
             implementation(libs.koin.android)
             implementation(libs.koin.androidx.compose)
-            implementation(libs.ui.tooling)
             implementation(libs.ui.tooling.preview)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.androidx.media3.transformer)
@@ -92,13 +107,13 @@ kotlin {
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
         }
-        
+
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.test)
         }
 
-        androidUnitTest.dependencies {
+        getByName("androidHostTest").dependencies {
             implementation(libs.mockk)
         }
     }
@@ -106,58 +121,8 @@ kotlin {
 
 dependencies {
     add("kspAndroid", libs.room.compiler)
-}
 
-android {
-    namespace = "com.setiker.app"
-    compileSdk = 37
-    
-    sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
-    sourceSets["main"].res.srcDirs("src/androidMain/res")
-    sourceSets["main"].resources.srcDirs("src/commonMain/resources")
-
-    val localProperties = Properties().apply {
-        val file = rootProject.file("local.properties")
-        if (file.exists()) {
-            file.inputStream().use { load(it) }
-        }
-    }
-    val googleWebClientId = localProperties.getProperty("GOOGLE_WEB_CLIENT_ID")
-        ?: (project.findProperty("GOOGLE_WEB_CLIENT_ID") as String?)
-        ?: ""
-    
-    defaultConfig {
-        applicationId = "com.setiker.app"
-        minSdk = 24
-        targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
-        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
-    }
-    
-    buildFeatures {
-        compose = true
-        buildConfig = true
-    }
-    
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
-    }
-    
-    buildTypes {
-        getByName("release") {
-            isMinifyEnabled = false
-        }
-    }
-    
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
-    }
-
-    lint {
-        disable += "UnsafeOptInUsageError"
-    }
+    // Compose preview tooling is runtime-only: it must not end up on the compile classpath
+    // or in the library API (AGP 9 KMP workaround).
+    "androidRuntimeClasspath"(libs.ui.tooling)
 }

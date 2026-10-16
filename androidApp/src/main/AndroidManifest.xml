@@ -7,9 +7,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-    
-    <!-- Storage permissions for Android 12 and below -->
-    
+
     <!-- Photo/video access uses system picker (SAF); no broad media permissions required -->
     <!-- Permission to query if WhatsApp is installed -->
     <queries>
@@ -18,7 +16,7 @@
     </queries>
 
     <application
-        android:name=".StickerApplication"
+        android:name="com.setiker.app.StickerApplication"
         android:largeHeap="true"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -28,9 +26,9 @@
         android:usesCleartextTraffic="true"
         android:supportsRtl="true"
         android:theme="@style/Theme.Setiker">
-        
+
         <activity
-            android:name=".MainActivity"
+            android:name="com.setiker.app.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.Setiker.Splash"
             android:windowSoftInputMode="adjustResize">
@@ -68,7 +66,7 @@
 
         <!-- WhatsApp Sticker ContentProvider -->
         <provider
-            android:name=".StickerContentProvider"
+            android:name="com.setiker.app.StickerContentProvider"
             android:authorities="${applicationId}.stickercontentprovider"
             android:enabled="true"
             android:exported="true"

@@ -20,6 +20,7 @@ import org.koin.core.context.startKoin
 class StickerApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+        SetikerRuntimeConfig.install(applicationInfo, getString(R.string.google_web_client_id))
         ForegroundActivityProvider.install(this)
 
         startKoin {

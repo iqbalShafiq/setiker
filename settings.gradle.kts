@@ -15,3 +15,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Setiker"
 include(":composeApp")
+include(":androidApp")
