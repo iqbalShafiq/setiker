@@ -14,6 +14,12 @@ plugins {
 }
 
 kotlin {
+    // Applies to every target and to the common metadata compilation, which the Android-only
+    // compilerOptions block below would not reach.
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
+
     android {
         namespace = "com.setiker.app"
         compileSdk = 37
@@ -21,7 +27,6 @@ kotlin {
 
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_21)
-            freeCompilerArgs.add("-Xexpect-actual-classes")
         }
 
         // Android resources are opt-in with the KMP Android library plugin.

@@ -25,6 +25,7 @@ import presentation.aijob.toSnapshot
 import presentation.moderation.AiOutputReportSupport
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
+import util.AppLog
 import data.util.EmojiPreferences
 import data.util.OnDeviceImageProcessor
 import domain.model.AiQuotaOperation
@@ -866,9 +867,9 @@ class EditorViewModel(
                         )
                     }
                     if (isPathModified) {
-                        android.util.Log.d("EditorViewModel", "Preserving modified image path: $currentImagePath")
+                        AppLog.d("EditorViewModel", "Preserving modified image path: $currentImagePath")
                     } else {
-                        android.util.Log.d("EditorViewModel", "Loaded sticker: ${sticker.imageFile}")
+                        AppLog.d("EditorViewModel", "Loaded sticker: ${sticker.imageFile}")
                     }
                 }
             } catch (e: Exception) {
@@ -891,13 +892,13 @@ class EditorViewModel(
             
             if (effectivePackId.isBlank()) {
                 _effect.send(EditorEffect.ShowError(UiText.StringRes(Res.string.error_pack_id_missing)))
-                android.util.Log.e("EditorViewModel", "Cannot save sticker: packId is blank! state.packId='${currentState.packId}', field.packId='$packId'")
+                AppLog.e("EditorViewModel", "Cannot save sticker: packId is blank! state.packId='${currentState.packId}', field.packId='$packId'")
                 return@launch
             }
 
             try {
                 _state.update { it.copy(isSaving = true) }
-                android.util.Log.d("EditorViewModel", "Saving sticker with packId: '$effectivePackId'")
+                AppLog.d("EditorViewModel", "Saving sticker with packId: '$effectivePackId'")
                 
                 // Save editable base image and flattened preview image separately
                 val time = Clock.System.now().toEpochMilliseconds()
@@ -931,19 +932,19 @@ class EditorViewModel(
 
                 // Update existing sticker or add new one
                 val index = currentState.stickerIndex
-                android.util.Log.d("EditorViewModel", "Saving sticker - index from state: $index, field: $stickerIndex")
+                AppLog.d("EditorViewModel", "Saving sticker - index from state: $index, field: $stickerIndex")
                 if (index != null) {
                     repository.updateStickerInPack(effectivePackId, index, sticker)
-                    android.util.Log.d("EditorViewModel", "Updated sticker at index $index")
+                    AppLog.d("EditorViewModel", "Updated sticker at index $index")
                 } else {
                     repository.addStickerToPack(effectivePackId, sticker)
-                    android.util.Log.d("EditorViewModel", "Added new sticker")
+                    AppLog.d("EditorViewModel", "Added new sticker")
                 }
                 _state.update { it.copy(isSaving = false) }
                 _effect.send(EditorEffect.StickerSaved)
             } catch (e: Exception) {
                 _state.update { it.copy(isSaving = false) }
-                android.util.Log.e("EditorViewModel", "Failed to save sticker: ${e.message}", e)
+                AppLog.e("EditorViewModel", "Failed to save sticker: ${e.message}", e)
                 _effect.send(
                     EditorEffect.ShowError(
                         e.toUiText(Res.string.error_failed_save_sticker)

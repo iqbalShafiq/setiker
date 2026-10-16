@@ -1,6 +1,6 @@
-package data.aijob
+package util
 
-internal actual object AiJobProgressLog {
+internal actual object AppLog {
     actual fun e(tag: String, message: String, throwable: Throwable?) {
         println("E/$tag: $message${throwable?.let { " (${it.message})" }.orEmpty()}")
     }

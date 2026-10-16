@@ -1,6 +1,6 @@
 package data.remote
 
-import data.aijob.AiJobProgressLog
+import util.AppLog
 import data.remote.mapper.toDecorationApiImage
 import data.util.deleteLocalFileQuietly
 import data.util.releaseMemoryAfterStickerStep
@@ -151,7 +151,7 @@ class StickerApiRepository(
     ): List<GridSplitStickerFile> {
         val (rows, cols) = parseGridLayout(layout)
         val cellCount = rows * cols
-        AiJobProgressLog.i(LOG_TAG, "splitGridOnDevice start layout=${rows}x$cols cells=$cellCount")
+        AppLog.i(LOG_TAG, "splitGridOnDevice start layout=${rows}x$cols cells=$cellCount")
         onProgress(
             GridSplitOnDeviceProgressUpdate(
                 phase = GridSplitProgressPhase.SplittingCells,
@@ -171,7 +171,7 @@ class StickerApiRepository(
                 total = rawCellPaths.size
             )
         )
-        AiJobProgressLog.i(
+        AppLog.i(
             LOG_TAG,
             "splitGridOnDevice cells_ready count=${rawCellPaths.size}"
         )
@@ -184,9 +184,9 @@ class StickerApiRepository(
                 total = 0
             )
         )
-        AiJobProgressLog.i(LOG_TAG, "splitGridOnDevice text_assets_request cells=$total")
+        AppLog.i(LOG_TAG, "splitGridOnDevice text_assets_request cells=$total")
         val textAssets = extractTextAssetsOrEmpty(rawCellPaths)
-        AiJobProgressLog.i(
+        AppLog.i(
             LOG_TAG,
             "splitGridOnDevice text_assets_done decorations=${textAssets.size}"
         )
@@ -200,12 +200,12 @@ class StickerApiRepository(
                     total = total
                 )
             )
-            AiJobProgressLog.i(
+            AppLog.i(
                 LOG_TAG,
                 "remove_background start sticker=$stickerIndex/$total"
             )
             val processedPath = onDeviceImageProcessor.removeBackground(rawCellPath)
-            AiJobProgressLog.i(
+            AppLog.i(
                 LOG_TAG,
                 "remove_background done sticker=$stickerIndex/$total output=${processedPath.takeLast(64)}"
             )
@@ -220,7 +220,7 @@ class StickerApiRepository(
                     .orEmpty()
             )
         }.also {
-            AiJobProgressLog.i(LOG_TAG, "splitGridOnDevice complete stickers=${it.size}")
+            AppLog.i(LOG_TAG, "splitGridOnDevice complete stickers=${it.size}")
         }
     }
 
@@ -265,7 +265,7 @@ class StickerApiRepository(
         rawCellPaths: List<String>
     ) = runCatching { api.extractGridTextAssets(rawCellPaths) }
             .onFailure { error ->
-                AiJobProgressLog.w(
+                AppLog.w(
                     LOG_TAG,
                     "grid_text_assets failed cells=${rawCellPaths.size} reason=${error.message}",
                     error

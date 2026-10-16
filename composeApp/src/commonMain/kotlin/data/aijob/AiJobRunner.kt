@@ -40,6 +40,7 @@ import domain.repository.StickerRepository
 import domain.repository.WorkspaceDraftRepository
 import presentation.common.settlesQuotaOnApi
 import domain.util.VideoStickerPackPlanner
+import data.util.isOutOfMemoryError
 import data.util.OnDeviceImageProcessor
 import kotlin.time.Clock
 import kotlinx.coroutines.CancellationException
@@ -54,6 +55,7 @@ import presentation.common.PackIdentifierSanitizer
 import presentation.common.toQuotaOperation
 import presentation.videostickerpack.selectionKey
 import kotlin.random.Random
+import util.AppLog
 
 class AiJobRunner(
     private val jobRepository: AiJobRepository,
@@ -427,7 +429,7 @@ class AiJobRunner(
         val fraction = gridSplitFraction(update)
         val label = update.stepLabel()
         updateProgress(jobId, stepKey, label, fraction)
-        AiJobProgressLog.i(
+        AppLog.i(
             AI_JOB_LOG_TAG,
             "jobId=$jobId ${update.logLine()} fraction=$fraction label=$label"
         )
@@ -438,8 +440,9 @@ class AiJobRunner(
     }
 
     private suspend fun handleFailure(job: AiJob, throwable: Throwable) {
-        if (throwable is OutOfMemoryError) {
-            AiJobProgressLog.e(
+        val outOfMemory = isOutOfMemoryError(throwable)
+        if (outOfMemory) {
+            AppLog.e(
                 AI_JOB_LOG_TAG,
                 "jobId=${job.id} failed with OOM during on-device processing",
                 throwable
@@ -458,15 +461,15 @@ class AiJobRunner(
             )
             return
         }
-        val (kind, retryable) = if (throwable is OutOfMemoryError) {
+        val (kind, retryable) = if (outOfMemory) {
             AiJobFailureKind.LOCAL_PROCESSOR to true
         } else {
             AiJobFailureClassifier.classify(throwable)
         }
-        val message = when (throwable) {
-            is OutOfMemoryError ->
-                "Memori penuh saat menghapus background. Tutup app lain lalu coba lagi."
-            else -> throwable.message ?: "Processing failed"
+        val message = if (outOfMemory) {
+            "Memori penuh saat menghapus background. Tutup app lain lalu coba lagi."
+        } else {
+            throwable.message ?: "Processing failed"
         }
         val now = Clock.System.now().toEpochMilliseconds()
         val exhausted = job.attemptCount >= AiJobManager.MAX_AUTO_RETRY_ATTEMPTS
@@ -547,7 +550,7 @@ class AiJobRunner(
             jobId,
             AiJobProgress(stepKey = stepKey, stepLabel = stepLabel, fraction = fraction)
         )
-        AiJobProgressLog.d(
+        AppLog.d(
             AI_JOB_LOG_TAG,
             "progress jobId=$jobId step=$stepKey fraction=$fraction label=$stepLabel"
         )

@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
+import util.AppLog
 
 @Composable
 fun EditorScreenRoot(
@@ -41,7 +42,7 @@ fun EditorScreenRoot(
 
     LaunchedEffect(croppedImagePath) {
         croppedImagePath?.let { path ->
-            android.util.Log.d("EditorScreenRoot", "Processing crop result: $path")
+            AppLog.d("EditorScreenRoot", "Processing crop result: $path")
             viewModel.onIntent(EditorIntent.UpdateImagePath(path))
             onResultProcessed()
         }

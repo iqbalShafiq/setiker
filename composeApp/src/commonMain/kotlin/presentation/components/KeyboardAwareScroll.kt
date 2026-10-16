@@ -2,9 +2,7 @@ package presentation.components
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.imeNestedScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
@@ -15,14 +13,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
 /**
- * Applies [keyboardAwareInsets], [imeNestedScroll], and [verticalScroll] in the
+ * Applies [keyboardAwareInsets], [imeNestedScrollCompat], and [verticalScroll] in the
  * recommended order for text-input screens.
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun Modifier.keyboardAwareScroll(scrollState: ScrollState): Modifier =
     keyboardAwareInsets()
-        .imeNestedScroll()
+        .imeNestedScrollCompat()
         .verticalScroll(scrollState)
 
 /**
@@ -31,18 +28,15 @@ fun Modifier.keyboardAwareScroll(scrollState: ScrollState): Modifier =
  * The bar applies [androidx.compose.foundation.layout.imePadding]; content must not
  * add [keyboardAwareInsets] or the form is clipped and a gap appears above the bar.
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun Modifier.scaffoldBottomBarScroll(scrollState: ScrollState): Modifier =
-    imeNestedScroll()
+    imeNestedScrollCompat()
         .verticalScroll(scrollState)
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun Modifier.scaffoldBottomBarLazyList(): Modifier =
-    imeNestedScroll()
+    imeNestedScrollCompat()
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ScaffoldBottomBarLazyColumn(
     modifier: Modifier = Modifier,

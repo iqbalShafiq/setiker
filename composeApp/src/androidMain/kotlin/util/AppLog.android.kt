@@ -1,8 +1,8 @@
-package data.aijob
+package util
 
 import android.util.Log
 
-internal actual object AiJobProgressLog {
+internal actual object AppLog {
     actual fun e(tag: String, message: String, throwable: Throwable?) {
         if (throwable != null) {
             Log.e(tag, message, throwable)
