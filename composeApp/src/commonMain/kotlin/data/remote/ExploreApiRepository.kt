@@ -2,6 +2,16 @@ package data.remote
 
 import data.auth.AuthManager
 import data.auth.AuthTokenRefresher
+import data.remote.explore.ExploreAuthMode
+import data.remote.explore.ExploreGateway
+import data.remote.explore.HistoryDataSource
+import data.remote.explore.ModerationDataSource
+import data.remote.explore.NotificationDataSource
+import data.remote.explore.PackShareLinkDataSource
+import data.remote.explore.PackSocialDataSource
+import data.remote.explore.StickerShareLinkDataSource
+import data.remote.explore.UserDirectoryDataSource
+import data.remote.json.ApiJson
 import data.remote.model.AcceptSharedPackData
 import data.remote.model.AcceptSharedStickerData
 import data.remote.model.ApiErrorEnvelope
@@ -11,49 +21,37 @@ import data.remote.model.BlockedUsersData
 import data.remote.model.CloudStickerPack
 import data.remote.model.CloudStickerPackShareLink
 import data.remote.model.CloudStickerShareLink
-import data.remote.model.CloudSticker
 import data.remote.model.CreateStickerPackLinkRequest
-import data.remote.model.DeleteCountData
-import data.remote.model.PackSocialStateData
 import data.remote.model.FeaturedTodayData
 import data.remote.model.ImportPublicPackResult
 import data.remote.model.PackCollaborator
+import data.remote.model.PackSocialStateData
 import data.remote.model.ProcessingHistoryItem
-import data.remote.model.PromptPresetDto
-import domain.model.PromptPreset
 import data.remote.model.PublicUserProfile
-import data.remote.model.ReportContentRequest
 import data.remote.model.SharePackWithUserRequest
-import kotlinx.serialization.Serializable
-import data.remote.model.UserNotificationItem
-import data.remote.model.UserSearchResult
 import data.remote.model.SharePreviewPackData
 import data.remote.model.SharePreviewStickerData
 import data.remote.model.UserFollowStateData
+import data.remote.model.UserNotificationItem
+import data.remote.model.UserSearchResult
 import domain.error.AppErrorCode
+import domain.model.PromptPreset
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
-import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
-import io.ktor.client.request.patch
 import io.ktor.client.request.post
-import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.ContentType
-import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
-import data.remote.json.ApiJson
-import kotlinx.serialization.json.Json
 
 enum class ExploreSort(val value: String) {
     RECENT("recent"),
@@ -78,6 +76,12 @@ data class PaginatedResult<T>(
     val totalPages: Int
 )
 
+/**
+ * Public API facade of the explore plane (spec P3b, D5). Endpoint bodies live in the
+ * `data.remote.explore` data sources, wired through a private [ExploreGateway]; this class
+ * keeps the home surface (public packs/detail, import, featured), the client, and the
+ * auth-retry implementation. Method signatures are unchanged, so call sites stay untouched.
+ */
 class ExploreApiRepository(
     private val authManager: AuthManager,
     private val authTokenRefresher: AuthTokenRefresher? = null,
@@ -105,6 +109,28 @@ class ExploreApiRepository(
         }
     }
 
+    private val gateway: ExploreGateway = object : ExploreGateway {
+        override val http: HttpClient get() = client
+        override val baseUrl: String get() = this@ExploreApiRepository.baseUrl
+
+        override suspend fun authRetry(
+            mode: ExploreAuthMode,
+            request: suspend (authHeader: String?) -> HttpResponse,
+        ): HttpResponse = runAuthRetry(mode, request)
+
+        override fun extractMessage(bodyText: String): String? =
+            this@ExploreApiRepository.extractMessage(bodyText)
+    }
+
+    // Must be declared after `gateway` so the sources capture the finished object.
+    private val social = PackSocialDataSource(gateway)
+    private val packShares = PackShareLinkDataSource(gateway)
+    private val stickerShares = StickerShareLinkDataSource(gateway)
+    private val userDirectory = UserDirectoryDataSource(gateway)
+    private val notifications = NotificationDataSource(gateway)
+    private val history = HistoryDataSource(gateway)
+    private val moderation = ModerationDataSource(gateway)
+
     private fun extractMessage(bodyText: String): String? {
         return runCatching { json.decodeFromString<ApiErrorEnvelope>(bodyText) }
             .getOrNull()
@@ -123,23 +149,35 @@ class ExploreApiRepository(
         return if (refreshed.isNullOrBlank()) null else refreshed
     }
 
-    private suspend fun withOptionalAuthRetry(request: suspend (String?) -> HttpResponse): HttpResponse {
-        val firstToken = resolveAccessToken()
-        val firstResponse = request(firstToken?.let { "Bearer $it" })
-        if (firstResponse.status != HttpStatusCode.Unauthorized || firstToken.isNullOrBlank()) {
-            return firstResponse
+    /**
+     * Single implementation of the optional/required auth-retry pair: `Required` throws when no
+     * token is available, `Optional` proceeds unauthenticated; both retry once on 401 after a
+     * forced token refresh. `Public` never attaches an Authorization header.
+     */
+    private suspend fun runAuthRetry(
+        mode: ExploreAuthMode,
+        request: suspend (String?) -> HttpResponse,
+    ): HttpResponse = when (mode) {
+        ExploreAuthMode.Public -> {
+            request(null)
         }
-
-        val refreshedToken = forceRefreshAccessToken() ?: return firstResponse
-        return request("Bearer $refreshedToken")
-    }
-
-    private suspend fun withRequiredAuthRetry(request: suspend (String) -> HttpResponse): HttpResponse {
-        val firstToken = resolveAccessToken() ?: throw ApiException(code = AppErrorCode.AuthNotAuthenticated)
-        val firstResponse = request("Bearer $firstToken")
-        if (firstResponse.status != HttpStatusCode.Unauthorized) return firstResponse
-        val refreshedToken = forceRefreshAccessToken() ?: return firstResponse
-        return request("Bearer $refreshedToken")
+        ExploreAuthMode.Optional -> {
+            val firstToken = resolveAccessToken()
+            val firstResponse = request(firstToken?.let { "Bearer $it" })
+            if (firstResponse.status != HttpStatusCode.Unauthorized || firstToken.isNullOrBlank()) {
+                firstResponse
+            } else {
+                val refreshedToken = forceRefreshAccessToken() ?: return firstResponse
+                request("Bearer $refreshedToken")
+            }
+        }
+        ExploreAuthMode.Required -> {
+            val firstToken = resolveAccessToken() ?: throw ApiException(code = AppErrorCode.AuthNotAuthenticated)
+            val firstResponse = request("Bearer $firstToken")
+            if (firstResponse.status != HttpStatusCode.Unauthorized) return firstResponse
+            val refreshedToken = forceRefreshAccessToken() ?: return firstResponse
+            request("Bearer $refreshedToken")
+        }
     }
 
     suspend fun getPublicPacks(
@@ -156,7 +194,7 @@ class ExploreApiRepository(
             ExploreFeed.SHARED_WITH_ME -> "/api/v1/sticker-packs/shared-with-me"
         }
         val response = if (feed == ExploreFeed.DISCOVER) {
-            withOptionalAuthRetry { authHeader ->
+            runAuthRetry(ExploreAuthMode.Optional) { authHeader ->
                 client.get("$baseUrl$path") {
                     authHeader?.let { header(HttpHeaders.Authorization, it) }
                     parameter("page", page)
@@ -166,7 +204,7 @@ class ExploreApiRepository(
                 }
             }
         } else {
-            withRequiredAuthRetry { authHeader ->
+            runAuthRetry(ExploreAuthMode.Required) { authHeader ->
                 client.get("$baseUrl$path") {
                     header(HttpHeaders.Authorization, authHeader)
                     parameter("page", page)
@@ -192,7 +230,7 @@ class ExploreApiRepository(
     }
 
     suspend fun getPublicPackDetail(packId: String): CloudStickerPack {
-        val response = withOptionalAuthRetry { authHeader ->
+        val response = runAuthRetry(ExploreAuthMode.Optional) { authHeader ->
             client.get("$baseUrl/api/v1/sticker-packs/public/$packId") {
                 authHeader?.let { header(HttpHeaders.Authorization, it) }
             }
@@ -206,7 +244,7 @@ class ExploreApiRepository(
     }
 
     suspend fun importPublicPack(packId: String): ImportPublicPackResult {
-        val response = withRequiredAuthRetry { authHeader ->
+        val response = runAuthRetry(ExploreAuthMode.Required) { authHeader ->
             client.post("$baseUrl/api/v1/sticker-packs/$packId/import") {
                 header(HttpHeaders.Authorization, authHeader)
             }
@@ -220,7 +258,7 @@ class ExploreApiRepository(
     }
 
     suspend fun getFeaturedToday(): FeaturedTodayData? {
-        val response = withOptionalAuthRetry { authHeader ->
+        val response = runAuthRetry(ExploreAuthMode.Optional) { authHeader ->
             client.get("$baseUrl/api/v1/featured/today") {
                 authHeader?.let { header(HttpHeaders.Authorization, it) }
             }
@@ -233,17 +271,7 @@ class ExploreApiRepository(
     }
 
     suspend fun getPublicUserProfile(userId: String): PublicUserProfile {
-        val response = withOptionalAuthRetry { authHeader ->
-            client.get("$baseUrl/api/v1/users/$userId/public") {
-                authHeader?.let { header(HttpHeaders.Authorization, it) }
-            }
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudFetchFailed, message = extractMessage(bodyText))
-        }
-        return json.decodeFromString<ApiSuccessEnvelope<PublicUserProfile>>(bodyText).data
-            ?: throw ApiException(code = AppErrorCode.CloudFetchFailed)
+        return userDirectory.getPublicUserProfile(userId)
     }
 
     suspend fun getPublicUserPacks(
@@ -252,488 +280,140 @@ class ExploreApiRepository(
         limit: Int,
         sort: ExploreSort
     ): PaginatedResult<CloudStickerPack> {
-        val response = withOptionalAuthRetry { authHeader ->
-            client.get("$baseUrl/api/v1/users/$userId/packs/public") {
-                authHeader?.let { header(HttpHeaders.Authorization, it) }
-                parameter("page", page)
-                parameter("limit", limit)
-                parameter("sort", sort.value)
-            }
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudFetchFailed, message = extractMessage(bodyText))
-        }
-        val envelope = json.decodeFromString<ApiPaginatedSuccessEnvelope<List<CloudStickerPack>>>(bodyText)
-        val pagination = envelope.meta?.pagination
-        return PaginatedResult(
-            data = envelope.data.orEmpty(),
-            page = pagination?.page ?: page,
-            limit = pagination?.limit ?: limit,
-            total = pagination?.total ?: envelope.data.orEmpty().size,
-            totalPages = pagination?.totalPages ?: 1
-        )
+        return userDirectory.getPublicUserPacks(userId, page, limit, sort)
     }
 
     suspend fun searchUsers(query: String, limit: Int = 10): List<UserSearchResult> {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.get("$baseUrl/api/v1/users/search") {
-                header(HttpHeaders.Authorization, authHeader)
-                parameter("q", query.trim())
-                parameter("limit", limit)
-            }
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudFetchFailed, message = extractMessage(bodyText))
-        }
-        return json.decodeFromString<ApiSuccessEnvelope<List<UserSearchResult>>>(bodyText).data.orEmpty()
+        return userDirectory.searchUsers(query, limit)
     }
 
     suspend fun sharePackWithUser(packId: String, request: SharePackWithUserRequest) {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.post("$baseUrl/api/v1/sticker-packs/$packId/share") {
-                header(HttpHeaders.Authorization, authHeader)
-                contentType(ContentType.Application.Json)
-                setBody(request)
-            }
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudCreateFailed, message = extractMessage(bodyText))
-        }
+        userDirectory.sharePackWithUser(packId, request)
     }
 
     suspend fun removePackCollaborator(packId: String, userId: String) {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.delete("$baseUrl/api/v1/sticker-packs/$packId/share") {
-                header(HttpHeaders.Authorization, authHeader)
-                contentType(ContentType.Application.Json)
-                setBody(RemovePackShareBody(userId))
-            }
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudDeleteFailed, message = extractMessage(bodyText))
-        }
+        userDirectory.removePackCollaborator(packId, userId)
     }
 
     suspend fun listPackCollaborators(packId: String): List<PackCollaborator> {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.get("$baseUrl/api/v1/sticker-packs/$packId/collaborators") {
-                header(HttpHeaders.Authorization, authHeader)
-            }
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudFetchFailed, message = extractMessage(bodyText))
-        }
-        return json.decodeFromString<ApiSuccessEnvelope<List<PackCollaborator>>>(bodyText).data.orEmpty()
+        return userDirectory.listPackCollaborators(packId)
     }
 
     suspend fun getNotifications(page: Int, limit: Int, unreadOnly: Boolean = false): Pair<List<UserNotificationItem>, Int> {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.get("$baseUrl/api/v1/notifications") {
-                header(HttpHeaders.Authorization, authHeader)
-                parameter("page", page)
-                parameter("limit", limit)
-                if (unreadOnly) parameter("unreadOnly", true)
-            }
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudFetchFailed, message = extractMessage(bodyText))
-        }
-        val envelope = json.decodeFromString<ApiPaginatedSuccessEnvelope<List<UserNotificationItem>>>(bodyText)
-        return envelope.data.orEmpty() to (envelope.meta?.unreadCount ?: 0)
+        return notifications.getNotifications(page, limit, unreadOnly)
     }
 
     suspend fun markNotificationRead(id: String) {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.patch("$baseUrl/api/v1/notifications/$id/read") {
-                header(HttpHeaders.Authorization, authHeader)
-            }
-        }
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudUpdateFailed, message = extractMessage(response.bodyAsText()))
-        }
+        notifications.markNotificationRead(id)
     }
 
     suspend fun markAllNotificationsRead() {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.post("$baseUrl/api/v1/notifications/read-all") {
-                header(HttpHeaders.Authorization, authHeader)
-            }
-        }
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudUpdateFailed, message = extractMessage(response.bodyAsText()))
-        }
+        notifications.markAllNotificationsRead()
     }
 
     suspend fun getPromptPresets(category: String? = null): List<PromptPreset> {
-        val response = client.get("$baseUrl/api/v1/prompt-presets") {
-            category?.trim()?.takeIf { it.isNotEmpty() }?.let { parameter("category", it) }
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudFetchFailed, message = extractMessage(bodyText))
-        }
-        return json.decodeFromString<ApiSuccessEnvelope<List<PromptPresetDto>>>(bodyText)
-            .data
-            .orEmpty()
-            .map { dto ->
-                PromptPreset(
-                    id = dto.id,
-                    title = dto.title,
-                    category = dto.category,
-                    prompt = dto.prompt,
-                    referenceHint = dto.referenceHint
-                )
-            }
+        return history.getPromptPresets(category)
     }
 
-    suspend fun likePack(packId: String): PackSocialStateData = postSocial("/api/v1/sticker-packs/$packId/like")
-    suspend fun unlikePack(packId: String): PackSocialStateData = deleteSocial("/api/v1/sticker-packs/$packId/like")
-    suspend fun savePack(packId: String): PackSocialStateData = postSocial("/api/v1/sticker-packs/$packId/save")
-    suspend fun unsavePack(packId: String): PackSocialStateData = deleteSocial("/api/v1/sticker-packs/$packId/save")
-    suspend fun trackDownload(packId: String): PackSocialStateData = postSocial("/api/v1/sticker-packs/$packId/download")
+    suspend fun likePack(packId: String): PackSocialStateData = social.likePack(packId)
+
+    suspend fun unlikePack(packId: String): PackSocialStateData = social.unlikePack(packId)
+
+    suspend fun savePack(packId: String): PackSocialStateData = social.savePack(packId)
+
+    suspend fun unsavePack(packId: String): PackSocialStateData = social.unsavePack(packId)
+
+    suspend fun trackDownload(packId: String): PackSocialStateData = social.trackDownload(packId)
 
     suspend fun followUser(userId: String): UserFollowStateData {
-        return postFollow("/api/v1/users/$userId/follow")
+        return social.followUser(userId)
     }
 
     suspend fun unfollowUser(userId: String): UserFollowStateData {
-        return deleteFollow("/api/v1/users/$userId/follow")
-    }
-
-    private suspend fun postSocial(path: String): PackSocialStateData {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.post("$baseUrl$path") {
-                header(HttpHeaders.Authorization, authHeader)
-            }
-        }
-        return decodeSocial(response)
-    }
-
-    private suspend fun deleteSocial(path: String): PackSocialStateData {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.delete("$baseUrl$path") {
-                header(HttpHeaders.Authorization, authHeader)
-            }
-        }
-        return decodeSocial(response)
-    }
-
-    private suspend fun decodeSocial(response: HttpResponse): PackSocialStateData {
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudUpdateFailed, message = extractMessage(bodyText))
-        }
-        return json.decodeFromString<ApiSuccessEnvelope<PackSocialStateData>>(bodyText).data
-            ?: throw ApiException(code = AppErrorCode.CloudUpdateFailed)
-    }
-
-    private suspend fun postFollow(path: String): UserFollowStateData {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.post("$baseUrl$path") {
-                header(HttpHeaders.Authorization, authHeader)
-            }
-        }
-        return decodeFollow(response)
-    }
-
-    private suspend fun deleteFollow(path: String): UserFollowStateData {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.delete("$baseUrl$path") {
-                header(HttpHeaders.Authorization, authHeader)
-            }
-        }
-        return decodeFollow(response)
-    }
-
-    private suspend fun decodeFollow(response: HttpResponse): UserFollowStateData {
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudUpdateFailed, message = extractMessage(bodyText))
-        }
-        return json.decodeFromString<ApiSuccessEnvelope<UserFollowStateData>>(bodyText).data
-            ?: throw ApiException(code = AppErrorCode.CloudUpdateFailed)
+        return social.unfollowUser(userId)
     }
 
     suspend fun previewPackShare(token: String): SharePreviewPackData {
-        val response = client.get("$baseUrl/api/v1/share/pack/$token")
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudFetchFailed, message = extractMessage(bodyText))
-        }
-        return json.decodeFromString<ApiSuccessEnvelope<SharePreviewPackData>>(bodyText).data
-            ?: throw ApiException(code = AppErrorCode.CloudFetchFailed)
+        return packShares.previewPackShare(token)
     }
 
     suspend fun previewStickerShare(token: String): SharePreviewStickerData {
-        val response = client.get("$baseUrl/api/v1/share/sticker/$token")
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudFetchFailed, message = extractMessage(bodyText))
-        }
-        return json.decodeFromString<ApiSuccessEnvelope<SharePreviewStickerData>>(bodyText).data
-            ?: throw ApiException(code = AppErrorCode.CloudFetchFailed)
+        return packShares.previewStickerShare(token)
     }
 
     suspend fun acceptPackShare(token: String): AcceptSharedPackData {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.post("$baseUrl/api/v1/share/pack/$token/accept") {
-                header(HttpHeaders.Authorization, authHeader)
-            }
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudCreateFailed, message = extractMessage(bodyText))
-        }
-        return json.decodeFromString<ApiSuccessEnvelope<AcceptSharedPackData>>(bodyText).data
-            ?: throw ApiException(code = AppErrorCode.CloudCreateFailed)
+        return packShares.acceptPackShare(token)
     }
 
     suspend fun acceptStickerShare(token: String): AcceptSharedStickerData {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.post("$baseUrl/api/v1/share/sticker/$token/accept") {
-                header(HttpHeaders.Authorization, authHeader)
-            }
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudCreateFailed, message = extractMessage(bodyText))
-        }
-        return json.decodeFromString<ApiSuccessEnvelope<AcceptSharedStickerData>>(bodyText).data
-            ?: throw ApiException(code = AppErrorCode.CloudCreateFailed)
+        return packShares.acceptStickerShare(token)
     }
 
     suspend fun getPackLinks(packId: String): List<CloudStickerPackShareLink> {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.get("$baseUrl/api/v1/sticker-packs/$packId/links") {
-                header(HttpHeaders.Authorization, authHeader)
-            }
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudFetchFailed, message = extractMessage(bodyText))
-        }
-        return json.decodeFromString<ApiSuccessEnvelope<List<CloudStickerPackShareLink>>>(bodyText).data.orEmpty()
+        return packShares.getPackLinks(packId)
     }
 
     suspend fun createPackLink(packId: String, request: CreateStickerPackLinkRequest): CloudStickerPackShareLink {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.post("$baseUrl/api/v1/sticker-packs/$packId/link") {
-                header(HttpHeaders.Authorization, authHeader)
-                contentType(ContentType.Application.Json)
-                setBody(request)
-            }
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudCreateFailed, message = extractMessage(bodyText))
-        }
-        return json.decodeFromString<ApiSuccessEnvelope<CloudStickerPackShareLink>>(bodyText).data
-            ?: throw ApiException(code = AppErrorCode.CloudCreateFailed)
+        return packShares.createPackLink(packId, request)
     }
 
     suspend fun revokePackLink(packId: String, linkId: String) {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.delete("$baseUrl/api/v1/sticker-packs/$packId/link/$linkId") {
-                header(HttpHeaders.Authorization, authHeader)
-            }
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudDeleteFailed, message = extractMessage(bodyText))
-        }
-    }
-
-    suspend fun getProcessingHistory(type: String? = null): List<ProcessingHistoryItem> {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.get("$baseUrl/api/v1/processing-history") {
-                header(HttpHeaders.Authorization, authHeader)
-                if (!type.isNullOrBlank()) parameter("type", type)
-            }
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudFetchFailed, message = extractMessage(bodyText))
-        }
-        return json.decodeFromString<ApiSuccessEnvelope<List<ProcessingHistoryItem>>>(bodyText).data.orEmpty()
-    }
-
-    suspend fun deleteHistoryItem(id: String) {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.delete("$baseUrl/api/v1/processing-history/$id") {
-                header(HttpHeaders.Authorization, authHeader)
-            }
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudDeleteFailed, message = extractMessage(bodyText))
-        }
-    }
-
-    suspend fun clearHistory(type: String? = null): Int {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.delete("$baseUrl/api/v1/processing-history") {
-                header(HttpHeaders.Authorization, authHeader)
-                if (!type.isNullOrBlank()) parameter("type", type)
-            }
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudDeleteFailed, message = extractMessage(bodyText))
-        }
-        return json.decodeFromString<ApiSuccessEnvelope<DeleteCountData>>(bodyText).data?.deletedCount ?: 0
-    }
-
-    suspend fun reportPack(packId: String, reason: String, details: String? = null) {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.post("$baseUrl/api/v1/sticker-packs/$packId/report") {
-                header(HttpHeaders.Authorization, authHeader)
-                contentType(ContentType.Application.Json)
-                setBody(ReportContentRequest(reason = reason, details = details))
-            }
-        }
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudFetchFailed, message = extractMessage(response.bodyAsText()))
-        }
-    }
-
-    suspend fun reportProcessingHistory(historyId: String, reason: String, details: String? = null) {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.post("$baseUrl/api/v1/processing-history/$historyId/report") {
-                header(HttpHeaders.Authorization, authHeader)
-                contentType(ContentType.Application.Json)
-                setBody(ReportContentRequest(reason = reason, details = details))
-            }
-        }
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudFetchFailed, message = extractMessage(response.bodyAsText()))
-        }
-    }
-
-    suspend fun blockUser(userId: String) {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.post("$baseUrl/api/v1/users/$userId/block") {
-                header(HttpHeaders.Authorization, authHeader)
-            }
-        }
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudFetchFailed, message = extractMessage(response.bodyAsText()))
-        }
-    }
-
-    suspend fun listBlockedUsers(): BlockedUsersData {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.get("$baseUrl/api/v1/users/blocked") {
-                header(HttpHeaders.Authorization, authHeader)
-            }
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudFetchFailed, message = extractMessage(bodyText))
-        }
-        return json.decodeFromString<ApiSuccessEnvelope<BlockedUsersData>>(bodyText).data
-            ?: BlockedUsersData()
-    }
-
-    suspend fun unblockUser(userId: String) {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.delete("$baseUrl/api/v1/users/$userId/block") {
-                header(HttpHeaders.Authorization, authHeader)
-            }
-        }
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudDeleteFailed, message = extractMessage(response.bodyAsText()))
-        }
+        packShares.revokePackLink(packId, linkId)
     }
 
     suspend fun getStickerLinks(stickerId: String): List<CloudStickerShareLink> {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.get("$baseUrl/api/v1/stickers/$stickerId/links") {
-                header(HttpHeaders.Authorization, authHeader)
-            }
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudFetchFailed, message = extractMessage(bodyText))
-        }
-        return json.decodeFromString<ApiSuccessEnvelope<List<CloudStickerShareLink>>>(bodyText).data.orEmpty()
+        return stickerShares.getStickerLinks(stickerId)
     }
 
     suspend fun createStickerLink(stickerId: String, request: CreateStickerPackLinkRequest): CloudStickerShareLink {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.post("$baseUrl/api/v1/stickers/$stickerId/link") {
-                header(HttpHeaders.Authorization, authHeader)
-                contentType(ContentType.Application.Json)
-                setBody(request)
-            }
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudCreateFailed, message = extractMessage(bodyText))
-        }
-        return json.decodeFromString<ApiSuccessEnvelope<CloudStickerShareLink>>(bodyText).data
-            ?: throw ApiException(code = AppErrorCode.CloudCreateFailed)
+        return stickerShares.createStickerLink(stickerId, request)
     }
 
     suspend fun revokeStickerLink(stickerId: String, linkId: String) {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.delete("$baseUrl/api/v1/stickers/$stickerId/link/$linkId") {
-                header(HttpHeaders.Authorization, authHeader)
-            }
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudDeleteFailed, message = extractMessage(bodyText))
-        }
+        stickerShares.revokeStickerLink(stickerId, linkId)
     }
 
     suspend fun shareStickerWithUser(stickerId: String, request: SharePackWithUserRequest) {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.post("$baseUrl/api/v1/stickers/$stickerId/share") {
-                header(HttpHeaders.Authorization, authHeader)
-                contentType(ContentType.Application.Json)
-                setBody(request)
-            }
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudCreateFailed, message = extractMessage(bodyText))
-        }
+        stickerShares.shareStickerWithUser(stickerId, request)
     }
 
     suspend fun removeStickerShare(stickerId: String, userId: String) {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.delete("$baseUrl/api/v1/stickers/$stickerId/share") {
-                header(HttpHeaders.Authorization, authHeader)
-                contentType(ContentType.Application.Json)
-                setBody(RemovePackShareBody(userId))
-            }
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudDeleteFailed, message = extractMessage(bodyText))
-        }
+        stickerShares.removeStickerShare(stickerId, userId)
     }
 
     suspend fun listStickerCollaborators(stickerId: String): List<data.remote.model.StickerCollaborator> {
-        val response = withRequiredAuthRetry { authHeader ->
-            client.get("$baseUrl/api/v1/stickers/$stickerId/collaborators") {
-                header(HttpHeaders.Authorization, authHeader)
-            }
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.CloudFetchFailed, message = extractMessage(bodyText))
-        }
-        return json.decodeFromString<ApiSuccessEnvelope<List<data.remote.model.StickerCollaborator>>>(bodyText)
-            .data.orEmpty()
+        return stickerShares.listStickerCollaborators(stickerId)
+    }
+
+    suspend fun getProcessingHistory(type: String? = null): List<ProcessingHistoryItem> {
+        return history.getProcessingHistory(type)
+    }
+
+    suspend fun deleteHistoryItem(id: String) {
+        history.deleteHistoryItem(id)
+    }
+
+    suspend fun clearHistory(type: String? = null): Int {
+        return history.clearHistory(type)
+    }
+
+    suspend fun reportPack(packId: String, reason: String, details: String? = null) {
+        moderation.reportPack(packId, reason, details)
+    }
+
+    suspend fun reportProcessingHistory(historyId: String, reason: String, details: String? = null) {
+        moderation.reportProcessingHistory(historyId, reason, details)
+    }
+
+    suspend fun blockUser(userId: String) {
+        moderation.blockUser(userId)
+    }
+
+    suspend fun listBlockedUsers(): BlockedUsersData {
+        return moderation.listBlockedUsers()
+    }
+
+    suspend fun unblockUser(userId: String) {
+        moderation.unblockUser(userId)
     }
 }
-
-@Serializable
-private data class RemovePackShareBody(val userId: String)
