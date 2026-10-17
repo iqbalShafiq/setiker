@@ -14,6 +14,10 @@ import data.remote.model.withOptimisticFollowOwner
 import data.remote.model.withOptimisticLike
 import data.remote.model.withOptimisticSave
 import data.storage.StickerFileStorage
+import data.remote.ApiException
+import domain.error.AppErrorCode
+import domain.error.Result
+import domain.error.detailText
 import domain.model.Sticker
 import domain.model.StickerPack
 import domain.model.AiQuotaOperation
@@ -305,7 +309,10 @@ class PublicPackDetailViewModel(
         val stickers = mutableListOf<Sticker>()
         pack.stickers.sortedBy { it.order }.forEachIndexed { index, relation ->
             val sticker = relation.sticker ?: return@forEachIndexed
-            val bytes = cloudStickerRepository.downloadBytes(sticker.url)
+            val bytes = when (val download = cloudStickerRepository.downloadBytes(sticker.url)) {
+                is Result.Success -> download.data
+                is Result.Error -> throw ApiException(code = AppErrorCode.CloudFetchFailed, message = download.error.detailText())
+            }
             val stickerPath = stickerFileStorage.saveBytes(
                 bytes = bytes,
                 fileName = "imported_${pack.id}_${index}_${Clock.System.now().toEpochMilliseconds()}.png"

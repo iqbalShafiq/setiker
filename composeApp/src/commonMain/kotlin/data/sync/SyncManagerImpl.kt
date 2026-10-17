@@ -9,6 +9,10 @@ import data.remote.CloudStickerRepository
 import data.storage.StickerFileStorage
 import data.sync.operationBelongsToPack
 import data.sync.operationIsPackVisibilityUpdate
+import domain.error.DataError
+import domain.error.EmptyResult
+import domain.error.Result
+import domain.error.detailText
 import domain.model.SyncOperation
 import domain.model.SyncOperationStatus
 import domain.model.SyncOperationType
@@ -197,56 +201,66 @@ class SyncManagerImpl(
             for (operation in pendingOps) {
                 _activeOperationFlow.value = operation
 
-                val result = executor.execute(operation)
+                val outcome = executor.execute(operation)
                 processedCount++
 
-                when (result) {
-                    is OperationResult.Success -> {
+                when (outcome) {
+                    is Result.Success -> {
                         operationDao.markCompleted(operation.id, SyncOperationStatus.SUCCESS.name, Clock.System.now().toEpochMilliseconds())
                         successCount++
                     }
-                    is OperationResult.RetryableError -> {
-                        if (operation.retryCount < 5) {
-                            operationDao.markRetryableFailure(operation.id, result.error)
+                    is Result.Error -> {
+                        val detail = outcome.error.detailText()
+                        if (outcome.error.retryable && operation.retryCount < 5) {
+                            operationDao.markRetryableFailure(operation.id, detail)
                         } else {
-                            operationDao.markFailed(operation.id, result.error)
+                            operationDao.markFailed(operation.id, detail)
                             failedCount++
                         }
-                    }
-                    is OperationResult.PermanentError -> {
-                        operationDao.markFailed(operation.id, result.error)
-                        failedCount++
                     }
                 }
                 delay(100)
             }
 
-            val pullResult = if (skipPull) {
-                PullSyncResult(
-                    packsDownloaded = 0,
-                    stickersDownloaded = 0,
-                    itemsDeleted = 0,
-                    downloadFailures = 0,
+            val pullOutcome = if (skipPull) {
+                Result.Success(
+                    PullSyncResult(
+                        packsDownloaded = 0,
+                        stickersDownloaded = 0,
+                        itemsDeleted = 0,
+                        downloadFailures = 0,
+                    )
                 )
             } else {
                 _syncStage.value = SyncStage.PULLING_REMOTE
                 pullProcessor.pullRemoteChanges()
             }
 
-            val finalReport = report.copy(
-                operationsProcessed = processedCount,
-                operationsSucceeded = successCount,
-                operationsFailed = failedCount,
-                packsSynced = pullResult.packsDownloaded,
-                stickersSynced = pullResult.stickersDownloaded,
-                remotePacksDownloaded = pullResult.packsDownloaded,
-                remoteStickersDownloaded = pullResult.stickersDownloaded,
-                remoteItemsDeleted = pullResult.itemsDeleted,
-                remoteDownloadFailures = pullResult.downloadFailures,
-                stage = SyncStage.IDLE,
-                result = if (failedCount > 0) SyncResult.Failed("$failedCount operations failed") else SyncResult.Success
-            )
-            _lastSyncReport.value = finalReport
+            val finalReport = when (pullOutcome) {
+                is Result.Success -> {
+                    val pull = pullOutcome.data
+                    report.copy(
+                        operationsProcessed = processedCount,
+                        operationsSucceeded = successCount,
+                        operationsFailed = failedCount,
+                        packsSynced = pull.packsDownloaded,
+                        stickersSynced = pull.stickersDownloaded,
+                        remotePacksDownloaded = pull.packsDownloaded,
+                        remoteStickersDownloaded = pull.stickersDownloaded,
+                        remoteItemsDeleted = pull.itemsDeleted,
+                        remoteDownloadFailures = pull.downloadFailures,
+                        stage = SyncStage.IDLE,
+                        result = if (failedCount > 0) SyncResult.Failed("$failedCount operations failed") else SyncResult.Success
+                    ).also { _lastSyncReport.value = it }
+                }
+                is Result.Error -> report.copy(
+                    operationsProcessed = processedCount,
+                    operationsSucceeded = successCount,
+                    operationsFailed = failedCount,
+                    result = SyncResult.Failed(pullOutcome.error.detailText()),
+                    stage = _syncStage.value,
+                ).also { _lastSyncReport.value = it }
+            }
             finalReport
         } catch (e: Exception) {
             val finalReport = report.copy(

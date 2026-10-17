@@ -6,6 +6,10 @@ import data.auth.AuthManager
 import data.remote.CloudStickerRepository
 import data.remote.ExploreApiRepository
 import data.storage.StickerFileStorage
+import data.remote.ApiException
+import domain.error.AppErrorCode
+import domain.error.Result
+import domain.error.detailText
 import domain.model.Sticker
 import domain.model.StickerPack
 import domain.repository.StickerRepository
@@ -81,7 +85,10 @@ class SharePreviewViewModel(
                 if (kind == "sticker") {
                     val accepted = exploreApiRepository.acceptStickerShare(token)
                     val sticker = accepted.sticker
-                    val bytes = cloudStickerRepository.downloadBytes(sticker.url)
+                    val bytes = when (val download = cloudStickerRepository.downloadBytes(sticker.url)) {
+                        is Result.Success -> download.data
+                        is Result.Error -> throw ApiException(code = AppErrorCode.CloudFetchFailed, message = download.error.detailText())
+                    }
                     val stickerPath = stickerFileStorage.saveBytes(
                         bytes = bytes,
                         fileName = "shared_sticker_${sticker.id}_${Clock.System.now().toEpochMilliseconds()}.png"
@@ -102,7 +109,10 @@ class SharePreviewViewModel(
                     val stickers = mutableListOf<Sticker>()
                     pack.stickers.sortedBy { it.order }.forEachIndexed { index, relation ->
                         val remoteSticker = relation.sticker ?: return@forEachIndexed
-                        val bytes = cloudStickerRepository.downloadBytes(remoteSticker.url)
+                        val bytes = when (val download = cloudStickerRepository.downloadBytes(remoteSticker.url)) {
+                            is Result.Success -> download.data
+                            is Result.Error -> throw ApiException(code = AppErrorCode.CloudFetchFailed, message = download.error.detailText())
+                        }
                         val path = stickerFileStorage.saveBytes(
                             bytes = bytes,
                             fileName = "shared_pack_${pack.id}_${index}_${Clock.System.now().toEpochMilliseconds()}.png"

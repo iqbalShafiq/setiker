@@ -10,28 +10,20 @@ import data.remote.model.DeleteStickerSyncPayload
 import data.remote.model.UpdateStickerPackRequest
 import data.remote.toDataError
 import data.sync.normalizePackVisibilityForStorage
-import domain.error.detailText
+import domain.error.DataError
+import domain.error.EmptyResult
+import domain.error.Result
 import domain.model.SyncOperation
 import domain.model.SyncOperationType
-import kotlinx.serialization.json.Json
 import kotlin.time.Clock
 
 private const val SYNC_STATE_SYNCED = "SYNCED"
 
 /**
- * Outcome of executing one pending sync operation against the cloud.
- * `RetryableError` is classified via the typed transport classifier (`toDataError`); the
- * executor's caller applies the 5-retry cap.
- */
-sealed class OperationResult {
-    data object Success : OperationResult()
-    data class RetryableError(val error: String) : OperationResult()
-    data class PermanentError(val error: String) : OperationResult()
-}
-
-/**
- * Push-side operation execution (spec P3b, D4). Moved verbatim from `SyncManagerImpl` — the
- * only behavioral change is the typed retry classification replacing message string-matching.
+ * Push-side operation execution (spec P3b, D4/D6). Every cloud call returns a typed
+ * [Result]; the first [Result.Error] short-circuits out of [execute]. The queue owner in
+ * `SyncManagerImpl` reads `error.retryable` to apply the 5-retry cap. Coroutine cancellation
+ * propagates untouched instead of being recorded as an operation failure.
  */
 internal class SyncOperationExecutor(
     private val packDao: StickerPackDao,
@@ -42,14 +34,22 @@ internal class SyncOperationExecutor(
 ) {
     private val json = ApiJson.codec
 
-    suspend fun execute(operation: SyncOperation): OperationResult {
-        return try {
+    suspend fun execute(operation: SyncOperation): EmptyResult<DataError.Network> {
+        try {
             when (operation.type) {
                 SyncOperationType.CREATE_PACK -> {
                     val request = json.decodeFromString<CreateStickerPackRequest>(operation.payload)
-                    val upload = cloudRepo.uploadPack(request)
+                    val upload = when (val outcome = cloudRepo.uploadPack(request)) {
+                        is Result.Success -> outcome.data
+                        is Result.Error -> return Result.Error(outcome.error)
+                    }
                     val cloudPackId = upload.stickerPackId
-                        ?: return OperationResult.PermanentError("Upload did not return sticker pack id")
+                        ?: return Result.Error(
+                            DataError.Network.ApiRejected(
+                                appCode = null,
+                                message = "Upload did not return sticker pack id",
+                            )
+                        )
                     val now = Clock.System.now().toEpochMilliseconds()
                     packDao.updateCloudId(operation.targetId, cloudPackId)
                     packDao.updateSyncStatus(operation.targetId, SYNC_STATE_SYNCED, now)
@@ -60,28 +60,39 @@ internal class SyncOperationExecutor(
                     }
                     updateLocalStickerCloudInfo(operation.targetId, upload.stickers)
                     syncCursorStore.setLastPullSyncAt(now)
-                    OperationResult.Success
+                    Result.Success(Unit)
                 }
                 SyncOperationType.UPDATE_PACK -> {
                     val request = json.decodeFromString<CreateStickerPackRequest>(operation.payload)
                     if (request.stickers.isEmpty()) {
-                        return OperationResult.Success
+                        return Result.Success(Unit)
                     }
                     val localPack = packDao.getByCloudId(operation.targetId)
-                        ?: return OperationResult.PermanentError("Local pack not found for cloud id ${operation.targetId}")
+                        ?: return Result.Error(
+                            DataError.Network.ApiRejected(
+                                appCode = null,
+                                message = "Local pack not found for cloud id ${operation.targetId}",
+                            )
+                        )
                     if (localPack.syncState == SYNC_STATE_SYNCED) {
-                        return OperationResult.Success
+                        return Result.Success(Unit)
                     }
                     val now = Clock.System.now().toEpochMilliseconds()
-                    val upload = cloudRepo.uploadPack(request, stickerPackId = operation.targetId)
+                    val upload = when (val outcome = cloudRepo.uploadPack(request, stickerPackId = operation.targetId)) {
+                        is Result.Success -> outcome.data
+                        is Result.Error -> return Result.Error(outcome.error)
+                    }
                     packDao.updateSyncStatus(localPack.identifier, SYNC_STATE_SYNCED, now)
                     updateLocalStickerCloudInfo(localPack.identifier, upload.stickers)
                     syncCursorStore.setLastPullSyncAt(now)
-                    OperationResult.Success
+                    Result.Success(Unit)
                 }
                 SyncOperationType.UPDATE_PACK_VISIBILITY -> {
                     val request = json.decodeFromString<UpdateStickerPackRequest>(operation.payload)
-                    val updatedPack = cloudRepo.updatePack(operation.targetId, request)
+                    val updatedPack = when (val outcome = cloudRepo.updatePack(operation.targetId, request)) {
+                        is Result.Success -> outcome.data
+                        is Result.Error -> return Result.Error(outcome.error)
+                    }
                     val now = Clock.System.now().toEpochMilliseconds()
                     packDao.getByCloudId(operation.targetId)?.let { pack ->
                         packDao.upsert(
@@ -96,33 +107,44 @@ internal class SyncOperationExecutor(
                     // Visibility updates also bump remote updatedAt; advance cursor so a
                     // background pull does not immediately re-import and wipe local stickers.
                     syncCursorStore.setLastPullSyncAt(now)
-                    OperationResult.Success
+                    Result.Success(Unit)
                 }
                 SyncOperationType.DELETE_PACK -> {
-                    cloudRepo.deletePackViaUpload(operation.targetId)
-                    OperationResult.Success
+                    when (val outcome = cloudRepo.deletePackViaUpload(operation.targetId)) {
+                        is Result.Success -> outcome.data
+                        is Result.Error -> return Result.Error(outcome.error)
+                    }
+                    Result.Success(Unit)
                 }
                 SyncOperationType.DELETE_STICKER -> {
                     val payload = json.decodeFromString<DeleteStickerSyncPayload>(operation.payload)
-                    cloudRepo.deleteStickerFromPack(payload.stickerPackId, payload.stickerId)
-                    OperationResult.Success
+                    when (val outcome = cloudRepo.deleteStickerFromPack(payload.stickerPackId, payload.stickerId)) {
+                        is Result.Success -> outcome.data
+                        is Result.Error -> return Result.Error(outcome.error)
+                    }
+                    Result.Success(Unit)
                 }
                 SyncOperationType.REORDER_STICKERS -> {
                     val payload = json.decodeFromString<data.remote.model.ReorderStickersSyncPayload>(operation.payload)
-                    cloudRepo.reorderStickers(payload.stickerPackId, payload.stickerOrders)
-                    OperationResult.Success
+                    when (val outcome = cloudRepo.reorderStickers(payload.stickerPackId, payload.stickerOrders)) {
+                        is Result.Success -> outcome.data
+                        is Result.Error -> return Result.Error(outcome.error)
+                    }
+                    Result.Success(Unit)
                 }
-                else -> OperationResult.PermanentError("Operation type ${operation.type} not implemented")
+                else -> return Result.Error(
+                    DataError.Network.ApiRejected(
+                        appCode = null,
+                        message = "Operation type ${operation.type} not implemented",
+                    )
+                )
             }
+            return Result.Success(Unit)
         } catch (e: kotlinx.coroutines.CancellationException) {
             // Cancelling the queue worker must not be recorded as an operation failure.
             throw e
         } catch (e: Exception) {
-            val classified = e.toDataError()
-            when {
-                classified.retryable -> OperationResult.RetryableError(classified.detailText())
-                else -> OperationResult.PermanentError(classified.detailText())
-            }
+            return Result.Error(e.toDataError())
         }
     }
 

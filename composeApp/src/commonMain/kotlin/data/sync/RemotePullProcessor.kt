@@ -13,6 +13,8 @@ import data.sync.normalizePackVisibilityForStorage
 import data.sync.shouldIgnoreRemoteStickerDeletion
 import data.sync.shouldImportStickersIntoExistingPack
 import data.sync.shouldPreserveLocalStickersOnPull
+import domain.error.DataError
+import domain.error.Result
 import kotlin.time.Clock
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -34,8 +36,11 @@ internal class RemotePullProcessor(
     private val authManager: AuthManager,
     private val syncCursorStore: SyncCursorStore,
 ) {
-    suspend fun pullRemoteChanges(): PullSyncResult {
-        val syncData = cloudRepo.sync(syncCursorStore.getLastPullSyncAt())
+    suspend fun pullRemoteChanges(): Result<PullSyncResult, DataError.Network> {
+        val syncData = when (val syncOutcome = cloudRepo.sync(syncCursorStore.getLastPullSyncAt())) {
+            is Result.Success -> syncOutcome.data
+            is Result.Error -> return Result.Error(syncOutcome.error)
+        }
         val currentUserId = authManager.getUser()?.id
         val blockingOperations = operationDao.getBlockingOperations()
         var packsDownloaded = 0
@@ -79,11 +84,13 @@ internal class RemotePullProcessor(
             decodeSyncTokenToEpochMillis(token)?.let { syncCursorStore.setLastPullSyncAt(it) }
         }
 
-        return PullSyncResult(
-            packsDownloaded = packsDownloaded,
-            stickersDownloaded = stickersDownloaded,
-            itemsDeleted = itemsDeleted,
-            downloadFailures = downloadFailures,
+        return Result.Success(
+            PullSyncResult(
+                packsDownloaded = packsDownloaded,
+                stickersDownloaded = stickersDownloaded,
+                itemsDeleted = itemsDeleted,
+                downloadFailures = downloadFailures,
+            )
         )
     }
 
@@ -170,13 +177,20 @@ internal class RemotePullProcessor(
             .forEachIndexed { index, relation ->
                 val sticker = relation.sticker ?: return@forEachIndexed
                 val fileName = remoteStickerFileName(sticker.id, sticker.filename ?: sticker.url)
-                val localPath = runCatching {
-                    val bytes = cloudRepo.downloadBytes(sticker.url)
-                    fileStorage.saveBytes(bytes, fileName)
-                }.getOrElse {
-                    downloadFailures += 1
-                    null
-                } ?: return@forEachIndexed
+                val bytes = when (val download = cloudRepo.downloadBytes(sticker.url)) {
+                    is Result.Success -> download.data
+                    is Result.Error -> {
+                        downloadFailures += 1
+                        null
+                    }
+                }
+                val localPath = bytes?.let {
+                    runCatching { fileStorage.saveBytes(it, fileName) }.getOrNull()
+                }
+                if (localPath == null) {
+                    if (bytes != null) downloadFailures += 1
+                    return@forEachIndexed
+                }
 
                 importedStickers += StickerEntity(
                     id = stickerDao.getByCloudId(sticker.id)?.id ?: Uuid.random().toString(),

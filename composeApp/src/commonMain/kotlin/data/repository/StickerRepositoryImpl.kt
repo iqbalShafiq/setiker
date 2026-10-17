@@ -42,6 +42,9 @@ import kotlinx.serialization.json.Json
 import kotlin.time.Clock
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
+import util.AppLog
+
+private const val TAG_ASYNC_PUSH = "SyncTrigger"
 
 @OptIn(ExperimentalUuidApi::class)
 class StickerRepositoryImpl(
@@ -59,6 +62,12 @@ class StickerRepositoryImpl(
         scope.launch {
             runCatching {
                 syncManager?.pushPackOperations(packId, cloudPackId)
+            }.onFailure { failure ->
+                if (failure is kotlinx.coroutines.CancellationException) {
+                    throw failure
+                }
+                // R5: async push must never fail silently; there is no awaiter to show an error.
+                AppLog.e(TAG_ASYNC_PUSH, "push failed for pack=$packId cloudPackId=$cloudPackId", failure)
             }
         }
     }
@@ -67,6 +76,12 @@ class StickerRepositoryImpl(
         scope.launch {
             runCatching {
                 syncManager?.pushPackVisibilityOperations(packId, cloudPackId)
+            }.onFailure { failure ->
+                if (failure is kotlinx.coroutines.CancellationException) {
+                    throw failure
+                }
+                // R5: async push must never fail silently; there is no awaiter to show an error.
+                AppLog.e(TAG_ASYNC_PUSH, "visibility push failed for pack=$packId cloudPackId=$cloudPackId", failure)
             }
         }
     }

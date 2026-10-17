@@ -42,13 +42,17 @@ fun createApiClient(
         connectTimeoutMillis = 30_000
         socketTimeoutMillis = profile.requestMillis
     }
-    install(Logging) {
-        logger = object : Logger {
-            override fun log(message: String) {
-                AppLog.d(tag, message)
+    // Matches the pre-factory clients: per-request-URL logging only in debug builds,
+    // at INFO level so request/response bodies (incl. multipart uploads) are not dumped.
+    if (ApiConfig.isDebugLoggingEnabled) {
+        install(Logging) {
+            logger = object : Logger {
+                override fun log(message: String) {
+                    AppLog.d(tag, message)
+                }
             }
+            sanitizeHeader { it == HttpHeaders.Authorization }
+            level = LogLevel.INFO
         }
-        sanitizeHeader { it == HttpHeaders.Authorization }
-        level = LogLevel.INFO
     }
 }
