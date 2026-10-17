@@ -219,7 +219,7 @@ class VideoTrimViewModel(
 
         val spec = current.toSpec()
         val validation = AnimatedStickerValidator.validateSpec(spec)
-        if (validation is AnimatedStickerValidator.Result.Failure) {
+        if (validation is AnimatedStickerValidator.StickerValidation.Failure) {
             val errorText = validation.reason.toUiText()
             _state.update { it.copy(error = errorText) }
             viewModelScope.launch {

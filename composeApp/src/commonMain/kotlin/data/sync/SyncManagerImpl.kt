@@ -8,6 +8,8 @@ import data.local.entity.PendingSyncOperationEntity
 import data.local.entity.StickerEntity
 import data.local.entity.StickerPackEntity
 import data.remote.CloudStickerRepository
+import data.remote.toDataError
+import domain.error.detailText
 import data.remote.model.CloudStickerPack
 import data.remote.model.CreateStickerPackRequest
 import data.remote.model.DeleteStickerSyncPayload
@@ -588,11 +590,14 @@ class SyncManagerImpl(
                 }
                 else -> OperationResult.PermanentError("Operation type ${operation.type} not implemented")
             }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            // Cancelling the queue worker must not be recorded as an operation failure.
+            throw e
         } catch (e: Exception) {
+            val classified = e.toDataError()
             when {
-                e.message?.contains("timeout", ignoreCase = true) == true -> OperationResult.RetryableError(e.message ?: "Timeout")
-                e.message?.contains("5", ignoreCase = true) == true -> OperationResult.RetryableError(e.message ?: "Server error")
-                else -> OperationResult.PermanentError(e.message ?: "Unknown error")
+                classified.retryable -> OperationResult.RetryableError(classified.detailText())
+                else -> OperationResult.PermanentError(classified.detailText())
             }
         }
     }

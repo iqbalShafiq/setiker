@@ -11,27 +11,27 @@ class AnimatedStickerValidatorTest {
     @Test
     fun frameDurationBelow8MsFails() {
         val result = AnimatedStickerValidator.validateFrameDuration(StickerPack.MIN_FRAME_DURATION_MS - 1)
-        assertTrue(result is AnimatedStickerValidator.Result.Failure)
+        assertTrue(result is AnimatedStickerValidator.StickerValidation.Failure)
         assertEquals(AnimatedStickerValidator.Reason.FrameDurationTooShort, result.reason)
     }
 
     @Test
     fun frameDurationAtMinIsOk() {
         val result = AnimatedStickerValidator.validateFrameDuration(StickerPack.MIN_FRAME_DURATION_MS)
-        assertEquals(AnimatedStickerValidator.Result.Ok, result)
+        assertEquals(AnimatedStickerValidator.StickerValidation.Ok, result)
     }
 
     @Test
     fun totalDurationOver10sFails() {
         val result = AnimatedStickerValidator.validateTotalDuration(StickerPack.MAX_ANIMATION_DURATION_MS + 1)
-        assertTrue(result is AnimatedStickerValidator.Result.Failure)
+        assertTrue(result is AnimatedStickerValidator.StickerValidation.Failure)
         assertEquals(AnimatedStickerValidator.Reason.TotalDurationTooLong, result.reason)
     }
 
     @Test
     fun totalDurationAtCapIsOk() {
         val result = AnimatedStickerValidator.validateTotalDuration(StickerPack.MAX_ANIMATION_DURATION_MS)
-        assertEquals(AnimatedStickerValidator.Result.Ok, result)
+        assertEquals(AnimatedStickerValidator.StickerValidation.Ok, result)
     }
 
     @Test
@@ -39,7 +39,7 @@ class AnimatedStickerValidatorTest {
         val result = AnimatedStickerValidator.validateFileSize(
             StickerPack.MAX_ANIMATED_STICKER_FILE_SIZE.toLong()
         )
-        assertEquals(AnimatedStickerValidator.Result.Ok, result)
+        assertEquals(AnimatedStickerValidator.StickerValidation.Ok, result)
     }
 
     @Test
@@ -47,27 +47,27 @@ class AnimatedStickerValidatorTest {
         val result = AnimatedStickerValidator.validateFileSize(
             StickerPack.MAX_ANIMATED_STICKER_FILE_SIZE.toLong() + 1
         )
-        assertTrue(result is AnimatedStickerValidator.Result.Failure)
+        assertTrue(result is AnimatedStickerValidator.StickerValidation.Failure)
         assertEquals(AnimatedStickerValidator.Reason.FileSizeTooLarge, result.reason)
     }
 
     @Test
     fun zeroFileSizeFails() {
         val result = AnimatedStickerValidator.validateFileSize(0)
-        assertTrue(result is AnimatedStickerValidator.Result.Failure)
+        assertTrue(result is AnimatedStickerValidator.StickerValidation.Failure)
     }
 
     @Test
     fun nonSquareDimensionsFail() {
         val result = AnimatedStickerValidator.validateDimensions(512, 256)
-        assertTrue(result is AnimatedStickerValidator.Result.Failure)
+        assertTrue(result is AnimatedStickerValidator.StickerValidation.Failure)
         assertEquals(AnimatedStickerValidator.Reason.DimensionsInvalid, result.reason)
     }
 
     @Test
     fun perfect512SquareIsOk() {
         val result = AnimatedStickerValidator.validateDimensions(512, 512)
-        assertEquals(AnimatedStickerValidator.Result.Ok, result)
+        assertEquals(AnimatedStickerValidator.StickerValidation.Ok, result)
     }
 
     @Test
@@ -78,7 +78,7 @@ class AnimatedStickerValidatorTest {
             fps = 15,
             speed = 1f
         )
-        assertEquals(AnimatedStickerValidator.Result.Ok, AnimatedStickerValidator.validateSpec(spec))
+        assertEquals(AnimatedStickerValidator.StickerValidation.Ok, AnimatedStickerValidator.validateSpec(spec))
     }
 
     @Test
@@ -90,7 +90,7 @@ class AnimatedStickerValidatorTest {
             speed = 1f
         )
         val result = AnimatedStickerValidator.validateSpec(spec)
-        assertTrue(result is AnimatedStickerValidator.Result.Failure)
+        assertTrue(result is AnimatedStickerValidator.StickerValidation.Failure)
         assertEquals(AnimatedStickerValidator.Reason.FpsOutOfRange, result.reason)
     }
 
@@ -103,7 +103,7 @@ class AnimatedStickerValidatorTest {
             speed = 1f
         )
         val result = AnimatedStickerValidator.validateSpec(spec)
-        assertTrue(result is AnimatedStickerValidator.Result.Failure)
+        assertTrue(result is AnimatedStickerValidator.StickerValidation.Failure)
         assertEquals(AnimatedStickerValidator.Reason.TrimRangeInvalid, result.reason)
     }
 
@@ -116,7 +116,7 @@ class AnimatedStickerValidatorTest {
             speed = AnimatedStickerSpec.MAX_SPEED + 1f
         )
         val result = AnimatedStickerValidator.validateSpec(spec)
-        assertTrue(result is AnimatedStickerValidator.Result.Failure)
+        assertTrue(result is AnimatedStickerValidator.StickerValidation.Failure)
         assertEquals(AnimatedStickerValidator.Reason.SpeedOutOfRange, result.reason)
     }
 
@@ -129,7 +129,7 @@ class AnimatedStickerValidatorTest {
             speed = 1f
         )
         val result = AnimatedStickerValidator.validateSpec(spec)
-        assertTrue(result is AnimatedStickerValidator.Result.Failure)
+        assertTrue(result is AnimatedStickerValidator.StickerValidation.Failure)
         assertEquals(AnimatedStickerValidator.Reason.TotalDurationTooLong, result.reason)
     }
 }
