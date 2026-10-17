@@ -1,12 +1,13 @@
 package data.aijob
 
+import data.remote.json.ApiJson
 import domain.model.aijob.GenerateStickersPayload
 import domain.model.aijob.WorkspaceDraftContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class AiJobJsonTest {
+class AiJobCodecTest {
     @Test
     fun roundTripWorkspaceDraftContext() {
         val original = WorkspaceDraftContext(
@@ -14,8 +15,8 @@ class AiJobJsonTest {
             packName = "Cats",
             publisher = "Me"
         )
-        val json = AiJobJson.codec.encodeToString(original)
-        val decoded = AiJobJson.codec.decodeFromString<WorkspaceDraftContext>(json)
+        val json = ApiJson.codec.encodeToString(original)
+        val decoded = ApiJson.codec.decodeFromString<WorkspaceDraftContext>(json)
         assertEquals(original.prompt, decoded.prompt)
         assertEquals(original.packName, decoded.packName)
     }
@@ -23,8 +24,8 @@ class AiJobJsonTest {
     @Test
     fun roundTripGenerateStickersPayload() {
         val original = GenerateStickersPayload(prompt = "dragon", inputImagePath = "/tmp/a.png")
-        val json = AiJobJson.codec.encodeToString(original)
-        val decoded = AiJobJson.codec.decodeFromString<GenerateStickersPayload>(json)
+        val json = ApiJson.codec.encodeToString(original)
+        val decoded = ApiJson.codec.decodeFromString<GenerateStickersPayload>(json)
         assertEquals(original.prompt, decoded.prompt)
         assertEquals(original.inputImagePath, decoded.inputImagePath)
     }

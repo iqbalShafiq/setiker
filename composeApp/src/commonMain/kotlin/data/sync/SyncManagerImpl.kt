@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
+import data.remote.json.ApiJson
 import kotlinx.serialization.json.Json
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -55,7 +56,7 @@ class SyncManagerImpl(
     private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Default)
  ) : SyncManager {
      
-      private val json = Json { ignoreUnknownKeys = true }
+      private val json = ApiJson.codec
       private var monitoringJob: kotlinx.coroutines.Job? = null
       private val syncRunGate = SyncRunGate()
      

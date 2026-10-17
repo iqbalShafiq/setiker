@@ -1,5 +1,6 @@
 package data.aijob
 
+import data.remote.json.ApiJson
 import data.remote.GridSplitOnDeviceProgressUpdate
 import data.remote.GridSplitProgressPhase
 import data.remote.StickerApiRepository
@@ -109,7 +110,7 @@ class AiJobRunner(
     }
 
     private suspend fun runGenerateStickers(job: AiJob) {
-        val payload = AiJobJson.codec.decodeFromString<GenerateStickersPayload>(job.payloadJson)
+        val payload = ApiJson.codec.decodeFromString<GenerateStickersPayload>(job.payloadJson)
         updateProgress(job.id, "api_generate", "Generating stickers", 0.2f)
         if (!payload.inputImagePath.isNullOrBlank() && !SourcePathValidator.exists(payload.inputImagePath)) {
             throw IllegalStateException("Input image file not found")
@@ -127,7 +128,7 @@ class AiJobRunner(
                 ).toSnapshot()
             }
         )
-        completeJob(job, AiJobJson.codec.encodeToString(result))
+        completeJob(job, ApiJson.codec.encodeToString(result))
         mergeDraftContext(job.workspaceDraftId) { context ->
             context.copy(
                 generatedPreview = result.previews,
@@ -140,7 +141,7 @@ class AiJobRunner(
     }
 
     private suspend fun runGeneratePack(job: AiJob) {
-        val payload = AiJobJson.codec.decodeFromString<GeneratePackPayload>(job.payloadJson)
+        val payload = ApiJson.codec.decodeFromString<GeneratePackPayload>(job.payloadJson)
         updateProgress(job.id, "api_generate_pack", "Menghubungi server AI…", 0.15f)
         val rawGridPath = coroutineScope {
             val waiter = launch {
@@ -194,7 +195,7 @@ class AiJobRunner(
         )
         stickerRepository.savePack(pack)
         val result = GeneratePackResult(packId = pack.identifier)
-        completeJob(job, AiJobJson.codec.encodeToString(result))
+        completeJob(job, ApiJson.codec.encodeToString(result))
         mergeDraftContext(job.workspaceDraftId) { context ->
             context.copy(
                 resultPackId = pack.identifier,
@@ -206,7 +207,7 @@ class AiJobRunner(
     }
 
     private suspend fun runImproveStickers(job: AiJob) {
-        val payload = AiJobJson.codec.decodeFromString<ImproveStickersPayload>(job.payloadJson)
+        val payload = ApiJson.codec.decodeFromString<ImproveStickersPayload>(job.payloadJson)
         updateProgress(job.id, "api_improve", "Improving stickers", 0.3f)
         payload.imagePaths.forEach { path ->
             if (!SourcePathValidator.exists(path)) throw IllegalStateException("Sticker file not found: $path")
@@ -224,7 +225,7 @@ class AiJobRunner(
             },
             replaceMode = payload.imagePaths.size > 1
         )
-        completeJob(job, AiJobJson.codec.encodeToString(result))
+        completeJob(job, ApiJson.codec.encodeToString(result))
         mergeDraftContext(job.workspaceDraftId) { context ->
             context.copy(
                 generatedPreview = result.previews,
@@ -237,7 +238,7 @@ class AiJobRunner(
     }
 
     private suspend fun runGridSplit(job: AiJob) {
-        val payload = AiJobJson.codec.decodeFromString<GridSplitPayload>(job.payloadJson)
+        val payload = ApiJson.codec.decodeFromString<GridSplitPayload>(job.payloadJson)
         if (!SourcePathValidator.exists(payload.imagePath)) {
             throw IllegalStateException("Grid source file not found")
         }
@@ -250,7 +251,7 @@ class AiJobRunner(
                 ).toSnapshot()
             }
         )
-        completeJob(job, AiJobJson.codec.encodeToString(result))
+        completeJob(job, ApiJson.codec.encodeToString(result))
         mergeDraftContext(job.workspaceDraftId) { context ->
             context.copy(
                 splitPreview = result.previews,
@@ -262,14 +263,14 @@ class AiJobRunner(
     }
 
     private suspend fun runRemoveBackground(job: AiJob) {
-        val payload = AiJobJson.codec.decodeFromString<RemoveBackgroundPayload>(job.payloadJson)
+        val payload = ApiJson.codec.decodeFromString<RemoveBackgroundPayload>(job.payloadJson)
         if (!SourcePathValidator.exists(payload.imagePath)) {
             throw IllegalStateException("Source image file not found")
         }
         updateProgress(job.id, "remove_bg", "Removing background", 0.4f)
         val outputPath = onDeviceImageProcessor.removeBackground(payload.imagePath)
         val result = RemoveBackgroundResult(outputPath = outputPath)
-        completeJob(job, AiJobJson.codec.encodeToString(result))
+        completeJob(job, ApiJson.codec.encodeToString(result))
         mergeDraftContext(job.workspaceDraftId) { context ->
             context.copy(
                 backgroundPreviewPath = outputPath,
@@ -280,9 +281,9 @@ class AiJobRunner(
     }
 
     private suspend fun runVideoPack(job: AiJob) {
-        val payload = AiJobJson.codec.decodeFromString<VideoPackPayload>(job.payloadJson)
+        val payload = ApiJson.codec.decodeFromString<VideoPackPayload>(job.payloadJson)
         val checkpoint = job.checkpointJson?.let {
-            AiJobJson.codec.decodeFromString<VideoPackCheckpoint>(it)
+            ApiJson.codec.decodeFromString<VideoPackCheckpoint>(it)
         } ?: VideoPackCheckpoint()
 
         var candidatePaths = checkpoint.candidatePaths
@@ -350,9 +351,9 @@ class AiJobRunner(
             reservationId = job.quotaReservationId
         )
         val stored = generated.toStored()
-        val planJson = AiJobJson.codec.encodeToString(stored)
+        val planJson = ApiJson.codec.encodeToString(stored)
         val result = VideoPackResult(videoPlanResultJson = planJson)
-        completeJob(job, AiJobJson.codec.encodeToString(result))
+        completeJob(job, ApiJson.codec.encodeToString(result))
         mergeDraftContext(job.workspaceDraftId) { context ->
             context.copy(
                 videoPlanResultJson = planJson,
@@ -370,10 +371,10 @@ class AiJobRunner(
     }
 
     private suspend fun runAnimatedEncode(job: AiJob) {
-        val payload = AiJobJson.codec.decodeFromString<AnimatedEncodePayload>(job.payloadJson)
+        val payload = ApiJson.codec.decodeFromString<AnimatedEncodePayload>(job.payloadJson)
         val draft = draftRepository.getById(job.workspaceDraftId)
             ?: throw IllegalStateException("Workspace draft not found")
-        val context = AiJobJson.codec.decodeFromString<WorkspaceDraftContext>(draft.contextJson)
+        val context = ApiJson.codec.decodeFromString<WorkspaceDraftContext>(draft.contextJson)
         val frames = animatedDraftHelper.loadFrames(draft)
             ?: throw IllegalStateException("Animated frame files are missing")
         context.animatedFrameSnapshots.forEach { snapshot ->
@@ -402,7 +403,7 @@ class AiJobRunner(
             }
         )
         val result = AnimatedEncodeResult(outputPath = outputPath)
-        completeJob(job, AiJobJson.codec.encodeToString(result))
+        completeJob(job, ApiJson.codec.encodeToString(result))
         mergeDraftContext(job.workspaceDraftId) { ctx ->
             ctx.copy(animatedOutputPath = outputPath)
         }
@@ -535,7 +536,7 @@ class AiJobRunner(
     }
 
     private suspend fun saveCheckpoint(job: AiJob, checkpoint: VideoPackCheckpoint) {
-        val json = AiJobJson.codec.encodeToString(checkpoint)
+        val json = ApiJson.codec.encodeToString(checkpoint)
         jobRepository.updateStatus(
             id = job.id,
             status = AiJobStatus.CHECKPOINTED,
@@ -566,11 +567,11 @@ class AiJobRunner(
         transform: (WorkspaceDraftContext) -> WorkspaceDraftContext
     ) {
         val draft = draftRepository.getById(draftId) ?: return
-        val context = AiJobJson.codec.decodeFromString<WorkspaceDraftContext>(draft.contextJson)
+        val context = ApiJson.codec.decodeFromString<WorkspaceDraftContext>(draft.contextJson)
         val updated = transform(context)
         draftRepository.upsert(
             draft.copy(
-                contextJson = AiJobJson.codec.encodeToString(updated),
+                contextJson = ApiJson.codec.encodeToString(updated),
                 updatedAt = Clock.System.now().toEpochMilliseconds()
             )
         )

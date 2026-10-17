@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlin.time.Clock
 import kotlinx.serialization.encodeToString
+import data.remote.json.ApiJson
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.long
 import kotlinx.serialization.json.jsonObject
@@ -29,7 +30,7 @@ class AuthManagerImpl(
     private val dataStore: DataStore<Preferences>
 ) : AuthManager {
     
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = ApiJson.codec
     
     private val _authState = MutableStateFlow(AuthState.UNKNOWN)
     override val authState: StateFlow<AuthState> = _authState

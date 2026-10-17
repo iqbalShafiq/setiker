@@ -33,6 +33,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
+import data.remote.json.ApiJson
 import kotlinx.serialization.json.Json
 import data.sync.encodeLastSyncAt
 import data.sync.normalizePackVisibilityForApi
@@ -43,7 +44,7 @@ class CloudStickerRepository(
     private val authTokenRefresher: AuthTokenRefresher? = null,
     private val baseUrl: String = ApiConfig.baseUrl
 ) {
-    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
+    private val json = ApiJson.codec
 
     private val client = HttpClient {
         install(ContentNegotiation) { json(json) }

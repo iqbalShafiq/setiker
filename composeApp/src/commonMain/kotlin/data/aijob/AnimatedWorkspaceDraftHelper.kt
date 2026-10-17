@@ -1,5 +1,6 @@
 package data.aijob
 
+import data.remote.json.ApiJson
 import data.storage.StickerFileStorage
 import domain.model.AnimatedStickerSpec
 import domain.model.DecodedFrame
@@ -36,7 +37,7 @@ class AnimatedWorkspaceDraftHelper(
         }
         val context = WorkspaceDraftContext(
             videoPath = videoPath,
-            animatedSpecJson = AiJobJson.codec.encodeToString(spec),
+            animatedSpecJson = ApiJson.codec.encodeToString(spec),
             animatedFrameSnapshots = snapshots,
             tempFilePaths = snapshots.map { it.filePath }
         )
@@ -72,7 +73,7 @@ class AnimatedWorkspaceDraftHelper(
         val draft = draftRepository.getById(draftId) ?: return
         val previous = WorkspaceDraftFactory.decodeContext(draft)
         val updated = draft.copy(
-            contextJson = AiJobJson.codec.encodeToString(
+            contextJson = ApiJson.codec.encodeToString(
                 previous.copy(
                     animatedBaseDecorations = state.baseDecorations,
                     animatedFrameDecorations = state.frameDecorations,

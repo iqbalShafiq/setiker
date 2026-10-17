@@ -24,6 +24,7 @@ import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.Serializable
+import data.remote.json.ApiJson
 import kotlinx.serialization.json.Json
 
 @Serializable
@@ -44,7 +45,7 @@ class LegalApiRepository(
     private val authTokenRefresher: AuthTokenRefresher? = null,
     private val baseUrl: String = ApiConfig.baseUrl
 ) {
-    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
+    private val json = ApiJson.codec
 
     private val client = HttpClient {
         install(ContentNegotiation) { json(json) }

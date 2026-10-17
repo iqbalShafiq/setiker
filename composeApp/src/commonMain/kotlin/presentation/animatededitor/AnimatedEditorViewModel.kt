@@ -2,9 +2,9 @@ package presentation.animatededitor
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import data.aijob.AiJobJson
 import data.aijob.AiJobManager
 import data.aijob.AnimatedWorkspaceDraftHelper
+import data.remote.json.ApiJson
 import data.util.EmojiPreferences
 import domain.model.DecorationFont
 import domain.model.EmojiDecoration
@@ -131,7 +131,7 @@ class AnimatedEditorViewModel(
         val draft = aiJobManager.getDraft(job.workspaceDraftId) ?: return
         val context = WorkspaceDraftFactory.decodeContext(draft)
         val outputPath = job.resultJson?.let {
-            AiJobJson.codec.decodeFromString<AnimatedEncodeResult>(it).outputPath
+            ApiJson.codec.decodeFromString<AnimatedEncodeResult>(it).outputPath
         } ?: context.animatedOutputPath
         if (outputPath.isNullOrBlank()) return
 

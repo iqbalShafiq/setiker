@@ -13,6 +13,7 @@ import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.Serializable
+import data.remote.json.ApiJson
 import kotlinx.serialization.json.Json
 import data.remote.model.ApiSuccessEnvelope
 import data.auth.AuthManager
@@ -119,7 +120,7 @@ class BillingApiRepository(
     private val baseUrl: String = ApiConfig.baseUrl,
     private val packageName: String = "com.setiker.app"
 ) {
-    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
+    private val json = ApiJson.codec
     private val client = HttpClient {
         install(ContentNegotiation) { json(json) }
     }

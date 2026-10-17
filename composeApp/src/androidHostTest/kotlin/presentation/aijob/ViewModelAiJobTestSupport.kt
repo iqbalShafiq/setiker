@@ -1,7 +1,7 @@
 package presentation.aijob
 
-import data.aijob.AiJobJson
 import data.aijob.AiJobManager
+import data.remote.json.ApiJson
 import domain.model.ResolvedVideoStickerPackPlan
 import domain.model.aijob.AiJob
 import domain.model.aijob.AiJobOrigin
@@ -147,7 +147,7 @@ object ViewModelAiJobTestSupport {
         status = AiJobStatus.COMPLETED,
         origin = AiJobOrigin.CREATE_PACK,
         payloadJson = "{}",
-        resultJson = AiJobJson.codec.encodeToString(
+        resultJson = ApiJson.codec.encodeToString(
             ImproveStickersResult(previews = previews, replaceMode = replaceMode)
         ),
         attemptGroupId = "group",
@@ -165,9 +165,9 @@ object ViewModelAiJobTestSupport {
         status = AiJobStatus.COMPLETED,
         origin = AiJobOrigin.VIDEO_STICKER_PACK,
         payloadJson = "{}",
-        resultJson = AiJobJson.codec.encodeToString(
+        resultJson = ApiJson.codec.encodeToString(
             VideoPackResult(
-                videoPlanResultJson = AiJobJson.codec.encodeToString(plan.toStored())
+                videoPlanResultJson = ApiJson.codec.encodeToString(plan.toStored())
             )
         ),
         attemptGroupId = "group",
@@ -216,7 +216,7 @@ data class VideoAiDeps(
 ) {
     fun emitVideoCompletion() {
         val draft = draftsFlow.value ?: return
-        val planJson = AiJobJson.codec.encodeToString(plan.toStored())
+        val planJson = ApiJson.codec.encodeToString(plan.toStored())
         val context = WorkspaceDraftFactory.decodeContext(draft).copy(
             videoPlanResultJson = planJson,
             selectedStaticKeys = plan.staticStickers.map { it.selectionKey() }.toSet(),
@@ -225,7 +225,7 @@ data class VideoAiDeps(
             }.toSet()
         )
         draftsFlow.value = draft.copy(
-            contextJson = AiJobJson.codec.encodeToString(context)
+            contextJson = ApiJson.codec.encodeToString(context)
         )
         jobsFlow.value = listOf(ViewModelAiJobTestSupport.completeVideoPackJob(draft.id, plan))
     }

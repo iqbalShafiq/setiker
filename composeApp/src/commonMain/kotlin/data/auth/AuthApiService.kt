@@ -35,13 +35,14 @@ import io.ktor.http.Cookie
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
+import data.remote.json.ApiJson
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
 class AuthApiService(
     private val baseUrl: String = ApiConfig.baseUrl
 ) {
-    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
+    private val json = ApiJson.codec
 
     private val cookieStorage = RefreshTokenStorage()
 

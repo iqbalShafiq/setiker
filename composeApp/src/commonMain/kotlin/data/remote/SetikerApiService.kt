@@ -31,6 +31,7 @@ import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.delay
 import io.ktor.serialization.kotlinx.json.json
+import data.remote.json.ApiJson
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import data.auth.AuthManager
@@ -49,10 +50,7 @@ class SetikerApiService(
         const val AI_RESERVATION_HEADER = "X-AI-Reservation-Id"
     }
 
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-    }
+    private val json = ApiJson.codec
 
     private fun HttpRequestBuilder.applyAiReservation(reservationId: String?) {
         reservationId?.takeIf { it.isNotBlank() }?.let { header(AI_RESERVATION_HEADER, it) }
