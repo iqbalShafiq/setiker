@@ -13,6 +13,7 @@ import data.remote.ExploreApiRepository
 import data.remote.LegalApiRepository
 import domain.model.AiUsage
 import domain.model.LegalSummary
+import domain.error.Result
 import domain.model.User
 import domain.repository.AiQuotaRepository
 import domain.repository.StickerRepository
@@ -298,9 +299,10 @@ class ProfileViewModel(
             }
             val legalSummary = runCatching { legalApiRepository.getSummary() }.getOrNull()
             val unread = if (user != null) {
-                runCatching {
-                    exploreApiRepository.getNotifications(page = 1, limit = 1, unreadOnly = true).second
-                }.getOrDefault(0)
+                when (val notifications = exploreApiRepository.getNotifications(page = 1, limit = 1, unreadOnly = true)) {
+                    is Result.Success -> notifications.data.second
+                    is Result.Error -> 0
+                }
             } else {
                 0
             }

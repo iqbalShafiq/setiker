@@ -3,6 +3,8 @@ package presentation.blocked
 import data.remote.ExploreApiRepository
 import data.remote.model.BlockedUserItem
 import data.remote.model.BlockedUsersData
+import domain.error.DataError
+import domain.error.Result
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -38,11 +40,13 @@ class BlockedUsersViewModelTest {
     @Test
     fun loadSuccessShowsUsers() = runTest {
         val exploreApiRepository = mockk<ExploreApiRepository>()
-        coEvery { exploreApiRepository.listBlockedUsers() } returns BlockedUsersData(
-            users = listOf(
-                BlockedUserItem(id = "u2", username = "bob", displayName = "Bob")
-            ),
-            blockedUserIds = listOf("u2")
+        coEvery { exploreApiRepository.listBlockedUsers() } returns Result.Success(
+            BlockedUsersData(
+                users = listOf(
+                    BlockedUserItem(id = "u2", username = "bob", displayName = "Bob")
+                ),
+                blockedUserIds = listOf("u2")
+            )
         )
 
         val viewModel = BlockedUsersViewModel(exploreApiRepository)
@@ -57,7 +61,7 @@ class BlockedUsersViewModelTest {
     @Test
     fun loadFailureSetsLoadFailed() = runTest {
         val exploreApiRepository = mockk<ExploreApiRepository>()
-        coEvery { exploreApiRepository.listBlockedUsers() } throws RuntimeException("network")
+        coEvery { exploreApiRepository.listBlockedUsers() } returns Result.Error(DataError.Network.Unknown)
 
         val viewModel = BlockedUsersViewModel(exploreApiRepository)
         advanceUntilIdle()
@@ -70,14 +74,16 @@ class BlockedUsersViewModelTest {
     @Test
     fun confirmUnblockRemovesUserAndEmitsMessage() = runTest {
         val exploreApiRepository = mockk<ExploreApiRepository>()
-        coEvery { exploreApiRepository.listBlockedUsers() } returns BlockedUsersData(
-            users = listOf(
-                BlockedUserItem(id = "u2", username = "bob", displayName = "Bob"),
-                BlockedUserItem(id = "u3", username = "carol", displayName = "Carol")
-            ),
-            blockedUserIds = listOf("u2", "u3")
+        coEvery { exploreApiRepository.listBlockedUsers() } returns Result.Success(
+            BlockedUsersData(
+                users = listOf(
+                    BlockedUserItem(id = "u2", username = "bob", displayName = "Bob"),
+                    BlockedUserItem(id = "u3", username = "carol", displayName = "Carol")
+                ),
+                blockedUserIds = listOf("u2", "u3")
+            )
         )
-        coEvery { exploreApiRepository.unblockUser("u2") } returns Unit
+        coEvery { exploreApiRepository.unblockUser("u2") } returns Result.Success(Unit)
 
         val viewModel = BlockedUsersViewModel(exploreApiRepository)
         advanceUntilIdle()
@@ -95,11 +101,13 @@ class BlockedUsersViewModelTest {
     @Test
     fun confirmUnblockFailureKeepsUserAndEmitsMessage() = runTest {
         val exploreApiRepository = mockk<ExploreApiRepository>()
-        coEvery { exploreApiRepository.listBlockedUsers() } returns BlockedUsersData(
-            users = listOf(BlockedUserItem(id = "u2", username = "bob")),
-            blockedUserIds = listOf("u2")
+        coEvery { exploreApiRepository.listBlockedUsers() } returns Result.Success(
+            BlockedUsersData(
+                users = listOf(BlockedUserItem(id = "u2", username = "bob")),
+                blockedUserIds = listOf("u2")
+            )
         )
-        coEvery { exploreApiRepository.unblockUser("u2") } throws RuntimeException("failed")
+        coEvery { exploreApiRepository.unblockUser("u2") } returns Result.Error(DataError.Network.Unknown)
 
         val viewModel = BlockedUsersViewModel(exploreApiRepository)
         advanceUntilIdle()

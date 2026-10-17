@@ -10,6 +10,8 @@ import data.remote.ApiException
 import domain.error.AppErrorCode
 import domain.error.Result
 import domain.error.detailText
+import domain.error.onFailure
+import domain.error.onSuccess
 import domain.model.Sticker
 import domain.model.StickerPack
 import domain.repository.StickerRepository
@@ -51,9 +53,10 @@ class SharePreviewViewModel(
         this.token = token
         _state.update { it.copy(isLoading = true, error = null, kind = kind) }
         viewModelScope.launch {
-            val result = runCatching {
-                if (kind == "sticker") exploreApiRepository.previewStickerShare(token)
-                else exploreApiRepository.previewPackShare(token)
+            val result = if (kind == "sticker") {
+                exploreApiRepository.previewStickerShare(token)
+            } else {
+                exploreApiRepository.previewPackShare(token)
             }
             result.onSuccess { preview ->
                 if (preview is data.remote.model.SharePreviewStickerData) {
@@ -68,7 +71,7 @@ class SharePreviewViewModel(
                     }
                 }
             }.onFailure { error ->
-                _state.update { it.copy(isLoading = false, error = error.message ?: "Failed to load share preview") }
+                _state.update { it.copy(isLoading = false, error = error.detailText()) }
             }
         }
     }
@@ -83,7 +86,10 @@ class SharePreviewViewModel(
             val kind = _state.value.kind
             val result = runCatching {
                 if (kind == "sticker") {
-                    val accepted = exploreApiRepository.acceptStickerShare(token)
+                    val accepted = when (val share = exploreApiRepository.acceptStickerShare(token)) {
+                        is Result.Success -> share.data
+                        is Result.Error -> throw ApiException(code = AppErrorCode.CloudFetchFailed, message = share.error.detailText())
+                    }
                     val sticker = accepted.sticker
                     val bytes = when (val download = cloudStickerRepository.downloadBytes(sticker.url)) {
                         is Result.Success -> download.data
@@ -104,7 +110,10 @@ class SharePreviewViewModel(
                     stickerRepository.savePack(pack)
                     pack.identifier
                 } else {
-                    val accepted = exploreApiRepository.acceptPackShare(token)
+                    val accepted = when (val share = exploreApiRepository.acceptPackShare(token)) {
+                        is Result.Success -> share.data
+                        is Result.Error -> throw ApiException(code = AppErrorCode.CloudFetchFailed, message = share.error.detailText())
+                    }
                     val pack = accepted.stickerPack
                     val stickers = mutableListOf<Sticker>()
                     pack.stickers.sortedBy { it.order }.forEachIndexed { index, relation ->

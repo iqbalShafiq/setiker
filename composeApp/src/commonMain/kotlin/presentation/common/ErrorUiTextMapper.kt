@@ -3,6 +3,7 @@ package presentation.common
 import data.remote.ApiException
 import domain.error.AppErrorCode
 import domain.error.AppException
+import domain.error.DataError
 import domain.error.serverSubcodeToAppErrorCode
 import org.jetbrains.compose.resources.StringResource
 import setiker.composeapp.generated.resources.Res
@@ -45,6 +46,18 @@ import setiker.composeapp.generated.resources.error_sticker_not_found
 fun Throwable.toUiText(defaultRes: StringResource): UiText {
     val code = (this as? ApiException)?.code ?: (this as? AppException)?.code
     return code?.toUiText() ?: UiText.StringRes(defaultRes)
+}
+
+/**
+ * Typed-error variant used by the Result-based data layer (P3b Family B). Business codes
+ * parsed anywhere in the chain win before falling back to the call site's default resource.
+ */
+fun DataError.Network.toUiText(defaultRes: StringResource): UiText = when (this) {
+    is DataError.Network.ApiRejected -> appCode?.toUiText() ?: UiText.StringRes(defaultRes)
+    is DataError.Network.HttpFailure -> appCode?.toUiText() ?: UiText.StringRes(defaultRes)
+    DataError.Network.NoInternet, DataError.Network.ConnectTimeout, DataError.Network.RequestTimeout ->
+        UiText.StringRes(Res.string.error_network_unavailable)
+    DataError.Network.Serialization, DataError.Network.Unknown -> UiText.StringRes(defaultRes)
 }
 
 fun AppErrorCode.toUiText(): UiText = UiText.StringRes(toStringResource())

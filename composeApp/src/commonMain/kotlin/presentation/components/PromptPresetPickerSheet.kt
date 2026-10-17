@@ -27,6 +27,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import data.remote.ExploreApiRepository
+import domain.error.detailText
+import domain.error.onFailure
+import domain.error.onSuccess
 import domain.model.PromptPreset
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -75,14 +78,14 @@ fun PromptPresetPickerSheet(
         if (!visible) return@LaunchedEffect
         isLoading = true
         loadError = null
-        runCatching { exploreApiRepository.getPromptPresets(category) }
+        exploreApiRepository.getPromptPresets(category)
             .onSuccess { loaded ->
                 presets = loaded
                 isLoading = false
             }
             .onFailure { error ->
                 presets = emptyList()
-                loadError = error.message ?: "Failed to load presets"
+                loadError = error.detailText()
                 isLoading = false
             }
     }

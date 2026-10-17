@@ -35,6 +35,9 @@ import data.remote.model.UserFollowStateData
 import data.remote.model.UserNotificationItem
 import data.remote.model.UserSearchResult
 import domain.error.AppErrorCode
+import domain.error.DataError
+import domain.error.EmptyResult
+import domain.error.Result
 import domain.model.PromptPreset
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
@@ -186,7 +189,8 @@ class ExploreApiRepository(
         sort: ExploreSort,
         q: String? = null,
         feed: ExploreFeed = ExploreFeed.DISCOVER
-    ): PaginatedResult<CloudStickerPack> {
+    ): Result<PaginatedResult<CloudStickerPack>, DataError.Network> =
+        runApiCall("ExploreApi") {
         val path = when (feed) {
             ExploreFeed.DISCOVER -> "/api/v1/sticker-packs/public"
             ExploreFeed.SAVED -> "/api/v1/sticker-packs/saved"
@@ -220,16 +224,17 @@ class ExploreApiRepository(
         }
         val envelope = json.decodeFromString<ApiPaginatedSuccessEnvelope<List<CloudStickerPack>>>(bodyText)
         val pagination = envelope.meta?.pagination
-        return PaginatedResult(
+        PaginatedResult(
             data = envelope.data.orEmpty(),
             page = pagination?.page ?: page,
             limit = pagination?.limit ?: limit,
             total = pagination?.total ?: envelope.data.orEmpty().size,
             totalPages = pagination?.totalPages ?: 1
         )
-    }
+        }
 
-    suspend fun getPublicPackDetail(packId: String): CloudStickerPack {
+    suspend fun getPublicPackDetail(packId: String): Result<CloudStickerPack, DataError.Network> =
+        runApiCall("ExploreApi") {
         val response = runAuthRetry(ExploreAuthMode.Optional) { authHeader ->
             client.get("$baseUrl/api/v1/sticker-packs/public/$packId") {
                 authHeader?.let { header(HttpHeaders.Authorization, it) }
@@ -239,11 +244,12 @@ class ExploreApiRepository(
         if (!response.status.isSuccess()) {
             throw ApiException(code = AppErrorCode.CloudFetchFailed, message = extractMessage(bodyText))
         }
-        return json.decodeFromString<ApiSuccessEnvelope<CloudStickerPack>>(bodyText).data
+        json.decodeFromString<ApiSuccessEnvelope<CloudStickerPack>>(bodyText).data
             ?: throw ApiException(code = AppErrorCode.CloudFetchFailed)
-    }
+        }
 
-    suspend fun importPublicPack(packId: String): ImportPublicPackResult {
+    suspend fun importPublicPack(packId: String): Result<ImportPublicPackResult, DataError.Network> =
+        runApiCall("ExploreApi") {
         val response = runAuthRetry(ExploreAuthMode.Required) { authHeader ->
             client.post("$baseUrl/api/v1/sticker-packs/$packId/import") {
                 header(HttpHeaders.Authorization, authHeader)
@@ -253,11 +259,12 @@ class ExploreApiRepository(
         if (!response.status.isSuccess()) {
             throw ApiException(code = AppErrorCode.CloudCreateFailed, message = extractMessage(bodyText))
         }
-        return json.decodeFromString<ApiSuccessEnvelope<ImportPublicPackResult>>(bodyText).data
+        json.decodeFromString<ApiSuccessEnvelope<ImportPublicPackResult>>(bodyText).data
             ?: throw ApiException(code = AppErrorCode.CloudCreateFailed)
-    }
+        }
 
-    suspend fun getFeaturedToday(): FeaturedTodayData? {
+    suspend fun getFeaturedToday(): Result<FeaturedTodayData?, DataError.Network> =
+        runApiCall("ExploreApi") {
         val response = runAuthRetry(ExploreAuthMode.Optional) { authHeader ->
             client.get("$baseUrl/api/v1/featured/today") {
                 authHeader?.let { header(HttpHeaders.Authorization, it) }
@@ -267,153 +274,125 @@ class ExploreApiRepository(
         if (!response.status.isSuccess()) {
             throw ApiException(code = AppErrorCode.CloudFetchFailed, message = extractMessage(bodyText))
         }
-        return json.decodeFromString<ApiSuccessEnvelope<FeaturedTodayData?>>(bodyText).data
-    }
+        json.decodeFromString<ApiSuccessEnvelope<FeaturedTodayData?>>(bodyText).data
+        }
 
-    suspend fun getPublicUserProfile(userId: String): PublicUserProfile {
-        return userDirectory.getPublicUserProfile(userId)
-    }
+    suspend fun getPublicUserProfile(userId: String): Result<PublicUserProfile, DataError.Network> =
+        userDirectory.getPublicUserProfile(userId)
 
     suspend fun getPublicUserPacks(
         userId: String,
         page: Int,
         limit: Int,
         sort: ExploreSort
-    ): PaginatedResult<CloudStickerPack> {
-        return userDirectory.getPublicUserPacks(userId, page, limit, sort)
-    }
+    ): Result<PaginatedResult<CloudStickerPack>, DataError.Network> =
+        userDirectory.getPublicUserPacks(userId, page, limit, sort)
 
-    suspend fun searchUsers(query: String, limit: Int = 10): List<UserSearchResult> {
-        return userDirectory.searchUsers(query, limit)
-    }
+    suspend fun searchUsers(query: String, limit: Int = 10): Result<List<UserSearchResult>, DataError.Network> =
+        userDirectory.searchUsers(query, limit)
 
-    suspend fun sharePackWithUser(packId: String, request: SharePackWithUserRequest) {
+    suspend fun sharePackWithUser(packId: String, request: SharePackWithUserRequest): EmptyResult<DataError.Network> =
         userDirectory.sharePackWithUser(packId, request)
-    }
 
-    suspend fun removePackCollaborator(packId: String, userId: String) {
+    suspend fun removePackCollaborator(packId: String, userId: String): EmptyResult<DataError.Network> =
         userDirectory.removePackCollaborator(packId, userId)
-    }
 
-    suspend fun listPackCollaborators(packId: String): List<PackCollaborator> {
-        return userDirectory.listPackCollaborators(packId)
-    }
+    suspend fun listPackCollaborators(packId: String): Result<List<PackCollaborator>, DataError.Network> =
+        userDirectory.listPackCollaborators(packId)
 
-    suspend fun getNotifications(page: Int, limit: Int, unreadOnly: Boolean = false): Pair<List<UserNotificationItem>, Int> {
-        return notifications.getNotifications(page, limit, unreadOnly)
-    }
+    suspend fun getNotifications(page: Int, limit: Int, unreadOnly: Boolean = false): Result<Pair<List<UserNotificationItem>, Int>, DataError.Network> =
+        notifications.getNotifications(page, limit, unreadOnly)
 
-    suspend fun markNotificationRead(id: String) {
+    suspend fun markNotificationRead(id: String): EmptyResult<DataError.Network> =
         notifications.markNotificationRead(id)
-    }
 
-    suspend fun markAllNotificationsRead() {
+    suspend fun markAllNotificationsRead(): EmptyResult<DataError.Network> =
         notifications.markAllNotificationsRead()
-    }
 
-    suspend fun getPromptPresets(category: String? = null): List<PromptPreset> {
-        return history.getPromptPresets(category)
-    }
+    suspend fun getPromptPresets(category: String? = null): Result<List<PromptPreset>, DataError.Network> =
+        history.getPromptPresets(category)
 
-    suspend fun likePack(packId: String): PackSocialStateData = social.likePack(packId)
+    suspend fun likePack(packId: String): Result<PackSocialStateData, DataError.Network> =
+        social.likePack(packId)
 
-    suspend fun unlikePack(packId: String): PackSocialStateData = social.unlikePack(packId)
+    suspend fun unlikePack(packId: String): Result<PackSocialStateData, DataError.Network> =
+        social.unlikePack(packId)
 
-    suspend fun savePack(packId: String): PackSocialStateData = social.savePack(packId)
+    suspend fun savePack(packId: String): Result<PackSocialStateData, DataError.Network> =
+        social.savePack(packId)
 
-    suspend fun unsavePack(packId: String): PackSocialStateData = social.unsavePack(packId)
+    suspend fun unsavePack(packId: String): Result<PackSocialStateData, DataError.Network> =
+        social.unsavePack(packId)
 
-    suspend fun trackDownload(packId: String): PackSocialStateData = social.trackDownload(packId)
+    suspend fun trackDownload(packId: String): Result<PackSocialStateData, DataError.Network> =
+        social.trackDownload(packId)
 
-    suspend fun followUser(userId: String): UserFollowStateData {
-        return social.followUser(userId)
-    }
+    suspend fun followUser(userId: String): Result<UserFollowStateData, DataError.Network> =
+        social.followUser(userId)
 
-    suspend fun unfollowUser(userId: String): UserFollowStateData {
-        return social.unfollowUser(userId)
-    }
+    suspend fun unfollowUser(userId: String): Result<UserFollowStateData, DataError.Network> =
+        social.unfollowUser(userId)
 
-    suspend fun previewPackShare(token: String): SharePreviewPackData {
-        return packShares.previewPackShare(token)
-    }
+    suspend fun previewPackShare(token: String): Result<SharePreviewPackData, DataError.Network> =
+        packShares.previewPackShare(token)
 
-    suspend fun previewStickerShare(token: String): SharePreviewStickerData {
-        return packShares.previewStickerShare(token)
-    }
+    suspend fun previewStickerShare(token: String): Result<SharePreviewStickerData, DataError.Network> =
+        packShares.previewStickerShare(token)
 
-    suspend fun acceptPackShare(token: String): AcceptSharedPackData {
-        return packShares.acceptPackShare(token)
-    }
+    suspend fun acceptPackShare(token: String): Result<AcceptSharedPackData, DataError.Network> =
+        packShares.acceptPackShare(token)
 
-    suspend fun acceptStickerShare(token: String): AcceptSharedStickerData {
-        return packShares.acceptStickerShare(token)
-    }
+    suspend fun acceptStickerShare(token: String): Result<AcceptSharedStickerData, DataError.Network> =
+        packShares.acceptStickerShare(token)
 
-    suspend fun getPackLinks(packId: String): List<CloudStickerPackShareLink> {
-        return packShares.getPackLinks(packId)
-    }
+    suspend fun getPackLinks(packId: String): Result<List<CloudStickerPackShareLink>, DataError.Network> =
+        packShares.getPackLinks(packId)
 
-    suspend fun createPackLink(packId: String, request: CreateStickerPackLinkRequest): CloudStickerPackShareLink {
-        return packShares.createPackLink(packId, request)
-    }
+    suspend fun createPackLink(packId: String, request: CreateStickerPackLinkRequest): Result<CloudStickerPackShareLink, DataError.Network> =
+        packShares.createPackLink(packId, request)
 
-    suspend fun revokePackLink(packId: String, linkId: String) {
+    suspend fun revokePackLink(packId: String, linkId: String): EmptyResult<DataError.Network> =
         packShares.revokePackLink(packId, linkId)
-    }
 
-    suspend fun getStickerLinks(stickerId: String): List<CloudStickerShareLink> {
-        return stickerShares.getStickerLinks(stickerId)
-    }
+    suspend fun getStickerLinks(stickerId: String): Result<List<CloudStickerShareLink>, DataError.Network> =
+        stickerShares.getStickerLinks(stickerId)
 
-    suspend fun createStickerLink(stickerId: String, request: CreateStickerPackLinkRequest): CloudStickerShareLink {
-        return stickerShares.createStickerLink(stickerId, request)
-    }
+    suspend fun createStickerLink(stickerId: String, request: CreateStickerPackLinkRequest): Result<CloudStickerShareLink, DataError.Network> =
+        stickerShares.createStickerLink(stickerId, request)
 
-    suspend fun revokeStickerLink(stickerId: String, linkId: String) {
+    suspend fun revokeStickerLink(stickerId: String, linkId: String): EmptyResult<DataError.Network> =
         stickerShares.revokeStickerLink(stickerId, linkId)
-    }
 
-    suspend fun shareStickerWithUser(stickerId: String, request: SharePackWithUserRequest) {
+    suspend fun shareStickerWithUser(stickerId: String, request: SharePackWithUserRequest): EmptyResult<DataError.Network> =
         stickerShares.shareStickerWithUser(stickerId, request)
-    }
 
-    suspend fun removeStickerShare(stickerId: String, userId: String) {
+    suspend fun removeStickerShare(stickerId: String, userId: String): EmptyResult<DataError.Network> =
         stickerShares.removeStickerShare(stickerId, userId)
-    }
 
-    suspend fun listStickerCollaborators(stickerId: String): List<data.remote.model.StickerCollaborator> {
-        return stickerShares.listStickerCollaborators(stickerId)
-    }
+    suspend fun listStickerCollaborators(stickerId: String): Result<List<data.remote.model.StickerCollaborator>, DataError.Network> =
+        stickerShares.listStickerCollaborators(stickerId)
 
-    suspend fun getProcessingHistory(type: String? = null): List<ProcessingHistoryItem> {
-        return history.getProcessingHistory(type)
-    }
+    suspend fun getProcessingHistory(type: String? = null): Result<List<ProcessingHistoryItem>, DataError.Network> =
+        history.getProcessingHistory(type)
 
-    suspend fun deleteHistoryItem(id: String) {
+    suspend fun deleteHistoryItem(id: String): EmptyResult<DataError.Network> =
         history.deleteHistoryItem(id)
-    }
 
-    suspend fun clearHistory(type: String? = null): Int {
-        return history.clearHistory(type)
-    }
+    suspend fun clearHistory(type: String? = null): Result<Int, DataError.Network> =
+        history.clearHistory(type)
 
-    suspend fun reportPack(packId: String, reason: String, details: String? = null) {
+    suspend fun reportPack(packId: String, reason: String, details: String? = null): EmptyResult<DataError.Network> =
         moderation.reportPack(packId, reason, details)
-    }
 
-    suspend fun reportProcessingHistory(historyId: String, reason: String, details: String? = null) {
+    suspend fun reportProcessingHistory(historyId: String, reason: String, details: String? = null): EmptyResult<DataError.Network> =
         moderation.reportProcessingHistory(historyId, reason, details)
-    }
 
-    suspend fun blockUser(userId: String) {
+    suspend fun blockUser(userId: String): EmptyResult<DataError.Network> =
         moderation.blockUser(userId)
-    }
 
-    suspend fun listBlockedUsers(): BlockedUsersData {
-        return moderation.listBlockedUsers()
-    }
+    suspend fun listBlockedUsers(): Result<BlockedUsersData, DataError.Network> =
+        moderation.listBlockedUsers()
 
-    suspend fun unblockUser(userId: String) {
+    suspend fun unblockUser(userId: String): EmptyResult<DataError.Network> =
         moderation.unblockUser(userId)
-    }
 }

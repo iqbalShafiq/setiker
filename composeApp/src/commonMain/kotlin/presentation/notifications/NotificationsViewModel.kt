@@ -3,6 +3,8 @@ package presentation.notifications
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import data.remote.ExploreApiRepository
+import domain.error.onFailure
+import domain.error.onSuccess
 import data.remote.model.UserNotificationItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.json.JsonObject
@@ -80,13 +82,13 @@ class NotificationsViewModel(
     private fun load() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, loadFailed = false) }
-            runCatching { exploreApiRepository.getNotifications(page = 1, limit = 50) }
-                .onSuccess { (items, unread) ->
-                    _state.update { it.copy(isLoading = false, loadFailed = false, items = items, unreadCount = unread) }
-                }
-                .onFailure {
-                    _state.update { it.copy(isLoading = false, loadFailed = true) }
-                }
+        exploreApiRepository.getNotifications(page = 1, limit = 50)
+            .onSuccess { (items, unread) ->
+                _state.update { it.copy(isLoading = false, loadFailed = false, items = items, unreadCount = unread) }
+            }
+            .onFailure {
+                _state.update { it.copy(isLoading = false, loadFailed = true) }
+            }
         }
     }
 }

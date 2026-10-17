@@ -3,6 +3,8 @@ package presentation.blocked
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import data.remote.ExploreApiRepository
+import domain.error.onFailure
+import domain.error.onSuccess
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -49,13 +51,13 @@ class BlockedUsersViewModel(
     private fun load() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, loadFailed = false) }
-            runCatching { exploreApiRepository.listBlockedUsers() }
-                .onSuccess { data ->
-                    _state.update { it.copy(isLoading = false, loadFailed = false, users = data.users) }
-                }
-                .onFailure {
-                    _state.update { it.copy(isLoading = false, loadFailed = true) }
-                }
+        exploreApiRepository.listBlockedUsers()
+            .onSuccess { data ->
+                _state.update { it.copy(isLoading = false, loadFailed = false, users = data.users) }
+            }
+            .onFailure {
+                _state.update { it.copy(isLoading = false, loadFailed = true) }
+            }
         }
     }
 
@@ -63,7 +65,7 @@ class BlockedUsersViewModel(
         val userId = _state.value.pendingUnblockUserId ?: return
         viewModelScope.launch {
             _state.update { it.copy(unblockingUserId = userId, pendingUnblockUserId = null) }
-            runCatching { exploreApiRepository.unblockUser(userId) }
+            exploreApiRepository.unblockUser(userId)
                 .onSuccess {
                     _state.update {
                         it.copy(
