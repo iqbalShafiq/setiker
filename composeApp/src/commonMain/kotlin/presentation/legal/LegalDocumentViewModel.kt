@@ -3,8 +3,10 @@ package presentation.legal
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import data.auth.AuthManager
-import data.remote.ApiException
 import data.remote.LegalApiRepository
+import domain.error.DataError
+import domain.error.onFailure
+import domain.error.onSuccess
 import domain.model.LegalDocType
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -82,14 +84,12 @@ class LegalDocumentViewModel(
                     deletionEmail = prefilledEmail.ifBlank { it.deletionEmail }
                 )
             }
-            runCatching {
-                when (docType) {
-                    LegalDocType.PRIVACY -> legalApiRepository.getPrivacyDocument()
-                    LegalDocType.TERMS -> legalApiRepository.getTermsDocument()
-                    LegalDocType.RETENTION -> legalApiRepository.getRetentionDocument()
-                    LegalDocType.PERMISSIONS -> legalApiRepository.getPermissionsDocument()
-                    LegalDocType.ACCOUNT_DELETION -> legalApiRepository.getAccountDeletionDocument()
-                }
+            when (docType) {
+                LegalDocType.PRIVACY -> legalApiRepository.getPrivacyDocument()
+                LegalDocType.TERMS -> legalApiRepository.getTermsDocument()
+                LegalDocType.RETENTION -> legalApiRepository.getRetentionDocument()
+                LegalDocType.PERMISSIONS -> legalApiRepository.getPermissionsDocument()
+                LegalDocType.ACCOUNT_DELETION -> legalApiRepository.getAccountDeletionDocument()
             }.onSuccess { document ->
                 _state.update { it.copy(isLoading = false, document = document) }
             }.onFailure { error ->
@@ -127,13 +127,11 @@ class LegalDocumentViewModel(
                     deletionSubmitSuccessMessage = null
                 )
             }
-            runCatching {
-                legalApiRepository.requestAccountDeletion(
-                    email = email,
-                    reason = current.deletionReason.takeIf { it.isNotBlank() },
-                    confirmed = true
-                )
-            }.onSuccess { message ->
+            legalApiRepository.requestAccountDeletion(
+                email = email,
+                reason = current.deletionReason.takeIf { it.isNotBlank() },
+                confirmed = true
+            ).onSuccess { message ->
                 _state.update {
                     it.copy(
                         isSubmittingDeletion = false,
@@ -147,7 +145,11 @@ class LegalDocumentViewModel(
                     )
                 }
             }.onFailure { error ->
-                val apiMessage = (error as? ApiException)?.message?.takeIf { it.isNotBlank() }
+                val apiMessage = when (error) {
+                    is DataError.Network.ApiRejected -> error.message
+                    is DataError.Network.HttpFailure -> error.message
+                    else -> null
+                }?.takeIf { it.isNotBlank() }
                 _state.update {
                     it.copy(
                         isSubmittingDeletion = false,

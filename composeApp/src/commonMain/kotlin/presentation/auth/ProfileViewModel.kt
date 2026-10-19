@@ -14,6 +14,7 @@ import data.remote.LegalApiRepository
 import domain.model.AiUsage
 import domain.model.LegalSummary
 import domain.error.Result
+import domain.error.getOrNull
 import domain.error.onFailure
 import domain.error.onSuccess
 import domain.model.User
@@ -300,7 +301,7 @@ class ProfileViewModel(
             } else {
                 null
             }
-            val legalSummary = runCatching { legalApiRepository.getSummary() }.getOrNull()
+            val legalSummary = legalApiRepository.getSummary().getOrNull()
             val unread = if (user != null) {
                 when (val notifications = exploreApiRepository.getNotifications(page = 1, limit = 1, unreadOnly = true)) {
                     is Result.Success -> notifications.data.second

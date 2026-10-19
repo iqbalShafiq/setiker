@@ -2,6 +2,7 @@ package data.billing
 
 import data.auth.AuthManager
 import data.remote.AiUsageApiRepository
+import data.remote.toApiException
 import domain.billing.BillingProductUiModel
 import domain.billing.BillingRepository
 import domain.billing.EntitlementSnapshot
@@ -9,6 +10,9 @@ import domain.billing.PurchaseHistoryItem
 import domain.billing.PurchaseHistoryPage
 import domain.billing.PurchaseVerificationResult
 import domain.billing.RestorePurchasesResult
+import domain.error.AppErrorCode
+import domain.error.Result
+import domain.error.detailText
 
 class BillingRepositoryImpl(
     private val apiRepository: BillingApiRepository,
@@ -21,7 +25,10 @@ class BillingRepositoryImpl(
         get() = PlatformBillingConfig.platform
 
     override suspend fun getProducts(productCodes: List<String>): List<BillingProductUiModel> {
-        val catalog = apiRepository.fetchProducts()
+        val catalog = when (val products = apiRepository.fetchProducts()) {
+            is Result.Error -> throw products.error.toApiException()
+            is Result.Success -> products.data
+        }
         val filtered = if (productCodes.isEmpty()) catalog else catalog.filter { it.code in productCodes }
         val storeIds = filtered.mapNotNull { product -> storeProductId(product) }
         val storeProducts = platformStore.queryProducts(storeIds)
@@ -43,7 +50,14 @@ class BillingRepositoryImpl(
     }
 
     override suspend fun purchase(productCode: String): PurchaseVerificationResult {
-        val catalog = apiRepository.fetchProducts()
+        val catalog = when (val products = apiRepository.fetchProducts()) {
+            is Result.Error -> return PurchaseVerificationResult(
+                success = false,
+                productCode = productCode,
+                errorMessage = products.error.detailText()
+            )
+            is Result.Success -> products.data
+        }
         val product = catalog.firstOrNull { it.code == productCode }
             ?: return PurchaseVerificationResult(false, productCode, errorMessage = "Unknown product")
         val storeProductId = storeProductId(product)
@@ -58,18 +72,28 @@ class BillingRepositoryImpl(
 
         return try {
             val verified = when (storePlatform) {
-                BillingStorePlatform.GOOGLE_PLAY -> apiRepository.verifyGooglePlayPurchase(
-                    productCode = productCode,
-                    productId = storeProductId,
-                    purchaseToken = purchase.purchaseToken
-                )
-                BillingStorePlatform.APPLE_APP_STORE -> apiRepository.verifyApplePurchase(
-                    productCode = productCode,
-                    productId = storeProductId,
-                    signedTransactionInfo = purchase.purchaseToken,
-                    transactionId = purchase.transactionId,
-                    originalTransactionId = purchase.originalTransactionId
-                )
+                BillingStorePlatform.GOOGLE_PLAY -> when (
+                    val result = apiRepository.verifyGooglePlayPurchase(
+                        productCode = productCode,
+                        productId = storeProductId,
+                        purchaseToken = purchase.purchaseToken
+                    )
+                ) {
+                    is Result.Error -> throw result.error.toApiException(AppErrorCode.CloudCreateFailed)
+                    is Result.Success -> result.data
+                }
+                BillingStorePlatform.APPLE_APP_STORE -> when (
+                    val result = apiRepository.verifyApplePurchase(
+                        productCode = productCode,
+                        productId = storeProductId,
+                        signedTransactionInfo = purchase.purchaseToken,
+                        transactionId = purchase.transactionId,
+                        originalTransactionId = purchase.originalTransactionId
+                    )
+                ) {
+                    is Result.Error -> throw result.error.toApiException(AppErrorCode.CloudCreateFailed)
+                    is Result.Success -> result.data
+                }
             }
             if (verified.shouldConsume || verified.shouldAcknowledge) {
                 finishStorePurchase(purchase, verified.shouldConsume, verified.shouldAcknowledge)
@@ -91,7 +115,13 @@ class BillingRepositoryImpl(
         if (pending.isEmpty()) {
             return RestorePurchasesResult(restoredCount = 0)
         }
-        val catalog = apiRepository.fetchProducts()
+        val catalog = when (val products = apiRepository.fetchProducts()) {
+            is Result.Error -> return RestorePurchasesResult(
+                restoredCount = 0,
+                errorMessage = products.error.detailText()
+            )
+            is Result.Success -> products.data
+        }
         return try {
             val restored = when (storePlatform) {
                 BillingStorePlatform.GOOGLE_PLAY -> {
@@ -105,7 +135,10 @@ class BillingRepositoryImpl(
                             packageName = "com.setiker.app"
                         )
                     }
-                    apiRepository.restorePurchases(googlePlay = items)
+                    when (val result = apiRepository.restorePurchases(googlePlay = items)) {
+                        is Result.Error -> throw result.error.toApiException(AppErrorCode.CloudCreateFailed)
+                        is Result.Success -> result.data
+                    }
                 }
                 BillingStorePlatform.APPLE_APP_STORE -> {
                     val items = pending.mapNotNull { purchase ->
@@ -119,7 +152,10 @@ class BillingRepositoryImpl(
                             originalTransactionId = purchase.originalTransactionId
                         )
                     }
-                    apiRepository.restorePurchases(apple = items)
+                    when (val result = apiRepository.restorePurchases(apple = items)) {
+                        is Result.Error -> throw result.error.toApiException(AppErrorCode.CloudCreateFailed)
+                        is Result.Success -> result.data
+                    }
                 }
             }
             RestorePurchasesResult(restoredCount = restored)
@@ -129,8 +165,14 @@ class BillingRepositoryImpl(
     }
 
     override suspend fun getCurrentEntitlement(): EntitlementSnapshot {
-        val usage = usageApiRepository.getUsage()
-        val subscription = apiRepository.getSubscriptionSnapshot()
+        val usage = when (val result = usageApiRepository.getUsage()) {
+            is Result.Error -> throw result.error.toApiException()
+            is Result.Success -> result.data
+        }
+        val subscription = when (val result = apiRepository.getSubscriptionSnapshot()) {
+            is Result.Error -> throw result.error.toApiException()
+            is Result.Success -> result.data
+        }
         return EntitlementSnapshot(
             subscriptionTier = usage.subscriptionTier,
             purchasedTokenBalance = usage.purchasedTokenBalance,
@@ -144,7 +186,10 @@ class BillingRepositoryImpl(
     }
 
     override suspend fun getPurchaseHistory(limit: Int, offset: Int): PurchaseHistoryPage {
-        val page = apiRepository.listPurchases(limit = limit, offset = offset)
+        val page = when (val result = apiRepository.listPurchases(limit = limit, offset = offset)) {
+            is Result.Error -> throw result.error.toApiException()
+            is Result.Success -> result.data
+        }
         return PurchaseHistoryPage(
             purchases = page.purchases.map { dto ->
                 PurchaseHistoryItem(

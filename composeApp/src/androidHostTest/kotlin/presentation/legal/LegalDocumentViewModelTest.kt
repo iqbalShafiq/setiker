@@ -1,9 +1,10 @@
 package presentation.legal
 
 import data.auth.AuthManager
-import data.remote.ApiException
 import data.remote.LegalApiRepository
 import domain.error.AppErrorCode
+import domain.error.DataError
+import domain.error.Result
 import domain.model.LegalDocument
 import domain.model.LegalSection
 import domain.model.User
@@ -47,7 +48,7 @@ class LegalDocumentViewModelTest {
         val legalApi = mockk<LegalApiRepository>()
         val authManager = mockk<AuthManager>()
         coEvery { authManager.getUser() } returns sampleUser(email = "user@setiker.app")
-        coEvery { legalApi.getAccountDeletionDocument() } returns sampleDeletionDoc()
+        coEvery { legalApi.getAccountDeletionDocument() } returns Result.Success(sampleDeletionDoc())
 
         val viewModel = LegalDocumentViewModel(legalApi, authManager, "ACCOUNT_DELETION")
         advanceUntilIdle()
@@ -63,14 +64,14 @@ class LegalDocumentViewModelTest {
         val legalApi = mockk<LegalApiRepository>()
         val authManager = mockk<AuthManager>()
         coEvery { authManager.getUser() } returns sampleUser()
-        coEvery { legalApi.getAccountDeletionDocument() } returns sampleDeletionDoc()
+        coEvery { legalApi.getAccountDeletionDocument() } returns Result.Success(sampleDeletionDoc())
         coEvery {
             legalApi.requestAccountDeletion(
                 email = "user@setiker.app",
                 reason = "Leaving",
                 confirmed = true
             )
-        } returns "Request received."
+        } returns Result.Success("Request received.")
 
         val viewModel = LegalDocumentViewModel(legalApi, authManager, "ACCOUNT_DELETION")
         advanceUntilIdle()
@@ -102,10 +103,15 @@ class LegalDocumentViewModelTest {
         val legalApi = mockk<LegalApiRepository>()
         val authManager = mockk<AuthManager>()
         coEvery { authManager.getUser() } returns sampleUser()
-        coEvery { legalApi.getAccountDeletionDocument() } returns sampleDeletionDoc()
+        coEvery { legalApi.getAccountDeletionDocument() } returns Result.Success(sampleDeletionDoc())
         coEvery {
             legalApi.requestAccountDeletion(any(), any(), any())
-        } throws ApiException(AppErrorCode.CloudCreateFailed, message = "Too many requests")
+        } returns Result.Error(
+            DataError.Network.ApiRejected(
+                appCode = AppErrorCode.CloudCreateFailed,
+                message = "Too many requests"
+            )
+        )
 
         val viewModel = LegalDocumentViewModel(legalApi, authManager, "ACCOUNT_DELETION")
         advanceUntilIdle()
@@ -127,7 +133,7 @@ class LegalDocumentViewModelTest {
         val legalApi = mockk<LegalApiRepository>()
         val authManager = mockk<AuthManager>()
         coEvery { authManager.getUser() } returns sampleUser()
-        coEvery { legalApi.getAccountDeletionDocument() } returns sampleDeletionDoc()
+        coEvery { legalApi.getAccountDeletionDocument() } returns Result.Success(sampleDeletionDoc())
 
         val viewModel = LegalDocumentViewModel(legalApi, authManager, "ACCOUNT_DELETION")
         advanceUntilIdle()

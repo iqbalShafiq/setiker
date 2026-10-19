@@ -350,7 +350,7 @@ class SettingsViewModel(
                     usageError = false
                 )
             }
-            runCatching { legalApiRepository.getSummary() }
+            legalApiRepository.getSummary()
                 .onSuccess { summary ->
                     _state.update { it.copy(isLoadingLegal = false, legalSummary = summary) }
                 }
@@ -376,7 +376,7 @@ class SettingsViewModel(
                             }
                         }
                 }
-                runCatching { aiUsageApiRepository.getUsage() }
+                aiUsageApiRepository.getUsage()
                     .onSuccess { usage ->
                         _state.update { it.copy(isLoadingUsage = false, aiUsage = usage, usageError = false) }
                     }

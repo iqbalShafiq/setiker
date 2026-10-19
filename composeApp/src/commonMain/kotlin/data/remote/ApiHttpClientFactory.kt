@@ -1,6 +1,7 @@
 package data.remote
 
 import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
@@ -35,6 +36,7 @@ enum class ApiTimeoutProfile(val requestMillis: Long) {
 fun createApiClient(
     tag: String,
     profile: ApiTimeoutProfile = ApiTimeoutProfile.Default,
+    configure: HttpClientConfig<*>.() -> Unit = {},
 ): HttpClient = HttpClient {
     install(ContentNegotiation) { json(ApiJson.codec) }
     install(HttpTimeout) {
@@ -55,4 +57,5 @@ fun createApiClient(
             level = LogLevel.INFO
         }
     }
+    configure()
 }

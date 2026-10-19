@@ -53,7 +53,7 @@ class SettingsViewModelDeleteAccountTest {
         val authSessionCoordinator = mockk<AuthSessionCoordinator>(relaxed = true)
         val legalApiRepository = mockk<LegalApiRepository>()
 
-        coEvery { legalApiRepository.getSummary() } returns legalSummary()
+        coEvery { legalApiRepository.getSummary() } returns Result.Success(legalSummary())
         coEvery { authManager.getUser() } returns null
         coEvery { authManager.isAuthenticated() } returns true
         coEvery { authManager.getValidAccessToken() } returns "access-token"
@@ -93,7 +93,7 @@ class SettingsViewModelDeleteAccountTest {
         val authSessionCoordinator = mockk<AuthSessionCoordinator>(relaxed = true)
         val legalApiRepository = mockk<LegalApiRepository>()
 
-        coEvery { legalApiRepository.getSummary() } returns legalSummary()
+        coEvery { legalApiRepository.getSummary() } returns Result.Success(legalSummary())
         coEvery { authManager.getUser() } returns null
         coEvery { authManager.isAuthenticated() } returns true
         coEvery { authManager.getValidAccessToken() } returns "access-token"
@@ -129,7 +129,7 @@ class SettingsViewModelDeleteAccountTest {
         val authManager = mockk<AuthManager>()
         val legalApiRepository = mockk<LegalApiRepository>()
 
-        coEvery { legalApiRepository.getSummary() } returns legalSummary()
+        coEvery { legalApiRepository.getSummary() } returns Result.Success(legalSummary())
         coEvery { authManager.getUser() } returns null
         coEvery { authManager.isAuthenticated() } returns false
         coEvery { authManager.getValidAccessToken() } returns null
@@ -151,7 +151,9 @@ class SettingsViewModelDeleteAccountTest {
 
     private fun settingsViewModel(
         legalApiRepository: LegalApiRepository = mockk(relaxed = true),
-        aiUsageApiRepository: AiUsageApiRepository = mockk(relaxed = true),
+        aiUsageApiRepository: AiUsageApiRepository = mockk {
+            coEvery { getUsage() } returns Result.Error(DataError.Network.Unknown)
+        },
         authManager: AuthManager = mockk(relaxed = true),
         authApiService: AuthApiService = mockk(relaxed = true),
         authSessionCoordinator: AuthSessionCoordinator = mockk(relaxed = true),

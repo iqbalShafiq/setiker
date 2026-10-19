@@ -9,12 +9,13 @@ import data.remote.model.AiUsageCountsDto
 import data.remote.model.AiUsageDto
 import data.remote.model.ApiSuccessEnvelope
 import domain.error.AppErrorCode
+import domain.error.DataError
+import domain.error.EmptyResult
+import domain.error.Result
 import domain.model.AiQuotaOperation
 import domain.model.AiQuotaReservation
 import domain.model.AiUsage
 import domain.model.AiUsageCounts
-import io.ktor.client.HttpClient
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -25,9 +26,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
-import io.ktor.serialization.kotlinx.json.json
 import data.remote.json.ApiJson
-import kotlinx.serialization.json.Json
 import presentation.common.apiName
 
 class AiUsageApiRepository(
@@ -37,59 +36,59 @@ class AiUsageApiRepository(
 ) {
     private val json = ApiJson.codec
 
-    private val client = HttpClient {
-        install(ContentNegotiation) { json(json) }
-    }
+    private val client = createApiClient(TAG)
 
-    suspend fun getUsage(): AiUsage {
+    suspend fun getUsage(): Result<AiUsage, DataError.Network> = runApiCall(TAG) {
         val response = withAuthRetry { token ->
             client.get("$baseUrl/api/v1/ai/usage") {
                 header(HttpHeaders.Authorization, "Bearer $token")
             }
         }
-        return parseSuccess(response) { bodyText ->
+        parseSuccess(response) { bodyText ->
             json.decodeFromString<ApiSuccessEnvelope<AiUsageDto>>(bodyText).data?.toDomain()
                 ?: throw ApiException(AppErrorCode.CloudFetchFailed)
         }
     }
 
-    suspend fun reserve(operation: AiQuotaOperation): AiQuotaReservation {
-        val response = withAuthRetry { token ->
-            client.post("$baseUrl/api/v1/ai/quota/reserve") {
-                header(HttpHeaders.Authorization, "Bearer $token")
-                contentType(ContentType.Application.Json)
-                setBody(AiQuotaReserveRequestDto(operation = operation.apiName()))
+    suspend fun reserve(operation: AiQuotaOperation): Result<AiQuotaReservation, DataError.Network> =
+        runApiCall(TAG) {
+            val response = withAuthRetry { token ->
+                client.post("$baseUrl/api/v1/ai/quota/reserve") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                    contentType(ContentType.Application.Json)
+                    setBody(AiQuotaReserveRequestDto(operation = operation.apiName()))
+                }
             }
-        }
-        return parseSuccess(response) { bodyText ->
-            val dto = json.decodeFromString<ApiSuccessEnvelope<AiQuotaReserveResponseDto>>(bodyText).data
-                ?: throw ApiException(AppErrorCode.CloudFetchFailed)
-            AiQuotaReservation(
-                reservationId = dto.reservationId,
-                operation = operation,
-                pointCost = dto.pointCost,
-                pointsRemaining = dto.pointsRemaining,
-                reservationExpiresAt = dto.reservationExpiresAt,
-                serverNow = dto.serverNow
-            )
-        }
-    }
-
-    suspend fun finalize(reservationId: String, committed: Boolean) {
-        val response = withAuthRetry { token ->
-            client.post("$baseUrl/api/v1/ai/quota/finalize") {
-                header(HttpHeaders.Authorization, "Bearer $token")
-                contentType(ContentType.Application.Json)
-                setBody(
-                    AiQuotaFinalizeRequestDto(
-                        reservationId = reservationId,
-                        outcome = if (committed) "committed" else "released"
-                    )
+            parseSuccess(response) { bodyText ->
+                val dto = json.decodeFromString<ApiSuccessEnvelope<AiQuotaReserveResponseDto>>(bodyText).data
+                    ?: throw ApiException(AppErrorCode.CloudFetchFailed)
+                AiQuotaReservation(
+                    reservationId = dto.reservationId,
+                    operation = operation,
+                    pointCost = dto.pointCost,
+                    pointsRemaining = dto.pointsRemaining,
+                    reservationExpiresAt = dto.reservationExpiresAt,
+                    serverNow = dto.serverNow
                 )
             }
         }
-        parseSuccess(response) { }
-    }
+
+    suspend fun finalize(reservationId: String, committed: Boolean): EmptyResult<DataError.Network> =
+        runApiCall(TAG) {
+            val response = withAuthRetry { token ->
+                client.post("$baseUrl/api/v1/ai/quota/finalize") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                    contentType(ContentType.Application.Json)
+                    setBody(
+                        AiQuotaFinalizeRequestDto(
+                            reservationId = reservationId,
+                            outcome = if (committed) "committed" else "released"
+                        )
+                    )
+                }
+            }
+            parseSuccess(response) { }
+        }
 
     private suspend inline fun <T> parseSuccess(
         response: io.ktor.client.statement.HttpResponse,
@@ -125,6 +124,10 @@ class AiUsageApiRepository(
     private suspend fun forceRefreshAccessToken(): String? {
         val refreshed = authTokenRefresher?.refreshAccessToken(clearTokensOnFailure = true)
         return if (refreshed.isNullOrBlank()) null else refreshed
+    }
+
+    private companion object {
+        const val TAG = "AiUsageApi"
     }
 }
 

@@ -9,14 +9,8 @@ import data.remote.model.ApiTextAsset
 import data.remote.model.VideoStickerPackPlanData
 import domain.model.VideoStickerCandidateManifestItem
 import domain.error.AppErrorCode
-import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.DefaultRequest
-import io.ktor.client.plugins.HttpTimeout
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.plugins.logging.Logger
-import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.forms.FormBuilder
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
@@ -30,9 +24,7 @@ import io.ktor.http.URLProtocol
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.delay
-import io.ktor.serialization.kotlinx.json.json
 import data.remote.json.ApiJson
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import data.auth.AuthManager
 import data.auth.AuthTokenRefresher
@@ -64,28 +56,10 @@ class SetikerApiService(
         )
     }
 
-    private val client = HttpClient {
-        install(ContentNegotiation) {
-            json(
-                json
-            )
-        }
-        install(HttpTimeout) {
-            requestTimeoutMillis = 600_000
-            connectTimeoutMillis = 30_000
-            socketTimeoutMillis = 600_000
-        }
-        if (ApiConfig.isDebugLoggingEnabled) {
-            install(Logging) {
-                logger = object : Logger {
-                    override fun log(message: String) {
-                        println("KtorClient: $message")
-                    }
-                }
-                sanitizeHeader { it == HttpHeaders.Authorization }
-                level = LogLevel.ALL
-            }
-        }
+    private val client = createApiClient(
+        tag = "SetikerApi",
+        profile = ApiTimeoutProfile.LongOperation,
+    ) {
         install(DefaultRequest) {
             url(baseUrl)
             if (url.protocol.name.isBlank()) {
