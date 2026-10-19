@@ -1,6 +1,9 @@
 # P3b — Data Layer Error Model & Infrastructure Consolidation
 
-Status: DRAFT — awaiting user review before planning/execution.
+Status: DONE — executed 2026-10-19 on `audit/android-modernization` (infra `504fabc`, Family A
+`f5798fe`, Family B `b3db044`, Family C `5d11e3a`, Family D `ee45e8a`). Final gates: 180 tests /
+0 failures / 0 errors, metadata compile + `assembleDebug` green; device smoke and the executed
+deviations (DD1–DD5) are recorded in `docs/plans/2026-10-17-p3b-data-layer-consolidation.md`.
 Scope: commonMain data layer refactor. No server/API contract change, no UI behavior change
 (except strictly-better failure visibility where messages already existed).
 Target toolchain: unchanged from P3a (AGP 9.4.1, Gradle 9.6.0, Kotlin 2.4.21, Compose Multiplatform 1.12.1, Room 2.8.5).

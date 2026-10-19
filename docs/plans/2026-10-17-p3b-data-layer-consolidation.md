@@ -18,6 +18,47 @@ kotlinx-serialization-json, JUnit 5 host tests, Koin DI, Room unchanged.
 
 **Spec:** `docs/specs/p3b-data-layer-consolidation.md` (approved by user 2026-10-17, "setuju sepenuhnya").
 
+## Execution record — DONE (2026-10-19)
+
+Executed natively in-session, staged commits on `audit/android-modernization` (all pushed):
+
+- T1–T3 infra + splits: `0398e07`, `f876975`, `29f12d6`, `255c699`, `70c5f93`, `36467b9`, `1f25536`, `504fabc`.
+- Task 14 — Family A (cloud/sync): `f5798fe`.
+- Task 15 — Family B (explore + VMs): `b3db044`.
+- Task 16 — Family C (auth plane, R2): `5d11e3a`.
+- Task 17 — Family D (billing/legal/ai-usage/quota + stragglers, R1/R4): `ee45e8a`.
+
+**Final gates:** `build/p3b-final-gate.txt` — `compileCommonMainKotlinMetadata` ok,
+`testAndroidHostTest` **180 tests / 0 failures / 0 errors** (baseline 171 + 9 new incl.
+`ApiTimeoutProfileTest`), `assembleDebug` BUILD SUCCESSFUL. Test XMLs re-executed 2026-10-19 09:51.
+
+**Device smoke evidence** (`C:\Users\iqbal.shafiq\AppData\Local\Temp\opencode\setiker-audit\p3b\`):
+A/B: cold start, sync 200 round trip; B/C: explore UI + `POST /auth/refresh 200` single attempt;
+D: billing products + subscription 200, `GET /ai/usage 200`, and the Review-Focus-#1 run —
+`POST /generate/sticker-pack 200` in 26 s + `POST /grid/split/text-assets 200` in **170 s**
+(exceeds the old 60 s default; only succeeds because `LongOperation` keeps 600 s), job reached
+Saved (`SmokePack`) on device; no FATAL/ANR.
+
+### Spec deviations (DD1–DD5) and execution notes
+
+1. **DD1 — slim `HttpFailure`.** `HttpFailure(status, appCode, message, subcode)` is the canonical
+   network-failure payload alongside `DataError`; `retryable` is derived, not stored twice.
+2. **DD2 — classifier placement.** `Throwable.toDataError()` lives in `data/remote` (next to
+   `ApiErrorParser` consumers) instead of `domain/error`, since only the data layer classifies
+   Ktor exceptions; String matching deleted as specced.
+3. **DD3 — codec name.** Canonical codec shipped as `ApiJson.codec`; `AiJobJson` folded in,
+   `ApiErrorParser` keeps its tolerant config as the documented exception (D2).
+4. **DD4 — logging.** `createApiClient` request logging is debug-gated via
+   `ApiConfig.isDebugLoggingEnabled` (URL-only, no bodies) instead of always-on `AppLog.d`.
+5. **DD5 — quota exception bridge (R4).** Family D adds `DataError.Network.toApiException(fallback)`
+   (`data/remote/DataErrorBridge.kt`): typed `Result` everywhere, but `AiQuotaRepositoryImpl` /
+   `BillingRepositoryImpl` keep their domain exception contract so `AiJobFailureClassifier` still
+   sees the exact `ApiException.code`; `429` without appCode maps to `AiQuotaExceeded`.
+   `createApiClient` gained a `configure` param so `SetikerApiService` keeps
+   `DefaultRequest { url(baseUrl) }` (relative `/api/v1/...` paths, R1 verified on device);
+   billing catalog fetch failure inside `purchase`/`restorePurchases` returns a failure result
+   instead of throwing (their VMs treat it as `Result`).
+
 ## Global Constraints
 
 - Branch `audit/android-modernization`; every stage commits after its gates pass; push after each stage.
@@ -594,17 +635,17 @@ Constraint pinned by Review Focus #2: 401→refresh→one retry→typed failure;
 `SetikerApiService` (AI pipeline) switches to the shared factory with `LongOperation`
 profile (timeout preserved) — this is the Review Focus #1 verification point.
 
-- [ ] Step 1: Task 14 — gates + device sync-pack smoke (push+pull round trip) → commit A + push.
-- [ ] Step 2: Task 15 — per-family compile until all 13 files green; gated UI smoke (like/save/detail) → commit B + push.
-- [ ] Step 3: Task 16 — gates + login/logout/pass-change smoke → commit C + push.
-- [ ] Step 4: Task 17 — gates + AI **generate** device run (completes; not timeout) + billing rows → commit D + push.
+- [x] Step 1: Task 14 — gates + device sync-pack smoke (push+pull round trip) → commit A (`f5798fe`) + push.
+- [x] Step 2: Task 15 — per-family compile until all 13 files green; gated UI smoke (like/save/detail) → commit B (`b3db044`) + push.
+- [x] Step 3: Task 16 — gates + login/logout/pass-change smoke → commit C (`5d11e3a`) + push.
+- [x] Step 4: Task 17 — gates + AI **generate** device run (completes; not timeout) + billing rows → commit D (`ee45e8a`) + push.
 
 ### Task 18: Close-out
 
-- [ ] Step 1: Update `docs/specs/p3b-data-layer-consolidation.md` Status → DONE + deviations (DD1 slim HttpFailure, DD2 exact test list, DD3 anything found).
-- [ ] Step 2: Update audit ledger notes.md (backlog P3b → DONE, carry any P3e/f/g/j changes).
-- [ ] Step 3: Full gate run recorded `p3b-final-gate.txt`; device smoke evidence screenshot into temp dir like P3a (`C:\Users\iqbal.shafiq\AppData\Local\Temp\opencode\setiker-audit\p3b\`).
-- [ ] Step 4: Final summary back to user (Bahasa Indonesia).
+- [x] Step 1: Update `docs/specs/p3b-data-layer-consolidation.md` Status → DONE + deviations (shipped as DD1–DD5 in the Execution record above).
+- [x] Step 2: Update audit ledger notes.md (backlog P3b → DONE, carry any P3e/f/g/j changes).
+- [x] Step 3: Full gate run recorded `p3b-final-gate.txt`; device smoke evidence screenshots into `C:\Users\iqbal.shafiq\AppData\Local\Temp\opencode\setiker-audit\p3b\`.
+- [x] Step 4: Final summary back to user (Bahasa Indonesia).
 
 ---
 
