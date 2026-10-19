@@ -197,6 +197,12 @@ class AndroidOnDeviceImageProcessor(
 
     private fun copyAssetModelToFiles(): File {
         val modelDir = File(context.filesDir, "models").apply { mkdirs() }
+        LEGACY_MODEL_FILE_NAMES.forEach { legacyName ->
+            val legacy = File(modelDir, legacyName)
+            if (legacy.exists()) {
+                legacy.delete()
+            }
+        }
         val output = File(modelDir, MODEL_FILE_NAME)
         if (output.exists() && output.length() > 0) {
             return output
@@ -413,7 +419,15 @@ class AndroidOnDeviceImageProcessor(
 
     companion object {
         private const val TAG = "OnDeviceImageProcessor"
-        private const val MODEL_FILE_NAME = "u2net.onnx"
+
+        /**
+         * Quantized (int8 QDQ, percentile-calibrated) u2net export. The name is versioned by the
+         * quantization scheme so a model swap replaces the cached copy in `files/models` on update.
+         */
+        private const val MODEL_FILE_NAME = "u2net_int8.onnx"
+
+        /** Pre-quantization model copies kept for upgrade compatibility; deleted once present. */
+        private val LEGACY_MODEL_FILE_NAMES = listOf("u2net.onnx")
         private const val MODEL_INPUT_SIZE = 320
         private const val OUTPUT_SIZE = 512
         private const val MAX_WORKING_DIMENSION = 512
