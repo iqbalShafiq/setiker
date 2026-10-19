@@ -1,16 +1,21 @@
 package data.util
 
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.useContents
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
-import platform.CoreGraphics.CGAffineTransformMakeRotation
-import platform.CoreGraphics.CGAffineTransformMakeScale
 import platform.CoreGraphics.CGAffineTransformMakeTranslation
+import platform.CoreGraphics.CGContextConcatCTM
+import platform.CoreGraphics.CGContextRotateCTM
+import platform.CoreGraphics.CGContextScaleCTM
 import platform.CoreGraphics.CGRectMake
 import platform.CoreGraphics.CGSizeMake
 import platform.Foundation.writeToFile
+import platform.posix.time
 import platform.UIKit.UIGraphicsBeginImageContextWithOptions
 import platform.UIKit.UIGraphicsEndImageContext
+import platform.UIKit.UIGraphicsGetCurrentContext
 import platform.UIKit.UIGraphicsGetImageFromCurrentImageContext
 import platform.UIKit.UIImage
 import platform.UIKit.UIImagePNGRepresentation
@@ -32,11 +37,13 @@ actual suspend fun applyCropTransformation(
     val size = CGSizeMake(outputSize.toDouble(), outputSize.toDouble())
     UIGraphicsBeginImageContextWithOptions(size, false, 0.0)
 
-    val context = platform.CoreGraphics.UIGraphicsGetCurrentContext()
+    val context = UIGraphicsGetCurrentContext()
         ?: throw IllegalStateException("Cannot get graphics context")
 
     val sourceSize = sourceImage.size
-    val maxDim = maxOf(sourceSize.width, sourceSize.height).coerceAtLeast(1.0)
+    val sourceWidth = sourceSize.useContents { width }
+    val sourceHeight = sourceSize.useContents { height }
+    val maxDim = maxOf(sourceWidth, sourceHeight).coerceAtLeast(1.0)
     val fitScale = outputSize.toDouble() / maxDim
     val finalScale = scale.coerceIn(0.5f, 4f).toDouble() * fitScale
 
@@ -46,29 +53,30 @@ actual suspend fun applyCropTransformation(
         outputSize / 2.0 + offsetX.coerceIn(-1f, 1f).toDouble() * outputSize,
         outputSize / 2.0 + offsetY.coerceIn(-1f, 1f).toDouble() * outputSize
     )
-    context.concatenateWithTransform(transform)
+    CGContextConcatCTM(context, transform)
 
-    context.rotateByAngle(rotation.toDouble() * kotlin.math.PI / 180.0)
+    CGContextRotateCTM(context, rotation.toDouble() * kotlin.math.PI / 180.0)
 
     val scaleX = if (flipHorizontal) -finalScale else finalScale
     val scaleY = if (flipVertical) -finalScale else finalScale
-    context.scaleBy(x = scaleX, y = scaleY)
+    CGContextScaleCTM(context, scaleX, scaleY)
 
     // Draw centered
     sourceImage.drawInRect(
         CGRectMake(
-            -sourceSize.width / 2.0,
-            -sourceSize.height / 2.0,
-            sourceSize.width,
-            sourceSize.height
+            -sourceWidth / 2.0,
+            -sourceHeight / 2.0,
+            sourceWidth,
+            sourceHeight
         )
     )
 
     val outputImage = UIGraphicsGetImageFromCurrentImageContext()
+        ?: throw IllegalStateException("Cannot encode image")
     UIGraphicsEndImageContext()
 
     // Save to file
-    val outputPath = sourcePath.substringBeforeLast("/") + "/cropped_${System.currentTimeMillis()}.png"
+    val outputPath = sourcePath.substringBeforeLast("/") + "/cropped_${time(null) * 1000}.png"
     val imageData = UIImagePNGRepresentation(outputImage)
         ?: throw IllegalStateException("Cannot encode image")
 

@@ -10,7 +10,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 object IosGoogleSignInIntegration {
     private var signInHandler: (((String?) -> Unit) -> Unit)? = null
 
-    fun registerGoogleSignInHandler(signIn: ((String?) -> Unit) -> Unit) -> Unit) {
+    fun registerGoogleSignInHandler(signIn: ((String?) -> Unit) -> Unit) {
         signInHandler = signIn
     }
 

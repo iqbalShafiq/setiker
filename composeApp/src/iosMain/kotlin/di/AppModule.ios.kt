@@ -30,14 +30,15 @@ import org.koin.core.module.Module
 import org.koin.dsl.module
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
+import platform.Foundation.NSURL
 import platform.Foundation.NSUserDomainMask
 
 actual fun platformModule(): Module = module {
     single<StickerDatabase> {
-        val documentsDir = NSFileManager.defaultManager.URLsForDirectory(
+        val documentsDir = (NSFileManager.defaultManager.URLsForDirectory(
             NSDocumentDirectory,
             NSUserDomainMask
-        ).firstOrNull()?.path ?: ""
+        ).firstOrNull() as? NSURL)?.path ?: ""
         val dbFile = "$documentsDir/${StickerDatabase.DATABASE_NAME}"
 
         Room.databaseBuilder<StickerDatabase>(

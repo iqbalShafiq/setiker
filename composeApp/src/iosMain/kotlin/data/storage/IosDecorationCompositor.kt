@@ -8,6 +8,7 @@ import domain.model.TextDecoration
 import domain.model.isBottomCaption
 import domain.model.resolveEmojiStyle
 import domain.model.resolveStyle
+import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.useContents
@@ -28,8 +29,10 @@ import platform.UIKit.UIFont
 import platform.UIKit.UIImage
 import platform.UIKit.UIImagePNGRepresentation
 import platform.UIKit.UIColor
+import platform.UIKit.drawAtPoint
+import platform.UIKit.sizeWithAttributes
 
-@OptIn(ExperimentalForeignApi::class)
+@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 internal object IosDecorationCompositor {
     private const val STICKER_SIZE = 512.0
 
@@ -70,7 +73,7 @@ internal object IosDecorationCompositor {
         val textSizePx = DecorationRenderSpec.textSizePx(decoration, minDim, scale).toDouble()
         val resolved = decoration.resolveStyle(textSizePx.toFloat())
         val font = UIFont.boldSystemFontOfSize(textSizePx)
-        val nsText = decoration.text as NSString
+        val nsText = NSString.create(string = decoration.text)
         if (decoration.isBottomCaption()) {
             drawSingleLayerText(nsText, centerX, centerY, font, resolved.textColorArgb, 0.06f, 0xFFFFFFFFL)
             return
@@ -98,7 +101,7 @@ internal object IosDecorationCompositor {
         val textSizePx = (minDim * DecorationRenderSpec.EMOJI_SIZE_RATIO * scale).toDouble()
         val resolved = decoration.resolveEmojiStyle(textSizePx.toFloat())
         val font = UIFont.systemFontOfSize(textSizePx)
-        val nsText = decoration.emoji as NSString
+        val nsText = NSString.create(string = decoration.emoji)
         resolved.layers.forEach { layer ->
             drawSingleLayerText(
                 text = nsText,

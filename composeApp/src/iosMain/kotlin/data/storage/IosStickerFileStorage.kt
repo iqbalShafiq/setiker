@@ -3,17 +3,24 @@ package data.storage
 import domain.model.AnimatedStickerSpec
 import domain.model.DecodedFrame
 import domain.model.StickerDecoration
+import kotlinx.cinterop.BetaInteropApi
+import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 import platform.Foundation.NSData
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
+import platform.Foundation.NSURL
 import platform.Foundation.NSUserDomainMask
+import platform.Foundation.create
 import platform.Foundation.dataWithContentsOfFile
 import platform.Foundation.writeToFile
+import platform.posix.memcpy
 
+@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 actual class StickerFileStorage {
 
     private val stickersDir: String
@@ -22,7 +29,7 @@ actual class StickerFileStorage {
                 NSDocumentDirectory,
                 NSUserDomainMask
             )
-            val documentsDir = paths.firstOrNull()?.path ?: ""
+            val documentsDir = (paths.firstOrNull() as? NSURL)?.path ?: ""
             val stickersPath = "$documentsDir/stickers"
             NSFileManager.defaultManager.createDirectoryAtPath(
                 stickersPath,
@@ -46,7 +53,7 @@ actual class StickerFileStorage {
             val destPath = "$stickersDir/$fileName"
             bytes.usePinned { pinned ->
                 NSData.create(bytes = pinned.addressOf(0), length = bytes.size.toULong())
-            }?.writeToFile(destPath, atomically = true)
+            }.writeToFile(destPath, atomically = true)
             destPath
         }
 
@@ -159,9 +166,4 @@ actual class StickerFileStorage {
         // builds stay green. WhatsApp pack validation only happens on Android right now.
         return saveStickerImage(sourcePath, fileName)
     }
-}
-
-@kotlinx.cinterop.ExperimentalForeignApi
-private fun memcpy(dest: kotlinx.cinterop.CValuesRef<*>, src: kotlinx.cinterop.CValuesRef<*>, count: Int) {
-    kotlinx.cinterop.memcpy(dest, src, count.toULong())
 }

@@ -9,7 +9,7 @@ actual class NetworkMonitor {
     private val _isOnline = MutableStateFlow(false)
     actual val isOnline: StateFlow<Boolean> = _isOnline
 
-    private var monitor: nw_path_monitor_t? = null
+    private var monitor: nw_path_monitor_t = null
     private val monitorQueue = dispatch_queue_create("NetworkMonitor", null)
 
     actual fun startMonitoring() {

@@ -10,7 +10,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 object IosAppleSignInIntegration {
     private var signInHandler: (((String?) -> Unit) -> Unit)? = null
 
-    fun registerAppleSignInHandler(signIn: ((String?) -> Unit) -> Unit) -> Unit) {
+    fun registerAppleSignInHandler(signIn: ((String?) -> Unit) -> Unit) {
         signInHandler = signIn
     }
 

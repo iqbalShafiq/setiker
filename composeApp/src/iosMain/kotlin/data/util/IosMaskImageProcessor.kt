@@ -2,17 +2,23 @@ package data.util
 
 import androidx.compose.ui.unit.IntSize
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.useContents
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
+import platform.CoreGraphics.CGBlendMode
 import platform.CoreGraphics.CGContextAddLineToPoint
 import platform.CoreGraphics.CGContextMoveToPoint
+import platform.CoreGraphics.CGContextSetBlendMode
 import platform.CoreGraphics.CGContextSetLineCap
 import platform.CoreGraphics.CGContextSetLineJoin
 import platform.CoreGraphics.CGContextSetLineWidth
-import platform.CoreGraphics.CGLineCapRound
-import platform.CoreGraphics.CGLineJoinRound
+import platform.CoreGraphics.CGContextStrokePath
+import platform.CoreGraphics.CGLineCap
+import platform.CoreGraphics.CGLineJoin
 import platform.CoreGraphics.CGRectMake
 import platform.Foundation.writeToFile
+import platform.posix.time
 import platform.UIKit.UIGraphicsBeginImageContextWithOptions
 import platform.UIKit.UIGraphicsEndImageContext
 import platform.UIKit.UIGraphicsGetCurrentContext
@@ -30,8 +36,10 @@ actual suspend fun applyMaskToImage(
         ?: throw IllegalArgumentException("Cannot load image: $imagePath")
 
     val sourceSize = sourceImage.size
-    val scaleX = sourceSize.width / canvasSize.width.toDouble()
-    val scaleY = sourceSize.height / canvasSize.height.toDouble()
+    val sourceWidth = sourceSize.useContents { width }
+    val sourceHeight = sourceSize.useContents { height }
+    val scaleX = sourceWidth / canvasSize.width.toDouble()
+    val scaleY = sourceHeight / canvasSize.height.toDouble()
 
     UIGraphicsBeginImageContextWithOptions(sourceSize, false, 0.0)
 
@@ -39,18 +47,18 @@ actual suspend fun applyMaskToImage(
         ?: throw IllegalStateException("Cannot get graphics context")
 
     // Draw source image
-    sourceImage.drawInRect(CGRectMake(0.0, 0.0, sourceSize.width, sourceSize.height))
+    sourceImage.drawInRect(CGRectMake(0.0, 0.0, sourceWidth, sourceHeight))
 
     // Apply mask
     paths.forEach { brushPath ->
         CGContextSetLineWidth(context, brushPath.brushSize * kotlin.math.max(scaleX, scaleY))
-        CGContextSetLineCap(context, kCGLineCapRound)
-        CGContextSetLineJoin(context, kCGLineJoinRound)
+        CGContextSetLineCap(context, CGLineCap.kCGLineCapRound)
+        CGContextSetLineJoin(context, CGLineJoin.kCGLineJoinRound)
 
         if (brushPath.isErasing) {
-            context.setBlendMode(platform.CoreGraphics.kCGBlendModeClear)
+            CGContextSetBlendMode(context, CGBlendMode.kCGBlendModeClear)
         } else {
-            context.setBlendMode(platform.CoreGraphics.kCGBlendModeNormal)
+            CGContextSetBlendMode(context, CGBlendMode.kCGBlendModeNormal)
         }
 
         if (brushPath.points.isNotEmpty()) {
@@ -62,14 +70,15 @@ actual suspend fun applyMaskToImage(
             }
         }
 
-        context.strokePath()
+        CGContextStrokePath(context)
     }
 
     val outputImage = UIGraphicsGetImageFromCurrentImageContext()
+        ?: throw IllegalStateException("Cannot encode image")
     UIGraphicsEndImageContext()
 
     // Save
-    val outputPath = imagePath.substringBeforeLast("/") + "/masked_${System.currentTimeMillis()}.png"
+    val outputPath = imagePath.substringBeforeLast("/") + "/masked_${time(null) * 1000}.png"
     val imageData = UIImagePNGRepresentation(outputImage)
         ?: throw IllegalStateException("Cannot encode image")
 
