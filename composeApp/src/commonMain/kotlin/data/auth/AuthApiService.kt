@@ -18,7 +18,11 @@ import data.auth.model.UserProfileResponse
 import data.remote.ApiConfig
 import data.remote.ApiErrorParser
 import data.remote.ApiException
+import data.remote.runApiCall
 import domain.error.AppErrorCode
+import domain.error.DataError
+import domain.error.EmptyResult
+import domain.error.Result
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.cookies.CookiesStorage
@@ -39,6 +43,12 @@ import data.remote.json.ApiJson
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
+/**
+ * Auth transport with cookie-based refresh-token rotation (spec P3b, D6/Family C): a
+ * legitimately different client from the bearer-token planes. Every endpoint returns a typed
+ * [Result]; business codes parsed from the error body keep their exact [AppErrorCode]/subcode
+ * (R2 constraint). Refresh side has no retry loop - [AuthTokenRefresher] runs at most once.
+ */
 class AuthApiService(
     private val baseUrl: String = ApiConfig.baseUrl
 ) {
@@ -66,254 +76,277 @@ class AuthApiService(
         )
     }
 
-    suspend fun register(request: RegisterRequest): AuthResponse {
-        val response = client.post("$baseUrl/api/v1/auth/register") {
-            contentType(ContentType.Application.Json)
-            setBody(request)
+    suspend fun register(request: RegisterRequest): Result<AuthResponse, DataError.Network> =
+        runApiCall(TAG) {
+            val response = client.post("$baseUrl/api/v1/auth/register") {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }
+            val bodyText = response.bodyAsText()
+            if (!response.status.isSuccess()) {
+                throwApiError(bodyText, AppErrorCode.AuthRegisterFailed)
+            }
+            json.decodeFromString(bodyText)
         }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throwApiError(bodyText, AppErrorCode.AuthRegisterFailed)
-        }
-        return json.decodeFromString(bodyText)
-    }
 
-    suspend fun login(request: LoginRequest): AuthResponse {
-        val response = client.post("$baseUrl/api/v1/auth/login") {
-            contentType(ContentType.Application.Json)
-            setBody(request)
+    suspend fun login(request: LoginRequest): Result<AuthResponse, DataError.Network> =
+        runApiCall(TAG) {
+            val response = client.post("$baseUrl/api/v1/auth/login") {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }
+            val bodyText = response.bodyAsText()
+            if (!response.status.isSuccess()) {
+                throwApiError(bodyText, AppErrorCode.AuthLoginFailed)
+            }
+            json.decodeFromString(bodyText)
         }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throwApiError(bodyText, AppErrorCode.AuthLoginFailed)
-        }
-        return json.decodeFromString(bodyText)
-    }
 
-    suspend fun loginWithGoogle(idToken: String): AuthResponse {
-        val response = client.post("$baseUrl/api/v1/auth/google") {
-            contentType(ContentType.Application.Json)
-            setBody(GoogleIdTokenRequest(idToken = idToken))
+    suspend fun loginWithGoogle(idToken: String): Result<AuthResponse, DataError.Network> =
+        runApiCall(TAG) {
+            val response = client.post("$baseUrl/api/v1/auth/google") {
+                contentType(ContentType.Application.Json)
+                setBody(GoogleIdTokenRequest(idToken = idToken))
+            }
+            val bodyText = response.bodyAsText()
+            if (!response.status.isSuccess()) {
+                throwApiError(bodyText, AppErrorCode.AuthGoogleFailed)
+            }
+            json.decodeFromString(bodyText)
         }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throwApiError(bodyText, AppErrorCode.AuthGoogleFailed)
-        }
-        return json.decodeFromString(bodyText)
-    }
 
-    suspend fun linkGoogleWithPassword(idToken: String, email: String, password: String): AuthResponse {
-        val response = client.post("$baseUrl/api/v1/auth/google/link-with-password") {
-            contentType(ContentType.Application.Json)
-            setBody(
-                LinkGoogleWithPasswordRequest(
-                    idToken = idToken,
-                    email = email,
-                    password = password
+    suspend fun linkGoogleWithPassword(idToken: String, email: String, password: String): Result<AuthResponse, DataError.Network> =
+        runApiCall(TAG) {
+            val response = client.post("$baseUrl/api/v1/auth/google/link-with-password") {
+                contentType(ContentType.Application.Json)
+                setBody(
+                    LinkGoogleWithPasswordRequest(
+                        idToken = idToken,
+                        email = email,
+                        password = password
+                    )
                 )
-            )
+            }
+            val bodyText = response.bodyAsText()
+            if (!response.status.isSuccess()) {
+                throwApiError(bodyText, AppErrorCode.AuthGoogleFailed)
+            }
+            json.decodeFromString(bodyText)
         }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throwApiError(bodyText, AppErrorCode.AuthGoogleFailed)
-        }
-        return json.decodeFromString(bodyText)
-    }
 
-    suspend fun linkGoogle(token: String, idToken: String): UserProfileResponse {
-        val response = client.post("$baseUrl/api/v1/auth/google/link") {
-            contentType(ContentType.Application.Json)
-            header(HttpHeaders.Authorization, "Bearer $token")
-            setBody(GoogleIdTokenRequest(idToken = idToken))
+    suspend fun linkGoogle(token: String, idToken: String): Result<UserProfileResponse, DataError.Network> =
+        runApiCall(TAG) {
+            val response = client.post("$baseUrl/api/v1/auth/google/link") {
+                contentType(ContentType.Application.Json)
+                header(HttpHeaders.Authorization, "Bearer $token")
+                setBody(GoogleIdTokenRequest(idToken = idToken))
+            }
+            val bodyText = response.bodyAsText()
+            if (!response.status.isSuccess()) {
+                throwApiError(bodyText, AppErrorCode.AuthGoogleFailed)
+            }
+            json.decodeFromString(bodyText)
         }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throwApiError(bodyText, AppErrorCode.AuthGoogleFailed)
-        }
-        return json.decodeFromString(bodyText)
-    }
 
-    suspend fun unlinkGoogle(token: String): UserProfileResponse {
-        val response = client.delete("$baseUrl/api/v1/auth/google") {
-            header(HttpHeaders.Authorization, "Bearer $token")
+    suspend fun unlinkGoogle(token: String): Result<UserProfileResponse, DataError.Network> =
+        runApiCall(TAG) {
+            val response = client.delete("$baseUrl/api/v1/auth/google") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }
+            val bodyText = response.bodyAsText()
+            if (!response.status.isSuccess()) {
+                throwApiError(bodyText, AppErrorCode.AuthGoogleFailed)
+            }
+            json.decodeFromString(bodyText)
         }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throwApiError(bodyText, AppErrorCode.AuthGoogleFailed)
-        }
-        return json.decodeFromString(bodyText)
-    }
 
-    suspend fun loginWithApple(idToken: String): AuthResponse {
-        val response = client.post("$baseUrl/api/v1/auth/apple") {
-            contentType(ContentType.Application.Json)
-            setBody(AppleIdTokenRequest(idToken = idToken))
+    suspend fun loginWithApple(idToken: String): Result<AuthResponse, DataError.Network> =
+        runApiCall(TAG) {
+            val response = client.post("$baseUrl/api/v1/auth/apple") {
+                contentType(ContentType.Application.Json)
+                setBody(AppleIdTokenRequest(idToken = idToken))
+            }
+            val bodyText = response.bodyAsText()
+            if (!response.status.isSuccess()) {
+                throwApiError(bodyText, AppErrorCode.AuthAppleFailed)
+            }
+            json.decodeFromString(bodyText)
         }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throwApiError(bodyText, AppErrorCode.AuthAppleFailed)
-        }
-        return json.decodeFromString(bodyText)
-    }
 
-    suspend fun linkAppleWithPassword(idToken: String, email: String, password: String): AuthResponse {
-        val response = client.post("$baseUrl/api/v1/auth/apple/link-with-password") {
-            contentType(ContentType.Application.Json)
-            setBody(
-                LinkAppleWithPasswordRequest(
-                    idToken = idToken,
-                    email = email,
-                    password = password
+    suspend fun linkAppleWithPassword(idToken: String, email: String, password: String): Result<AuthResponse, DataError.Network> =
+        runApiCall(TAG) {
+            val response = client.post("$baseUrl/api/v1/auth/apple/link-with-password") {
+                contentType(ContentType.Application.Json)
+                setBody(
+                    LinkAppleWithPasswordRequest(
+                        idToken = idToken,
+                        email = email,
+                        password = password
+                    )
                 )
-            )
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throwApiError(bodyText, AppErrorCode.AuthAppleFailed)
-        }
-        return json.decodeFromString(bodyText)
-    }
-
-    suspend fun linkApple(token: String, idToken: String): UserProfileResponse {
-        val response = client.post("$baseUrl/api/v1/auth/apple/link") {
-            contentType(ContentType.Application.Json)
-            header(HttpHeaders.Authorization, "Bearer $token")
-            setBody(AppleIdTokenRequest(idToken = idToken))
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throwApiError(bodyText, AppErrorCode.AuthAppleFailed)
-        }
-        return json.decodeFromString(bodyText)
-    }
-
-    suspend fun unlinkApple(token: String): UserProfileResponse {
-        val response = client.delete("$baseUrl/api/v1/auth/apple") {
-            header(HttpHeaders.Authorization, "Bearer $token")
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throwApiError(bodyText, AppErrorCode.AuthAppleFailed)
-        }
-        return json.decodeFromString(bodyText)
-    }
-
-    suspend fun forgotPassword(email: String) {
-        val response = client.post("$baseUrl/api/v1/auth/forgot-password") {
-            contentType(ContentType.Application.Json)
-            setBody(ForgotPasswordRequest(email = email))
-        }
-        if (!response.status.isSuccess()) {
+            }
             val bodyText = response.bodyAsText()
-            throwApiError(bodyText, AppErrorCode.AuthPasswordResetFailed)
+            if (!response.status.isSuccess()) {
+                throwApiError(bodyText, AppErrorCode.AuthAppleFailed)
+            }
+            json.decodeFromString(bodyText)
         }
-    }
 
-    suspend fun resetPassword(token: String, newPassword: String) {
-        val response = client.post("$baseUrl/api/v1/auth/reset-password") {
-            contentType(ContentType.Application.Json)
-            setBody(ResetPasswordRequest(token = token, newPassword = newPassword))
-        }
-        if (!response.status.isSuccess()) {
+    suspend fun linkApple(token: String, idToken: String): Result<UserProfileResponse, DataError.Network> =
+        runApiCall(TAG) {
+            val response = client.post("$baseUrl/api/v1/auth/apple/link") {
+                contentType(ContentType.Application.Json)
+                header(HttpHeaders.Authorization, "Bearer $token")
+                setBody(AppleIdTokenRequest(idToken = idToken))
+            }
             val bodyText = response.bodyAsText()
-            throwApiError(bodyText, AppErrorCode.AuthInvalidPasswordResetToken)
+            if (!response.status.isSuccess()) {
+                throwApiError(bodyText, AppErrorCode.AuthAppleFailed)
+            }
+            json.decodeFromString(bodyText)
         }
-    }
 
-    suspend fun setPassword(token: String, newPassword: String) {
-        val response = client.post("$baseUrl/api/v1/auth/set-password") {
-            contentType(ContentType.Application.Json)
-            header(HttpHeaders.Authorization, "Bearer $token")
-            setBody(SetPasswordRequest(newPassword = newPassword))
-        }
-        if (!response.status.isSuccess()) {
+    suspend fun unlinkApple(token: String): Result<UserProfileResponse, DataError.Network> =
+        runApiCall(TAG) {
+            val response = client.delete("$baseUrl/api/v1/auth/apple") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }
             val bodyText = response.bodyAsText()
-            throwApiError(bodyText, AppErrorCode.AuthChangePasswordFailed)
+            if (!response.status.isSuccess()) {
+                throwApiError(bodyText, AppErrorCode.AuthAppleFailed)
+            }
+            json.decodeFromString(bodyText)
         }
-    }
 
-    suspend fun refreshToken(storedRefreshToken: String? = null): AuthResponse {
-        if (cookieStorage.refreshToken.isNullOrBlank() && !storedRefreshToken.isNullOrBlank()) {
-            cookieStorage.setRefreshToken(storedRefreshToken)
-        }
-        val response = client.post("$baseUrl/api/v1/auth/refresh") {
-            contentType(ContentType.Application.Json)
-            storedRefreshToken?.takeIf { it.isNotBlank() }?.let { token ->
-                setBody(RefreshTokenRequest(refreshToken = token))
+    suspend fun forgotPassword(email: String): EmptyResult<DataError.Network> =
+        runApiCall(TAG) {
+            val response = client.post("$baseUrl/api/v1/auth/forgot-password") {
+                contentType(ContentType.Application.Json)
+                setBody(ForgotPasswordRequest(email = email))
+            }
+            if (!response.status.isSuccess()) {
+                val bodyText = response.bodyAsText()
+                throwApiError(bodyText, AppErrorCode.AuthPasswordResetFailed)
             }
         }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throwApiError(bodyText, AppErrorCode.AuthRefreshFailed)
-        }
-        return json.decodeFromString(bodyText)
-    }
 
-    suspend fun logout(accessToken: String? = null, refreshToken: String? = null) {
-        val response = client.post("$baseUrl/api/v1/auth/logout") {
-            contentType(ContentType.Application.Json)
-            accessToken?.takeIf { it.isNotBlank() }?.let {
-                header(HttpHeaders.Authorization, "Bearer $it")
+    suspend fun resetPassword(token: String, newPassword: String): EmptyResult<DataError.Network> =
+        runApiCall(TAG) {
+            val response = client.post("$baseUrl/api/v1/auth/reset-password") {
+                contentType(ContentType.Application.Json)
+                setBody(ResetPasswordRequest(token = token, newPassword = newPassword))
             }
-            val token = refreshToken ?: cookieStorage.refreshToken
-            if (!token.isNullOrBlank()) {
-                setBody(RefreshTokenRequest(refreshToken = token))
+            if (!response.status.isSuccess()) {
+                val bodyText = response.bodyAsText()
+                throwApiError(bodyText, AppErrorCode.AuthInvalidPasswordResetToken)
             }
         }
-        if (!response.status.isSuccess()) {
-            // Best-effort logout; client still clears local session.
-        }
-        cookieStorage.clear()
-    }
 
-    suspend fun getProfile(token: String): UserProfileResponse {
-        val response = client.get("$baseUrl/api/v1/auth/me") {
-            header(HttpHeaders.Authorization, "Bearer $token")
+    suspend fun setPassword(token: String, newPassword: String): EmptyResult<DataError.Network> =
+        runApiCall(TAG) {
+            val response = client.post("$baseUrl/api/v1/auth/set-password") {
+                contentType(ContentType.Application.Json)
+                header(HttpHeaders.Authorization, "Bearer $token")
+                setBody(SetPasswordRequest(newPassword = newPassword))
+            }
+            if (!response.status.isSuccess()) {
+                val bodyText = response.bodyAsText()
+                throwApiError(bodyText, AppErrorCode.AuthChangePasswordFailed)
+            }
         }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw ApiException(code = AppErrorCode.AuthProfileFailed, message = "Failed to get profile")
-        }
-        return json.decodeFromString(bodyText)
-    }
 
-    suspend fun updateProfile(token: String, request: UpdateProfileRequest): UserProfileResponse {
-        val response = client.put("$baseUrl/api/v1/auth/me") {
-            contentType(ContentType.Application.Json)
-            header(HttpHeaders.Authorization, "Bearer $token")
-            setBody(request)
-        }
-        val bodyText = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throwApiError(bodyText, AppErrorCode.AuthUpdateProfileFailed)
-        }
-        return json.decodeFromString(bodyText)
-    }
-
-    suspend fun changePassword(token: String, request: ChangePasswordRequest) {
-        val response = client.post("$baseUrl/api/v1/auth/change-password") {
-            contentType(ContentType.Application.Json)
-            header(HttpHeaders.Authorization, "Bearer $token")
-            setBody(request)
-        }
-        if (!response.status.isSuccess()) {
+    suspend fun refreshToken(storedRefreshToken: String? = null): Result<AuthResponse, DataError.Network> =
+        runApiCall(TAG) {
+            if (cookieStorage.refreshToken.isNullOrBlank() && !storedRefreshToken.isNullOrBlank()) {
+                cookieStorage.setRefreshToken(storedRefreshToken)
+            }
+            val response = client.post("$baseUrl/api/v1/auth/refresh") {
+                contentType(ContentType.Application.Json)
+                storedRefreshToken?.takeIf { it.isNotBlank() }?.let { token ->
+                    setBody(RefreshTokenRequest(refreshToken = token))
+                }
+            }
             val bodyText = response.bodyAsText()
-            throwApiError(bodyText, AppErrorCode.AuthChangePasswordFailed)
+            if (!response.status.isSuccess()) {
+                throwApiError(bodyText, AppErrorCode.AuthRefreshFailed)
+            }
+            json.decodeFromString(bodyText)
         }
-    }
 
-    suspend fun deleteAccount(token: String, currentPassword: String? = null) {
-        val response = client.delete("$baseUrl/api/v1/auth/me") {
-            contentType(ContentType.Application.Json)
-            header(HttpHeaders.Authorization, "Bearer $token")
-            if (!currentPassword.isNullOrBlank()) {
-                setBody(DeleteAccountRequest(currentPassword = currentPassword))
+    suspend fun logout(accessToken: String? = null, refreshToken: String? = null): EmptyResult<DataError.Network> =
+        runApiCall(TAG) {
+            val response = client.post("$baseUrl/api/v1/auth/logout") {
+                contentType(ContentType.Application.Json)
+                accessToken?.takeIf { it.isNotBlank() }?.let {
+                    header(HttpHeaders.Authorization, "Bearer $it")
+                }
+                val token = refreshToken ?: cookieStorage.refreshToken
+                if (!token.isNullOrBlank()) {
+                    setBody(RefreshTokenRequest(refreshToken = token))
+                }
+            }
+            if (!response.status.isSuccess()) {
+                // Best-effort logout; client still clears local session.
+            }
+            cookieStorage.clear()
+        }
+
+    suspend fun getProfile(token: String): Result<UserProfileResponse, DataError.Network> =
+        runApiCall(TAG) {
+            val response = client.get("$baseUrl/api/v1/auth/me") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }
+            val bodyText = response.bodyAsText()
+            if (!response.status.isSuccess()) {
+                throw ApiException(code = AppErrorCode.AuthProfileFailed, message = "Failed to get profile")
+            }
+            json.decodeFromString(bodyText)
+        }
+
+    suspend fun updateProfile(token: String, request: UpdateProfileRequest): Result<UserProfileResponse, DataError.Network> =
+        runApiCall(TAG) {
+            val response = client.put("$baseUrl/api/v1/auth/me") {
+                contentType(ContentType.Application.Json)
+                header(HttpHeaders.Authorization, "Bearer $token")
+                setBody(request)
+            }
+            val bodyText = response.bodyAsText()
+            if (!response.status.isSuccess()) {
+                throwApiError(bodyText, AppErrorCode.AuthUpdateProfileFailed)
+            }
+            json.decodeFromString(bodyText)
+        }
+
+    suspend fun changePassword(token: String, request: ChangePasswordRequest): EmptyResult<DataError.Network> =
+        runApiCall(TAG) {
+            val response = client.post("$baseUrl/api/v1/auth/change-password") {
+                contentType(ContentType.Application.Json)
+                header(HttpHeaders.Authorization, "Bearer $token")
+                setBody(request)
+            }
+            if (!response.status.isSuccess()) {
+                val bodyText = response.bodyAsText()
+                throwApiError(bodyText, AppErrorCode.AuthChangePasswordFailed)
             }
         }
-        if (!response.status.isSuccess()) {
-            val bodyText = response.bodyAsText()
-            throwApiError(bodyText, AppErrorCode.CloudDeleteFailed)
+
+    suspend fun deleteAccount(token: String, currentPassword: String? = null): EmptyResult<DataError.Network> =
+        runApiCall(TAG) {
+            val response = client.delete("$baseUrl/api/v1/auth/me") {
+                contentType(ContentType.Application.Json)
+                header(HttpHeaders.Authorization, "Bearer $token")
+                if (!currentPassword.isNullOrBlank()) {
+                    setBody(DeleteAccountRequest(currentPassword = currentPassword))
+                }
+            }
+            if (!response.status.isSuccess()) {
+                val bodyText = response.bodyAsText()
+                throwApiError(bodyText, AppErrorCode.CloudDeleteFailed)
+            }
         }
+
+    private companion object {
+        const val TAG = "AuthApi"
     }
 }
 

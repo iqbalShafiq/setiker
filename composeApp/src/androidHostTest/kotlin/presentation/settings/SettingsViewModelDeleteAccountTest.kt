@@ -3,11 +3,13 @@ package presentation.settings
 import data.auth.AuthApiService
 import data.auth.AuthManager
 import data.auth.AuthSessionCoordinator
+import data.auth.model.UserProfileResponse
 import data.preferences.UserPreferencesRepository
 import data.remote.AiUsageApiRepository
-import data.remote.ApiException
 import data.remote.LegalApiRepository
 import domain.error.AppErrorCode
+import domain.error.DataError
+import domain.error.Result
 import domain.model.LegalSummary
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -55,7 +57,10 @@ class SettingsViewModelDeleteAccountTest {
         coEvery { authManager.getUser() } returns null
         coEvery { authManager.isAuthenticated() } returns true
         coEvery { authManager.getValidAccessToken() } returns "access-token"
-        coEvery { authApiService.deleteAccount("access-token", "Secret1!") } returns Unit
+        coEvery { authApiService.getProfile("access-token") } returns Result.Success(
+            UserProfileResponse(success = true, data = null)
+        )
+        coEvery { authApiService.deleteAccount("access-token", "Secret1!") } returns Result.Success(Unit)
         coEvery { authSessionCoordinator.endSession() } returns Unit
 
         val viewModel = settingsViewModel(
@@ -92,9 +97,14 @@ class SettingsViewModelDeleteAccountTest {
         coEvery { authManager.getUser() } returns null
         coEvery { authManager.isAuthenticated() } returns true
         coEvery { authManager.getValidAccessToken() } returns "access-token"
+        coEvery { authApiService.getProfile("access-token") } returns Result.Success(
+            UserProfileResponse(success = true, data = null)
+        )
         coEvery {
             authApiService.deleteAccount("access-token", "wrong")
-        } throws ApiException(code = AppErrorCode.CloudDeleteFailed, message = "Invalid password")
+        } returns Result.Error(
+            DataError.Network.ApiRejected(appCode = AppErrorCode.CloudDeleteFailed, message = "Invalid password")
+        )
 
         val viewModel = settingsViewModel(
             legalApiRepository = legalApiRepository,

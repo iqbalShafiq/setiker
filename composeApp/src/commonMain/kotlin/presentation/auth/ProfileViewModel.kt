@@ -14,6 +14,8 @@ import data.remote.LegalApiRepository
 import domain.model.AiUsage
 import domain.model.LegalSummary
 import domain.error.Result
+import domain.error.onFailure
+import domain.error.onSuccess
 import domain.model.User
 import domain.repository.AiQuotaRepository
 import domain.repository.StickerRepository
@@ -114,7 +116,7 @@ class ProfileViewModel(
         viewModelScope.launch {
             val token = authManager.getValidAccessToken() ?: return@launch
             _state.update { it.copy(isLinkingAuth = true, setPasswordError = null) }
-            runCatching { authApiService.setPassword(token, current.newPassword) }
+            authApiService.setPassword(token, current.newPassword)
                 .onSuccess {
                     val user = authManager.getUser()?.copy(
                         hasPassword = true,
@@ -163,7 +165,7 @@ class ProfileViewModel(
                 return@launch
             }
             val idToken = idTokenResult.getOrNull()?.idToken ?: return@launch
-            runCatching { authApiService.linkGoogle(token, idToken) }
+            authApiService.linkGoogle(token, idToken)
                 .onSuccess { response ->
                     val user = response.data?.toDomainModel()
                     if (user != null) authManager.saveUser(user)
@@ -190,7 +192,7 @@ class ProfileViewModel(
         viewModelScope.launch {
             val token = authManager.getValidAccessToken() ?: return@launch
             _state.update { it.copy(isLinkingAuth = true) }
-            runCatching { authApiService.unlinkGoogle(token) }
+            authApiService.unlinkGoogle(token)
                 .onSuccess { response ->
                     val user = response.data?.toDomainModel()
                     if (user != null) authManager.saveUser(user)
@@ -229,7 +231,7 @@ class ProfileViewModel(
                 return@launch
             }
             val idToken = idTokenResult.getOrNull()?.idToken ?: return@launch
-            runCatching { authApiService.linkApple(token, idToken) }
+            authApiService.linkApple(token, idToken)
                 .onSuccess { response ->
                     val user = response.data?.toDomainModel()
                     if (user != null) authManager.saveUser(user)
@@ -256,7 +258,7 @@ class ProfileViewModel(
         viewModelScope.launch {
             val token = authManager.getValidAccessToken() ?: return@launch
             _state.update { it.copy(isLinkingAuth = true) }
-            runCatching { authApiService.unlinkApple(token) }
+            authApiService.unlinkApple(token)
                 .onSuccess { response ->
                     val user = response.data?.toDomainModel()
                     if (user != null) authManager.saveUser(user)
@@ -284,12 +286,13 @@ class ProfileViewModel(
             val cached = authManager.getUser()
             val token = authManager.getValidAccessToken()
             val user = if (token != null) {
-                runCatching {
-                    authApiService.getProfile(token).data?.toDomainModel()?.also { authManager.saveUser(it) }
-                }.getOrNull() ?: cached
+                when (val profileResult = authApiService.getProfile(token)) {
+                    is Result.Success -> profileResult.data.data?.toDomainModel()?.also { authManager.saveUser(it) }
+                    is Result.Error -> null
+                }
             } else {
                 cached
-            }
+            } ?: cached
             val packs = runCatching { stickerRepository.getAllPacks() }.getOrDefault(emptyList())
             val stickersCount = packs.sumOf { it.stickers.size }
             val usage = if (user != null) {

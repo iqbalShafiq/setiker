@@ -21,6 +21,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import data.auth.AuthApiService
+import domain.error.onFailure
+import domain.error.onSuccess
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -68,7 +70,7 @@ class ForgotPasswordViewModel(
         if (!email.contains("@")) return
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            runCatching { authApiService.forgotPassword(email) }
+            authApiService.forgotPassword(email)
                 .onSuccess {
                     _state.update { it.copy(isLoading = false, sent = true) }
                 }

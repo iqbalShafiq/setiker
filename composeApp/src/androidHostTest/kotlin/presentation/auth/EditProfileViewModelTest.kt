@@ -7,6 +7,8 @@ import data.auth.model.UserDto
 import data.auth.model.UserProfileResponse
 import data.remote.ApiException
 import domain.error.AppErrorCode
+import domain.error.DataError
+import domain.error.Result
 import domain.model.User
 import domain.model.UserRole
 import io.mockk.coEvery
@@ -49,17 +51,19 @@ class EditProfileViewModelTest {
         val authApiService = mockk<AuthApiService>()
         coEvery { authManager.getUser() } returns sampleUser()
         coEvery { authManager.getValidAccessToken() } returns "token"
-        coEvery { authApiService.getProfile("token") } returns UserProfileResponse(
-            success = true,
-            data = UserDto(
-                id = "u1",
-                email = "a@b.com",
-                username = "alice",
-                displayName = "Alice",
-                role = "user",
-                isActive = true,
-                createdAt = "2024-01-01T00:00:00.000Z",
-                totalPackDownloads = 12
+        coEvery { authApiService.getProfile("token") } returns Result.Success(
+            UserProfileResponse(
+                success = true,
+                data = UserDto(
+                    id = "u1",
+                    email = "a@b.com",
+                    username = "alice",
+                    displayName = "Alice",
+                    role = "user",
+                    isActive = true,
+                    createdAt = "2024-01-01T00:00:00.000Z",
+                    totalPackDownloads = 12
+                )
             )
         )
         coEvery { authManager.saveUser(any()) } returns Unit
@@ -80,9 +84,11 @@ class EditProfileViewModelTest {
         val authApiService = mockk<AuthApiService>(relaxed = true)
         coEvery { authManager.getUser() } returns sampleUser()
         coEvery { authManager.getValidAccessToken() } returns "token"
-        coEvery { authApiService.getProfile("token") } returns UserProfileResponse(
-            success = true,
-            data = null
+        coEvery { authApiService.getProfile("token") } returns Result.Success(
+            UserProfileResponse(
+                success = true,
+                data = null
+            )
         )
 
         val viewModel = EditProfileViewModel(authManager, authApiService)
@@ -102,25 +108,29 @@ class EditProfileViewModelTest {
         val authApiService = mockk<AuthApiService>()
         coEvery { authManager.getUser() } returns sampleUser()
         coEvery { authManager.getValidAccessToken() } returns "token"
-        coEvery { authApiService.getProfile("token") } returns UserProfileResponse(
-            success = true,
-            data = null
+        coEvery { authApiService.getProfile("token") } returns Result.Success(
+            UserProfileResponse(
+                success = true,
+                data = null
+            )
         )
         coEvery {
             authApiService.updateProfile(
                 token = "token",
                 request = UpdateProfileRequest(displayName = "New Name", username = "new_user")
             )
-        } returns UserProfileResponse(
-            success = true,
-            data = UserDto(
-                id = "u1",
-                email = "a@b.com",
-                username = "new_user",
-                displayName = "New Name",
-                role = "user",
-                isActive = true,
-                createdAt = "2024-01-01T00:00:00.000Z"
+        } returns Result.Success(
+            UserProfileResponse(
+                success = true,
+                data = UserDto(
+                    id = "u1",
+                    email = "a@b.com",
+                    username = "new_user",
+                    displayName = "New Name",
+                    role = "user",
+                    isActive = true,
+                    createdAt = "2024-01-01T00:00:00.000Z"
+                )
             )
         )
         coEvery { authManager.saveUser(any()) } returns Unit
@@ -145,13 +155,17 @@ class EditProfileViewModelTest {
         val authApiService = mockk<AuthApiService>()
         coEvery { authManager.getUser() } returns sampleUser()
         coEvery { authManager.getValidAccessToken() } returns "token"
-        coEvery { authApiService.getProfile("token") } returns UserProfileResponse(
-            success = true,
-            data = null
+        coEvery { authApiService.getProfile("token") } returns Result.Success(
+            UserProfileResponse(
+                success = true,
+                data = null
+            )
         )
         coEvery {
             authApiService.updateProfile(any(), any())
-        } throws ApiException(code = AppErrorCode.AuthUsernameTaken, message = "taken")
+        } returns Result.Error(
+            DataError.Network.ApiRejected(appCode = AppErrorCode.AuthUsernameTaken, message = "taken")
+        )
 
         val viewModel = EditProfileViewModel(authManager, authApiService)
         advanceUntilIdle()

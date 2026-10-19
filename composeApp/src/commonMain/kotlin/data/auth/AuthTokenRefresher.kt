@@ -1,8 +1,13 @@
 package data.auth
 
+import domain.error.Result
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+/**
+ * Refreshes the access token at most once per call (R2: no retry loop). Callers
+ * (Cloud/Explore planes) treat a null result as "unauthenticated" and surface a clean failure.
+ */
 class AuthTokenRefresher(
     private val authManager: AuthManager,
     private val authApiService: AuthApiService
@@ -16,9 +21,12 @@ class AuthTokenRefresher(
             return@withLock null
         }
 
-        val response = runCatching { authApiService.refreshToken(storedRefreshToken) }.getOrElse {
-            if (clearTokensOnFailure) authManager.clearTokens()
-            return@withLock null
+        val response = when (val refreshOutcome = authApiService.refreshToken(storedRefreshToken)) {
+            is Result.Error -> {
+                if (clearTokensOnFailure) authManager.clearTokens()
+                return@withLock null
+            }
+            is Result.Success -> refreshOutcome.data
         }
 
         val accessToken = response.data?.accessToken
