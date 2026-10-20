@@ -29,6 +29,9 @@ import domain.model.decodeStickerDecorationsForCurrentSchema
 import domain.model.normalizedForCurrentSchema
 import domain.repository.StickerRepository
 import domain.repository.SyncStatus
+import kotlin.time.Clock
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -39,9 +42,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import kotlin.time.Clock
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 import util.AppLog
 
 private const val TAG_ASYNC_PUSH = "SyncTrigger"

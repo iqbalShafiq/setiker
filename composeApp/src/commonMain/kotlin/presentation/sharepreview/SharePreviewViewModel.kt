@@ -3,10 +3,10 @@ package presentation.sharepreview
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import data.auth.AuthManager
+import data.remote.ApiException
 import data.remote.CloudStickerRepository
 import data.remote.ExploreApiRepository
 import data.storage.StickerFileStorage
-import data.remote.ApiException
 import domain.error.AppErrorCode
 import domain.error.Result
 import domain.error.detailText
@@ -15,6 +15,7 @@ import domain.error.onSuccess
 import domain.model.Sticker
 import domain.model.StickerPack
 import domain.repository.StickerRepository
+import kotlin.time.Clock
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +23,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlin.time.Clock
 import presentation.common.UiText
 
 class SharePreviewViewModel(

@@ -9,7 +9,6 @@ import data.auth.GoogleSignInGateway
 import data.auth.GoogleSignInMode
 import data.auth.model.LoginRequest
 import data.auth.model.toDomainModel
-import data.remote.ApiException
 import domain.error.AppErrorCode
 import domain.error.DataError
 import domain.error.Result

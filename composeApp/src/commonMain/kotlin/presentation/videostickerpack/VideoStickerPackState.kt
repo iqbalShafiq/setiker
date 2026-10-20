@@ -1,7 +1,7 @@
 package presentation.videostickerpack
 
-import domain.model.CandidateGridImage
 import domain.model.AiUsage
+import domain.model.CandidateGridImage
 import domain.model.ResolvedVideoStickerPackPlan
 import domain.model.VideoFrameCandidate
 import domain.model.VideoStickerCandidateManifestItem

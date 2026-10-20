@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,42 +20,39 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
+import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.Block
-import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Feedback
-import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Verified
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import domain.model.User
 import domain.model.UserRole
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import presentation.common.ContentStateAnimations
 import presentation.common.DetailLoadPhase
 import presentation.common.resolveLocal
@@ -62,13 +60,15 @@ import presentation.components.AiQuotaSummary
 import presentation.components.AppIllustration
 import presentation.components.AppPasswordTextField
 import presentation.components.AppPrimaryButton
+import presentation.components.AppTopBar
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
-import presentation.components.AppTopBar
-import presentation.components.ProfileMenuItem
 import presentation.components.ProfileBottomBar
+import presentation.components.ProfileMenuItem
 import presentation.theme.AccentCoral
 import presentation.theme.AccentCoralLight
+import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalWhite
 import presentation.theme.PastelBlue
 import presentation.theme.PastelMint
@@ -77,51 +77,45 @@ import presentation.theme.PastelPurple
 import presentation.theme.PastelYellow
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
-import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import presentation.theme.neubrutalSubtleOnSurface
-import presentation.theme.NeubrutalCardRadius
-import presentation.theme.NeubrutalShadowOffset
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.about_app
-import setiker.composeapp.generated.resources.profile_ai_quota_section
 import setiker.composeapp.generated.resources.account_section
-import setiker.composeapp.generated.resources.downloaded_packs
 import setiker.composeapp.generated.resources.downloads_label
 import setiker.composeapp.generated.resources.edit_profile_title
-import setiker.composeapp.generated.resources.following
 import setiker.composeapp.generated.resources.help_center
-import setiker.composeapp.generated.resources.liked_stickers
 import setiker.composeapp.generated.resources.login_welcome_subtitle
 import setiker.composeapp.generated.resources.logout
 import setiker.composeapp.generated.resources.my_profile_title
 import setiker.composeapp.generated.resources.my_stickers_title
+import setiker.composeapp.generated.resources.notifications_title
 import setiker.composeapp.generated.resources.packs_label
 import setiker.composeapp.generated.resources.premium_badge
 import setiker.composeapp.generated.resources.profile_ai_jobs_menu
+import setiker.composeapp.generated.resources.profile_ai_quota_section
 import setiker.composeapp.generated.resources.profile_blocked_users_menu
 import setiker.composeapp.generated.resources.profile_explore_packs
-import setiker.composeapp.generated.resources.notifications_title
 import setiker.composeapp.generated.resources.profile_guest_login_prompt
 import setiker.composeapp.generated.resources.profile_processing_history
 import setiker.composeapp.generated.resources.profile_upgrade_premium
+import setiker.composeapp.generated.resources.reset_password_confirm_label
 import setiker.composeapp.generated.resources.send_feedback
-import setiker.composeapp.generated.resources.settings
 import setiker.composeapp.generated.resources.settings_account_deletion
 import setiker.composeapp.generated.resources.settings_legal_section
-import setiker.composeapp.generated.resources.settings_privacy
 import setiker.composeapp.generated.resources.settings_permissions
+import setiker.composeapp.generated.resources.settings_privacy
 import setiker.composeapp.generated.resources.settings_retention
-import setiker.composeapp.generated.resources.settings_terms
 import setiker.composeapp.generated.resources.settings_set_password
 import setiker.composeapp.generated.resources.settings_set_password_message
 import setiker.composeapp.generated.resources.settings_set_password_title
-import setiker.composeapp.generated.resources.reset_password_confirm_label
+import setiker.composeapp.generated.resources.settings_terms
 import setiker.composeapp.generated.resources.stickers_label
 import setiker.composeapp.generated.resources.support_section
 
@@ -268,6 +262,9 @@ fun ProfileScreen(
                         modifier = modifier
                             .fillMaxSize()
                             .padding(horizontal = 20.dp),
+                        // The last menu row used to end flush against the bottom bar, which read
+                        // as clipped.
+                        contentPadding = PaddingValues(bottom = 24.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         item { Spacer(modifier = Modifier.height(4.dp)) }

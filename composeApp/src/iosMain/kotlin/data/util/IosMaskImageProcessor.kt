@@ -18,13 +18,13 @@ import platform.CoreGraphics.CGLineCap
 import platform.CoreGraphics.CGLineJoin
 import platform.CoreGraphics.CGRectMake
 import platform.Foundation.writeToFile
-import platform.posix.time
 import platform.UIKit.UIGraphicsBeginImageContextWithOptions
 import platform.UIKit.UIGraphicsEndImageContext
 import platform.UIKit.UIGraphicsGetCurrentContext
 import platform.UIKit.UIGraphicsGetImageFromCurrentImageContext
 import platform.UIKit.UIImage
 import platform.UIKit.UIImagePNGRepresentation
+import platform.posix.time
 
 @OptIn(ExperimentalForeignApi::class)
 actual suspend fun applyMaskToImage(

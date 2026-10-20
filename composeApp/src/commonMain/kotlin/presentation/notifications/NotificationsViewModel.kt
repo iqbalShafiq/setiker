@@ -3,17 +3,17 @@ package presentation.notifications
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import data.remote.ExploreApiRepository
+import data.remote.model.UserNotificationItem
 import domain.error.onFailure
 import domain.error.onSuccess
-import data.remote.model.UserNotificationItem
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 
 data class NotificationsState(
     val isLoading: Boolean = true,

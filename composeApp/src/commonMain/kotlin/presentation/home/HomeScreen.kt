@@ -2,10 +2,14 @@ package presentation.home
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -16,11 +20,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Workspaces
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -37,15 +42,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import domain.model.Sticker
 import domain.model.StickerPack
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import presentation.components.AiGenerateStickerPackBottomSheet
-import presentation.components.PromptPresetPickerSheet
 import presentation.components.AppIllustration
 import presentation.components.AppTopBar
 import presentation.components.AppTopBarBadgedActionIcon
@@ -55,10 +60,14 @@ import presentation.components.LoadingIndicator
 import presentation.components.NeubrutalIconButton
 import presentation.components.OfflineBanner
 import presentation.components.ProcessingPackListCard
+import presentation.components.PromptPresetPickerSheet
 import presentation.components.SortBottomSheet
 import presentation.components.StickerPackListCard
 import presentation.components.rememberImagePicker
 import presentation.components.rememberVideoPicker
+import presentation.theme.AccentCoral
+import presentation.theme.NeubrutalSmallRadius
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.screenContentHorizontalPadding
@@ -123,17 +132,33 @@ fun HomeScreen(
                         label = "home_topbar_title_transition"
                     ) { expanded ->
                         if (expanded) {
+                            val searchInteractionSource = remember { MutableInteractionSource() }
+                            val isSearchFocused by searchInteractionSource.collectIsFocusedAsState()
+                            // A focus ring that fades in: the inline search field used to give no
+                            // sign of being focused beyond the blinking cursor.
+                            val focusRing by animateColorAsState(
+                                targetValue = if (isSearchFocused) AccentCoral else Color.Transparent,
+                                animationSpec = SetikerMotion.standard(),
+                                label = "home_search_focus_ring"
+                            )
                             BasicTextField(
                                 value = state.searchQuery,
                                 onValueChange = { onIntent(HomeIntent.SearchQueryChanged(it)) },
                                 singleLine = true,
+                                interactionSource = searchInteractionSource,
                                 textStyle = MaterialTheme.typography.titleMedium.copy(
                                     color = MaterialTheme.colorScheme.onSurface,
                                     fontWeight = FontWeight.SemiBold
                                 ),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .focusRequester(searchFocusRequester),
+                                    .focusRequester(searchFocusRequester)
+                                    .border(
+                                        width = 2.dp,
+                                        color = focusRing,
+                                        shape = RoundedCornerShape(NeubrutalSmallRadius)
+                                    )
+                                    .padding(horizontal = 6.dp, vertical = 2.dp),
                                 decorationBox = { innerTextField ->
                                     if (state.searchQuery.isEmpty()) {
                                         Text(
@@ -185,27 +210,33 @@ fun HomeScreen(
             )
         },
         bottomBar = {
+            val authAction = homeAuthAction(state.authState)
             HomeBottomBar(
                 currentUser = state.currentUser,
                 pendingSyncCount = state.pendingSyncCount,
                 isSyncing = state.isSyncing,
+                accountActionsEnabled = authAction != HomeAuthAction.WAITING,
                 onExploreClick = { onIntent(HomeIntent.NavigateToExplore) },
                 onProfileClick = {
-                    if (state.currentUser != null) {
-                        onIntent(HomeIntent.NavigateToProfile)
-                    } else {
-                        onIntent(HomeIntent.NavigateToLogin)
+                    when (authAction) {
+                        HomeAuthAction.SIGNED_IN -> onIntent(HomeIntent.NavigateToProfile)
+                        HomeAuthAction.SIGN_IN -> onIntent(HomeIntent.NavigateToLogin)
+                        // The session is still being resolved: acting now would send a signed-in
+                        // user to the login screen.
+                        HomeAuthAction.WAITING -> Unit
                     }
                 },
                 onSyncClick = {
-                    if (state.currentUser != null) {
-                        if (state.activeAiJobCount > 0) {
-                            onIntent(HomeIntent.NavigateToAiJobs)
-                        } else {
-                            onIntent(HomeIntent.NavigateToSync)
+                    when (authAction) {
+                        HomeAuthAction.SIGNED_IN -> {
+                            if (state.activeAiJobCount > 0) {
+                                onIntent(HomeIntent.NavigateToAiJobs)
+                            } else {
+                                onIntent(HomeIntent.NavigateToSync)
+                            }
                         }
-                    } else {
-                        onIntent(HomeIntent.NavigateToLogin)
+                        HomeAuthAction.SIGN_IN -> onIntent(HomeIntent.NavigateToLogin)
+                        HomeAuthAction.WAITING -> Unit
                     }
                 },
                 onGeneratePackClick = { onIntent(HomeIntent.OpenGeneratePackSheet) },
@@ -286,7 +317,7 @@ fun HomeScreen(
                     val packsToShow = state.filteredPacks
                     val processingPacksToShow = state.filteredProcessingPacks
 
-                    if (packsToShow.isEmpty() && processingPacksToShow.isEmpty() && state.searchQuery.isNotEmpty()) {
+                    if (state.hasSearchNoResults) {
                         EmptyState(
                             title = stringResource(Res.string.no_search_results_title),
                             description = stringResource(Res.string.no_search_results_desc),

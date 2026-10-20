@@ -4,54 +4,49 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import data.aijob.AiJobManager
 import data.auth.AuthManager
+import data.remote.ApiException
 import data.remote.StickerApiRepository
 import data.repository.StickerPackDraftSaver
 import data.sync.SyncManager
-import data.remote.ApiException
 import domain.error.AppErrorCode
 import domain.model.AiQuotaOperation
-import domain.model.StickerDraftInput
-import domain.repository.AiQuotaRepository
-import presentation.common.AiQuotaGate
 import domain.model.StickerPack
 import domain.model.SyncOperationStatus
 import domain.model.aijob.AiJobOrigin
 import domain.model.aijob.AiJobStatus
 import domain.model.aijob.AiJobType
-import domain.model.aijob.WorkspaceDraftKind
-import domain.model.aijob.WorkspaceDraftStatus
 import domain.model.aijob.GeneratePackPayload
 import domain.model.aijob.WorkspaceDraftContext
+import domain.model.aijob.WorkspaceDraftKind
+import domain.model.aijob.WorkspaceDraftStatus
+import domain.repository.AiQuotaRepository
 import domain.repository.StickerRepository
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import presentation.aijob.AiJobEnqueueHelper
-import presentation.aijob.DraftResultApplier
-import presentation.aijob.WorkspaceDraftFactory
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import presentation.aijob.AiJobEnqueueHelper
+import presentation.aijob.DraftResultApplier
+import presentation.aijob.WorkspaceDraftFactory
+import presentation.common.AiQuotaGate
 import presentation.common.UiText
-import presentation.common.PackIdentifierSanitizer
 import presentation.common.toUiText
-import kotlin.random.Random
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_failed_add_pack
 import setiker.composeapp.generated.resources.error_failed_delete_pack
-import setiker.composeapp.generated.resources.error_load_packs_failed
 import setiker.composeapp.generated.resources.error_failed_generate_sticker_pack
+import setiker.composeapp.generated.resources.error_load_packs_failed
 import setiker.composeapp.generated.resources.error_pack_min_stickers_whatsapp
 import setiker.composeapp.generated.resources.error_pack_name_required
-import setiker.composeapp.generated.resources.error_ai_quota_exceeded
 import setiker.composeapp.generated.resources.error_prompt_required
 import setiker.composeapp.generated.resources.error_publisher_required
 import setiker.composeapp.generated.resources.info_ai_job_started_background
@@ -243,6 +238,13 @@ class HomeViewModel(
         viewModelScope.launch {
             authManager.currentUser.collect { user ->
                 _state.update { it.copy(currentUser = user) }
+            }
+        }
+        viewModelScope.launch {
+            // The session is resolved asynchronously on a cold start. Tracking it separately keeps
+            // "not resolved yet" apart from "signed out".
+            authManager.authState.collect { authState ->
+                _state.update { it.copy(authState = authState) }
             }
         }
     }

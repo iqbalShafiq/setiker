@@ -2,6 +2,7 @@ package data.remote
 
 import data.auth.AuthManager
 import data.auth.AuthTokenRefresher
+import data.remote.json.ApiJson
 import data.remote.model.AiQuotaFinalizeRequestDto
 import data.remote.model.AiQuotaReserveRequestDto
 import data.remote.model.AiQuotaReserveResponseDto
@@ -26,7 +27,6 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
-import data.remote.json.ApiJson
 import presentation.common.apiName
 
 class AiUsageApiRepository(

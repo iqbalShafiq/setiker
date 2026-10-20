@@ -6,7 +6,6 @@ import data.auth.AuthApiService
 import data.auth.AuthManager
 import data.auth.model.UpdateProfileRequest
 import data.auth.model.toDomainModel
-import data.remote.ApiException
 import domain.error.AppErrorCode
 import domain.error.DataError
 import domain.error.Result

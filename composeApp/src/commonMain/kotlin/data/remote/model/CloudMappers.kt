@@ -2,7 +2,6 @@ package data.remote.model
 
 import domain.model.Sticker
 import domain.model.StickerPack
-import kotlin.time.Instant
 
 /**
  * Mapper functions for converting cloud API models to domain models.

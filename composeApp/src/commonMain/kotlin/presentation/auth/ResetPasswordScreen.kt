@@ -36,14 +36,14 @@ import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalSubtleOnSurface
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_auth_invalid_reset_token
+import setiker.composeapp.generated.resources.login_password_label
+import setiker.composeapp.generated.resources.login_password_placeholder
 import setiker.composeapp.generated.resources.reset_password_confirm_label
 import setiker.composeapp.generated.resources.reset_password_submit
 import setiker.composeapp.generated.resources.reset_password_subtitle
 import setiker.composeapp.generated.resources.reset_password_success
 import setiker.composeapp.generated.resources.reset_password_title
 import setiker.composeapp.generated.resources.settings_password_mismatch
-import setiker.composeapp.generated.resources.login_password_label
-import setiker.composeapp.generated.resources.login_password_placeholder
 
 data class ResetPasswordState(
     val token: String = "",

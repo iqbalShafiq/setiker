@@ -21,7 +21,6 @@ import kotlinx.coroutines.flow.map
 import presentation.aijob.toDraftSticker
 import presentation.createpack.CreatePackState
 import presentation.createpack.GeneratedPreviewMode
-import presentation.createpack.DraftSticker
 import presentation.editor.EditorState
 import presentation.home.HomeState
 import presentation.videostickerpack.VideoStickerPackState

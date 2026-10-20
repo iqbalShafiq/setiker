@@ -22,13 +22,13 @@ import platform.UIKit.NSFontAttributeName
 import platform.UIKit.NSForegroundColorAttributeName
 import platform.UIKit.NSStrokeColorAttributeName
 import platform.UIKit.NSStrokeWidthAttributeName
+import platform.UIKit.UIColor
+import platform.UIKit.UIFont
 import platform.UIKit.UIGraphicsBeginImageContextWithOptions
 import platform.UIKit.UIGraphicsEndImageContext
 import platform.UIKit.UIGraphicsGetImageFromCurrentImageContext
-import platform.UIKit.UIFont
 import platform.UIKit.UIImage
 import platform.UIKit.UIImagePNGRepresentation
-import platform.UIKit.UIColor
 import platform.UIKit.drawAtPoint
 import platform.UIKit.sizeWithAttributes
 

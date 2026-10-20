@@ -18,6 +18,7 @@ import data.auth.model.UserProfileResponse
 import data.remote.ApiConfig
 import data.remote.ApiErrorParser
 import data.remote.ApiException
+import data.remote.json.ApiJson
 import data.remote.runApiCall
 import domain.error.AppErrorCode
 import domain.error.DataError
@@ -39,7 +40,6 @@ import io.ktor.http.Cookie
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
-import data.remote.json.ApiJson
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 

@@ -1,7 +1,7 @@
 package presentation.aijob
 
-import data.remote.json.ApiJson
 import data.aijob.AiJobManager
+import data.remote.json.ApiJson
 import domain.model.aijob.AiJobOrigin
 import domain.model.aijob.AiJobType
 import domain.model.aijob.AnimatedEncodePayload
@@ -12,7 +12,6 @@ import domain.model.aijob.ImproveStickersPayload
 import domain.model.aijob.RemoveBackgroundPayload
 import domain.model.aijob.VideoPackPayload
 import domain.model.aijob.WorkspaceDraft
-import domain.model.aijob.WorkspaceDraftKind
 import kotlinx.serialization.encodeToString
 
 class AiJobEnqueueHelper(

@@ -3,7 +3,6 @@ package domain.repository
 import domain.model.aijob.AiJob
 import domain.model.aijob.AiJobProgress
 import domain.model.aijob.AiJobStatus
-import domain.model.aijob.AiJobType
 import kotlinx.coroutines.flow.Flow
 
 interface AiJobRepository {

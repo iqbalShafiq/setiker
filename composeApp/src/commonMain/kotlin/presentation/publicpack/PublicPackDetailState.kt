@@ -1,6 +1,8 @@
 package presentation.publicpack
 
 import data.remote.model.CloudStickerPack
+
+
 data class PublicPackDetailState(
     val isLoading: Boolean = true,
     val loadFailed: Boolean = false,

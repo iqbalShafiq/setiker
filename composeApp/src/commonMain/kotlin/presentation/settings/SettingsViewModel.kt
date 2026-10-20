@@ -25,6 +25,7 @@ import kotlinx.coroutines.launch
 import presentation.common.UiText
 import presentation.common.toUiText
 import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.error_auth_change_password_failed
 import setiker.composeapp.generated.resources.error_auth_not_authenticated
 import setiker.composeapp.generated.resources.error_cloud_delete_failed
 import setiker.composeapp.generated.resources.settings_apple_linked
@@ -34,7 +35,6 @@ import setiker.composeapp.generated.resources.settings_google_unlinked
 import setiker.composeapp.generated.resources.settings_password_changed
 import setiker.composeapp.generated.resources.settings_password_mismatch
 import setiker.composeapp.generated.resources.settings_password_set_success
-import setiker.composeapp.generated.resources.error_auth_change_password_failed
 
 class SettingsViewModel(
     private val legalApiRepository: LegalApiRepository,

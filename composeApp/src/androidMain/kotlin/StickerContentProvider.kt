@@ -1,7 +1,6 @@
 package com.setiker.app
 
 import android.content.ContentProvider
-import android.content.ContentResolver
 import android.content.ContentValues
 import android.content.res.AssetFileDescriptor
 import android.database.Cursor
@@ -14,9 +13,9 @@ import data.local.database.DatabaseMigrations
 import data.local.database.StickerDatabase
 import data.storage.StickerFileStorage
 import domain.model.decodeStickerDecorationsForCurrentSchema
+import java.io.File
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
-import java.io.File
 
 class StickerContentProvider : ContentProvider() {
 

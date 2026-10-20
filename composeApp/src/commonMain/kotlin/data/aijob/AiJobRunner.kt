@@ -1,16 +1,17 @@
 package data.aijob
 
-import data.remote.json.ApiJson
 import data.remote.GridSplitOnDeviceProgressUpdate
 import data.remote.GridSplitProgressPhase
 import data.remote.StickerApiRepository
 import data.remote.gridSplitFraction
+import data.remote.json.ApiJson
 import data.repository.StickerPackDraftSaver
 import data.storage.StickerFileStorage
+import data.util.OnDeviceImageProcessor
+import data.util.isOutOfMemoryError
 import data.video.CandidateGridComposer
 import data.video.VideoFrameCandidateExtractor
 import domain.model.StickerDraftInput
-import domain.model.StickerPack
 import domain.model.VideoFrameCandidate
 import domain.model.aijob.AiJob
 import domain.model.aijob.AiJobFailureKind
@@ -39,10 +40,8 @@ import domain.repository.AiJobRepository
 import domain.repository.AiQuotaRepository
 import domain.repository.StickerRepository
 import domain.repository.WorkspaceDraftRepository
-import presentation.common.settlesQuotaOnApi
 import domain.util.VideoStickerPackPlanner
-import data.util.isOutOfMemoryError
-import data.util.OnDeviceImageProcessor
+import kotlin.random.Random
 import kotlin.time.Clock
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
@@ -53,9 +52,9 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import presentation.aijob.toSnapshot
 import presentation.common.PackIdentifierSanitizer
+import presentation.common.settlesQuotaOnApi
 import presentation.common.toQuotaOperation
 import presentation.videostickerpack.selectionKey
-import kotlin.random.Random
 import util.AppLog
 
 class AiJobRunner(

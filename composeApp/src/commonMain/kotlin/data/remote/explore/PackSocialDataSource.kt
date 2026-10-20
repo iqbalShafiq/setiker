@@ -1,14 +1,13 @@
 package data.remote.explore
 
 import data.remote.ApiException
-import data.remote.runApiCall
 import data.remote.json.ApiJson
 import data.remote.model.ApiSuccessEnvelope
 import data.remote.model.PackSocialStateData
 import data.remote.model.UserFollowStateData
+import data.remote.runApiCall
 import domain.error.AppErrorCode
 import domain.error.DataError
-import domain.error.EmptyResult
 import domain.error.Result
 import io.ktor.client.request.delete
 import io.ktor.client.request.header

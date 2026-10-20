@@ -1,11 +1,11 @@
 package presentation.aijob
 
+import data.remote.json.ApiJson
 import domain.model.aijob.AiJob
 import domain.model.aijob.AiJobStatus
 import domain.model.aijob.AiJobType
-import domain.model.aijob.WorkspaceDraft
-import data.remote.json.ApiJson
 import domain.model.aijob.GeneratePackResult
+import domain.model.aijob.WorkspaceDraft
 import domain.model.aijob.WorkspaceDraftStatus
 import domain.repository.AiJobRepository
 import domain.repository.WorkspaceDraftRepository

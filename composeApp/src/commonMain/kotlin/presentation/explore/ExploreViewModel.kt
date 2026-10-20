@@ -21,11 +21,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import presentation.common.UiText
 import presentation.common.toUiText
 import setiker.composeapp.generated.resources.Res
-import setiker.composeapp.generated.resources.error_load_explore_failed
 import setiker.composeapp.generated.resources.error_cloud_update_failed
+import setiker.composeapp.generated.resources.error_load_explore_failed
 
 class ExploreViewModel(
     private val exploreApiRepository: ExploreApiRepository,

@@ -2,6 +2,7 @@ package data.remote
 
 import data.auth.AuthManager
 import data.auth.AuthTokenRefresher
+import data.remote.json.ApiJson
 import data.remote.model.ApiSuccessEnvelope
 import data.remote.model.LegalDocumentDto
 import data.remote.model.LegalRetentionDto
@@ -24,7 +25,6 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import kotlinx.serialization.Serializable
-import data.remote.json.ApiJson
 
 @Serializable
 private data class AccountDeletionRequestDto(

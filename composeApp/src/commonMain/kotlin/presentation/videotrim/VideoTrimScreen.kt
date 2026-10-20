@@ -35,9 +35,9 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import data.remote.readFileBytes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import data.remote.readFileBytes
 import org.jetbrains.compose.resources.stringResource
 import presentation.common.resolveLocal
 import presentation.components.AppIllustration

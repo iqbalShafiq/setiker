@@ -28,11 +28,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.tooling.preview.Preview
-import presentation.common.UiText
 import presentation.common.resolveLocal
 import presentation.components.AppIllustration
 import presentation.components.AppIllustrationImage
@@ -50,9 +49,9 @@ import setiker.composeapp.generated.resources.login_forgot_password
 import setiker.composeapp.generated.resources.login_forgot_password_hint
 import setiker.composeapp.generated.resources.login_google
 import setiker.composeapp.generated.resources.login_google_or
-import setiker.composeapp.generated.resources.login_link_google_confirm
 import setiker.composeapp.generated.resources.login_link_apple_message
 import setiker.composeapp.generated.resources.login_link_apple_title
+import setiker.composeapp.generated.resources.login_link_google_confirm
 import setiker.composeapp.generated.resources.login_link_google_message
 import setiker.composeapp.generated.resources.login_link_google_title
 import setiker.composeapp.generated.resources.login_password_invalid

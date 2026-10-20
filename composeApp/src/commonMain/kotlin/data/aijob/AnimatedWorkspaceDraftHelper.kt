@@ -10,13 +10,13 @@ import domain.model.aijob.WorkspaceDraft
 import domain.model.aijob.WorkspaceDraftContext
 import domain.model.aijob.WorkspaceDraftKind
 import domain.repository.WorkspaceDraftRepository
+import kotlin.time.Clock
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 import kotlinx.serialization.encodeToString
 import presentation.aijob.WorkspaceDraftFactory
 import presentation.animatededitor.AnimatedEditorState
 import presentation.animatededitor.DecorationApplyScope
-import kotlin.time.Clock
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class)
 class AnimatedWorkspaceDraftHelper(

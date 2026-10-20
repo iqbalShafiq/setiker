@@ -3,7 +3,6 @@ package presentation.creator
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import data.remote.ExploreApiRepository
-import data.remote.ExploreSort
 import data.remote.model.applyFollowUpdate
 import data.remote.model.withOptimisticFollow
 import domain.error.Result

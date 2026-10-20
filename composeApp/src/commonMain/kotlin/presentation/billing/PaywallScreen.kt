@@ -50,14 +50,13 @@ import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.paywall_buy
 import setiker.composeapp.generated.resources.paywall_empty_desc
 import setiker.composeapp.generated.resources.paywall_empty_title
-import setiker.composeapp.generated.resources.paywall_load_failed_desc
 import setiker.composeapp.generated.resources.paywall_load_failed_title
+import setiker.composeapp.generated.resources.paywall_price_unavailable
 import setiker.composeapp.generated.resources.paywall_processing
 import setiker.composeapp.generated.resources.paywall_purchase_history
 import setiker.composeapp.generated.resources.paywall_restore
 import setiker.composeapp.generated.resources.paywall_title
 import setiker.composeapp.generated.resources.paywall_tokens_label
-import setiker.composeapp.generated.resources.retry
 
 @Composable
 fun PaywallScreenRoot(
@@ -172,6 +171,11 @@ private fun PaywallProductCard(
     onPurchase: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val tokenLabel = product.tokenAmount?.let { amount ->
+        stringResource(Res.string.paywall_tokens_label, amount)
+    }
+    val presentation = paywallProductPresentation(product, tokenLabel)
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -192,32 +196,37 @@ private fun PaywallProductCard(
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Text(
-            text = product.name,
+            text = presentation.title,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = neubrutalOnSurface()
         )
-        product.description?.let {
+        presentation.description?.let {
             Text(
                 text = it,
                 style = MaterialTheme.typography.bodyMedium,
                 color = neubrutalMutedOnSurface()
             )
         }
-        product.formattedPrice?.let {
+        presentation.tokenLabel?.let {
             Text(
                 text = it,
-                style = MaterialTheme.typography.labelLarge,
-                color = neubrutalOnSurface()
-            )
-        }
-        product.tokenAmount?.let {
-            Text(
-                text = stringResource(Res.string.paywall_tokens_label, it),
                 style = MaterialTheme.typography.bodySmall,
                 color = neubrutalMutedOnSurface()
             )
         }
+        presentation.price?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = neubrutalOnSurface()
+            )
+        } ?: Text(
+            text = stringResource(Res.string.paywall_price_unavailable),
+            style = MaterialTheme.typography.labelMedium,
+            color = neubrutalMutedOnSurface()
+        )
         AppPrimaryButton(
             text = if (purchasingCode == product.code) {
                 stringResource(Res.string.paywall_processing)
@@ -225,7 +234,9 @@ private fun PaywallProductCard(
                 stringResource(Res.string.paywall_buy)
             },
             onClick = onPurchase,
-            enabled = purchasingCode == null,
+            // A product without a store price must not be purchasable: the user would have no
+            // idea what they are paying.
+            enabled = presentation.isPurchasable && purchasingCode == null,
             modifier = Modifier.padding(top = 4.dp)
         )
     }

@@ -1,13 +1,11 @@
 package data.remote
 
-import domain.error.AppError
 import domain.error.DataError
+import io.ktor.client.network.sockets.ConnectTimeoutException
+import io.ktor.client.network.sockets.SocketTimeoutException
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.ServerResponseException
-import io.ktor.client.network.sockets.ConnectTimeoutException
-import io.ktor.client.network.sockets.SocketTimeoutException
-import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerializationException
 
 /**

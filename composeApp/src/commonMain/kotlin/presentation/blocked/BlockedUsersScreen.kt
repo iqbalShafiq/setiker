@@ -37,7 +37,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import data.remote.model.BlockedUserItem
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
-import presentation.common.resolveLocal
 import presentation.common.resolveOrDefault
 import presentation.components.AppDialog
 import presentation.components.AppTopBar

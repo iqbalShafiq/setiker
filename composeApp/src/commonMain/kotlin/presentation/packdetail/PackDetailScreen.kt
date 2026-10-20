@@ -21,7 +21,6 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DragHandle
@@ -34,7 +33,6 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
@@ -54,26 +52,24 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import domain.model.Sticker
 import domain.model.StickerPack
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import presentation.common.ContentStateAnimations
 import presentation.common.DetailLoadPhase
 import presentation.common.toShareLinkUi
-import presentation.components.AppIllustration
 import presentation.components.AppDialog
+import presentation.components.AppIllustration
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
 import presentation.components.AppTopBar
 import presentation.components.AppTopBarActionIcon
-import presentation.components.ReorderIconButton
 import presentation.components.BottomSheetScrollColumn
 import presentation.components.ContentPolicyBottomSheet
-import presentation.components.zeroBottomSheetWindowInsets
 import presentation.components.DuplicatePackConfirmDialog
 import presentation.components.EmptyState
 import presentation.components.InteractionBlockedBox
@@ -82,20 +78,22 @@ import presentation.components.NeubrutalSelectableChip
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
+import presentation.components.ReorderIconButton
 import presentation.components.ShareCollaboratorUi
 import presentation.components.ShareLinksSheet
 import presentation.components.ShareWithUsersSheet
 import presentation.components.StickerCard
 import presentation.components.SyncStatusIndicator
 import presentation.components.rememberMultipleImagePicker
+import presentation.components.zeroBottomSheetWindowInsets
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalScrim
-import presentation.theme.neubrutalBorderWithGloss
-import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
@@ -107,18 +105,6 @@ import setiker.composeapp.generated.resources.back
 import setiker.composeapp.generated.resources.cancel
 import setiker.composeapp.generated.resources.delete
 import setiker.composeapp.generated.resources.delete_pack
-import setiker.composeapp.generated.resources.pack_collaborators
-import setiker.composeapp.generated.resources.pack_duplicate
-import setiker.composeapp.generated.resources.pack_duplicating
-import setiker.composeapp.generated.resources.pack_make_public
-import setiker.composeapp.generated.resources.pack_make_public_dialog_message
-import setiker.composeapp.generated.resources.pack_make_public_dialog_title
-import setiker.composeapp.generated.resources.pack_publish_confirm
-import setiker.composeapp.generated.resources.pack_unpublish
-import setiker.composeapp.generated.resources.pack_unpublish_confirm
-import setiker.composeapp.generated.resources.pack_unpublish_dialog_message
-import setiker.composeapp.generated.resources.pack_unpublish_dialog_title
-import setiker.composeapp.generated.resources.pack_updating_visibility
 import setiker.composeapp.generated.resources.delete_pack_dialog_message
 import setiker.composeapp.generated.resources.delete_pack_dialog_title
 import setiker.composeapp.generated.resources.delete_sticker_dialog_message
@@ -126,31 +112,44 @@ import setiker.composeapp.generated.resources.delete_sticker_dialog_title
 import setiker.composeapp.generated.resources.deleting
 import setiker.composeapp.generated.resources.edit_pack
 import setiker.composeapp.generated.resources.ic_whatsapp
-import setiker.composeapp.generated.resources.info_tray_icon_missing
 import setiker.composeapp.generated.resources.import_crop_sheet_message_detail
 import setiker.composeapp.generated.resources.import_crop_sheet_primary
 import setiker.composeapp.generated.resources.import_crop_sheet_title
+import setiker.composeapp.generated.resources.info_tray_icon_missing
 import setiker.composeapp.generated.resources.loading_pack
 import setiker.composeapp.generated.resources.no_stickers_desc
 import setiker.composeapp.generated.resources.no_stickers_title
+import setiker.composeapp.generated.resources.pack_collaborators
 import setiker.composeapp.generated.resources.pack_details_title
+import setiker.composeapp.generated.resources.pack_duplicate
+import setiker.composeapp.generated.resources.pack_duplicating
+import setiker.composeapp.generated.resources.pack_make_public
+import setiker.composeapp.generated.resources.pack_make_public_dialog_message
+import setiker.composeapp.generated.resources.pack_make_public_dialog_title
 import setiker.composeapp.generated.resources.pack_not_found_desc
 import setiker.composeapp.generated.resources.pack_not_found_title
+import setiker.composeapp.generated.resources.pack_publish_confirm
 import setiker.composeapp.generated.resources.pack_stickers_hint
+import setiker.composeapp.generated.resources.pack_unpublish
+import setiker.composeapp.generated.resources.pack_unpublish_confirm
+import setiker.composeapp.generated.resources.pack_unpublish_dialog_message
+import setiker.composeapp.generated.resources.pack_unpublish_dialog_title
+import setiker.composeapp.generated.resources.pack_updating_visibility
 import setiker.composeapp.generated.resources.processing
 import setiker.composeapp.generated.resources.reorder_drag_handle
 import setiker.composeapp.generated.resources.reorder_move_down
 import setiker.composeapp.generated.resources.reorder_move_up
-import sh.calvin.reorderable.ReorderableItem
-import sh.calvin.reorderable.rememberReorderableLazyGridState
 import setiker.composeapp.generated.resources.share_pack
 import setiker.composeapp.generated.resources.sticker_links_title
+import setiker.composeapp.generated.resources.sticker_position_label
+import setiker.composeapp.generated.resources.sticker_preview_content_description
 import setiker.composeapp.generated.resources.sticker_share_tab_links
 import setiker.composeapp.generated.resources.sticker_share_tab_people
-import setiker.composeapp.generated.resources.sticker_preview_content_description
 import setiker.composeapp.generated.resources.stickers_title
 import setiker.composeapp.generated.resources.stickers_with_count
 import setiker.composeapp.generated.resources.tray_icon_content_description
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyGridState
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PackDetailScreen(
@@ -651,7 +650,7 @@ private fun PackDetailContent(
                 } else {
                     AsyncImage(
                         model = pack.trayImageFile,
-                        contentDescription = pack.name,
+                        contentDescription = null,
                         modifier = trayModifier,
                         contentScale = ContentScale.Crop
                     )
@@ -757,6 +756,11 @@ private fun PackDetailContent(
                         Column {
                             StickerCard(
                                 sticker = sticker,
+                                fallbackContentDescription = stringResource(
+                                    Res.string.sticker_position_label,
+                                    index + 1,
+                                    orderedStickers.size
+                                ),
                                 onClick = {
                                     val packIndex = indexInPack(sticker.imageFile)
                                     if (packIndex >= 0) onEditSticker(packIndex)

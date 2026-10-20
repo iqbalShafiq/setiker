@@ -32,16 +32,16 @@ import presentation.common.resolveLocal
 import presentation.common.resolveOrDefault
 import presentation.components.AiQuotaSummary
 import presentation.components.AppDialog
-import presentation.components.AppPrimaryButton
-import presentation.components.DeleteAccountConfirmDialog
 import presentation.components.AppIllustration
 import presentation.components.AppIllustrationImage
 import presentation.components.AppPasswordTextField
+import presentation.components.AppPrimaryButton
 import presentation.components.AppTopBar
-import presentation.components.ScaffoldBottomBarLazyColumn
+import presentation.components.DeleteAccountConfirmDialog
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
+import presentation.components.ScaffoldBottomBarLazyColumn
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
@@ -58,7 +58,6 @@ import setiker.composeapp.generated.resources.settings_new_password
 import setiker.composeapp.generated.resources.settings_save_password_confirm_message
 import setiker.composeapp.generated.resources.settings_set_password
 import setiker.composeapp.generated.resources.settings_set_password_message
-import setiker.composeapp.generated.resources.settings_set_password_title
 import setiker.composeapp.generated.resources.settings_show_onboarding
 import setiker.composeapp.generated.resources.settings_title
 import setiker.composeapp.generated.resources.settings_username

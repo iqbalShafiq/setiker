@@ -1,37 +1,37 @@
 package data.remote
 
+import data.auth.AuthManager
+import data.auth.AuthTokenRefresher
+import data.remote.json.ApiJson
 import data.remote.model.ApiErrorEnvelope
 import data.remote.model.ApiImage
 import data.remote.model.ApiSuccessEnvelope
+import data.remote.model.ApiTextAsset
 import data.remote.model.GenerateData
 import data.remote.model.GridSplitTextAssetsData
-import data.remote.model.ApiTextAsset
 import data.remote.model.VideoStickerPackPlanData
-import domain.model.VideoStickerCandidateManifestItem
 import domain.error.AppErrorCode
+import domain.model.VideoStickerCandidateManifestItem
 import io.ktor.client.call.body
 import io.ktor.client.plugins.DefaultRequest
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.forms.FormBuilder
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLProtocol
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.delay
-import data.remote.json.ApiJson
 import kotlinx.serialization.encodeToString
-import data.auth.AuthManager
-import data.auth.AuthTokenRefresher
-import io.ktor.client.request.HttpRequestBuilder
-import io.ktor.client.request.header
-import io.ktor.client.statement.HttpResponse
-import io.ktor.http.HttpStatusCode
 
 class SetikerApiService(
     private val authManager: AuthManager? = null,

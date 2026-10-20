@@ -6,6 +6,7 @@ import data.remote.ApiConfig
 import data.remote.ApiErrorParser
 import data.remote.ApiException
 import data.remote.createApiClient
+import data.remote.json.ApiJson
 import data.remote.model.ApiSuccessEnvelope
 import data.remote.runApiCall
 import domain.error.AppErrorCode
@@ -23,7 +24,6 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import kotlinx.serialization.Serializable
-import data.remote.json.ApiJson
 
 @Serializable
 data class BillingProductDto(

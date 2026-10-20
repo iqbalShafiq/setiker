@@ -4,21 +4,18 @@ import data.auth.AuthManager
 import data.local.database.StickerDao
 import data.local.database.StickerPackDao
 import data.local.database.SyncOperationDao
-import data.local.entity.PendingSyncOperationEntity
 import data.remote.CloudStickerRepository
 import data.storage.StickerFileStorage
 import data.sync.operationBelongsToPack
 import data.sync.operationIsPackVisibilityUpdate
-import domain.error.DataError
-import domain.error.EmptyResult
 import domain.error.Result
 import domain.error.detailText
 import domain.model.SyncOperation
 import domain.model.SyncOperationStatus
-import domain.model.SyncOperationType
 import domain.model.SyncReport
 import domain.model.SyncResult
 import domain.model.SyncStage
+import kotlin.time.Clock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -27,7 +24,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlin.time.Clock
 
 /**
  * Gate, orchestration and reporting for the sync plane (spec P3b, D4). Push execution lives in

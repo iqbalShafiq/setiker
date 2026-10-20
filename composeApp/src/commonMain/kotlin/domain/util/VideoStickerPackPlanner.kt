@@ -2,8 +2,8 @@ package domain.util
 
 import domain.model.CandidateGridImage
 import domain.model.VideoFrameCandidate
-import domain.model.VideoStickerPackGridSpec
 import domain.model.VideoStickerCandidateManifestItem
+import domain.model.VideoStickerPackGridSpec
 
 object VideoStickerPackPlanner {
     const val MAX_SEGMENT_MS: Long = 60_000L

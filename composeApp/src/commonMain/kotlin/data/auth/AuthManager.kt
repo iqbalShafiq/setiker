@@ -1,7 +1,7 @@
 package data.auth
 
-import domain.model.User
 import domain.model.AuthState
+import domain.model.User
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 

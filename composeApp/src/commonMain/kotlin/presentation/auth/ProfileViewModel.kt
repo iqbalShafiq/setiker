@@ -11,12 +11,12 @@ import data.auth.GoogleSignInMode
 import data.auth.model.toDomainModel
 import data.remote.ExploreApiRepository
 import data.remote.LegalApiRepository
-import domain.model.AiUsage
-import domain.model.LegalSummary
 import domain.error.Result
 import domain.error.getOrNull
 import domain.error.onFailure
 import domain.error.onSuccess
+import domain.model.AiUsage
+import domain.model.LegalSummary
 import domain.model.User
 import domain.repository.AiQuotaRepository
 import domain.repository.StickerRepository

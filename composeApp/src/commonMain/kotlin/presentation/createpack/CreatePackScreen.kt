@@ -4,19 +4,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -31,9 +28,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -52,49 +47,48 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import domain.model.StickerPack
 import org.jetbrains.compose.resources.stringResource
+import presentation.aijob.AiResultSheetVisibility
+import presentation.components.AiGenerateBottomSheet
+import presentation.components.AppIllustration
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
-import presentation.components.AppIllustration
 import presentation.components.AppTextField
 import presentation.components.AppTopBar
+import presentation.components.BottomSheetScrollColumn
+import presentation.components.ContentPolicyBottomSheet
+import presentation.components.ImproveConfirmDialog
 import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
+import presentation.components.NeubrutalIconButton
 import presentation.components.PackBottomBar
-import presentation.components.ReorderIconButton
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
-import presentation.components.SelectableStickerGrid
-import presentation.components.ReadOnlyDecorationOverlay
-import presentation.components.ScreenSectionTitle
-import presentation.aijob.AiResultSheetVisibility
-import domain.model.StickerPack
-import presentation.components.AiGenerateBottomSheet
-import presentation.components.ContentPolicyBottomSheet
-import presentation.components.ReportContentBottomSheet
 import presentation.components.PromptPresetPickerSheet
-import presentation.components.ImproveConfirmDialog
-import presentation.components.BottomSheetScrollColumn
-import presentation.components.scaffoldBottomBarScroll
-import presentation.components.zeroBottomSheetWindowInsets
+import presentation.components.ReadOnlyDecorationOverlay
+import presentation.components.ReorderIconButton
+import presentation.components.ReportContentBottomSheet
+import presentation.components.SelectableStickerGrid
 import presentation.components.rememberImagePicker
 import presentation.components.rememberStickerImagePicker
+import presentation.components.scaffoldBottomBarScroll
+import presentation.components.zeroBottomSheetWindowInsets
 import presentation.theme.AccentCoral
 import presentation.theme.AccentCoralLight
 import presentation.theme.ErrorRed
-import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalScrim
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalSmallRadius
 import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
-import presentation.theme.neubrutalBorderWithGloss
-import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import setiker.composeapp.generated.resources.Res
@@ -102,18 +96,13 @@ import setiker.composeapp.generated.resources.add_sticker
 import setiker.composeapp.generated.resources.add_to_pack
 import setiker.composeapp.generated.resources.back
 import setiker.composeapp.generated.resources.cancel
-import setiker.composeapp.generated.resources.close
 import setiker.composeapp.generated.resources.cd_add_animated_sticker
 import setiker.composeapp.generated.resources.create_pack_title
 import setiker.composeapp.generated.resources.edit_pack_title
-import setiker.composeapp.generated.resources.generate
 import setiker.composeapp.generated.resources.generate_ai
-import setiker.composeapp.generated.resources.generate_ai_sheet_title
 import setiker.composeapp.generated.resources.generate_confirm_subtitle
 import setiker.composeapp.generated.resources.generate_confirm_title
 import setiker.composeapp.generated.resources.generate_improve_confirm_title
-import setiker.composeapp.generated.resources.generate_tip
-import setiker.composeapp.generated.resources.generating
 import setiker.composeapp.generated.resources.grid_confirm_hint
 import setiker.composeapp.generated.resources.grid_confirm_title
 import setiker.composeapp.generated.resources.grid_source_content_description
@@ -123,23 +112,21 @@ import setiker.composeapp.generated.resources.import_crop_sheet_message_sticker
 import setiker.composeapp.generated.resources.import_crop_sheet_message_tray
 import setiker.composeapp.generated.resources.import_crop_sheet_primary
 import setiker.composeapp.generated.resources.import_crop_sheet_title
+import setiker.composeapp.generated.resources.improve_confirm_message_pack
+import setiker.composeapp.generated.resources.improve_stickers
 import setiker.composeapp.generated.resources.pack_name_label
 import setiker.composeapp.generated.resources.pack_name_placeholder
 import setiker.composeapp.generated.resources.processing
-import setiker.composeapp.generated.resources.prompt_label
-import setiker.composeapp.generated.resources.prompt_placeholder
 import setiker.composeapp.generated.resources.publisher_label
 import setiker.composeapp.generated.resources.publisher_placeholder
-import setiker.composeapp.generated.resources.improve_confirm_message_pack
-import setiker.composeapp.generated.resources.improve_stickers
 import setiker.composeapp.generated.resources.remove_sticker
 import setiker.composeapp.generated.resources.reorder_move_down
 import setiker.composeapp.generated.resources.reorder_move_up
 import setiker.composeapp.generated.resources.replace_stickers
 import setiker.composeapp.generated.resources.save_pack
 import setiker.composeapp.generated.resources.saving
-import setiker.composeapp.generated.resources.selected_count
 import setiker.composeapp.generated.resources.select_tray_icon
+import setiker.composeapp.generated.resources.selected_count
 import setiker.composeapp.generated.resources.split_grid
 import setiker.composeapp.generated.resources.split_result_title
 import setiker.composeapp.generated.resources.sticker_limit_hint
@@ -149,9 +136,6 @@ import setiker.composeapp.generated.resources.tray_icon
 import setiker.composeapp.generated.resources.tray_icon_content_description
 import setiker.composeapp.generated.resources.update_pack
 import setiker.composeapp.generated.resources.updating
-import setiker.composeapp.generated.resources.visibility_label
-import setiker.composeapp.generated.resources.visibility_private
-import setiker.composeapp.generated.resources.visibility_public
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -759,16 +743,14 @@ fun CreatePackScreen(
                         color = neubrutalOnSurface()
                     )
 
-                    IconButton(
+                    NeubrutalIconButton(
+                        icon = Icons.Default.Add,
+                        contentDescription = stringResource(Res.string.add_sticker),
                         onClick = { stickerPicker.launch() },
-                        enabled = !isOperationInProgress
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = stringResource(Res.string.add_sticker),
-                            tint = AccentCoral
-                        )
-                    }
+                        enabled = !isOperationInProgress,
+                        tint = AccentCoral,
+                        label = "create_pack_add_sticker_scale"
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))

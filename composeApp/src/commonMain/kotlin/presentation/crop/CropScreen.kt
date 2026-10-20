@@ -55,14 +55,14 @@ import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalCardRadius
-import presentation.theme.neubrutalBorderWithGloss
-import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.NeubrutalDialogRadius
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
@@ -72,14 +72,14 @@ import presentation.theme.neubrutalSubtleOnSurface
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.back
 import setiker.composeapp.generated.resources.crop_image_title
-import setiker.composeapp.generated.resources.processing
-import setiker.composeapp.generated.resources.save_sticker
 import setiker.composeapp.generated.resources.flip_horizontal
 import setiker.composeapp.generated.resources.image_to_crop
 import setiker.composeapp.generated.resources.no_image_selected
+import setiker.composeapp.generated.resources.processing
 import setiker.composeapp.generated.resources.reset
 import setiker.composeapp.generated.resources.rotate_left
 import setiker.composeapp.generated.resources.rotate_right
+import setiker.composeapp.generated.resources.save_sticker
 import setiker.composeapp.generated.resources.zoom
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -9,9 +9,6 @@ import android.graphics.Movie
 import android.graphics.Paint
 import android.net.Uri
 import android.os.Build
-import android.text.Layout
-import android.text.StaticLayout
-import android.text.TextPaint
 import androidx.concurrent.futures.await
 import androidx.media3.common.MediaItem
 import androidx.media3.inspector.frame.FrameExtractor
@@ -23,16 +20,14 @@ import com.aureusapps.android.webpandroid.encoder.WebPPreset
 import domain.model.AnimatedStickerSpec
 import domain.model.CropTransform
 import domain.model.DecodedFrame
-import domain.model.DecorationFont
-import domain.model.DecorationFontWeight
 import domain.model.StickerDecoration
 import domain.model.StickerPack
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 actual class StickerFileStorage(private val context: Context) {
 

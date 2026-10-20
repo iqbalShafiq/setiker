@@ -14,21 +14,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -46,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -63,6 +61,7 @@ import presentation.components.AppTopBar
 import presentation.components.EmptyState
 import presentation.components.ExploreSortBottomSheet
 import presentation.components.LoadingIndicator
+import presentation.components.NeubrutalIconButton
 import presentation.components.NeubrutalSearchBar
 import presentation.components.NeubrutalSelectableChip
 import presentation.components.PackBottomBar
@@ -85,6 +84,7 @@ import presentation.theme.neubrutalShadowColor
 import presentation.theme.screenContentHorizontalPadding
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_load_explore_failed
+import setiker.composeapp.generated.resources.error_load_explore_failed_desc
 import setiker.composeapp.generated.resources.explore_back
 import setiker.composeapp.generated.resources.explore_creator_unknown
 import setiker.composeapp.generated.resources.explore_empty_following_desc
@@ -99,10 +99,10 @@ import setiker.composeapp.generated.resources.explore_feed_following
 import setiker.composeapp.generated.resources.explore_feed_saved
 import setiker.composeapp.generated.resources.explore_feed_shared
 import setiker.composeapp.generated.resources.explore_history
+import setiker.composeapp.generated.resources.explore_section_more_packs
 import setiker.composeapp.generated.resources.explore_sign_in_action
 import setiker.composeapp.generated.resources.explore_sign_in_desc
 import setiker.composeapp.generated.resources.explore_sign_in_title
-import setiker.composeapp.generated.resources.explore_section_more_packs
 import setiker.composeapp.generated.resources.explore_sort
 import setiker.composeapp.generated.resources.explore_title
 import setiker.composeapp.generated.resources.no_search_results_desc
@@ -258,7 +258,7 @@ fun ExploreScreen(
                             )
                             ExploreBodyPhase.Error -> EmptyState(
                                 title = stringResource(Res.string.error_load_explore_failed),
-                                description = stringResource(Res.string.no_search_results_desc),
+                                description = stringResource(Res.string.error_load_explore_failed_desc),
                                 illustration = AppIllustration.ErrorState,
                                 modifier = Modifier.fillMaxWidth(),
                                 action = {
@@ -449,28 +449,26 @@ private fun PublicPackCard(
                         horizontalArrangement = Arrangement.spacedBy(2.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(
+                        NeubrutalIconButton(
+                            icon = if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                            contentDescription = null,
                             onClick = onToggleLike,
-                            modifier = Modifier.size(socialButtonSize)
-                        ) {
-                            Icon(
-                                imageVector = if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                                contentDescription = null,
-                                modifier = Modifier.size(socialIconSize),
-                                tint = if (liked) AccentCoral else neubrutalMutedOnSurface()
-                            )
-                        }
-                        IconButton(
+                            size = socialButtonSize,
+                            iconSize = socialIconSize,
+                            tint = if (liked) AccentCoral else neubrutalMutedOnSurface(),
+                            pressedScale = 0.86f,
+                            label = "explore_like_scale"
+                        )
+                        NeubrutalIconButton(
+                            icon = if (saved) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder,
+                            contentDescription = null,
                             onClick = onToggleSave,
-                            modifier = Modifier.size(socialButtonSize)
-                        ) {
-                            Icon(
-                                imageVector = if (saved) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder,
-                                contentDescription = null,
-                                modifier = Modifier.size(socialIconSize),
-                                tint = if (saved) AccentCoral else neubrutalMutedOnSurface()
-                            )
-                        }
+                            size = socialButtonSize,
+                            iconSize = socialIconSize,
+                            tint = if (saved) AccentCoral else neubrutalMutedOnSurface(),
+                            pressedScale = 0.86f,
+                            label = "explore_save_scale"
+                        )
                     }
                 }
             }

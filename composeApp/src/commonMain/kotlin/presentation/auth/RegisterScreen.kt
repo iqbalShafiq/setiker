@@ -8,7 +8,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -26,10 +25,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import presentation.common.UiText
 import presentation.common.resolveLocal
 import presentation.components.AppIllustration
@@ -39,14 +38,14 @@ import presentation.components.AppTextField
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalSubtleOnSurface
 import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.login_apple
 import setiker.composeapp.generated.resources.login_email_invalid
 import setiker.composeapp.generated.resources.login_email_label
 import setiker.composeapp.generated.resources.login_email_placeholder
+import setiker.composeapp.generated.resources.login_google
 import setiker.composeapp.generated.resources.login_password_invalid
 import setiker.composeapp.generated.resources.login_password_label
 import setiker.composeapp.generated.resources.login_password_placeholder
-import setiker.composeapp.generated.resources.login_apple
-import setiker.composeapp.generated.resources.login_google
 import setiker.composeapp.generated.resources.register_confirm_password_label
 import setiker.composeapp.generated.resources.register_confirm_password_placeholder
 import setiker.composeapp.generated.resources.register_creating_account

@@ -1,6 +1,7 @@
 package presentation.legal
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.background
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.MaterialTheme
@@ -41,6 +41,7 @@ import presentation.components.LoadingIndicator
 import presentation.components.ScaffoldBottomBarLazyColumn
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
@@ -50,7 +51,6 @@ import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
-import presentation.theme.NeubrutalSmallShadowOffset
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.account_deletion_confirm_label
 import setiker.composeapp.generated.resources.account_deletion_email_label

@@ -1,12 +1,11 @@
 package com.setiker.app
 
 import android.app.Application
-import data.storage.ForegroundActivityProvider
 import data.aijob.AiJobManager
 import data.aijob.AiJobNotificationSync
 import data.aijob.AiNotificationHelper
+import data.storage.ForegroundActivityProvider
 import data.sync.SyncWorker
-import org.koin.java.KoinJavaComponent.inject
 import di.appModule
 import di.platformModule
 import kotlinx.coroutines.CoroutineScope
@@ -16,6 +15,7 @@ import kotlinx.coroutines.launch
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
+import org.koin.java.KoinJavaComponent.inject
 
 class StickerApplication : Application() {
     override fun onCreate() {
