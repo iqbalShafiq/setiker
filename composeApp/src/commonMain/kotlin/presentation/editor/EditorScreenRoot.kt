@@ -84,4 +84,4 @@ fun EditorScreenRoot(
 }
 
 /** How long the save celebration stays on screen. */
-private const val CELEBRATION_DURATION_MS = 850L
+private const val CELEBRATION_DURATION_MS = 1200L
