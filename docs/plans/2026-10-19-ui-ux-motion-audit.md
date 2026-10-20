@@ -168,12 +168,20 @@ Steady-state scroll of the 16-sticker grid: 6.25 % janky frames, p50 12 ms, p90 
 
 55 navigation states across 14 screens (home, search, sort sheet, AI jobs, pack detail, sticker grid, editor, decoration sheet, emoji picker, crop, explore + all four tabs, profile + all menu entries, settings, sync, AI generate sheet, create pack, share sheets, delete dialog, onboarding, splash) — **zero crashes**.
 
-## 8.6 Open decisions for the product owner
+## 8.6 Follow-up work (completed 2026-10-20, after the audit)
+
+| Item | Status |
+|---|---|
+| Coil placeholder for images | **Done.** `NeubrutalAsyncImage` renders a Compose-driven shimmer while a bitmap loads, and a `SolidColorPainter` covers the error state. Coil 3 has no colour painter, so it is built here. Applied to the sticker card, the pack cover and the editor preview. |
+| `SetikerMotion.DelightSpring` | **Used.** The sticker-saved celebration: a coral check badge pops in over the preview with the bouncy spring, holds for 1.2 s, then the app returns to the pack. It is the only place in the app allowed to bounce. |
+| README rewrite | **Done.** New README with the mark, a one-line lede, badges, a hero montage of four real screens, a feature table built from device screenshots, a saved-sticker GIF, a three-command quick start, a configuration table, a mermaid architecture diagram, and the MIT `LICENSE` the README had always claimed. |
+| Commits | 5 commits pushed to `origin/audit/android-modernization`: `4c983d0` design system, `74a1b5f` screen states, `16b6130` cold-start race, `5f46f8e` docs and README, `b05e2df` celebration timing. |
+
+## 8.7 Open decisions for the product owner
 
 1. **Launcher icon / system splash branding**: the system splash shows the launcher icon, which is pure black and grey — the brand coral never appears in the first two seconds of the app. Making the icon coral is a product decision, so it was left alone.
 2. **iOS**: the iOS targets cannot be compiled on Windows, so the shared `commonMain` changes were not verified on the native target. They only use common Compose APIs.
-3. **Photo placeholders**: sticker covers still render as blank squares while Coil loads them. A `placeholder` painter is the natural follow-up now that the loading states are visible.
-4. **Delight moments**: a spring "pop" on a saved sticker or a created pack would use `SetikerMotion.DelightSpring` — the token is in place but no screen uses it yet.
+3. **Delight moments**: the sticker-saved celebration is the first use of `DelightSpring`. The same spring is available for a created pack, a finished AI job, and an imported sticker.
 
 
 ---
