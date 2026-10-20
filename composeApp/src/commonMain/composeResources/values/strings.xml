@@ -510,7 +510,7 @@
     <string name="explore_feed_discover">Discover</string>
     <string name="explore_feed_saved">Saved</string>
     <string name="explore_feed_following">Following</string>
-    <string name="explore_feed_shared">Shared with me</string>
+    <string name="explore_feed_shared">Shared</string>
     <string name="explore_featured_badge">Sticker of the day</string>
     <string name="explore_section_more_packs">More packs</string>
     <string name="explore_sign_in_title">Sign in required</string>
