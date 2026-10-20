@@ -6,7 +6,6 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
@@ -50,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import domain.model.Sticker
 import domain.model.StickerPack
 import org.jetbrains.compose.resources.stringResource
+import presentation.common.ContentStateAnimations
 import presentation.components.AiGenerateStickerPackBottomSheet
 import presentation.components.AppIllustration
 import presentation.components.AppTopBar
@@ -124,9 +124,9 @@ fun HomeScreen(
                     AnimatedContent(
                         targetState = isSearchExpanded,
                         transitionSpec = {
-                            (fadeIn(animationSpec = tween(180)) togetherWith
-                                fadeOut(animationSpec = tween(120))).using(
-                                SizeTransform(clip = false)
+                            ContentStateAnimations.contentTransform(
+                                fadeIn(animationSpec = tween(180)),
+                                fadeOut(animationSpec = tween(120))
                             )
                         },
                         label = "home_topbar_title_transition"

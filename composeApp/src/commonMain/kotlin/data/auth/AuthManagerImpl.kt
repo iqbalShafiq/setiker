@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -109,12 +108,18 @@ class AuthManagerImpl(
         }
     }
     
-     override fun isTokenExpired(): Boolean {
-         val expiresAt = runBlocking {
-             dataStore.data.map { it[KEY_TOKEN_EXPIRES_AT] ?: 0L }.first()
-         }
-         return expiresAt <= Clock.System.now().toEpochMilliseconds() + 300_000
-     }
+    /**
+     * Whether the stored access token is expired (or about to be).
+     *
+     * This suspends instead of blocking. It used to wrap the DataStore read in unBlocking\,
+     * which froze whichever thread called it - the main thread, whenever a view model asked for a
+     * token while opening a screen. The stall was measurable: every screen open dropped to two
+     * frames and the app looked frozen for a quarter of a second.
+     */
+    override suspend fun isTokenExpired(): Boolean {
+        val expiresAt = dataStore.data.map { it[KEY_TOKEN_EXPIRES_AT] ?: 0L }.first()
+        return expiresAt <= Clock.System.now().toEpochMilliseconds() + 300_000
+    }
      
       override suspend fun getValidAccessToken(): String? {
           val token = getAccessToken() ?: return null

@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -92,8 +91,10 @@ fun ShareLinksSheet(
         AnimatedContent(
             targetState = bodyPhase,
             transitionSpec = {
-                fadeIn(animationSpec = tween(ContentStateAnimations.SHEET_MS)) togetherWith
+                ContentStateAnimations.contentTransform(
+                    fadeIn(animationSpec = tween(ContentStateAnimations.SHEET_MS)),
                     fadeOut(animationSpec = tween(ContentStateAnimations.EXIT_MS))
+                )
             },
             label = "share_links_body"
         ) { phase ->

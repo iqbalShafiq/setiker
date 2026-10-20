@@ -53,6 +53,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil3.size.Precision
 import coil3.compose.rememberAsyncImagePainter
 import domain.model.EmojiDecoration
 import domain.model.ImageDecoration
@@ -388,6 +389,9 @@ fun EditorScreen(
                                 NeubrutalAsyncImage(
                                     model = state.imagePath,
                                     contentDescription = stringResource(Res.string.sticker_preview),
+                                    // The preview is larger than the 512 px source, so exact
+                                    // precision would upscale it. Keep the source size.
+                                    precision = Precision.INEXACT,
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .clip(RoundedCornerShape(NeubrutalCardRadius)),
