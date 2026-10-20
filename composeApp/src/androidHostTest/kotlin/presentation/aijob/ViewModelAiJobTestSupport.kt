@@ -11,19 +11,18 @@ import domain.model.aijob.DraftStickerSnapshot
 import domain.model.aijob.ImproveStickersResult
 import domain.model.aijob.VideoPackResult
 import domain.model.aijob.WorkspaceDraft
-import domain.model.aijob.WorkspaceDraftContext
 import domain.model.aijob.toStored
 import domain.repository.AiJobRepository
 import domain.repository.WorkspaceDraftRepository
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import kotlin.time.Clock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import presentation.videostickerpack.selectionKey
 import presentation.aijob.WorkspaceDraftFactory
-import kotlin.time.Clock
+import presentation.videostickerpack.selectionKey
 
 object ViewModelAiJobTestSupport {
     fun manager(

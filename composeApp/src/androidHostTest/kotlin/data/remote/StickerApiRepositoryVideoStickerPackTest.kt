@@ -9,10 +9,10 @@ import domain.util.VideoStickerPackPlanner
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlinx.coroutines.test.runTest
 
 class StickerApiRepositoryVideoStickerPackTest {
     @Test

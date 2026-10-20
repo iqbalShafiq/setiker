@@ -12,6 +12,11 @@ import domain.model.TextDecorationStyleRegistry
 import domain.repository.AiQuotaRepository
 import domain.repository.StickerRepository
 import io.mockk.mockk
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -20,11 +25,6 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import presentation.aijob.ViewModelAiJobTestSupport
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EditorViewModelStyleTest {

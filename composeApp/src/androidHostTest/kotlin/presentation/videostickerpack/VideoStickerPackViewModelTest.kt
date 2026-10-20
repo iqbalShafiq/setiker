@@ -14,18 +14,21 @@ import domain.model.ResolvedVideoStickerPackPlan
 import domain.model.Sticker
 import domain.model.StickerDraftInput
 import domain.model.StickerPack
-import domain.model.VideoFrameCandidate
 import domain.model.VideoAnimatedStickerPlan
 import domain.model.VideoAnimatedTimelineFrame
+import domain.model.VideoFrameCandidate
 import domain.model.VideoStaticStickerPlan
 import domain.model.VideoStickerPackPlan
-import domain.repository.StickerRepository
 import domain.repository.AiQuotaRepository
+import domain.repository.StickerRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import presentation.aijob.VideoAiDeps
-import presentation.aijob.ViewModelAiJobTestSupport
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -34,13 +37,8 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
+import presentation.aijob.VideoAiDeps
+import presentation.aijob.ViewModelAiJobTestSupport
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class VideoStickerPackViewModelTest {

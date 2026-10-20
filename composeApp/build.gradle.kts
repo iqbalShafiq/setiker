@@ -18,6 +18,12 @@ kotlin {
     // compilerOptions block below would not reach.
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")
+
+        // Official Kotlin Gradle Plugin option: any compiler warning fails the build.
+        // The Kotlin compiler does not report unused imports (those come from the IDE), so the
+        // import blocks are additionally kept clean by review; this guard covers every other
+        // diagnostic, including deprecations.
+        allWarningsAsErrors.set(true)
     }
 
     android {

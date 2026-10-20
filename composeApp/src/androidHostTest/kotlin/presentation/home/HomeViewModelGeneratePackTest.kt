@@ -6,6 +6,9 @@ import data.remote.StickerApiRepository
 import data.repository.StickerPackDraftSaver
 import data.storage.StickerFileStorage
 import data.sync.SyncManager
+import domain.model.AiQuotaOperation
+import domain.model.AiQuotaReservation
+import domain.model.AiUsage
 import domain.model.AuthState
 import domain.model.Sticker
 import domain.model.StickerDraftInput
@@ -18,20 +21,22 @@ import domain.model.aijob.AiJobStatus
 import domain.model.aijob.AiJobType
 import domain.model.aijob.WorkspaceDraft
 import domain.model.aijob.WorkspaceDraftStatus
-import domain.model.AiQuotaOperation
-import domain.model.AiQuotaReservation
-import domain.model.AiUsage
 import domain.repository.AiQuotaRepository
 import domain.repository.StickerRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -42,17 +47,6 @@ import kotlinx.coroutines.test.setMain
 import presentation.aijob.AiJobEnqueueHelper
 import presentation.aijob.DraftResultApplier
 import presentation.aijob.ViewModelAiJobTestSupport
-import presentation.common.UiText
-import setiker.composeapp.generated.resources.Res
-import setiker.composeapp.generated.resources.info_ai_job_started_background
-import setiker.composeapp.generated.resources.success_generate_pack_background
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModelGeneratePackTest {

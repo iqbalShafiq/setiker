@@ -9,11 +9,18 @@ import domain.model.DecorationFont
 import domain.model.StickerDecoration
 import domain.model.TextDecoration
 import domain.model.aijob.DraftStickerSnapshot
-import domain.repository.StickerRepository
 import domain.repository.AiQuotaRepository
-import io.mockk.coEvery
+import domain.repository.StickerRepository
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertIs
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -29,14 +36,6 @@ import presentation.common.UiText
 import presentation.createpack.DraftSticker
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_select_image
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertIs
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EditorViewModelImproveTest {
