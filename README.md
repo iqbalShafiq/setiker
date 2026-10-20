@@ -1,152 +1,132 @@
-# Setiker - WhatsApp Sticker Maker
+<p align="center">
+  <img src="docs/images/logo.svg" alt="Setiker" width="96" height="96">
+</p>
 
-A Kotlin Multiplatform app for Android and iOS to create and manage WhatsApp sticker packs with image cropping and background removal features.
+<h1 align="center">Setiker</h1>
 
-## Features
+<p align="center">
+  Turn a photo into a WhatsApp sticker pack.
+</p>
 
-- Create and manage sticker packs (local-first, optional cloud sync when signed in)
-- Crop, decorate, and remove backgrounds; animated sticker packs from video
-- AI generation, improvement, grid split, and background jobs via `stiker-api`
-- Explore public packs, share links (`shareUrl`, `deepLinkUrl`, `webFallbackUrl`)
-- Auth (login/register/Google Sign-In on Android), profile, settings (legal links, AI daily usage, account deletion)
-- Onboarding for first-run users
-- Export sticker packs to WhatsApp
-- Neubrutal Compose UI (Android + iOS)
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-coral" alt="MIT License"></a>
+  <a href="https://developer.android.com"><img src="https://img.shields.io/badge/Android-7.0%2B-3DDC84" alt="Android 7.0+"></a>
+  <a href="https://developer.apple.com/ios/"><img src="https://img.shields.io/badge/iOS-18.2%2B-3DDC84" alt="iOS 18.2+"></a>
+  <img src="https://img.shields.io/badge/Kotlin-2.4-7F52FF" alt="Kotlin 2.4">
+  <img src="https://img.shields.io/badge/Compose%20Multiplatform-1.12-FF8A65" alt="Compose Multiplatform 1.12">
+</p>
 
-### Sign in with Google (Android)
+Setiker crops, de-backgrounds and decorates an image, then exports it as a WhatsApp sticker pack.
+Packs live on the device first; sign in and they sync to the cloud, where AI can generate a whole
+pack, clean up the background, or split a grid of stickers for you. One Kotlin codebase, Android and
+iOS.
 
-1. Create Web + Android OAuth clients in Google Cloud Console (package `com.setiker.app`, debug and Play App Signing SHA-1).
-2. Copy [`local.properties.example`](local.properties.example) → `local.properties` and set:
+<p align="center">
+  <img src="docs/images/hero.png" alt="Setiker on Android: the pack list, a pack of stickers, the sticker editor, and the public Explore feed" width="1000">
+</p>
 
-```properties
-GOOGLE_WEB_CLIENT_ID=your-web-client-id.apps.googleusercontent.com
-```
+## What it does
 
-(`sdk.dir` is usually filled by Android Studio.)
+| | |
+| --- | --- |
+| <img src="docs/images/pack-detail.png" alt="A pack of cat stickers in a three-column grid, each sticker with a delete button and reorder arrows" width="320"> **A pack, not a folder of images.** Every sticker has a tray icon, emoji tags and alt text, and the grid reorders with drag or arrows. | <img src="docs/images/editor.png" alt="The sticker editor with a large preview, Add text, Add emoji and Add image actions, and a tag row" width="320"> **Edit in place.** Crop, remove the background, add text or emoji, drag the decoration around, and see the result on the sticker itself. |
+| <img src="docs/images/ai-jobs.png" alt="The AI jobs and drafts screen, with a job that needs attention and drafts ready to review" width="320"> **AI that keeps working in the background.** Generate a pack, improve a set, or split a grid. Jobs survive a restart, report their progress, and land in a drafts list you can review. | <img src="docs/images/explore.png" alt="The Explore screen listing public sticker packs with like and save buttons" width="320"> **Publish and discover.** Share a pack with a link, browse what other people made, and save the ones you want. |
+| <img src="docs/images/onboarding.png" alt="The onboarding screen introducing sticker packs" width="320"> **Three screens, then you are in.** A short onboarding explains what a pack is, and the editor is right behind it. | <img src="docs/images/profile.png" alt="The profile screen with a sticker and pack count, a daily AI quota, and a menu of account settings" width="320"> **Your quota, your account, your cloud.** The profile shows how much AI quota is left, what is signed in, and where the legal documents and account deletion live. |
 
-3. Set the same Web client ID (and optional Android client ID) on the API as `GOOGLE_CLIENT_IDS`.
-4. See `stiker-api` README for server verification and account-linking rules.
+<p align="center">
+  <img src="docs/images/saved.gif" alt="A sticker being saved in the editor: a coral check badge pops in over the preview, then the app returns to the pack" width="260">
+</p>
 
-### Sign in with Google (iOS)
+## Quick start
 
-1. Create **iOS** and **Web** OAuth clients in Google Cloud Console (bundle ID `com.setiker.app` or your iOS bundle).
-2. Edit [`iosApp/iosApp/Info.plist`](iosApp/iosApp/Info.plist):
-   - `GIDClientID` — iOS OAuth client ID
-   - `GIDServerClientID` — same Web client ID as Android (`GOOGLE_WEB_CLIENT_ID` / API `GOOGLE_CLIENT_IDS`)
-   - `CFBundleURLTypes` → `CFBundleURLSchemes` — reversed iOS client ID (`com.googleusercontent.apps.<id-without-suffix>`)
-3. Open `iosApp/iosApp.xcodeproj` in Xcode; Swift Package **GoogleSignIn-iOS** (~8.0) is already referenced in the project.
-4. Build and run on device or simulator (Google Sign-In may require a real device for some accounts).
-
-### Sign in with Apple (iOS)
-
-1. Enable **Sign in with Apple** for the app ID in Apple Developer → Identifiers.
-2. Xcode uses [`iosApp/iosApp/iosApp.entitlements`](iosApp/iosApp/iosApp.entitlements) (`com.apple.developer.applesignin`).
-3. Configure the API with `APPLE_CLIENT_IDS` (comma-separated Services ID / iOS bundle audiences).
-
-### Auth continuity (Apple → Android)
-
-Apple Sign-In is **iOS only**. An Apple-only account has no password and no Apple button on Android.
-
-| Situation | What happens |
-|-----------|----------------|
-| Email/password login on Android | Blocked with `USE_OAUTH_OR_SET_PASSWORD` until a password is set |
-| Google Sign-In with the same email as Apple | **No auto-merge** — `ACCOUNT_EXISTS_OTHER_PROVIDER`; use forgot/set password |
-| Forgot password | Works even without a password (first-time set). Magic link: `setiker://auth/reset-password?token=…` |
-| Apple Hide My Email (`@privaterelay.appleid.com`) | Google Gmail will not match. Reset only if the user uses the relay address, or return to iOS Apple Sign-In |
-
-Password email is the cross-platform bridge. After setting a password on Android, users can optionally Connect Google from Profile or Settings.
-
-### Password reset (email)
-
-1. API: set `RESEND_API_KEY`, `RESEND_FROM`, `PASSWORD_RESET_URL_BASE` (see `stiker-api` `.env.example`).
-2. App: Login → Forgot password, or open the deep link from the email.
-
-### iOS limitations
-
-- WhatsApp pack export and some on-device processing paths differ from Android
-- Unsupported operations show localized messaging instead of failing silently
-- Configure API base URL in `ApiConfig.ios.kt` for your environment
-
-## Tech Stack
-
-- **Kotlin Multiplatform**: Shared business logic and UI
-- **Jetpack Compose**: Shared UI across platforms
-- **Material3**: Modern design system
-- **MVI Architecture**: Unidirectional data flow
-- **Koin**: Dependency injection
-- **Navigation Compose**: Type-safe navigation
-- **Coil**: Image loading
-
-## Project Structure
-
-```
-setiker/
-├── composeApp/
-│   ├── src/
-│   │   ├── commonMain/kotlin/     # Shared code
-│   │   ├── androidMain/kotlin/    # Android-specific code
-│   │   └── iosMain/kotlin/        # iOS-specific code
-│   └── build.gradle.kts
-├── androidApp/                     # Android app module
-├── iosApp/                         # iOS app module
-└── docs/
-    ├── design/                     # Design references
-    └── plans/                      # Implementation plans
-```
-
-## API dependency
-
-The app expects a compatible **stiker-api** backend (auth subcodes, refresh body, `/api/v1/ai/usage`, `/api/v1/legal/*`, share URL fields). Point `ApiConfig` at your server.
-
-## Bundled fonts
-
-Text decoration presets use these open-source fonts (see [SIL Open Font License 1.1](https://scripts.sil.org/OFL)):
-
-| Font | Preset usage | Source |
-|------|----------------|--------|
-| [Bungee](https://fonts.google.com/specimen/Bungee) | Sticker Pop | Google Fonts (OFL) |
-| [Luckiest Guy](https://fonts.google.com/specimen/Luckiest+Guy) | Bubble Red | Google Fonts (OFL) |
-| [Fredoka](https://fonts.google.com/specimen/Fredoka) | Bubble / Neon / Sunset | Google Fonts (OFL) |
-| Instrument Sans, Space Grotesk | UI / classic decoration weights | Bundled in `composeResources/font/` |
-
-Font files live in `composeApp/src/commonMain/composeResources/font/` (Compose preview) and `composeApp/src/androidMain/assets/fonts/` (Android export).
-
-## Verification
+You need **JDK 21**, the **Android SDK** (compile SDK 37), and the backend. The debug build talks to
+`127.0.0.1:7845`, so the device reaches your machine over `adb reverse`.
 
 ```bash
-./gradlew :composeApp:testDebugUnitTest :composeApp:lint
+git clone https://github.com/iqbalShafiq/setiker.git
+cd setiker
+
+# 1. the API (separate repo, see stiker-api/README.md)
+git clone https://github.com/iqbalShafiq/stiker-api.git
+cd stiker-api && docker compose up -d && npm run dev
+
+# 2. let the device reach the API
+adb reverse tcp:7845 tcp:7845
+
+# 3. build and install
+cd ../setiker
+./gradlew :androidApp:installDebug
 ```
 
-## Getting Started
+**iOS:** open `iosApp/iosApp.xcodeproj` in Xcode and run. The iOS build talks to
+`http://13.251.98.162:8080`; point `ApiConfig.ios.kt` at your own server for local work.
 
-### Prerequisites
+## Configuration
 
-- Android Studio Arctic Fox or later
-- Xcode 13 or later (for iOS)
-- JDK 11 or later
-
-### Running the App
-
-**Android:**
-```bash
-./gradlew :composeApp:installDebug
-```
-
-**iOS:**
-Open `iosApp/iosApp.xcodeproj` in Xcode and run.
-
-## WhatsApp Integration
-
-The app implements a ContentProvider to share sticker packs with WhatsApp following the [WhatsApp Stickers API](https://github.com/WhatsApp/stickers).
+| Setting | What it unlocks |
+| --- | --- |
+| `local.properties` → `GOOGLE_WEB_CLIENT_ID` | Google Sign-In on Android. Add the same client id to the API as `GOOGLE_CLIENT_IDS`. |
+| `iosApp/iosApp/Info.plist` → `GIDClientID`, `GIDServerClientID` | Google Sign-In on iOS, plus the reversed client id in `CFBundleURLSchemes`. |
+| `iosApp/iosApp/iosApp.entitlements` | Sign in with Apple (iOS only). |
+| `composeApp/src/commonMain/kotlin/data/remote/ApiConfig.android.kt` | The base URL the app calls. Debug builds use `http://127.0.0.1:7845`. |
+| `composeApp/src/commonMain/composeResources/font/` | The bundled text-decoration fonts. They ship with the app, so presets render offline. |
 
 ## Architecture
 
-The app uses MVI (Model-View-Intent) architecture:
-- **Intent**: User actions
-- **ViewModel**: Business logic and state management
-- **State**: Immutable UI state
-- **Effect**: One-shot events (navigation, snackbars)
+```mermaid
+flowchart LR
+  UI["composeApp\nCompose Multiplatform"] --> VM["ViewModel\nMVI state"]
+  VM --> Repo["Repository"]
+  Repo --> DB[("Room\ndevice store")]
+  Repo --> API["stiker-api\nExpress + Prisma"]
+  API --> PG[("Postgres")]
+  API --> Redis[("Redis")]
+  API --> AI["OpenRouter\nimage + chat models"]
+  API --> Store[("Object storage")]
+```
+
+| Module | Responsibility |
+| --- | --- |
+| `composeApp/src/commonMain` | The whole app: screens, view models, data layer, design system. Shared by both platforms. |
+| `composeApp/src/androidMain` | Android-only: Play Billing, Google Sign-In, an on-device u2net background remover (ONNX Runtime, int8), WorkManager jobs, Media3 video. |
+| `composeApp/src/iosMain` | iOS-only: StoreKit 2, Apple Sign-In, and UIKit-based image and video processing. |
+| `androidApp` | The Android application module. |
+| `iosApp` | The Xcode project. |
+| `docs/` | The design reference, the implementation plans, and the UI/UX and motion audit. |
+
+Each feature follows the same shape: a `*State`, a `*Intent`, a `*Effect`, a `*ViewModel` and a
+`*Screen`. The screen renders state and forwards intents; the view model owns the work.
+
+### The design system
+
+The UI is **neubrutalism**: thick black borders, hard offset shadows, flat colour, no gradients on
+the chrome. It lives in `composeApp/src/commonMain/kotlin/presentation/theme/` and every screen
+uses it.
+
+Motion has one home too, `SetikerMotion`: durations, curves and springs. Press feedback is a firm
+non-bouncy spring, because a button is pressed dozens of times a day and a wobble reads as
+sloppiness. The one place a bounce is allowed is a celebration, such as the badge that pops when a
+sticker is saved.
+
+## Development
+
+```bash
+./gradlew :composeApp:testAndroidHostTest   # unit and view-model tests
+./gradlew :composeApp:lint                   # Android lint
+./gradlew :androidApp:installDebug           # build and install
+```
+
+The build treats **any compiler warning as an error** (`allWarningsAsErrors = true`), so a new
+warning fails CI before it reaches a reviewer.
+
+## Contributing
+
+Issues and pull requests are welcome. Open a branch from `main`, keep the change focused, and say
+what you ran.
+
+The [UI/UX and motion audit](docs/plans/2026-10-19-ui-ux-motion-audit.md) is a good model for what
+a change should come with: the finding, the evidence on a device, and the measurement after.
 
 ## License
 
-MIT License
+Setiker is open source under the [MIT License](LICENSE).
