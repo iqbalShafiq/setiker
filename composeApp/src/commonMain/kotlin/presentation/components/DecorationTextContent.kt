@@ -2,7 +2,6 @@ package presentation.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import domain.model.DecorationRenderSpec
 import domain.model.TextDecoration
 import domain.model.TextDecorationLayout
 

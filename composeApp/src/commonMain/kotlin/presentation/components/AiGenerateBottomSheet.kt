@@ -1,13 +1,11 @@
 package presentation.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,35 +19,34 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import domain.model.AiQuotaOperation
+import domain.model.AiUsage
 import org.jetbrains.compose.resources.stringResource
+import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalScrim
 import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalSubtleOnSurface
-import presentation.theme.NeubrutalCardRadius
-import presentation.theme.neubrutalBorderWithGloss
-import presentation.theme.neubrutalGlossyHighlightColor
 import setiker.composeapp.generated.resources.Res
-import setiker.composeapp.generated.resources.cancel
 import setiker.composeapp.generated.resources.close
 import setiker.composeapp.generated.resources.generate
 import setiker.composeapp.generated.resources.generate_ai_sheet_title
 import setiker.composeapp.generated.resources.generate_clear_image
-import setiker.composeapp.generated.resources.generate_grid_hint
 import setiker.composeapp.generated.resources.generate_input_image_default_hint
 import setiker.composeapp.generated.resources.generate_input_image_hint
 import setiker.composeapp.generated.resources.generate_input_image_label
@@ -59,8 +56,6 @@ import setiker.composeapp.generated.resources.generate_tip
 import setiker.composeapp.generated.resources.generating
 import setiker.composeapp.generated.resources.prompt_label
 import setiker.composeapp.generated.resources.prompt_placeholder
-import domain.model.AiQuotaOperation
-import domain.model.AiUsage
 
 /**
  * Shared bottom sheet for hitting `/api/v1/generate`. Used by:

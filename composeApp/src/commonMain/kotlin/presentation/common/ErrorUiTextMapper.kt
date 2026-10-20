@@ -10,8 +10,8 @@ import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_ai_quota_exceeded
 import setiker.composeapp.generated.resources.error_ai_service_unavailable
 import setiker.composeapp.generated.resources.error_auth_account_deactivated
-import setiker.composeapp.generated.resources.error_auth_account_exists_password
 import setiker.composeapp.generated.resources.error_auth_account_exists_other_provider
+import setiker.composeapp.generated.resources.error_auth_account_exists_password
 import setiker.composeapp.generated.resources.error_auth_apple_failed
 import setiker.composeapp.generated.resources.error_auth_cannot_unlink_sole
 import setiker.composeapp.generated.resources.error_auth_change_password_failed
@@ -25,14 +25,13 @@ import setiker.composeapp.generated.resources.error_auth_profile_failed
 import setiker.composeapp.generated.resources.error_auth_refresh_failed
 import setiker.composeapp.generated.resources.error_auth_register_failed
 import setiker.composeapp.generated.resources.error_auth_use_oauth_or_set_password
-import setiker.composeapp.generated.resources.error_edit_profile_failed
-import setiker.composeapp.generated.resources.error_username_taken
 import setiker.composeapp.generated.resources.error_background_remove_request_failed
 import setiker.composeapp.generated.resources.error_cloud_create_failed
 import setiker.composeapp.generated.resources.error_cloud_delete_failed
 import setiker.composeapp.generated.resources.error_cloud_fetch_failed
 import setiker.composeapp.generated.resources.error_cloud_sync_failed
 import setiker.composeapp.generated.resources.error_cloud_update_failed
+import setiker.composeapp.generated.resources.error_edit_profile_failed
 import setiker.composeapp.generated.resources.error_generate_request_failed
 import setiker.composeapp.generated.resources.error_grid_split_request_failed
 import setiker.composeapp.generated.resources.error_image_download_failed
@@ -42,6 +41,7 @@ import setiker.composeapp.generated.resources.error_invalid_grid_split_response
 import setiker.composeapp.generated.resources.error_network_unavailable
 import setiker.composeapp.generated.resources.error_pack_not_found
 import setiker.composeapp.generated.resources.error_sticker_not_found
+import setiker.composeapp.generated.resources.error_username_taken
 
 fun Throwable.toUiText(defaultRes: StringResource): UiText {
     val code = (this as? ApiException)?.code ?: (this as? AppException)?.code

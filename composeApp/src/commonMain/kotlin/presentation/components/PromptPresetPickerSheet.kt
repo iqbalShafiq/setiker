@@ -4,14 +4,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -39,25 +36,22 @@ import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.prompt_presets
 import setiker.composeapp.generated.resources.prompt_presets_empty
 import setiker.composeapp.generated.resources.prompt_presets_open
-import androidx.compose.ui.unit.dp
 
 @Composable
 fun PromptPresetsTrailingIcon(
     onClick: () -> Unit,
     enabled: Boolean = true
 ) {
-    IconButton(
+    NeubrutalIconButton(
+        icon = Icons.AutoMirrored.Filled.MenuBook,
+        contentDescription = stringResource(Res.string.prompt_presets_open),
         onClick = onClick,
         enabled = enabled,
-        modifier = Modifier.size(32.dp)
-    ) {
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.MenuBook,
-            contentDescription = stringResource(Res.string.prompt_presets_open),
-            modifier = Modifier.size(20.dp),
-            tint = neubrutalSubtleOnSurface()
-        )
-    }
+        iconSize = 20.dp,
+        tint = neubrutalSubtleOnSurface(),
+        pressedScale = 0.88f,
+        label = "prompt_presets_scale"
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

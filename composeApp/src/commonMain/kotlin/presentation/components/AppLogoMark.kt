@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import presentation.theme.NeubrutalBg
@@ -21,17 +22,23 @@ import presentation.theme.neubrutalBorderColor
 
 /**
  * Neubrutal app logo mark matching the launcher icon (offset stacked squares).
+ *
+ * @param accent optional colour for the offset shadow tile. The splash uses the brand coral so the
+ *   mark reads as part of the product instead of a grey placeholder.
  */
 @Composable
 fun AppLogoMark(
     modifier: Modifier = Modifier,
-    size: Dp = 96.dp
+    size: Dp = 96.dp,
+    accent: Color? = null
 ) {
     val isDark = isSystemInDarkTheme()
     val borderColor = neubrutalBorderColor()
     val tileShape = RoundedCornerShape(NeubrutalCardRadius)
     val tileSize = size * 0.74f
     val shadowOffset = size * 0.08f
+    val shadowTileColor = accent
+        ?: if (isDark) NeubrutalWhite else NeubrutalBlack
 
     Box(modifier = modifier.size(size)) {
         Box(
@@ -39,7 +46,7 @@ fun AppLogoMark(
                 .size(tileSize)
                 .offset(x = shadowOffset, y = shadowOffset)
                 .clip(tileShape)
-                .background(if (isDark) NeubrutalWhite else NeubrutalBlack)
+                .background(shadowTileColor)
                 .border(width = 2.dp, color = borderColor, shape = tileShape)
         )
 

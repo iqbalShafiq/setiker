@@ -20,21 +20,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
-import domain.model.Sticker
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import domain.model.Sticker
 import org.jetbrains.compose.resources.stringResource
 import presentation.theme.ErrorRed
-import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalSmallRadius
 import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalBorderColor
-import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
@@ -50,6 +48,7 @@ fun StickerCard(
     onDeleteClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
     showDecorations: Boolean = false,
+    fallbackContentDescription: String? = null,
     modifier: Modifier = Modifier
 ) {
     val border = neubrutalBorderColor()
@@ -81,9 +80,11 @@ fun StickerCard(
             )
             .padding(4.dp)
     ) {
-        AsyncImage(
+        NeubrutalAsyncImage(
             model = sticker.imageFile,
-            contentDescription = sticker.accessibilityText ?: stringResource(Res.string.sticker_fallback),
+            contentDescription = sticker.accessibilityText
+                ?: fallbackContentDescription
+                ?: stringResource(Res.string.sticker_fallback),
             modifier = Modifier
                 .fillMaxSize()
                 .clip(innerShape),

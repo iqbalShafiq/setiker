@@ -1,8 +1,7 @@
 package presentation.components
 
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.runtime.Composable
@@ -12,6 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import presentation.theme.SetikerMotion
 
 /**
  * Press feedback shared by every tappable claymorphism control: the interaction source to hand to
@@ -30,6 +30,10 @@ class PressFeedback(
 /**
  * Remembers the press interaction of a control. [pressedScale] is the scale while pressed; while
  * [enabled] is false the control stays at 1f.
+ *
+ * The spring is deliberately **not** bouncy: these controls are pressed dozens of times a day and
+ * an overshoot on release reads as sloppiness. Use [SetikerMotion.DelightSpring] explicitly for the
+ * rare, celebratory moments.
  */
 @Composable
 fun rememberPressFeedback(
@@ -44,10 +48,7 @@ fun rememberPressFeedback(
         isPressed = isPressed,
         scale = animateFloatAsState(
             targetValue = if (isPressed && enabled) pressedScale else 1f,
-            animationSpec = spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessMedium
-            ),
+            animationSpec = SetikerMotion.PressSpring,
             label = label
         )
     )
@@ -59,3 +60,20 @@ fun Modifier.pressScale(feedback: PressFeedback): Modifier =
         scaleX = feedback.scale.value
         scaleY = feedback.scale.value
     }
+
+/**
+ * A clickable without the Material ripple.
+ *
+ * Every control in this app shows its press state with a scale + shadow change. Leaving the
+ * Material ripple on a control made two different press languages live in the same product.
+ */
+fun Modifier.clickableNoRipple(
+    interactionSource: MutableInteractionSource,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+): Modifier = clickable(
+    interactionSource = interactionSource,
+    indication = null,
+    enabled = enabled,
+    onClick = onClick
+)

@@ -12,22 +12,24 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalButtonRadius
-import presentation.theme.neubrutalBorderWithGloss
-import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalDisabledBorder
+import presentation.theme.neubrutalDisabledFill
+import presentation.theme.neubrutalGlossyHighlightColor
+import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
@@ -45,11 +47,14 @@ fun AppPrimaryButton(
         label = "primary_button_scale"
     )
 
-    val border = neubrutalBorderColor()
+    val border = if (enabled) neubrutalBorderColor() else neubrutalDisabledBorder()
     val shadow = neubrutalShadowColor()
     val shadowX = if (pressFeedback.isPressed && enabled) NeubrutalSmallShadowOffset else NeubrutalShadowOffset
     val shadowY = if (pressFeedback.isPressed && enabled) NeubrutalSmallShadowOffset else NeubrutalShadowOffset
     val shape = RoundedCornerShape(NeubrutalButtonRadius)
+    // The fill has to stay opaque: the hard shadow is painted behind the button, so a
+    // translucent fill would composite with black and read as an enabled button.
+    val fill = if (enabled) AccentCoral else neubrutalDisabledFill(AccentCoral)
 
     Box(
         modifier = modifier
@@ -62,9 +67,7 @@ fun AppPrimaryButton(
                 color = shadow
             )
             .clip(shape)
-            .background(
-                color = if (enabled) AccentCoral else AccentCoral.copy(alpha = 0.4f),
-            )
+            .background(color = fill)
             .neubrutalBorderWithGloss(
                 color = border,
                 cornerRadius = NeubrutalButtonRadius,
@@ -83,7 +86,7 @@ fun AppPrimaryButton(
             text = text,
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
-            color = NeubrutalWhite
+            color = if (enabled) NeubrutalWhite else neubrutalMutedOnSurface()
         )
     }
 }
@@ -101,13 +104,15 @@ fun AppSecondaryButton(
         label = "secondary_button_scale"
     )
 
-    val border = neubrutalBorderColor()
+    val border = if (enabled) neubrutalBorderColor() else neubrutalDisabledBorder()
     val shadow = neubrutalShadowColor()
     val surface = neubrutalCardSurface()
     val onSurface = neubrutalOnSurface()
     val shadowX = if (pressFeedback.isPressed && enabled) NeubrutalSmallShadowOffset else NeubrutalShadowOffset
     val shadowY = if (pressFeedback.isPressed && enabled) NeubrutalSmallShadowOffset else NeubrutalShadowOffset
     val shape = RoundedCornerShape(NeubrutalButtonRadius)
+    // Opaque fill: a translucent one would composite with the black hard shadow behind it.
+    val fill = if (enabled) surface else neubrutalDisabledFill(surface, strength = 0.6f)
 
     Box(
         modifier = modifier
@@ -120,9 +125,7 @@ fun AppSecondaryButton(
                 color = shadow
             )
             .clip(shape)
-            .background(
-                color = if (enabled) surface else surface.copy(alpha = 0.5f),
-            )
+            .background(color = fill)
             .neubrutalBorderWithGloss(
                 color = border,
                 cornerRadius = NeubrutalButtonRadius,
@@ -141,7 +144,7 @@ fun AppSecondaryButton(
             text = text,
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
-            color = if (enabled) onSurface else onSurface.copy(alpha = 0.4f)
+            color = if (enabled) onSurface else neubrutalMutedOnSurface()
         )
     }
 }

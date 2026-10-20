@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import domain.model.AiQuotaOperation
 import domain.model.AiUsage
+import kotlin.math.roundToInt
 import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -35,7 +36,6 @@ import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.ai_quota_costs_info_cd
 import setiker.composeapp.generated.resources.ai_quota_loading
 import setiker.composeapp.generated.resources.ai_quota_unavailable
-import kotlin.math.roundToInt
 
 @Composable
 fun AiQuotaSummary(

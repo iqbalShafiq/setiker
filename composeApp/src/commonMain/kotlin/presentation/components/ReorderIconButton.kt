@@ -2,6 +2,7 @@ package presentation.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -34,22 +35,31 @@ fun ReorderIconButton(
     modifier: Modifier = Modifier
 ) {
     Box(
-        modifier = modifier.height(32.dp),
+        modifier = modifier.height(44.dp),
         contentAlignment = Alignment.Center
     ) {
         Box(
             modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
+                .fillMaxWidth()
+                .height(44.dp)
                 .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = contentDescription,
-                modifier = Modifier.size(22.dp),
-                tint = if (enabled) neubrutalOnSurface() else neubrutalMutedOnSurface()
-            )
+            // The visible circle stays small; the tap target uses the whole cell so the control
+            // is reachable without hitting a 32 dp glyph.
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = contentDescription,
+                    modifier = Modifier.size(22.dp),
+                    tint = if (enabled) neubrutalOnSurface() else neubrutalMutedOnSurface()
+                )
+            }
         }
     }
 }

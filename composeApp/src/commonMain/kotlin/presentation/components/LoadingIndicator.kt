@@ -1,5 +1,6 @@
 package presentation.components
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -21,21 +22,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
-import androidx.compose.ui.tooling.preview.Preview
 import presentation.theme.AccentCoral
-import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalSmallRadius
 import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.neubrutalBorderColor
-import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalGlossyHighlightColor
+import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
-import androidx.compose.animation.core.Animatable
 
 @Composable
 fun LoadingIndicator(
@@ -100,7 +99,12 @@ private fun NeubrutalBouncingDot(index: Int) {
     Box(
         modifier = Modifier
             .size(14.dp)
-            .scale(animatable.value)
+            // Read the animated value in the draw phase. Reading it in the composition made the
+            // whole loading indicator recompose on every frame of the animation.
+            .graphicsLayer {
+                scaleX = animatable.value
+                scaleY = animatable.value
+            }
             .neubrutalShadow(
                 offsetX = NeubrutalSmallShadowOffset,
                 offsetY = NeubrutalSmallShadowOffset,

@@ -15,8 +15,8 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.PastelYellow
-import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow

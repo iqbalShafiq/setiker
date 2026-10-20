@@ -13,9 +13,10 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.NavOptionsBuilder
+import presentation.theme.SetikerMotion
 
 object NavTransitionDefaults {
-    const val DURATION_MS = 300
+    const val DURATION_MS = SetikerMotion.DURATION_SCREEN_MS
 }
 
 const val NAV_FORWARD_TRANSITION_KEY = "nav_forward_transition"
@@ -114,8 +115,14 @@ fun NavBackStackEntry.saveEntryTransitionStyle(style: NavForwardTransition) {
     savedStateHandle[NAV_FORWARD_TRANSITION_KEY] = style.name
 }
 
-private fun slideAnimationSpec() = tween<IntOffset>(NavTransitionDefaults.DURATION_MS)
-private fun fadeAnimationSpec() = tween<Float>(NavTransitionDefaults.DURATION_MS)
+private fun slideAnimationSpec() = tween<IntOffset>(
+    durationMillis = NavTransitionDefaults.DURATION_MS,
+    easing = SetikerMotion.EaseOut
+)
+private fun fadeAnimationSpec() = tween<Float>(
+    durationMillis = NavTransitionDefaults.DURATION_MS,
+    easing = SetikerMotion.EaseOut
+)
 
 private fun bottomUpEnter(): EnterTransition =
     slideInVertically(initialOffsetY = { fullHeight -> fullHeight }, animationSpec = slideAnimationSpec()) +

@@ -6,8 +6,8 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -15,10 +15,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import domain.model.User
 import domain.model.UserRole
+import org.jetbrains.compose.resources.stringResource
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.create_new_pack
 import setiker.composeapp.generated.resources.explore
@@ -40,6 +40,13 @@ fun HomeBottomBar(
     onGeneratePackClick: () -> Unit,
     onVideoPackClick: () -> Unit,
     onAddPackClick: () -> Unit,
+    /**
+     * Whether the account actions (profile, sync) can be used.
+     *
+     * They stay disabled until the session has been resolved, so a tap during the cold-start
+     * window cannot be mistaken for "signed out".
+     */
+    accountActionsEnabled: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     PackBottomBar(
@@ -54,7 +61,8 @@ fun HomeBottomBar(
                 contentDescription = stringResource(
                     if (currentUser != null) Res.string.profile else Res.string.login
                 ),
-                onClick = onProfileClick
+                onClick = onProfileClick,
+                enabled = accountActionsEnabled
             )
             BadgedBox(
                 badge = {
@@ -66,7 +74,8 @@ fun HomeBottomBar(
                 PackBottomBarIconButton(
                     icon = Icons.Default.Refresh,
                     contentDescription = stringResource(Res.string.sync),
-                    onClick = onSyncClick
+                    onClick = onSyncClick,
+                    enabled = accountActionsEnabled
                 )
             }
             PackBottomBarIconButton(

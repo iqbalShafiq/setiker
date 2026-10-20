@@ -20,7 +20,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import presentation.theme.ErrorRed
 import presentation.theme.NeubrutalBlack
-import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalGray
 import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.NeubrutalWhite

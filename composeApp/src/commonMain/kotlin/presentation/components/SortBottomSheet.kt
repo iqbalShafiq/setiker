@@ -13,10 +13,10 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import domain.model.SortOrder
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import presentation.theme.NeubrutalScrim
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
@@ -28,7 +28,6 @@ import setiker.composeapp.generated.resources.sort_newest
 import setiker.composeapp.generated.resources.sort_oldest
 import setiker.composeapp.generated.resources.sort_stickers_asc
 import setiker.composeapp.generated.resources.sort_stickers_desc
-import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
