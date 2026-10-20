@@ -25,6 +25,10 @@ iOS.
   <img src="docs/images/hero.png" alt="Setiker on Android: the pack list, a pack of stickers, the sticker editor, and the public Explore feed" width="1000">
 </p>
 
+<p align="center">
+  <img src="docs/images/flow.gif" alt="The app in motion: the pack list, a pack opening, the sticker grid, the editor, and the coral check that pops in when a sticker is saved" width="300">
+</p>
+
 ## What it does
 
 | | |
@@ -32,10 +36,6 @@ iOS.
 | <img src="docs/images/pack-detail.png" alt="A pack of cat stickers in a three-column grid, each sticker with a delete button and reorder arrows" width="320"> **A pack, not a folder of images.** Every sticker has a tray icon, emoji tags and alt text, and the grid reorders with drag or arrows. | <img src="docs/images/editor.png" alt="The sticker editor with a large preview, Add text, Add emoji and Add image actions, and a tag row" width="320"> **Edit in place.** Crop, remove the background, add text or emoji, drag the decoration around, and see the result on the sticker itself. |
 | <img src="docs/images/ai-jobs.png" alt="The AI jobs and drafts screen, with a job that needs attention and drafts ready to review" width="320"> **AI that keeps working in the background.** Generate a pack, improve a set, or split a grid. Jobs survive a restart, report their progress, and land in a drafts list you can review. | <img src="docs/images/explore.png" alt="The Explore screen listing public sticker packs with like and save buttons" width="320"> **Publish and discover.** Share a pack with a link, browse what other people made, and save the ones you want. |
 | <img src="docs/images/onboarding.png" alt="The onboarding screen introducing sticker packs" width="320"> **Three screens, then you are in.** A short onboarding explains what a pack is, and the editor is right behind it. | <img src="docs/images/profile.png" alt="The profile screen with a sticker and pack count, a daily AI quota, and a menu of account settings" width="320"> **Your quota, your account, your cloud.** The profile shows how much AI quota is left, what is signed in, and where the legal documents and account deletion live. |
-
-<p align="center">
-  <img src="docs/images/saved.gif" alt="A sticker being saved in the editor: a coral check badge pops in over the preview, then the app returns to the pack" width="260">
-</p>
 
 ## Quick start
 
