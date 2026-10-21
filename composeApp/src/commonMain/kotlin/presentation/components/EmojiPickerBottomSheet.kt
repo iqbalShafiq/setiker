@@ -154,7 +154,7 @@ fun EmojiPickerBottomSheet(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    items(currentEmojis) { emoji ->
+                    items(currentEmojis, key = { it }) { emoji ->
                         Box(
                             modifier = Modifier
                                 .size(40.dp)

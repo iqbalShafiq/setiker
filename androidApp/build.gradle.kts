@@ -73,6 +73,7 @@ dependencies {
 
     // --- Screenshot tests: Robolectric + Roborazzi, on the JVM, no device needed -----------------
     testImplementation(project(":composeApp"))
+    testImplementation(libs.androidx.compose.foundation)
     testImplementation(libs.androidx.compose.ui.test)
     testImplementation(libs.androidx.compose.ui.test.manifest)
     testImplementation(libs.robolectric)

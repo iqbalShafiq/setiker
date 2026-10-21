@@ -231,7 +231,7 @@ fun SyncScreen(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(state.operations) { operation ->
+                        items(state.operations, key = { it.id }) { operation ->
                             SyncOperationItem(
                                 operation = operation,
                                 onRetry = { onIntent(SyncIntent.RetryOperation(operation.id)) },

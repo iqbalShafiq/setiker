@@ -13,13 +13,6 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-// The Compose compiler's own report: which composables restart, which parameters are unstable and
-// where the recompositions come from. It is the objective half of a performance review.
-composeCompiler {
-    reportsDestination = layout.buildDirectory.dir("compose-reports")
-    metricsDestination = layout.buildDirectory.dir("compose-metrics")
-    includeSourceInformation = true
-}
 
 kotlin {
     // Applies to every target and to the common metadata compilation, which the Android-only

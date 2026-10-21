@@ -15,10 +15,15 @@ command runs it.
 
 - `./gradlew :composeApp:testAndroidHostTest` is the fast loop: unit and view-model tests, no
   device.
+- `./gradlew :androidApp:testDebugUnitTest` holds the screenshot and the performance tests, also
+  without a device.
 - `./gradlew :composeApp:lint` must stay clean.
 - **Any compiler warning fails the build.** `allWarningsAsErrors` is on for both modules.
 - The Kotlin compiler does not report unused imports. Keep the import blocks sorted and remove what
   you do not use.
+- **Every module that writes `@Composable` code needs the Compose compiler plugin.** The app module
+  has no UI of its own, but its test source sets do, and without the plugin the composable lambdas
+  compile to the wrong signature and the test harness fails with a `NoSuchMethodError`.
 
 ## Rules that are not obvious from the code
 
@@ -47,6 +52,7 @@ is accepted. An update of an installed package goes through without a prompt.
 ## Before you push
 
 - [ ] `./gradlew :composeApp:testAndroidHostTest :composeApp:lint` is green
-- [ ] The UI tests still pass on a device, if you touched a screen
+- [ ] `./gradlew :androidApp:testDebugUnitTest` is green (the screenshot and the performance tests)
+- [ ] `./gradlew :androidApp:connectedUiTest` passes, if you touched a screen
 - [ ] `python tools/screenshot_tests.py` matches, if you touched a screen's appearance
 - [ ] The README still describes what the app does
