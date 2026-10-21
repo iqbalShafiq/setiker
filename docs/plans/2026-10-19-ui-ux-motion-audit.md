@@ -321,8 +321,8 @@ The error is now a snackbar:
 - the error variant carries the error container, a full strength error border, a solid icon in a
   filled circle and a bold message, because an error that does not look like an error gets read as
   a note, and a note gets ignored;
-- the line that drains along its bottom edge is the time the user has. The close button ends it
-  right away, and the buttons press with the app's spring;
+- it dismisses itself after fifteen seconds, and the close button ends it right away. The
+  buttons press with the app's spring;
 - it announces itself to a screen reader with a polite live region, so it does not interrupt the
   speech but is not missed either.
 
@@ -347,7 +347,7 @@ icon, a bold title in the error colour, and the two screens that show a full scr
 
 | | |
 | --- | --- |
-| ![error](https://github.com/iqbalShafiq/setiker/raw/audit/android-modernization/androidApp/src/screenshots/debug/error_snackbar.png) | The error snackbar: the error container, the solid icon, the bold message, the close button, and the draining timer line. The reference image lives with the tests, so a change in the look has to be a deliberate one. |
+| ![error](https://github.com/iqbalShafiq/setiker/raw/audit/android-modernization/androidApp/src/screenshots/debug/error_snackbar.png) | The error snackbar: the error container, the danger badge in the app's icon button shape, the bold message, and the close button on the first line of the message. The reference image lives with the tests, so a change in the look has to be a deliberate one. |
 
 # 7. Methodology (cheap, repeatable, and how to keep it cheap)
 
