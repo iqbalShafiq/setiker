@@ -26,7 +26,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import domain.model.AiQuotaOperation
 import domain.model.AiUsage
-import kotlinx.datetime.Instant
+import kotlin.math.roundToInt
+import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
@@ -35,7 +36,6 @@ import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.ai_quota_costs_info_cd
 import setiker.composeapp.generated.resources.ai_quota_loading
 import setiker.composeapp.generated.resources.ai_quota_unavailable
-import kotlin.math.roundToInt
 
 @Composable
 fun AiQuotaSummary(
@@ -197,6 +197,6 @@ private fun formatQuotaResetTime(value: String): String {
     return runCatching {
         val local = Instant.parse(value).toLocalDateTime(TimeZone.currentSystemDefault())
         val minute = local.minute.toString().padStart(2, '0')
-        "${local.year}-${local.monthNumber.toString().padStart(2, '0')}-${local.dayOfMonth.toString().padStart(2, '0')} ${local.hour}:$minute"
+        "${local.date} ${local.hour}:$minute"
     }.getOrDefault(value)
 }

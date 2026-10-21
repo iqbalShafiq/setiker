@@ -11,8 +11,8 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import domain.model.SyncResult
-import org.koin.java.KoinJavaComponent.inject
 import java.util.concurrent.TimeUnit
+import org.koin.java.KoinJavaComponent.inject
 
 actual class SyncWorker(private val context: Context) {
     private val workManager = WorkManager.getInstance(context)

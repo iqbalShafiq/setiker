@@ -2,6 +2,7 @@ package presentation.videotrim
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +21,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,18 +32,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import data.remote.readFileBytes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import data.remote.readFileBytes
 import org.jetbrains.compose.resources.stringResource
 import presentation.common.resolveLocal
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppIllustration
 import presentation.components.AppTopBar
 import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
 import presentation.components.MediaPreviewBottomBar
+import presentation.components.NeubrutalSnackbarHost
 import presentation.components.NeubrutalStickerPreviewFrame
 import presentation.components.ScreenSectionTitle
 import presentation.theme.NeubrutalBlack
@@ -54,11 +56,13 @@ import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalSubtleOnSurface
 import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.animated_error_decode_failed
 import setiker.composeapp.generated.resources.animation_duration_cap
 import setiker.composeapp.generated.resources.continue_action
 import setiker.composeapp.generated.resources.frames_per_second
 import setiker.composeapp.generated.resources.loading_frames
 import setiker.composeapp.generated.resources.processing
+import setiker.composeapp.generated.resources.retry
 import setiker.composeapp.generated.resources.source_video
 import setiker.composeapp.generated.resources.speed
 import setiker.composeapp.generated.resources.trim
@@ -71,7 +75,7 @@ fun VideoTrimScreen(
     state: VideoTrimState,
     onIntent: (VideoTrimIntent) -> Unit,
     onBackClick: () -> Unit,
-    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    snackbarHostState: AppSnackbarHostState = remember { AppSnackbarHostState() },
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -101,7 +105,7 @@ fun VideoTrimScreen(
                 )
             }
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         if (state.isLoading) {
@@ -149,6 +153,30 @@ fun VideoTrimScreen(
                                     .clip(RoundedCornerShape(NeubrutalCardRadius)),
                                 contentScale = ContentScale.Crop
                             )
+                        }
+                        state.previewUnavailable -> {
+                            // The device could not extract a single frame from this source, so the
+                            // loader would spin forever — offer a retry instead.
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = stringResource(Res.string.animated_error_decode_failed),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = neubrutalSubtleOnSurface()
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    text = stringResource(Res.string.retry),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = NeubrutalWhite,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(NeubrutalBlack)
+                                        .clickable {
+                                            onIntent(VideoTrimIntent.RetryPreviewExtraction)
+                                        }
+                                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                                )
+                            }
                         }
                         else -> {
                             // Thumbnails are still being extracted or decoded.

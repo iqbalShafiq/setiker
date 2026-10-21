@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import kotlin.time.Clock
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
@@ -30,23 +29,25 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import domain.model.SyncOperation
 import domain.model.SyncOperationStatus
 import domain.model.SyncOperationType
 import domain.model.SyncReport
 import domain.model.SyncResult
 import domain.model.SyncStage
+import kotlin.time.Clock
+import org.jetbrains.compose.resources.stringResource
 import presentation.common.ContentStateAnimations
 import presentation.common.ListLoadPhase
-import presentation.components.AppTopBar
 import presentation.components.AppIllustration
+import presentation.components.AppTopBar
 import presentation.components.EmptyState
 import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
@@ -57,7 +58,6 @@ import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
-import org.jetbrains.compose.resources.stringResource
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.back
 import setiker.composeapp.generated.resources.cancel
@@ -72,11 +72,23 @@ import setiker.composeapp.generated.resources.sync_detail_removed
 import setiker.composeapp.generated.resources.sync_detail_uploaded
 import setiker.composeapp.generated.resources.sync_empty_desc
 import setiker.composeapp.generated.resources.sync_empty_title
+import setiker.composeapp.generated.resources.sync_error_auth
+import setiker.composeapp.generated.resources.sync_error_connection
+import setiker.composeapp.generated.resources.sync_error_generic
+import setiker.composeapp.generated.resources.sync_error_server
+import setiker.composeapp.generated.resources.sync_error_timeout
+import setiker.composeapp.generated.resources.sync_failed_count
 import setiker.composeapp.generated.resources.sync_last_sync
 import setiker.composeapp.generated.resources.sync_login_to_sync
 import setiker.composeapp.generated.resources.sync_now
-import setiker.composeapp.generated.resources.sync_operation_status
-import setiker.composeapp.generated.resources.sync_operation_target
+import setiker.composeapp.generated.resources.sync_op_adding_sticker
+import setiker.composeapp.generated.resources.sync_op_creating_pack
+import setiker.composeapp.generated.resources.sync_op_deleting_pack
+import setiker.composeapp.generated.resources.sync_op_deleting_sticker
+import setiker.composeapp.generated.resources.sync_op_reordering_stickers
+import setiker.composeapp.generated.resources.sync_op_updating_pack
+import setiker.composeapp.generated.resources.sync_op_updating_sticker
+import setiker.composeapp.generated.resources.sync_op_uploading_image
 import setiker.composeapp.generated.resources.sync_operations_count
 import setiker.composeapp.generated.resources.sync_pending_count
 import setiker.composeapp.generated.resources.sync_ready
@@ -85,6 +97,11 @@ import setiker.composeapp.generated.resources.sync_resume_when_online
 import setiker.composeapp.generated.resources.sync_sign_in_required
 import setiker.composeapp.generated.resources.sync_stage_pulling_remote
 import setiker.composeapp.generated.resources.sync_stage_pushing_local
+import setiker.composeapp.generated.resources.sync_status_cancelled
+import setiker.composeapp.generated.resources.sync_status_done
+import setiker.composeapp.generated.resources.sync_status_failed
+import setiker.composeapp.generated.resources.sync_status_pending
+import setiker.composeapp.generated.resources.sync_status_running
 import setiker.composeapp.generated.resources.sync_synced_with_warnings
 import setiker.composeapp.generated.resources.sync_syncing
 import setiker.composeapp.generated.resources.sync_timestamp_days_ago
@@ -103,7 +120,7 @@ fun SyncScreenRoot(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     SyncScreen(
         state = state,
@@ -172,7 +189,8 @@ fun SyncScreen(
                 isSyncing = state.isSyncing,
                 syncStage = state.syncStage,
                 lastReport = state.lastReport,
-                pendingCount = state.operations.count { it.status == SyncOperationStatus.PENDING }
+                pendingCount = state.operations.count { it.status == SyncOperationStatus.PENDING },
+                failedCount = state.operations.count { it.status == SyncOperationStatus.FAILED }
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -213,7 +231,7 @@ fun SyncScreen(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(state.operations) { operation ->
+                        items(state.operations, key = { it.id }) { operation ->
                             SyncOperationItem(
                                 operation = operation,
                                 onRetry = { onIntent(SyncIntent.RetryOperation(operation.id)) },
@@ -233,7 +251,8 @@ private fun SyncStatusCard(
     isSyncing: Boolean,
     syncStage: SyncStage,
     lastReport: SyncReport?,
-    pendingCount: Int
+    pendingCount: Int,
+    failedCount: Int
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -251,15 +270,23 @@ private fun SyncStatusCard(
                     )
                 } else {
                     Icon(
-                        imageVector = if (pendingCount > 0) Icons.Default.Warning else Icons.Default.CheckCircle,
+                        imageVector = if (pendingCount > 0 || failedCount > 0) {
+                            Icons.Default.Warning
+                        } else {
+                            Icons.Default.CheckCircle
+                        },
                         contentDescription = null,
-                        tint = if (pendingCount > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                        tint = if (pendingCount > 0 || failedCount > 0) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        }
                     )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = syncTitle(isSyncing, syncStage, pendingCount, lastReport),
+                        text = syncTitle(isSyncing, syncStage, pendingCount, failedCount, lastReport),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = neubrutalOnSurface()
@@ -290,6 +317,7 @@ private fun syncTitle(
     isSyncing: Boolean,
     syncStage: SyncStage,
     pendingCount: Int,
+    failedCount: Int,
     lastReport: SyncReport?,
 ): String {
     if (isSyncing) {
@@ -305,6 +333,7 @@ private fun syncTitle(
         lastReport?.result is SyncResult.SkippedOffline -> stringResource(Res.string.sync_waiting_internet)
         lastReport?.result is SyncResult.SkippedNotAuthenticated -> stringResource(Res.string.sync_sign_in_required)
         lastReport?.result is SyncResult.SkippedInProgress -> stringResource(Res.string.sync_already_running)
+        failedCount > 0 -> stringResource(Res.string.sync_failed_count, failedCount)
         lastReport?.remoteDownloadFailures?.let { it > 0 } == true -> stringResource(Res.string.sync_synced_with_warnings)
         pendingCount > 0 -> stringResource(Res.string.sync_pending_count, pendingCount)
         else -> stringResource(Res.string.sync_up_to_date)
@@ -354,17 +383,13 @@ private fun SyncOperationItem(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = stringResource(
-                            Res.string.sync_operation_target,
-                            operation.type.name,
-                            operation.targetId
-                        ),
+                        text = stringResource(syncOperationTitleRes(operation.type)),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
                         color = neubrutalOnSurface()
                     )
                     Text(
-                        text = stringResource(Res.string.sync_operation_status, operation.status.name),
+                        text = stringResource(syncOperationStatusRes(operation.status)),
                         style = MaterialTheme.typography.bodySmall,
                         color = when (operation.status) {
                             SyncOperationStatus.PENDING -> MaterialTheme.colorScheme.onSurfaceVariant
@@ -374,7 +399,7 @@ private fun SyncOperationItem(
                             SyncOperationStatus.CANCELLED -> MaterialTheme.colorScheme.onSurfaceVariant
                         }
                     )
-                    operation.errorMessage?.let {
+                    syncOperationErrorText(operation.errorMessage)?.let {
                         Text(
                             text = it,
                             style = MaterialTheme.typography.bodySmall,
@@ -407,8 +432,49 @@ private fun SyncOperationItem(
     }
 }
 
-// MARK: - Previews
+@Composable
+private fun syncOperationTitleRes(type: SyncOperationType): org.jetbrains.compose.resources.StringResource =
+    when (syncOperationTitle(type)) {
+        SyncOperationTypeTitle.CREATING_PACK -> Res.string.sync_op_creating_pack
+        SyncOperationTypeTitle.UPDATING_PACK -> Res.string.sync_op_updating_pack
+        SyncOperationTypeTitle.DELETING_PACK -> Res.string.sync_op_deleting_pack
+        SyncOperationTypeTitle.ADDING_STICKER -> Res.string.sync_op_adding_sticker
+        SyncOperationTypeTitle.UPDATING_STICKER -> Res.string.sync_op_updating_sticker
+        SyncOperationTypeTitle.DELETING_STICKER -> Res.string.sync_op_deleting_sticker
+        SyncOperationTypeTitle.UPLOADING_IMAGE -> Res.string.sync_op_uploading_image
+        SyncOperationTypeTitle.REORDERING_STICKERS -> Res.string.sync_op_reordering_stickers
+    }
 
+@Composable
+private fun syncOperationStatusRes(status: SyncOperationStatus): org.jetbrains.compose.resources.StringResource =
+    when (syncOperationStatusLabel(status)) {
+        SyncOperationStatusLabel.PENDING -> Res.string.sync_status_pending
+        SyncOperationStatusLabel.RUNNING -> Res.string.sync_status_running
+        SyncOperationStatusLabel.DONE -> Res.string.sync_status_done
+        SyncOperationStatusLabel.FAILED -> Res.string.sync_status_failed
+        SyncOperationStatusLabel.CANCELLED -> Res.string.sync_status_cancelled
+    }
+
+/**
+ * Turns a raw sync failure into something a user can act on.
+ *
+ * The raw message used to reach the screen verbatim, exposing internal host names, ports and
+ * timeout configuration. Known causes now get a plain sentence; anything else keeps its text but
+ * with the technical detail stripped out.
+ */
+@Composable
+private fun syncOperationErrorText(raw: String?): String? {
+    if (raw.isNullOrBlank()) return null
+    return when (syncErrorReason(raw)) {
+        SyncErrorReason.CONNECTION -> stringResource(Res.string.sync_error_connection)
+        SyncErrorReason.TIMEOUT -> stringResource(Res.string.sync_error_timeout)
+        SyncErrorReason.AUTHENTICATION -> stringResource(Res.string.sync_error_auth)
+        SyncErrorReason.SERVER -> stringResource(Res.string.sync_error_server)
+        null -> sanitizeSyncError(raw) ?: stringResource(Res.string.sync_error_generic)
+    }
+}
+
+// MARK: - Previews
 @Preview
 @Composable
 private fun SyncScreenPreview() {

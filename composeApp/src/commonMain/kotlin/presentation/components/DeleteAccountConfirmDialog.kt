@@ -13,8 +13,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import org.jetbrains.compose.resources.stringResource
-import presentation.common.resolveLocal
 import presentation.common.UiText
+import presentation.common.resolveLocal
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import setiker.composeapp.generated.resources.Res
@@ -81,6 +81,11 @@ fun DeleteAccountConfirmDialog(
                     placeholder = stringResource(Res.string.settings_delete_phrase_hint),
                     enabled = !isLoading,
                     isError = confirmPhrase.isNotBlank() && !phraseMatches,
+                    errorText = if (confirmPhrase.isNotBlank() && !phraseMatches) {
+                        stringResource(Res.string.settings_delete_phrase_hint)
+                    } else {
+                        null
+                    },
                     supportingText = if (confirmPhrase.isNotBlank() && !phraseMatches) {
                         { Text(stringResource(Res.string.settings_delete_phrase_hint)) }
                     } else {

@@ -12,11 +12,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import data.remote.ExploreSort
 import org.jetbrains.compose.resources.stringResource
+import presentation.theme.NeubrutalScrim
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import setiker.composeapp.generated.resources.Res
@@ -39,7 +39,7 @@ fun ExploreSortBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = neubrutalScreenBackground(),
-        scrimColor = Color.Black.copy(alpha = 0.45f),
+        scrimColor = NeubrutalScrim,
         contentWindowInsets = { zeroBottomSheetWindowInsets() }
     ) {
         BottomSheetScrollColumn {

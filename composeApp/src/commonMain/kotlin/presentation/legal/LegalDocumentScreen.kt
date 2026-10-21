@@ -1,6 +1,7 @@
 package presentation.legal
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.background
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.MaterialTheme
@@ -18,13 +18,14 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import domain.model.LegalSection
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -40,6 +41,7 @@ import presentation.components.LoadingIndicator
 import presentation.components.ScaffoldBottomBarLazyColumn
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
@@ -49,7 +51,6 @@ import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
-import presentation.theme.NeubrutalSmallShadowOffset
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.account_deletion_confirm_label
 import setiker.composeapp.generated.resources.account_deletion_email_label
@@ -66,7 +67,7 @@ fun LegalDocumentScreenRoot(
     onBack: () -> Unit,
     viewModel: LegalDocumentViewModel = koinViewModel { parametersOf(docType) }
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
@@ -113,6 +114,7 @@ fun LegalDocumentScreen(
                 DocumentLoadPhase.Error -> EmptyState(
                     title = state.error?.resolveLocal().orEmpty(),
                     description = "",
+                    isError = true,
                     modifier = Modifier.fillMaxSize()
                 )
                 DocumentLoadPhase.Ready -> {
@@ -284,6 +286,17 @@ private fun LegalSectionCard(section: LegalSection) {
             text = section.body,
             style = MaterialTheme.typography.bodyMedium,
             color = neubrutalMutedOnSurface()
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun LegalDocumentScreenPreview() {
+    MaterialTheme {
+        LegalDocumentScreen(
+            state = LegalDocumentState(),
+            onIntent = {}
         )
     }
 }

@@ -1,9 +1,9 @@
 package data.local.database
 
 import data.local.entity.StickerEntity
-import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlinx.coroutines.test.runTest
 
 private class InMemoryStickerDao : StickerDao {
     private val stickers = linkedMapOf<String, StickerEntity>()

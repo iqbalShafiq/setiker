@@ -1,11 +1,6 @@
 package presentation.auth
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,16 +13,19 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.ContentStateAnimations
+import presentation.common.rememberErrorSnackbar
 import presentation.common.resolveLocal
 import presentation.common.resolveOrDefault
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppTextField
 import presentation.components.LoadingIndicator
 import presentation.theme.neubrutalMutedOnSurface
@@ -46,15 +44,15 @@ fun EditProfileScreenRoot(
     onBack: () -> Unit,
     viewModel: EditProfileViewModel = koinViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { AppSnackbarHostState() }
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
                 EditProfileEffect.NavigateBack -> onBack()
                 is EditProfileEffect.ShowMessage -> {
-                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
+                    snackbarHostState.showMessage(effect.message.resolveOrDefault())
                 }
             }
         }
@@ -85,6 +83,7 @@ fun EditProfileScreen(
                 title = stringResource(Res.string.edit_profile_title),
                 isLoading = state.isSaving,
                 loadingStatusText = stringResource(Res.string.processing),
+                snackbarHostState = rememberErrorSnackbar(state.error),
                 onPrimaryAction = { onIntent(EditProfileIntent.Save) },
                 primaryFabIcon = Icons.Default.Check,
                 primaryFabContentDescription = stringResource(Res.string.edit_profile_save),
@@ -107,6 +106,7 @@ fun EditProfileScreen(
                     label = stringResource(Res.string.edit_profile_display_name),
                     enabled = !state.isSaving,
                     isError = state.displayNameError != null,
+                errorText = state.displayNameError?.resolveLocal(),
                     supportingText = state.displayNameError?.let { err ->
                         { Text(err.resolveLocal(), color = MaterialTheme.colorScheme.error) }
                     },
@@ -119,24 +119,12 @@ fun EditProfileScreen(
                     label = stringResource(Res.string.edit_profile_username),
                     enabled = !state.isSaving,
                     isError = state.usernameError != null,
+                errorText = state.usernameError?.resolveLocal(),
                     supportingText = state.usernameError?.let { err ->
                         { Text(err.resolveLocal(), color = MaterialTheme.colorScheme.error) }
                     },
                     modifier = Modifier.fillMaxWidth()
                 )
-                AnimatedVisibility(
-                    visible = state.error != null,
-                    enter = expandVertically() + fadeIn(),
-                    exit = shrinkVertically() + fadeOut()
-                ) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = state.error?.resolveLocal().orEmpty(),
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = stringResource(Res.string.error_username_invalid),
@@ -145,5 +133,16 @@ fun EditProfileScreen(
                 )
             }
         }
+    }
+}
+
+@Preview
+@Composable
+private fun EditProfileScreenPreview() {
+    MaterialTheme {
+        EditProfileScreen(
+            state = EditProfileState(),
+            onIntent = {}
+        )
     }
 }

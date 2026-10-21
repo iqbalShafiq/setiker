@@ -1,7 +1,6 @@
 package com.setiker.app
 
 import android.content.Intent
-import com.setiker.app.MainActivityHolder
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
@@ -9,12 +8,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.setiker.app.MainActivityHolder
 import data.aijob.AiNotificationHelper
 import presentation.navigation.NotificationDeepLink
 import presentation.splash.AndroidAppEntryPoint

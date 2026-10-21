@@ -4,10 +4,15 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.delay
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
+import presentation.components.AppSnackbarHostState
+import util.AppLog
 
 @Composable
 fun EditorScreenRoot(
@@ -20,8 +25,9 @@ fun EditorScreenRoot(
     onStickerSaved: () -> Unit,
     viewModel: EditorViewModel = koinViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { AppSnackbarHostState() }
+    var showCelebration by remember { mutableStateOf(false) }
 
     // Always set packId and stickerIndex when entering the screen or recomposing.
     // This ensures both are set even when returning from crop
@@ -41,7 +47,7 @@ fun EditorScreenRoot(
 
     LaunchedEffect(croppedImagePath) {
         croppedImagePath?.let { path ->
-            android.util.Log.d("EditorScreenRoot", "Processing crop result: $path")
+            AppLog.d("EditorScreenRoot", "Processing crop result: $path")
             viewModel.onIntent(EditorIntent.UpdateImagePath(path))
             onResultProcessed()
         }
@@ -50,14 +56,20 @@ fun EditorScreenRoot(
     LaunchedEffect(viewModel.effect) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is EditorEffect.StickerSaved -> onStickerSaved()
+                is EditorEffect.StickerSaved -> {
+                    // Let the celebration land before leaving: saving a sticker is the moment the
+                    // whole app has been building towards.
+                    showCelebration = true
+                    delay(CELEBRATION_DURATION_MS)
+                    onStickerSaved()
+                }
                 is EditorEffect.NavigateBack -> onBackClick()
                 is EditorEffect.NavigateToCrop -> onNavigateToCrop(effect.imagePath)
                 is EditorEffect.ShowError -> {
-                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
+                    snackbarHostState.showMessage(effect.message.resolveOrDefault())
                 }
                 is EditorEffect.ShowMessage -> {
-                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
+                    snackbarHostState.showMessage(effect.message.resolveOrDefault())
                 }
             }
         }
@@ -67,6 +79,10 @@ fun EditorScreenRoot(
         state = state,
         onIntent = viewModel::onIntent,
         onBackClick = onBackClick,
-        snackbarHostState = snackbarHostState
+        snackbarHostState = snackbarHostState,
+        showCelebration = showCelebration
     )
 }
+
+/** How long the save celebration stays on screen. */
+private const val CELEBRATION_DURATION_MS = 1200L

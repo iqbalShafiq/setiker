@@ -5,52 +5,52 @@ import androidx.lifecycle.viewModelScope
 import data.aijob.AiJobManager
 import data.remote.StickerApiRepository
 import data.repository.StickerPackDraftSaver
-import domain.model.aijob.AiJobOrigin
-import domain.model.aijob.AiJobStatus
-import domain.model.aijob.AiJob
-import domain.model.aijob.VideoPackPayload
-import domain.model.aijob.WorkspaceDraftContext
-import domain.model.aijob.WorkspaceDraftKind
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.map
-import presentation.aijob.AiJobEnqueueHelper
-import presentation.aijob.DraftResultApplier
-import presentation.aijob.WorkspaceDraftFactory
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 import data.storage.StickerFileStorage
 import data.video.CandidateGridComposer
 import data.video.VideoFrameCandidateExtractor
-import domain.model.AnimatedStickerSpec
 import domain.model.AiQuotaOperation
+import domain.model.AnimatedStickerSpec
 import domain.model.DecodedFrame
 import domain.model.ResolvedVideoAnimatedSticker
 import domain.model.ResolvedVideoStaticSticker
 import domain.model.Sticker
 import domain.model.StickerDraftInput
 import domain.model.StickerPack
-import domain.repository.StickerRepository
+import domain.model.aijob.AiJob
+import domain.model.aijob.AiJobOrigin
+import domain.model.aijob.AiJobStatus
+import domain.model.aijob.VideoPackPayload
+import domain.model.aijob.WorkspaceDraftContext
+import domain.model.aijob.WorkspaceDraftKind
 import domain.repository.AiQuotaRepository
+import domain.repository.StickerRepository
 import domain.util.VideoStickerPackPlanner
 import kotlin.random.Random
 import kotlin.time.Clock
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import presentation.common.PackIdentifierSanitizer
+import presentation.aijob.AiJobEnqueueHelper
+import presentation.aijob.DraftResultApplier
+import presentation.aijob.WorkspaceDraftFactory
 import presentation.common.AiQuotaGate
+import presentation.common.PackIdentifierSanitizer
 import presentation.common.UiText
 import setiker.composeapp.generated.resources.Res
-import setiker.composeapp.generated.resources.error_failed_generate_video_sticker_pack
+import setiker.composeapp.generated.resources.animated_error_decode_failed
 
 @OptIn(ExperimentalUuidApi::class)
 class VideoStickerPackViewModel(
@@ -171,6 +171,7 @@ class VideoStickerPackViewModel(
             VideoStickerPackIntent.Generate -> generate(extractFreshCandidates = true)
             VideoStickerPackIntent.Regenerate -> generate(extractFreshCandidates = false)
             VideoStickerPackIntent.SavePack -> savePack()
+            VideoStickerPackIntent.RetryPreview -> reschedulePreviewExtraction(immediate = true)
         }
     }
 
@@ -265,6 +266,7 @@ class VideoStickerPackViewModel(
             val current = _state.value
             if (current.videoPath.isBlank()) return@launch
             if (current.selectedEndMs <= current.selectedStartMs) return@launch
+            _state.update { it.copy(previewUnavailable = false) }
             extractPreviewFramesForRange(
                 videoPath = current.videoPath,
                 startMs = current.selectedStartMs,
@@ -299,6 +301,16 @@ class VideoStickerPackViewModel(
                     )
                 }
             }
+        }
+        // Reached only when the extraction ran to completion (a cancelled job exits by exception),
+        // so an empty result really means the device could not read this source.
+        _state.update { it.copy(previewUnavailable = frames.isEmpty()) }
+        if (frames.isEmpty()) {
+            _effect.trySend(
+                VideoStickerPackEffect.ShowError(
+                    UiText.StringRes(Res.string.animated_error_decode_failed)
+                )
+            )
         }
     }
 

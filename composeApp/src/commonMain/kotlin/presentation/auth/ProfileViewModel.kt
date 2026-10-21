@@ -11,6 +11,10 @@ import data.auth.GoogleSignInMode
 import data.auth.model.toDomainModel
 import data.remote.ExploreApiRepository
 import data.remote.LegalApiRepository
+import domain.error.Result
+import domain.error.getOrNull
+import domain.error.onFailure
+import domain.error.onSuccess
 import domain.model.AiUsage
 import domain.model.LegalSummary
 import domain.model.User
@@ -113,7 +117,7 @@ class ProfileViewModel(
         viewModelScope.launch {
             val token = authManager.getValidAccessToken() ?: return@launch
             _state.update { it.copy(isLinkingAuth = true, setPasswordError = null) }
-            runCatching { authApiService.setPassword(token, current.newPassword) }
+            authApiService.setPassword(token, current.newPassword)
                 .onSuccess {
                     val user = authManager.getUser()?.copy(
                         hasPassword = true,
@@ -162,7 +166,7 @@ class ProfileViewModel(
                 return@launch
             }
             val idToken = idTokenResult.getOrNull()?.idToken ?: return@launch
-            runCatching { authApiService.linkGoogle(token, idToken) }
+            authApiService.linkGoogle(token, idToken)
                 .onSuccess { response ->
                     val user = response.data?.toDomainModel()
                     if (user != null) authManager.saveUser(user)
@@ -189,7 +193,7 @@ class ProfileViewModel(
         viewModelScope.launch {
             val token = authManager.getValidAccessToken() ?: return@launch
             _state.update { it.copy(isLinkingAuth = true) }
-            runCatching { authApiService.unlinkGoogle(token) }
+            authApiService.unlinkGoogle(token)
                 .onSuccess { response ->
                     val user = response.data?.toDomainModel()
                     if (user != null) authManager.saveUser(user)
@@ -228,7 +232,7 @@ class ProfileViewModel(
                 return@launch
             }
             val idToken = idTokenResult.getOrNull()?.idToken ?: return@launch
-            runCatching { authApiService.linkApple(token, idToken) }
+            authApiService.linkApple(token, idToken)
                 .onSuccess { response ->
                     val user = response.data?.toDomainModel()
                     if (user != null) authManager.saveUser(user)
@@ -255,7 +259,7 @@ class ProfileViewModel(
         viewModelScope.launch {
             val token = authManager.getValidAccessToken() ?: return@launch
             _state.update { it.copy(isLinkingAuth = true) }
-            runCatching { authApiService.unlinkApple(token) }
+            authApiService.unlinkApple(token)
                 .onSuccess { response ->
                     val user = response.data?.toDomainModel()
                     if (user != null) authManager.saveUser(user)
@@ -283,12 +287,13 @@ class ProfileViewModel(
             val cached = authManager.getUser()
             val token = authManager.getValidAccessToken()
             val user = if (token != null) {
-                runCatching {
-                    authApiService.getProfile(token).data?.toDomainModel()?.also { authManager.saveUser(it) }
-                }.getOrNull() ?: cached
+                when (val profileResult = authApiService.getProfile(token)) {
+                    is Result.Success -> profileResult.data.data?.toDomainModel()?.also { authManager.saveUser(it) }
+                    is Result.Error -> null
+                }
             } else {
                 cached
-            }
+            } ?: cached
             val packs = runCatching { stickerRepository.getAllPacks() }.getOrDefault(emptyList())
             val stickersCount = packs.sumOf { it.stickers.size }
             val usage = if (user != null) {
@@ -296,11 +301,12 @@ class ProfileViewModel(
             } else {
                 null
             }
-            val legalSummary = runCatching { legalApiRepository.getSummary() }.getOrNull()
+            val legalSummary = legalApiRepository.getSummary().getOrNull()
             val unread = if (user != null) {
-                runCatching {
-                    exploreApiRepository.getNotifications(page = 1, limit = 1, unreadOnly = true).second
-                }.getOrDefault(0)
+                when (val notifications = exploreApiRepository.getNotifications(page = 1, limit = 1, unreadOnly = true)) {
+                    is Result.Success -> notifications.data.second
+                    is Result.Error -> 0
+                }
             } else {
                 0
             }

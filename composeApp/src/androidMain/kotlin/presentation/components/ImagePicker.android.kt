@@ -9,21 +9,35 @@ import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import java.io.File
 import java.io.FileOutputStream
+import java.util.concurrent.atomic.AtomicLong
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+/** Guarantees unique picked-file names even when several files are copied in the same millisecond. */
+private val pickedFileSequence = AtomicLong()
+
+private fun nextPickedFileName(prefix: String, extension: String): String =
+    "${prefix}_${System.currentTimeMillis()}_${pickedFileSequence.incrementAndGet()}.$extension"
 
 @Composable
 actual fun rememberImagePicker(onImagePicked: (String?) -> Unit): ImagePickerLauncher {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        if (uri != null) {
-            val path = copyUriToInternalStorage(context, uri)
-            onImagePicked(path)
-        } else {
+        if (uri == null) {
             onImagePicked(null)
+        } else {
+            // Copying a picked file can be tens of megabytes; keep it off the main thread.
+            scope.launch {
+                onImagePicked(withContext(Dispatchers.IO) { copyUriToInternalStorage(context, uri) })
+            }
         }
     }
 
@@ -39,16 +53,19 @@ actual fun rememberImagePicker(onImagePicked: (String?) -> Unit): ImagePickerLau
 @Composable
 actual fun rememberMultipleImagePicker(onImagesPicked: (List<String>) -> Unit): MultipleImagePickerLauncher {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
     ) { uris: List<Uri> ->
-        if (uris.isNotEmpty()) {
-            val paths = uris.mapNotNull { uri ->
-                copyUriToInternalStorage(context, uri)
-            }
-            onImagesPicked(paths)
-        } else {
+        if (uris.isEmpty()) {
             onImagesPicked(emptyList())
+        } else {
+            scope.launch {
+                val paths = withContext(Dispatchers.IO) {
+                    uris.mapNotNull { uri -> copyUriToInternalStorage(context, uri) }
+                }
+                onImagesPicked(paths)
+            }
         }
     }
 
@@ -63,8 +80,7 @@ actual fun rememberMultipleImagePicker(onImagesPicked: (List<String>) -> Unit): 
 
 private fun copyUriToInternalStorage(context: Context, uri: Uri): String? {
     return try {
-        val fileName = "picked_${System.currentTimeMillis()}.jpg"
-        val file = File(context.filesDir, fileName)
+        val file = File(context.filesDir, nextPickedFileName("picked", "jpg"))
         context.contentResolver.openInputStream(uri)?.use { input ->
             FileOutputStream(file).use { output ->
                 input.copyTo(output)
@@ -105,6 +121,7 @@ actual fun rememberStickerImagePicker(
     onPicked: (path: String?, isAnimated: Boolean) -> Unit
 ): ImagePickerLauncher {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -112,11 +129,14 @@ actual fun rememberStickerImagePicker(
             onPicked(null, false)
             return@rememberLauncherForActivityResult
         }
-        val mime = context.contentResolver.getType(uri)
-        val isGif = mime?.equals("image/gif", ignoreCase = true) == true
-        val ext = if (isGif) "gif" else "jpg"
-        val path = copyImageUriToInternalStorageWithExt(context, uri, ext)
-        onPicked(path, isGif && path != null)
+        val isGif = context.contentResolver.getType(uri)?.equals("image/gif", ignoreCase = true) == true
+        val extension = if (isGif) "gif" else "jpg"
+        scope.launch {
+            val path = withContext(Dispatchers.IO) {
+                copyPickedUriToInternalStorage(context, uri, extension)
+            }
+            onPicked(path, isGif && path != null)
+        }
     }
 
     return remember {
@@ -128,14 +148,13 @@ actual fun rememberStickerImagePicker(
     }
 }
 
-private fun copyImageUriToInternalStorageWithExt(
+private fun copyPickedUriToInternalStorage(
     context: Context,
     uri: Uri,
-    ext: String
+    extension: String
 ): String? {
     return try {
-        val fileName = "picked_${System.currentTimeMillis()}.$ext"
-        val file = File(context.filesDir, fileName)
+        val file = File(context.filesDir, nextPickedFileName("picked", extension))
         context.contentResolver.openInputStream(uri)?.use { input ->
             FileOutputStream(file).use { output ->
                 input.copyTo(output)
@@ -151,14 +170,17 @@ private fun copyImageUriToInternalStorageWithExt(
 @Composable
 actual fun rememberVideoPicker(onVideoPicked: (String?) -> Unit): VideoPickerLauncher {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val launcher = rememberLauncherForActivityResult(
         contract = OpenVideoOrGifDocument()
     ) { uri: Uri? ->
-        if (uri != null) {
-            val path = copyVideoUriToInternalStorage(context, uri)
-            onVideoPicked(path)
-        } else {
+        if (uri == null) {
             onVideoPicked(null)
+        } else {
+            // Videos can be large; copy them off the main thread.
+            scope.launch {
+                onVideoPicked(withContext(Dispatchers.IO) { copyVideoUriToInternalStorage(context, uri) })
+            }
         }
     }
 
@@ -173,9 +195,8 @@ actual fun rememberVideoPicker(onVideoPicked: (String?) -> Unit): VideoPickerLau
 
 private fun copyVideoUriToInternalStorage(context: Context, uri: Uri): String? {
     return try {
-        val ext = guessVideoExtension(context, uri) ?: "mp4"
-        val fileName = "picked_video_${System.currentTimeMillis()}.$ext"
-        val file = File(context.filesDir, fileName)
+        val extension = guessVideoExtension(context, uri) ?: "mp4"
+        val file = File(context.filesDir, nextPickedFileName("picked_video", extension))
         context.contentResolver.openInputStream(uri)?.use { input ->
             FileOutputStream(file).use { output ->
                 input.copyTo(output)

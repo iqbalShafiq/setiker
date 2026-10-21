@@ -1,9 +1,9 @@
 package data.sync
 
-import kotlinx.coroutines.async
-import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlinx.coroutines.async
+import kotlinx.coroutines.test.runTest
 
 class SyncRunGateTest {
 

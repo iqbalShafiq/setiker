@@ -10,7 +10,6 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
 import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.ProductDetails
-import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
@@ -18,39 +17,45 @@ import com.android.billingclient.api.acknowledgePurchase
 import com.android.billingclient.api.consumePurchase
 import com.android.billingclient.api.queryProductDetails
 import com.android.billingclient.api.queryPurchasesAsync
+import java.security.MessageDigest
+import kotlin.coroutines.resume
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import java.security.MessageDigest
-import kotlin.coroutines.resume
 
 actual class PlatformBillingStore(
     private val activityProvider: () -> Activity?
 ) {
-    private val purchaseDeferred = CompletableDeferred<PlatformPurchase?>()
+    /**
+     * Completed by [purchasesUpdatedListener] for the purchase currently started via
+     * [launchPurchase]. Only touched on the main thread (the billing callbacks and our launch
+     * path both run there), so a plain field is enough.
+     */
+    private var activePurchase: CompletableDeferred<PlatformPurchase?>? = null
 
     private val purchasesUpdatedListener = PurchasesUpdatedListener { billingResult, purchases ->
-        if (billingResult.responseCode != BillingClient.BillingResponseCode.OK || purchases.isNullOrEmpty()) {
-            if (!purchaseDeferred.isCompleted) {
-                purchaseDeferred.complete(null)
-            }
-            return@PurchasesUpdatedListener
-        }
-        val purchase = purchases.first()
-        if (!purchaseDeferred.isCompleted) {
-            purchaseDeferred.complete(
+        val deferred = activePurchase
+        activePurchase = null
+        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && !purchases.isNullOrEmpty()) {
+            val purchase = purchases.first()
+            deferred?.complete(
                 PlatformPurchase(
                     productId = purchase.products.firstOrNull().orEmpty(),
                     purchaseToken = purchase.purchaseToken
                 )
             )
+        } else {
+            deferred?.complete(null)
         }
     }
 
     private val billingClient: BillingClient = BillingClient.newBuilder(activityProvider() ?: throw IllegalStateException("Activity required"))
         .setListener(purchasesUpdatedListener)
         .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
+        // PBL 8+: the library re-establishes transient disconnections on its own; there is no
+        // need to recreate the client or retry manually from onBillingServiceDisconnected.
+        .enableAutoServiceReconnection()
         .build()
 
     actual suspend fun queryProducts(productIds: List<String>): List<PlatformStoreProduct> {
@@ -90,50 +95,42 @@ actual class PlatformBillingStore(
         }
     }
 
-    actual suspend fun launchPurchase(productId: String, obfuscatedAccountId: String): PlatformPurchase? {
-        connect()
-        val details = queryProductDetails(productId) ?: return null
-        val productType = if (details.productType == BillingClient.ProductType.SUBS) {
-            BillingClient.ProductType.SUBS
-        } else {
-            BillingClient.ProductType.INAPP
-        }
-        val offerToken = details.subscriptionOfferDetails?.firstOrNull()?.offerToken
-        val productDetailsParams = BillingFlowParams.ProductDetailsParams.newBuilder()
-            .setProductDetails(details)
-            .apply { if (offerToken != null) setOfferToken(offerToken) }
-            .build()
-        val flowParams = BillingFlowParams.newBuilder()
-            .setProductDetailsParamsList(listOf(productDetailsParams))
-            .setObfuscatedAccountId(obfuscatedAccountId)
-            .build()
-        val activity = activityProvider() ?: return null
-        val deferred = CompletableDeferred<PlatformPurchase?>()
-        val listener = PurchasesUpdatedListener { billingResult, purchases ->
-            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && !purchases.isNullOrEmpty()) {
-                val purchase = purchases.first()
-                deferred.complete(
-                    PlatformPurchase(
-                        productId = purchase.products.firstOrNull().orEmpty(),
-                        purchaseToken = purchase.purchaseToken
-                    )
-                )
+    actual suspend fun launchPurchase(productId: String, obfuscatedAccountId: String): PlatformPurchase? =
+        withContext(Dispatchers.Main) {
+            connect()
+            val details = queryProductDetails(productId) ?: return@withContext null
+            val productType = if (details.productType == BillingClient.ProductType.SUBS) {
+                BillingClient.ProductType.SUBS
             } else {
-                deferred.complete(null)
+                BillingClient.ProductType.INAPP
             }
+            val offerToken = details.subscriptionOfferDetails?.firstOrNull()?.offerToken
+            if (productType == BillingClient.ProductType.SUBS && offerToken == null) {
+                // PBL 8+ requires an offer token for subscription purchases; without one the
+                // billing flow cannot be started.
+                return@withContext null
+            }
+            val productDetailsParams = BillingFlowParams.ProductDetailsParams.newBuilder()
+                .setProductDetails(details)
+                .apply { if (offerToken != null) setOfferToken(offerToken) }
+                .build()
+            val flowParams = BillingFlowParams.newBuilder()
+                .setProductDetailsParamsList(listOf(productDetailsParams))
+                .setObfuscatedAccountId(obfuscatedAccountId)
+                .build()
+            val activity = activityProvider() ?: return@withContext null
+
+            // Reuse the single client (and its listener) instead of building a throwaway client
+            // per purchase; the listener routes the result to the in-flight deferred.
+            val deferred = CompletableDeferred<PlatformPurchase?>()
+            activePurchase = deferred
+            val launchResult = billingClient.launchBillingFlow(activity, flowParams)
+            if (launchResult.responseCode != BillingClient.BillingResponseCode.OK) {
+                activePurchase = null
+                return@withContext null
+            }
+            deferred.await()
         }
-        // Rebuild client with one-shot listener for this purchase
-        val client = BillingClient.newBuilder(activity)
-            .setListener(listener)
-            .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
-            .build()
-        connectClient(client)
-        val launchResult = client.launchBillingFlow(activity, flowParams)
-        if (launchResult.responseCode != BillingClient.BillingResponseCode.OK) {
-            return null
-        }
-        return deferred.await()
-    }
 
     actual suspend fun queryPendingPurchases(): List<PlatformPurchase> {
         connect()
@@ -203,10 +200,12 @@ actual class PlatformBillingStore(
         suspendCancellableCoroutine { cont ->
             client.startConnection(object : BillingClientStateListener {
                 override fun onBillingSetupFinished(billingResult: BillingResult) {
-                    cont.resume(Unit)
+                    if (cont.isActive) cont.resume(Unit)
                 }
 
                 override fun onBillingServiceDisconnected() {
+                    // Auto-reconnection is enabled, so a later API call re-establishes the
+                    // connection. Resuming here keeps this continuation from hanging forever.
                     if (cont.isActive) cont.resume(Unit)
                 }
             })

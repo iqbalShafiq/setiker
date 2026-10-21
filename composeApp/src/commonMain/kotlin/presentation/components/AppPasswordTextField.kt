@@ -28,22 +28,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.neubrutalBorderColor
-import presentation.theme.neubrutalCardSurface
-import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalGlossyHighlightColor
+import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import presentation.theme.neubrutalSubtleOnSurface
@@ -56,6 +57,13 @@ fun AppPasswordTextField(
     modifier: Modifier = Modifier,
     placeholder: String = "",
     isError: Boolean = false,
+    /**
+     * The reason the field is invalid, in words.
+     *
+     * A red border is invisible to a screen reader. This is what makes TalkBack say that the
+     * field is invalid and what is wrong with it.
+     */
+    errorText: String? = null,
     supportingText: @Composable (() -> Unit)? = null,
     imeAction: ImeAction = ImeAction.Done,
     enabled: Boolean = true
@@ -99,7 +107,16 @@ fun AppPasswordTextField(
                 onValueChange = { if (enabled) onValueChange(it) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(end = 24.dp),
+                    .padding(end = 24.dp)
+                    .then(
+                        // A red border is invisible to a screen reader. This is what makes
+                        // TalkBack say that the field is invalid and what is wrong with it.
+                        if (isError && errorText != null) {
+                            Modifier.semantics { error(errorText) }
+                        } else {
+                            Modifier
+                        }
+                    ),
                 singleLine = true,
                 maxLines = 1,
                 enabled = enabled,

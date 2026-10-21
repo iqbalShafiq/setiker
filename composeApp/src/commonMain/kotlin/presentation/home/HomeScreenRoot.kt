@@ -7,10 +7,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.QuotaExceededBottomSheet
 import presentation.common.resolveOrDefault
+import presentation.components.AppSnackbarHostState
 
 @Composable
 fun HomeScreenRoot(
@@ -27,8 +28,8 @@ fun HomeScreenRoot(
     showOfflineBanner: Boolean = false,
     viewModel: HomeViewModel = koinViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { AppSnackbarHostState() }
     var showQuotaExceeded by remember { mutableStateOf(false) }
 
     LaunchedEffect(viewModel.effect) {
@@ -37,10 +38,10 @@ fun HomeScreenRoot(
                 is HomeEffect.NavigateToPackDetail -> onPackClick(effect.packId)
                 is HomeEffect.NavigateToCreatePack -> onCreatePackClick()
                 is HomeEffect.ShowError -> {
-                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
+                    snackbarHostState.showMessage(effect.message.resolveOrDefault())
                 }
                 is HomeEffect.ShowSuccess -> {
-                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
+                    snackbarHostState.showMessage(effect.message.resolveOrDefault())
                 }
                 is HomeEffect.NavigateToProfile -> onProfileClick()
                 is HomeEffect.NavigateToSync -> onSyncClick()

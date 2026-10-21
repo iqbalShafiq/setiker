@@ -1,112 +1,64 @@
 package presentation.aijobs
 
-
-
 import androidx.compose.foundation.layout.Arrangement
-
 import androidx.compose.foundation.layout.PaddingValues
-
 import androidx.compose.foundation.layout.fillMaxSize
-
 import androidx.compose.foundation.layout.fillMaxWidth
-
 import androidx.compose.foundation.layout.padding
-
 import androidx.compose.foundation.lazy.LazyColumn
-
 import androidx.compose.foundation.lazy.items
-
 import androidx.compose.material.icons.Icons
-
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-
-import androidx.compose.material.icons.filled.Refresh
-
+import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material3.MaterialTheme
-
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-
 import androidx.compose.material3.Text
-
 import androidx.compose.runtime.Composable
-
-import androidx.compose.runtime.collectAsState
-
 import androidx.compose.runtime.getValue
-
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-
 import androidx.compose.ui.text.font.FontWeight
-
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import domain.model.aijob.AiJobStatus
-
 import domain.model.aijob.WorkspaceDraft
-
 import domain.model.aijob.WorkspaceDraftStatus
-
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
-
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppIllustration
 import presentation.components.AppTopBar
-
 import presentation.components.DraftJobListCard
-
 import presentation.components.EmptyState
-
 import presentation.components.LoadingIndicator
-
+import presentation.components.NeubrutalSnackbarHost
 import presentation.components.PackBottomBar
-
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
-
-import presentation.theme.neubrutalMutedOnSurface
-
 import presentation.theme.neubrutalOnSurface
-
 import presentation.theme.neubrutalScreenBackground
-
 import setiker.composeapp.generated.resources.Res
-
-import setiker.composeapp.generated.resources.ai_jobs_empty_desc
-import setiker.composeapp.generated.resources.back_content_description
-
-import setiker.composeapp.generated.resources.ai_jobs_empty_title
-
-import setiker.composeapp.generated.resources.ai_jobs_running_status
-
-import setiker.composeapp.generated.resources.ai_jobs_section_cancelled
-
-import setiker.composeapp.generated.resources.ai_jobs_section_needs_attention
-
-import setiker.composeapp.generated.resources.ai_jobs_section_other
-
-import setiker.composeapp.generated.resources.ai_jobs_section_ready
-
-import setiker.composeapp.generated.resources.ai_jobs_section_running
-
-import setiker.composeapp.generated.resources.ai_jobs_section_saved
-
-import setiker.composeapp.generated.resources.ai_jobs_status_cancelled
-
-import setiker.composeapp.generated.resources.ai_jobs_status_draft
-
-import setiker.composeapp.generated.resources.ai_jobs_status_processing
-
-import setiker.composeapp.generated.resources.ai_jobs_status_ready
-
-import setiker.composeapp.generated.resources.ai_jobs_status_saved
-
 import setiker.composeapp.generated.resources.ai_jobs_clear_completed
+import setiker.composeapp.generated.resources.ai_jobs_empty_desc
+import setiker.composeapp.generated.resources.ai_jobs_empty_title
+import setiker.composeapp.generated.resources.ai_jobs_running_status
+import setiker.composeapp.generated.resources.ai_jobs_section_cancelled
+import setiker.composeapp.generated.resources.ai_jobs_section_needs_attention
+import setiker.composeapp.generated.resources.ai_jobs_section_other
+import setiker.composeapp.generated.resources.ai_jobs_section_ready
+import setiker.composeapp.generated.resources.ai_jobs_section_running
+import setiker.composeapp.generated.resources.ai_jobs_section_saved
+import setiker.composeapp.generated.resources.ai_jobs_status_cancelled
+import setiker.composeapp.generated.resources.ai_jobs_status_draft
+import setiker.composeapp.generated.resources.ai_jobs_status_processing
+import setiker.composeapp.generated.resources.ai_jobs_status_ready
+import setiker.composeapp.generated.resources.ai_jobs_status_saved
 import setiker.composeapp.generated.resources.ai_jobs_title
-
-
+import setiker.composeapp.generated.resources.back_content_description
 
 @Composable
 
@@ -122,9 +74,9 @@ fun AiJobsScreenRoot(
 
 ) {
 
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
-    val snackbarHostState = androidx.compose.runtime.remember { SnackbarHostState() }
+    val snackbarHostState = androidx.compose.runtime.remember { AppSnackbarHostState() }
 
     androidx.compose.runtime.LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -132,7 +84,7 @@ fun AiJobsScreenRoot(
                 AiJobsEffect.NavigateBack -> onBackClick()
                 is AiJobsEffect.NavigateToDraft -> onOpenDraft(effect.draftId, effect.originRoute)
                 is AiJobsEffect.NavigateToPack -> onOpenPack(effect.packId)
-                is AiJobsEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
+                is AiJobsEffect.ShowError -> snackbarHostState.showError(effect.message.resolveOrDefault())
             }
         }
     }
@@ -156,13 +108,15 @@ fun AiJobsScreen(
     onIntent: (AiJobsIntent) -> Unit,
 
     onBackClick: () -> Unit,
-    snackbarHostState: SnackbarHostState,
+    snackbarHostState: AppSnackbarHostState,
 
     modifier: Modifier = Modifier
 
 ) {
 
-    val grouped = groupDrafts(state.drafts, state.jobs)
+    // Grouping walks the drafts and the jobs a few times over. The result only changes when the
+    // lists change, so it is worth keeping instead of rebuilding it on every recomposition.
+    val grouped = remember(state.drafts, state.jobs) { groupDrafts(state.drafts, state.jobs) }
 
     Scaffold(
 
@@ -200,7 +154,9 @@ fun AiJobsScreen(
 
                     PackBottomBarFab(
 
-                        icon = Icons.Default.Refresh,
+                        // The action clears finished jobs; a refresh glyph used to advertise the
+                        // opposite meaning.
+                        icon = Icons.Default.DeleteSweep,
 
                         contentDescription = stringResource(Res.string.ai_jobs_clear_completed),
 
@@ -217,7 +173,7 @@ fun AiJobsScreen(
             )
 
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
 
         containerColor = neubrutalScreenBackground(),
 
@@ -260,7 +216,7 @@ fun AiJobsScreen(
 
                         Text(
 
-                            text = section.title,
+                            text = stringResource(section.title),
 
                             style = MaterialTheme.typography.titleMedium,
 
@@ -288,9 +244,10 @@ fun AiJobsScreen(
 
                         val latestJob = item.latestJob
 
-                        val showProgress = latestJob?.progress != null &&
-
-                            latestJob.status in ACTIVE_JOB_STATUSES
+                        val progressMode = aiJobProgressMode(
+                            status = latestJob?.status,
+                            hasProgress = latestJob?.progress != null
+                        )
 
                         DraftJobListCard(
 
@@ -300,7 +257,7 @@ fun AiJobsScreen(
 
                             statusLabel = statusLabel(item.draft, latestJob),
 
-                            showProgress = showProgress,
+                            progressMode = progressMode,
 
                             canRetry = canRetry(item.draft, latestJob),
 
@@ -340,7 +297,7 @@ private data class DraftSection(
 
     val titleKey: String,
 
-    val title: String,
+    val title: StringResource,
 
     val items: List<DraftJobItem>
 
@@ -358,27 +315,14 @@ private data class DraftJobItem(
 
 
 
-private val ACTIVE_JOB_STATUSES = setOf(
-
-    AiJobStatus.QUEUED,
-
-    AiJobStatus.RUNNING,
-
-    AiJobStatus.WAITING_FOR_NETWORK,
-
-    AiJobStatus.CHECKPOINTED,
-
-    AiJobStatus.CANCEL_REQUESTED
-
-)
-
-
-
 @Composable
 
 private fun statusLabel(draft: WorkspaceDraft, job: domain.model.aijob.AiJob?): String {
 
-    job?.progress?.stepLabel?.takeIf { it.isNotBlank() }?.let { return it }
+    // Only a job that is still running may describe itself with its current step. A finished job
+    // keeps its last step label in the payload, and showing it made a card claim "Removing
+    // background" long after the job had ended.
+    activeJobStepLabel(job)?.let { return it }
 
     return when (draft.status) {
 
@@ -413,8 +357,6 @@ private fun canRetry(draft: WorkspaceDraft, job: domain.model.aijob.AiJob?): Boo
 }
 
 
-
-@Composable
 
 private fun groupDrafts(
 
@@ -488,7 +430,7 @@ private fun groupDrafts(
 
                     titleKey = "running",
 
-                    title = stringResource(Res.string.ai_jobs_section_running),
+                    title = Res.string.ai_jobs_section_running,
 
                     items = running
 
@@ -506,7 +448,7 @@ private fun groupDrafts(
 
                     titleKey = "needs_attention",
 
-                    title = stringResource(Res.string.ai_jobs_section_needs_attention),
+                    title = Res.string.ai_jobs_section_needs_attention,
 
                     items = needsAttention
 
@@ -524,7 +466,7 @@ private fun groupDrafts(
 
                     titleKey = "ready",
 
-                    title = stringResource(Res.string.ai_jobs_section_ready),
+                    title = Res.string.ai_jobs_section_ready,
 
                     items = ready
 
@@ -542,7 +484,7 @@ private fun groupDrafts(
 
                     titleKey = "saved",
 
-                    title = stringResource(Res.string.ai_jobs_section_saved),
+                    title = Res.string.ai_jobs_section_saved,
 
                     items = saved
 
@@ -560,7 +502,7 @@ private fun groupDrafts(
 
                     titleKey = "cancelled",
 
-                    title = stringResource(Res.string.ai_jobs_section_cancelled),
+                    title = Res.string.ai_jobs_section_cancelled,
 
                     items = cancelled
 
@@ -578,7 +520,7 @@ private fun groupDrafts(
 
                     titleKey = "other",
 
-                    title = stringResource(Res.string.ai_jobs_section_other),
+                    title = Res.string.ai_jobs_section_other,
 
                     items = other
 
@@ -590,4 +532,17 @@ private fun groupDrafts(
 
     }
 
+}
+
+@Preview
+@Composable
+private fun AiJobsScreenPreview() {
+    MaterialTheme {
+        AiJobsScreen(
+            state = AiJobsState(),
+            onIntent = {},
+            onBackClick = {},
+            snackbarHostState = AppSnackbarHostState()
+        )
+    }
 }

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import data.storage.StickerFileStorage
 import domain.model.StickerPack
 import domain.util.AnimatedStickerValidator
+import kotlin.time.Clock
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -15,9 +16,10 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlin.time.Clock
 import presentation.common.UiText
 import presentation.common.toUiText
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.animated_error_decode_failed
 
 class VideoTrimViewModel(
     private val fileStorage: StickerFileStorage
@@ -57,6 +59,7 @@ class VideoTrimViewModel(
             is VideoTrimIntent.PlayPreview -> startPlayback()
             is VideoTrimIntent.PausePreview -> stopPlayback()
             is VideoTrimIntent.Confirm -> confirm()
+            is VideoTrimIntent.RetryPreviewExtraction -> rescheduleThumbnailExtraction(immediate = true)
             is VideoTrimIntent.Cancel -> {
                 stopPlayback()
                 viewModelScope.launch { _effect.send(VideoTrimEffect.NavigateBack) }
@@ -112,7 +115,8 @@ class VideoTrimViewModel(
                 it.copy(
                     thumbnails = emptyList(),
                     currentThumbIndex = 0,
-                    isExtracting = true
+                    isExtracting = true,
+                    previewUnavailable = false
                 )
             }
             extractThumbnailsForRange(videoPath, startMs, endMs)
@@ -142,6 +146,14 @@ class VideoTrimViewModel(
             }
         } finally {
             _state.update { it.copy(isExtracting = false) }
+        }
+        // Reaching this point means the extraction ran to completion; a cancelled job (the user is
+        // still dragging the trim handles) leaves through the finally above by exception instead.
+        if (thumbs.isEmpty()) {
+            _state.update { it.copy(previewUnavailable = true) }
+            _effect.trySend(
+                VideoTrimEffect.ShowError(UiText.StringRes(Res.string.animated_error_decode_failed))
+            )
         }
     }
 
@@ -207,7 +219,7 @@ class VideoTrimViewModel(
 
         val spec = current.toSpec()
         val validation = AnimatedStickerValidator.validateSpec(spec)
-        if (validation is AnimatedStickerValidator.Result.Failure) {
+        if (validation is AnimatedStickerValidator.StickerValidation.Failure) {
             val errorText = validation.reason.toUiText()
             _state.update { it.copy(error = errorText) }
             viewModelScope.launch {

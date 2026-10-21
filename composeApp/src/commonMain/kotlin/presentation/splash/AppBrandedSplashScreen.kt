@@ -1,5 +1,7 @@
 package presentation.splash
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -13,13 +15,19 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import presentation.components.AppLogoMark
+import presentation.theme.AccentCoral
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalSubtleOnSurface
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.splash_presented_by
@@ -27,6 +35,9 @@ import setiker.composeapp.generated.resources.splash_presented_by
 /**
  * Branded splash content aligned with the Android Splash Screen API theme:
  * centered logo mark and attribution at the bottom of the screen.
+ *
+ * The splash used to be a static grey square on an empty page. It is the first thing a new user
+ * sees, so the mark now arrives with a short spring and the attribution fades in behind it.
  */
 @Composable
 fun AppBrandedSplashScreen(
@@ -38,6 +49,16 @@ fun AppBrandedSplashScreen(
         SplashBranding.backgroundLight
     }
 
+    val logoScale = remember { Animatable(0.72f) }
+    val logoAlpha = remember { Animatable(0f) }
+    val captionAlpha = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        logoAlpha.animateTo(1f, tween(durationMillis = SetikerMotion.DURATION_BASE_MS, easing = SetikerMotion.EaseOut))
+        logoScale.animateTo(1f, SetikerMotion.DelightSpring)
+        captionAlpha.animateTo(1f, tween(durationMillis = SetikerMotion.DURATION_BASE_MS, easing = SetikerMotion.EaseOut))
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -46,13 +67,24 @@ fun AppBrandedSplashScreen(
             .navigationBarsPadding()
     ) {
         AppLogoMark(
-            modifier = Modifier.align(Alignment.Center)
+            modifier = Modifier
+                .align(Alignment.Center)
+                // The animation lives in the draw phase: reading the values here instead would
+                // recompose the logo on every frame of the animation.
+                .graphicsLayer {
+                    val scale = logoScale.value
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = logoAlpha.value
+                },
+            accent = AccentCoral
         )
 
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 32.dp),
+                .padding(bottom = 32.dp)
+                .graphicsLayer { alpha = captionAlpha.value },
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
@@ -64,5 +96,13 @@ fun AppBrandedSplashScreen(
             )
             Spacer(modifier = Modifier.height(4.dp))
         }
+    }
+}
+
+@Preview
+@Composable
+private fun AppBrandedSplashScreenPreview() {
+    MaterialTheme {
+        AppBrandedSplashScreen()
     }
 }

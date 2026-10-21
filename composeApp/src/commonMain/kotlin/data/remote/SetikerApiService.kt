@@ -1,44 +1,37 @@
 package data.remote
 
+import data.auth.AuthManager
+import data.auth.AuthTokenRefresher
+import data.remote.json.ApiJson
 import data.remote.model.ApiErrorEnvelope
 import data.remote.model.ApiImage
 import data.remote.model.ApiSuccessEnvelope
+import data.remote.model.ApiTextAsset
 import data.remote.model.GenerateData
 import data.remote.model.GridSplitTextAssetsData
-import data.remote.model.ApiTextAsset
 import data.remote.model.VideoStickerPackPlanData
-import domain.model.VideoStickerCandidateManifestItem
 import domain.error.AppErrorCode
-import io.ktor.client.HttpClient
+import domain.model.VideoStickerCandidateManifestItem
 import io.ktor.client.call.body
 import io.ktor.client.plugins.DefaultRequest
-import io.ktor.client.plugins.HttpTimeout
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.plugins.logging.Logger
-import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.forms.FormBuilder
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLProtocol
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.delay
-import io.ktor.serialization.kotlinx.json.json
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
-import data.auth.AuthManager
-import data.auth.AuthTokenRefresher
-import io.ktor.client.request.HttpRequestBuilder
-import io.ktor.client.request.header
-import io.ktor.client.statement.HttpResponse
-import io.ktor.http.HttpStatusCode
 
 class SetikerApiService(
     private val authManager: AuthManager? = null,
@@ -49,10 +42,7 @@ class SetikerApiService(
         const val AI_RESERVATION_HEADER = "X-AI-Reservation-Id"
     }
 
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-    }
+    private val json = ApiJson.codec
 
     private fun HttpRequestBuilder.applyAiReservation(reservationId: String?) {
         reservationId?.takeIf { it.isNotBlank() }?.let { header(AI_RESERVATION_HEADER, it) }
@@ -66,28 +56,10 @@ class SetikerApiService(
         )
     }
 
-    private val client = HttpClient {
-        install(ContentNegotiation) {
-            json(
-                json
-            )
-        }
-        install(HttpTimeout) {
-            requestTimeoutMillis = 600_000
-            connectTimeoutMillis = 600_000
-            socketTimeoutMillis = 600_000
-        }
-        if (ApiConfig.isDebugLoggingEnabled) {
-            install(Logging) {
-                logger = object : Logger {
-                    override fun log(message: String) {
-                        println("KtorClient: $message")
-                    }
-                }
-                sanitizeHeader { it == HttpHeaders.Authorization }
-                level = LogLevel.ALL
-            }
-        }
+    private val client = createApiClient(
+        tag = "SetikerApi",
+        profile = ApiTimeoutProfile.LongOperation,
+    ) {
         install(DefaultRequest) {
             url(baseUrl)
             if (url.protocol.name.isBlank()) {

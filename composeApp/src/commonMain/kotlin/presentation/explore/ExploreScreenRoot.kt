@@ -3,11 +3,12 @@ package presentation.explore
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
+import presentation.components.AppSnackbarHostState
 
 @Composable
 fun ExploreScreenRoot(
@@ -18,8 +19,8 @@ fun ExploreScreenRoot(
     onLoginClick: () -> Unit,
     viewModel: ExploreViewModel = koinViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { AppSnackbarHostState() }
 
     LaunchedEffect(viewModel.effect) {
         viewModel.effect.collect { effect ->
@@ -29,7 +30,7 @@ fun ExploreScreenRoot(
                 is ExploreEffect.NavigateToPublicPack -> onPackClick(effect.packId)
                 is ExploreEffect.NavigateToCreator -> onCreatorClick(effect.userId)
                 ExploreEffect.NavigateLogin -> onLoginClick()
-                is ExploreEffect.ShowError -> snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
+                is ExploreEffect.ShowError -> snackbarHostState.showMessage(effect.message.resolveOrDefault())
             }
         }
     }

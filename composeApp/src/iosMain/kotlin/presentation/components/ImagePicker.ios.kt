@@ -87,6 +87,12 @@ private fun saveImageToFile(image: UIImage): String? {
     }
 }
 
+@OptIn(ExperimentalForeignApi::class)
+private fun saveImageDataToFile(data: NSData): String? {
+    val image = UIImage.imageWithData(data) ?: return null
+    return saveImageToFile(image)
+}
+
 // Single picker delegate using UIImagePickerController
 private class IOSImagePickerDelegate(
     private val onImagePicked: (String?) -> Unit
@@ -137,11 +143,11 @@ private class IOSMultipleImagePickerDelegate(
             if (itemProvider.hasItemConformingToTypeIdentifier(UTTypeImage.identifier)) {
                 platform.darwin.dispatch_group_enter(group)
                 
-                itemProvider.loadObjectOfClass(
-                    UIImage.`class`(),
-                    completionHandler = { image, error ->
-                        if (error == null && image is UIImage) {
-                            saveImageToFile(image)?.let { path ->
+                itemProvider.loadDataRepresentationForTypeIdentifier(
+                    typeIdentifier = UTTypeImage.identifier,
+                    completionHandler = { data, error ->
+                        if (error == null && data != null) {
+                            saveImageDataToFile(data)?.let { path ->
                                 paths.add(path)
                             }
                         }

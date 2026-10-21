@@ -1,5 +1,17 @@
 package data.billing
 
+import data.auth.AuthManager
+import data.auth.AuthTokenRefresher
+import data.remote.ApiConfig
+import data.remote.ApiErrorParser
+import data.remote.ApiException
+import data.remote.createApiClient
+import data.remote.json.ApiJson
+import data.remote.model.ApiSuccessEnvelope
+import data.remote.runApiCall
+import domain.error.AppErrorCode
+import domain.error.DataError
+import domain.error.Result
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
@@ -11,15 +23,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import data.remote.model.ApiSuccessEnvelope
-import data.auth.AuthManager
-import data.auth.AuthTokenRefresher
-import data.remote.ApiConfig
-import io.ktor.client.HttpClient
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 
 @Serializable
 data class BillingProductDto(
@@ -119,46 +123,45 @@ class BillingApiRepository(
     private val baseUrl: String = ApiConfig.baseUrl,
     private val packageName: String = "com.setiker.app"
 ) {
-    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
-    private val client = HttpClient {
-        install(ContentNegotiation) { json(json) }
-    }
+    private val json = ApiJson.codec
+    private val client = createApiClient(TAG)
 
-    suspend fun fetchProducts(): List<BillingProductDto> {
+    suspend fun fetchProducts(): Result<List<BillingProductDto>, DataError.Network> = runApiCall(TAG) {
         val response = client.get("$baseUrl/api/v1/billing/products")
         val body = response.bodyAsText()
         if (!response.status.isSuccess()) {
-            throw BillingApiException("Failed to load products: ${response.status}")
+            throw apiFailure(body, AppErrorCode.CloudFetchFailed, "Failed to load products: ${response.status}")
         }
-        return json.decodeFromString<ApiSuccessEnvelope<BillingProductsResponseDto>>(body)
+        json.decodeFromString<ApiSuccessEnvelope<BillingProductsResponseDto>>(body)
             .data?.products.orEmpty()
     }
 
-    suspend fun listPurchases(limit: Int = 20, offset: Int = 0): PurchasesPageResult {
-        val response = withAuthRetry { token ->
-            client.get("$baseUrl/api/v1/billing/purchases") {
-                header(HttpHeaders.Authorization, "Bearer $token")
-                parameter("limit", limit)
-                parameter("offset", offset)
+    suspend fun listPurchases(limit: Int = 20, offset: Int = 0): Result<PurchasesPageResult, DataError.Network> =
+        runApiCall(TAG) {
+            val response = withAuthRetry { token ->
+                client.get("$baseUrl/api/v1/billing/purchases") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                    parameter("limit", limit)
+                    parameter("offset", offset)
+                }
             }
+            val body = response.bodyAsText()
+            if (!response.status.isSuccess()) {
+                throw apiFailure(body, AppErrorCode.CloudFetchFailed, "Failed to load purchases: ${response.status}")
+            }
+            val data = json.decodeFromString<ApiSuccessEnvelope<PurchasesListResponseDto>>(body).data
+                ?: PurchasesListResponseDto()
+            PurchasesPageResult(
+                purchases = data.purchases,
+                hasMore = data.hasMore
+            )
         }
-        val body = response.bodyAsText()
-        if (!response.status.isSuccess()) {
-            throw BillingApiException("Failed to load purchases: ${response.status}")
-        }
-        val data = json.decodeFromString<ApiSuccessEnvelope<PurchasesListResponseDto>>(body).data
-            ?: PurchasesListResponseDto()
-        return PurchasesPageResult(
-            purchases = data.purchases,
-            hasMore = data.hasMore
-        )
-    }
 
     suspend fun verifyGooglePlayPurchase(
         productCode: String,
         productId: String,
         purchaseToken: String
-    ): PurchaseVerifyResponseDto {
+    ): Result<PurchaseVerifyResponseDto, DataError.Network> = runApiCall(TAG) {
         val response = withAuthRetry { token ->
             client.post("$baseUrl/api/v1/billing/google-play/verify") {
                 header(HttpHeaders.Authorization, "Bearer $token")
@@ -173,19 +176,19 @@ class BillingApiRepository(
                 )
             }
         }
-        return parseSuccess(response) { bodyText ->
+        parseSuccess(response, fallback = AppErrorCode.CloudCreateFailed) { bodyText ->
             json.decodeFromString<ApiSuccessEnvelope<PurchaseVerifyResponseDto>>(bodyText).data
-                ?: throw BillingApiException("Verification failed")
+                ?: throw ApiException(AppErrorCode.CloudCreateFailed, "Verification failed")
         }
     }
 
-    suspend fun getSubscriptionSnapshot(): SubscriptionSnapshotDto {
+    suspend fun getSubscriptionSnapshot(): Result<SubscriptionSnapshotDto, DataError.Network> = runApiCall(TAG) {
         val response = withAuthRetry { token ->
             client.get("$baseUrl/api/v1/billing/subscription/me") {
                 header(HttpHeaders.Authorization, "Bearer $token")
             }
         }
-        return parseSuccess(response) { bodyText ->
+        parseSuccess(response) { bodyText ->
             json.decodeFromString<ApiSuccessEnvelope<SubscriptionSnapshotDto>>(bodyText).data
                 ?: SubscriptionSnapshotDto()
         }
@@ -197,7 +200,7 @@ class BillingApiRepository(
         signedTransactionInfo: String,
         transactionId: String? = null,
         originalTransactionId: String? = null
-    ): PurchaseVerifyResponseDto {
+    ): Result<PurchaseVerifyResponseDto, DataError.Network> = runApiCall(TAG) {
         val response = withAuthRetry { token ->
             client.post("$baseUrl/api/v1/billing/apple/verify") {
                 header(HttpHeaders.Authorization, "Bearer $token")
@@ -213,16 +216,16 @@ class BillingApiRepository(
                 )
             }
         }
-        return parseSuccess(response) { bodyText ->
+        parseSuccess(response, fallback = AppErrorCode.CloudCreateFailed) { bodyText ->
             json.decodeFromString<ApiSuccessEnvelope<PurchaseVerifyResponseDto>>(bodyText).data
-                ?: throw BillingApiException("Verification failed")
+                ?: throw ApiException(AppErrorCode.CloudCreateFailed, "Verification failed")
         }
     }
 
     suspend fun restorePurchases(
         googlePlay: List<GooglePlayVerifyRequestDto> = emptyList(),
         apple: List<AppleVerifyRequestDto> = emptyList()
-    ): Int {
+    ): Result<Int, DataError.Network> = runApiCall(TAG) {
         val response = withAuthRetry { token ->
             client.post("$baseUrl/api/v1/billing/restore") {
                 header(HttpHeaders.Authorization, "Bearer $token")
@@ -230,7 +233,7 @@ class BillingApiRepository(
                 setBody(RestorePurchasesRequestDto(googlePlay = googlePlay, apple = apple))
             }
         }
-        return parseSuccess(response) { bodyText ->
+        parseSuccess(response, fallback = AppErrorCode.CloudCreateFailed) { bodyText ->
             val restored = json.decodeFromString<ApiSuccessEnvelope<Map<String, Int>>>(bodyText).data
             restored?.get("restored") ?: 0
         }
@@ -238,17 +241,26 @@ class BillingApiRepository(
 
     suspend fun restoreGooglePlayPurchases(
         items: List<GooglePlayVerifyRequestDto>
-    ): Int = restorePurchases(googlePlay = items)
+    ): Result<Int, DataError.Network> = restorePurchases(googlePlay = items)
 
     private suspend inline fun <T> parseSuccess(
         response: io.ktor.client.statement.HttpResponse,
+        fallback: AppErrorCode = AppErrorCode.CloudFetchFailed,
         crossinline onSuccess: (String) -> T
     ): T {
         val bodyText = response.bodyAsText()
         if (!response.status.isSuccess()) {
-            throw BillingApiException("Request failed: ${response.status}")
+            throw apiFailure(bodyText, fallback, "Request failed: ${response.status}")
         }
         return onSuccess(bodyText)
+    }
+
+    private fun apiFailure(bodyText: String, fallback: AppErrorCode, defaultMessage: String): ApiException {
+        val parsed = ApiErrorParser.parse(bodyText)
+        return ApiException(
+            code = parsed?.code ?: fallback,
+            message = parsed?.message ?: defaultMessage
+        )
     }
 
     private suspend fun withAuthRetry(
@@ -257,13 +269,15 @@ class BillingApiRepository(
         val firstToken = authManager.getValidAccessToken()
             ?: authTokenRefresher?.refreshAccessToken(clearTokensOnFailure = false)
             ?: authManager.getAccessToken()
-            ?: throw BillingApiException("Not authenticated")
+            ?: throw ApiException(AppErrorCode.AuthNotAuthenticated, "Not authenticated")
         val firstResponse = request(firstToken)
         if (firstResponse.status != HttpStatusCode.Unauthorized) return firstResponse
         val refreshed = authTokenRefresher?.refreshAccessToken(clearTokensOnFailure = true)
             ?: return firstResponse
         return request(refreshed)
     }
-}
 
-class BillingApiException(message: String) : Exception(message)
+    private companion object {
+        const val TAG = "BillingApi"
+    }
+}

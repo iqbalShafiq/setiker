@@ -1,8 +1,8 @@
 package data.remote.model
 
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlinx.serialization.json.Json
 
 class VideoStickerPackPlanSerializationTest {
     private val json = Json { ignoreUnknownKeys = true }

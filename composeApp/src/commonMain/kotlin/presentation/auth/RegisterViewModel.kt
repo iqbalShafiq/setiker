@@ -6,6 +6,7 @@ import data.auth.AuthApiService
 import data.auth.AuthManager
 import data.auth.model.RegisterRequest
 import data.auth.model.toDomainModel
+import domain.error.Result
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -112,12 +113,10 @@ class RegisterViewModel(
     }
 
     private suspend fun completeOAuthGoogle(idToken: String) {
-        try {
-            val response = authApiService.loginWithGoogle(idToken)
-            persistAuth(response)
-        } catch (e: Exception) {
-            _state.update {
-                it.copy(isLoading = false, error = e.toUiText(Res.string.error_auth_register_failed))
+        when (val authOutcome = authApiService.loginWithGoogle(idToken)) {
+            is Result.Success -> persistAuth(authOutcome.data)
+            is Result.Error -> _state.update {
+                it.copy(isLoading = false, error = authOutcome.error.toUiText(Res.string.error_auth_register_failed))
             }
         }
     }
@@ -134,12 +133,10 @@ class RegisterViewModel(
                 return@launch
             }
             val idToken = tokenResult.getOrNull()?.idToken ?: return@launch
-            try {
-                val response = authApiService.loginWithApple(idToken)
-                persistAuth(response)
-            } catch (e: Exception) {
-                _state.update {
-                    it.copy(isLoading = false, error = e.toUiText(Res.string.error_auth_register_failed))
+            when (val authOutcome = authApiService.loginWithApple(idToken)) {
+                is Result.Success -> persistAuth(authOutcome.data)
+                is Result.Error -> _state.update {
+                    it.copy(isLoading = false, error = authOutcome.error.toUiText(Res.string.error_auth_register_failed))
                 }
             }
         }
@@ -184,35 +181,36 @@ class RegisterViewModel(
 
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            try {
-                val response = authApiService.register(
-                    RegisterRequest(
-                        email = s.email,
-                        username = s.username,
-                        password = s.password,
-                        displayName = s.name.takeIf { it.isNotBlank() }
-                    )
+            val authOutcome = authApiService.register(
+                RegisterRequest(
+                    email = s.email,
+                    username = s.username,
+                    password = s.password,
+                    displayName = s.name.takeIf { it.isNotBlank() }
                 )
-                val data = response.data
-                val user = data?.user
-                val accessToken = data?.accessToken
-                val refreshToken = authApiService.getRefreshToken()
-                if (accessToken != null && user != null) {
-                    val expiresIn = (data.expiresIn ?: 3600).toLong()
-                    authManager.saveTokens(accessToken, refreshToken ?: "", expiresIn)
-                    authManager.saveUser(user.toDomainModel())
-                    _effect.value = RegisterEffect.NavigateToHome
-                } else {
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            error = UiText.StringRes(Res.string.error_auth_register_failed)
-                        )
+            )
+            when (authOutcome) {
+                is Result.Success -> {
+                    val data = authOutcome.data.data
+                    val user = data?.user
+                    val accessToken = data?.accessToken
+                    val refreshToken = authApiService.getRefreshToken()
+                    if (accessToken != null && user != null) {
+                        val expiresIn = (data.expiresIn ?: 3600).toLong()
+                        authManager.saveTokens(accessToken, refreshToken ?: "", expiresIn)
+                        authManager.saveUser(user.toDomainModel())
+                        _effect.value = RegisterEffect.NavigateToHome
+                    } else {
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                error = UiText.StringRes(Res.string.error_auth_register_failed)
+                            )
+                        }
                     }
                 }
-            } catch (e: Exception) {
-                _state.update {
-                    it.copy(isLoading = false, error = e.toUiText(Res.string.error_auth_register_failed))
+                is Result.Error -> _state.update {
+                    it.copy(isLoading = false, error = authOutcome.error.toUiText(Res.string.error_auth_register_failed))
                 }
             }
         }

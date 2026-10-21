@@ -9,17 +9,19 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
+import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalCheckerSquare
 
 @Composable
 fun CheckerboardBackground(
     modifier: Modifier = Modifier,
-    checkerColor: Color = Color.LightGray,
+    checkerColor: Color = neubrutalCheckerSquare(),
     squareSize: Float = 20f
 ) {
     Box(
         modifier = modifier
-            .background(Color.White)
+            .background(neubrutalCardSurface())
             .drawBehind {
                 val numSquaresX = (size.width / squareSize).toInt() + 1
                 val numSquaresY = (size.height / squareSize).toInt() + 1

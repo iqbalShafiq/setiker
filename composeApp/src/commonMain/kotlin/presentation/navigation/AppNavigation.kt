@@ -6,21 +6,28 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavOptionsBuilder
 import androidx.navigation.NavType
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.navDeepLink
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import domain.model.AnimatedStickerSpec
-import domain.model.AuthState
+import androidx.navigation.navDeepLink
+import androidx.savedstate.read
 import data.auth.AuthManager
 import data.preferences.UserPreferencesRepository
 import data.sync.NetworkMonitor
+import domain.model.AnimatedStickerSpec
+import domain.model.AuthState
+import domain.repository.AiJobRepository
+import domain.repository.WorkspaceDraftRepository
+import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
+import presentation.aijob.WorkspaceDraftNavigation
+import presentation.aijobs.AiJobsScreenRoot
 import presentation.animatededitor.AnimatedEditorEffect
 import presentation.animatededitor.AnimatedEditorScreenRoot
 import presentation.auth.EditProfileScreenRoot
@@ -35,31 +42,25 @@ import presentation.auth.ResetPasswordScreenRoot
 import presentation.blocked.BlockedUsersScreenRoot
 import presentation.createpack.CreatePackScreenRoot
 import presentation.createpack.DraftSticker
+import presentation.creator.CreatorProfileScreenRoot
 import presentation.crop.CropScreenRoot
 import presentation.editor.EditorScreenRoot
-import presentation.creator.CreatorProfileScreenRoot
 import presentation.explore.ExploreScreenRoot
-import presentation.notifications.NotificationsScreenRoot
-import presentation.aijobs.AiJobsScreenRoot
 import presentation.history.ProcessingHistoryScreenRoot
 import presentation.home.HomeScreenRoot
+import presentation.legal.LegalDocumentScreenRoot
+import presentation.notifications.NotificationsScreenRoot
+import presentation.onboarding.OnboardingScreenRoot
 import presentation.packdetail.PackDetailScreenRoot
 import presentation.publicpack.PublicPackDetailScreenRoot
 import presentation.purchasehistory.PurchaseHistoryScreenRoot
+import presentation.settings.SettingsScreenRoot
+import presentation.sharepreview.SharePreviewScreenRoot
 import presentation.sync.SyncScreenRoot
 import presentation.sync.SyncViewModel
-import presentation.onboarding.OnboardingScreenRoot
-import presentation.settings.SettingsScreenRoot
-import presentation.legal.LegalDocumentScreenRoot
-import presentation.sharepreview.SharePreviewScreenRoot
 import presentation.videocrop.VideoCropScreenRoot
 import presentation.videostickerpack.VideoStickerPackScreenRoot
 import presentation.videotrim.VideoTrimScreenRoot
-import domain.repository.AiJobRepository
-import domain.repository.WorkspaceDraftRepository
-import presentation.aijob.WorkspaceDraftNavigation
-import org.koin.compose.koinInject
-import org.koin.compose.viewmodel.koinViewModel
 
 private object CropRecipient {
     const val Editor = "editor"
@@ -83,11 +84,11 @@ fun AppNavigation(
     val authManager: AuthManager = koinInject()
     val userPreferencesRepository: UserPreferencesRepository = koinInject()
     val networkMonitor: NetworkMonitor = koinInject()
-    val onboardingCompleted by userPreferencesRepository.hasCompletedOnboarding.collectAsState(initial = true)
-    val isOnline by networkMonitor.isOnline.collectAsState()
+    val onboardingCompleted by userPreferencesRepository.hasCompletedOnboarding.collectAsStateWithLifecycle(initialValue = true)
+    val isOnline by networkMonitor.isOnline.collectAsStateWithLifecycle()
     val workspaceDraftRepository: WorkspaceDraftRepository = koinInject()
     val aiJobRepository: AiJobRepository = koinInject()
-    val authState by authManager.authState.collectAsState()
+    val authState by authManager.authState.collectAsStateWithLifecycle()
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
     val loginGuardRoutes = setOf("home", "profile", "sync", "history", "aiJobs")
@@ -105,8 +106,12 @@ fun AppNavigation(
         onDispose { unbind() }
     }
 
-    LaunchedEffect(Unit) {
+    // The connectivity callback belongs to the process, not to this composition. The sync manager
+    // keeps it alive for as long as it needs it; the navigation only reads the state. Registering
+    // it again on every composition left another callback behind in the connectivity manager.
+    DisposableEffect(networkMonitor) {
         networkMonitor.startMonitoring()
+        onDispose { networkMonitor.stopMonitoring() }
     }
 
     LaunchedEffect(onboardingCompleted, currentRoute) {
@@ -199,7 +204,7 @@ fun AppNavigation(
             route = "legal/{docType}",
             arguments = listOf(navArgument("docType") { type = NavType.StringType })
         ) { backStackEntry ->
-            val docType = backStackEntry.arguments?.getString("docType") ?: "PRIVACY"
+            val docType = backStackEntry.arguments?.read { getStringOrNull("docType") } ?: "PRIVACY"
             LegalDocumentScreenRoot(
                 docType = docType,
                 onBack = { navController.popBackStack() }
@@ -250,7 +255,7 @@ fun AppNavigation(
             route = VIDEO_STICKER_PACK_ROUTE,
             arguments = listOf(navArgument("videoPath") { type = NavType.StringType })
         ) { backStackEntry ->
-            val encodedPath = backStackEntry.arguments?.getString("videoPath") ?: return@composable
+            val encodedPath = backStackEntry.arguments?.read { getStringOrNull("videoPath") } ?: return@composable
             val route = Screen.VideoStickerPack(PathEncoder.decode(encodedPath))
             VideoStickerPackScreenRoot(
                 videoPath = route.videoPath,
@@ -299,7 +304,7 @@ fun AppNavigation(
                 navDeepLink { uriPattern = "setiker://auth/reset-password?token={token}" }
             )
         ) { entry ->
-            val token = entry.arguments?.getString("token").orEmpty()
+            val token = entry.arguments?.read { getStringOrNull("token") }.orEmpty()
             ResetPasswordScreenRoot(
                 token = token,
                 onDone = {
@@ -418,7 +423,7 @@ fun AppNavigation(
             route = "creator/{userId}",
             arguments = listOf(navArgument("userId") { type = NavType.StringType })
         ) { backStackEntry ->
-            val userId = backStackEntry.arguments?.getString("userId") ?: return@composable
+            val userId = backStackEntry.arguments?.read { getStringOrNull("userId") } ?: return@composable
             CreatorProfileScreenRoot(
                 userId = userId,
                 onBackClick = { navController.popBackStack() },
@@ -438,7 +443,7 @@ fun AppNavigation(
             route = "publicPack/{packId}",
             arguments = listOf(navArgument("packId") { type = NavType.StringType })
         ) { backStackEntry ->
-            val packId = backStackEntry.arguments?.getString("packId") ?: return@composable
+            val packId = backStackEntry.arguments?.read { getStringOrNull("packId") } ?: return@composable
             PublicPackDetailScreenRoot(
                 packId = packId,
                 onBackClick = { navController.popBackStack() },
@@ -466,7 +471,7 @@ fun AppNavigation(
                 navDeepLink { uriPattern = "setiker://share/pack/{token}" }
             )
         ) { backStackEntry ->
-            val token = backStackEntry.arguments?.getString("token") ?: return@composable
+            val token = backStackEntry.arguments?.read { getStringOrNull("token") } ?: return@composable
             SharePreviewScreenRoot(
                 kind = "pack",
                 token = token,
@@ -488,7 +493,7 @@ fun AppNavigation(
                 navDeepLink { uriPattern = "setiker://share/sticker/{token}" }
             )
         ) { backStackEntry ->
-            val token = backStackEntry.arguments?.getString("token") ?: return@composable
+            val token = backStackEntry.arguments?.read { getStringOrNull("token") } ?: return@composable
             SharePreviewScreenRoot(
                 kind = "sticker",
                 token = token,
@@ -514,7 +519,7 @@ fun AppNavigation(
             route = "packDetail/{packId}",
             arguments = listOf(navArgument("packId") { type = NavType.StringType })
         ) { backStackEntry ->
-            val packId = backStackEntry.arguments?.getString("packId") ?: return@composable
+            val packId = backStackEntry.arguments?.read { getStringOrNull("packId") } ?: return@composable
             PackDetailScreenRoot(
                 packId = packId,
                 onBackClick = { navController.popBackStack() },
@@ -598,8 +603,8 @@ fun AppNavigation(
                 }
             )
         ) { backStackEntry ->
-            val packId = backStackEntry.arguments?.getString("packId")
-            val workspaceDraftId = backStackEntry.arguments?.getString("workspaceDraftId")
+            val packId = backStackEntry.arguments?.read { getStringOrNull("packId") }
+            val workspaceDraftId = backStackEntry.arguments?.read { getStringOrNull("workspaceDraftId") }
             CreatePackScreenRoot(
                 packId = packId,
                 workspaceDraftId = workspaceDraftId,
@@ -650,8 +655,8 @@ fun AppNavigation(
                 }
             )
         ) { backStackEntry ->
-            val packId = backStackEntry.arguments?.getString("packId") ?: return@composable
-            val stickerIndex = backStackEntry.arguments?.getInt("stickerIndex")?.takeIf { it >= 0 }
+            val packId = backStackEntry.arguments?.read { getStringOrNull("packId") } ?: return@composable
+            val stickerIndex = backStackEntry.arguments?.read { getIntOrNull("stickerIndex") }?.takeIf { it >= 0 }
 
             val croppedImagePath = editorCropDeliveredPath
 
@@ -680,8 +685,8 @@ fun AppNavigation(
                 navArgument("recipient") { type = NavType.StringType }
             )
         ) { backStackEntry ->
-            val encodedPath = backStackEntry.arguments?.getString("imagePath") ?: return@composable
-            val recipient = backStackEntry.arguments?.getString("recipient")
+            val encodedPath = backStackEntry.arguments?.read { getStringOrNull("imagePath") } ?: return@composable
+            val recipient = backStackEntry.arguments?.read { getStringOrNull("recipient") }
                 ?: CropRecipient.Editor
             val imagePath = PathEncoder.decode(encodedPath)
             CropScreenRoot(
@@ -711,9 +716,9 @@ fun AppNavigation(
                 }
             )
         ) { backStackEntry ->
-            val encodedPath = backStackEntry.arguments?.getString("videoPath") ?: return@composable
+            val encodedPath = backStackEntry.arguments?.read { getStringOrNull("videoPath") } ?: return@composable
             val videoPath = PathEncoder.decode(encodedPath)
-            val encodedPackId = backStackEntry.arguments?.getString("packId").orEmpty()
+            val encodedPackId = backStackEntry.arguments?.read { getStringOrNull("packId") }.orEmpty()
             val packId = if (encodedPackId.isBlank()) "" else PathEncoder.decode(encodedPackId)
             VideoTrimScreenRoot(
                 videoPath = videoPath,
@@ -746,15 +751,15 @@ fun AppNavigation(
                 navArgument("speed") { type = NavType.FloatType }
             )
         ) { backStackEntry ->
-            val encodedPath = backStackEntry.arguments?.getString("videoPath") ?: return@composable
+            val encodedPath = backStackEntry.arguments?.read { getStringOrNull("videoPath") } ?: return@composable
             val videoPath = PathEncoder.decode(encodedPath)
-            val encodedPackId = backStackEntry.arguments?.getString("packId").orEmpty()
+            val encodedPackId = backStackEntry.arguments?.read { getStringOrNull("packId") }.orEmpty()
             val packIdArg = if (encodedPackId.isBlank()) "" else PathEncoder.decode(encodedPackId)
             val spec = AnimatedStickerSpec(
-                trimStartMs = backStackEntry.arguments?.getLong("trimStart") ?: 0L,
-                trimEndMs = backStackEntry.arguments?.getLong("trimEnd") ?: 0L,
-                fps = backStackEntry.arguments?.getInt("fps") ?: AnimatedStickerSpec.DEFAULT_FPS,
-                speed = backStackEntry.arguments?.getFloat("speed") ?: 1f
+                trimStartMs = backStackEntry.arguments?.read { getLongOrNull("trimStart") } ?: 0L,
+                trimEndMs = backStackEntry.arguments?.read { getLongOrNull("trimEnd") } ?: 0L,
+                fps = backStackEntry.arguments?.read { getIntOrNull("fps") } ?: AnimatedStickerSpec.DEFAULT_FPS,
+                speed = backStackEntry.arguments?.read { getFloatOrNull("speed") } ?: 1f
             )
             VideoCropScreenRoot(
                 videoPath = videoPath,
@@ -784,8 +789,8 @@ fun AppNavigation(
                 }
             )
         ) { backStackEntry ->
-            val draftId = backStackEntry.arguments?.getString("draftId") ?: return@composable
-            val encodedPackId = backStackEntry.arguments?.getString("packId").orEmpty()
+            val draftId = backStackEntry.arguments?.read { getStringOrNull("draftId") } ?: return@composable
+            val encodedPackId = backStackEntry.arguments?.read { getStringOrNull("packId") }.orEmpty()
             val packId = if (encodedPackId.isBlank()) "" else PathEncoder.decode(encodedPackId)
             AnimatedEditorScreenRoot(
                 draftId = draftId,

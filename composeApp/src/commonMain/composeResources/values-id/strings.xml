@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="about_app">Tentang Setiker</string>
     <string name="error_auth_login_failed">Email atau kata sandi salah.</string>
@@ -19,12 +19,12 @@
     <string name="login_welcome_title">Selamat datang kembali</string>
     <string name="login_welcome_subtitle">Masuk untuk menyinkronkan paket dan fitur AI cloud.</string>
     <string name="login_submit">Masuk</string>
-    <string name="login_signing_in">Sedang masuk…</string>
+    <string name="login_signing_in">Sedang masukâ€¦</string>
     <string name="register_title">Buat akun</string>
     <string name="register_subtitle">Gabung Setiker untuk sinkron paket dan jelajahi stiker publik.</string>
     <string name="register_username_required">Nama pengguna wajib diisi.</string>
     <string name="register_password_mismatch">Kata sandi tidak cocok.</string>
-    <string name="register_creating_account">Membuat akun…</string>
+    <string name="register_creating_account">Membuat akunâ€¦</string>
     <string name="animated_error_draft_not_found">Draf tidak ditemukan. Pilih video lagi.</string>
     <string name="animated_error_frames_missing">File frame hilang. Pilih video lagi.</string>
     <string name="animated_error_save_failed">Gagal menyimpan stiker animasi.</string>
@@ -47,7 +47,7 @@
     <string name="pack_duplicate_success">Paket diduplikasi secara lokal.</string>
     <string name="pack_duplicate_dialog_title">Duplikat paket?</string>
     <string name="pack_duplicate_dialog_message">Buat salinan lokal dari \"%1$s\". Stiker dan ikon baki akan disalin ke paket baru.</string>
-    <string name="pack_duplicating">Menduplikasi paket…</string>
+    <string name="pack_duplicating">Menduplikasi paketâ€¦</string>
     <string name="pack_collaborators">Kolaborator</string>
     <string name="pack_make_public">Jadikan publik</string>
     <string name="pack_unpublish">Batalkan publikasi</string>
@@ -57,11 +57,11 @@
     <string name="pack_unpublish_dialog_message">Paket ini akan disembunyikan dari Explore.</string>
     <string name="pack_publish_confirm">Terbitkan</string>
     <string name="pack_unpublish_confirm">Batalkan publikasi</string>
-    <string name="pack_updating_visibility">Memperbarui visibilitas…</string>
+    <string name="pack_updating_visibility">Memperbarui visibilitasâ€¦</string>
     <string name="ai_quota_points_summary">Sisa %1$d dari %2$d poin AI hari ini</string>
-    <string name="ai_quota_usage_breakdown">%1$d terpakai • %2$d tertunda</string>
+    <string name="ai_quota_usage_breakdown">%1$d terpakai â€¢ %2$d tertunda</string>
     <string name="ai_quota_action_cost">Aksi ini memakai %1$d poin</string>
-    <string name="ai_quota_loading">Memuat kuota AI…</string>
+    <string name="ai_quota_loading">Memuat kuota AIâ€¦</string>
     <string name="ai_quota_unavailable">Kuota AI tidak bisa dimuat.</string>
     <string name="ai_quota_resets">Reset pada %1$s</string>
     <string name="settings_ai_usage_cost_generate">Generate: %1$d poin per aksi</string>
@@ -80,7 +80,7 @@
     <string name="ai_quota_op_video">Paket stiker video</string>
     <string name="ai_quota_op_improve">Poles kualitas</string>
     <string name="ai_quota_op_import">Impor paket publik</string>
-    <string name="ai_quota_op_cost">−%1$d poin</string>
+    <string name="ai_quota_op_cost">âˆ’%1$d poin</string>
     <string name="profile_ai_quota_section">Kuota AI</string>
     <string name="settings_change_password">Ubah kata sandi</string>
     <string name="settings_username">Nama pengguna</string>
@@ -97,4 +97,6 @@
     <string name="style_sunset">Sunset</string>
     <string name="style_caption">Keterangan</string>
     <string name="style_custom">Kustom</string>
+    <string name="paywall_title">Rencana &amp; token</string>
+    <string name="paywall_price_unavailable">Harga belum tersedia saat ini</string>
 </resources>

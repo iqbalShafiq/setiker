@@ -5,8 +5,8 @@ import domain.model.ResolvedVideoStaticSticker
 import domain.model.ResolvedVideoStickerPackPlan
 import domain.model.VideoAnimatedStickerPlan
 import domain.model.VideoAnimatedTimelineFrame
-import domain.model.VideoStickerPackPlan
 import domain.model.VideoStaticStickerPlan
+import domain.model.VideoStickerPackPlan
 import kotlinx.serialization.Serializable
 
 @Serializable

@@ -1,6 +1,7 @@
 package domain.model.aijob
 
-import kotlinx.serialization.Serializable
+
+
 
 enum class AiJobType {
     GENERATE_STICKERS,

@@ -18,7 +18,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
@@ -27,7 +26,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.distinctUntilChanged
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
@@ -63,7 +64,7 @@ fun OnboardingScreenRoot(
     onFinished: () -> Unit,
     viewModel: OnboardingViewModel = koinViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
@@ -86,7 +87,6 @@ fun OnboardingScreen(
     val pagerState = rememberPagerState(
         initialPage = state.pageIndex.coerceIn(0, pageCount - 1)
     ) { pageCount }
-    val isLast = state.pageIndex >= state.pageCount - 1
 
     LaunchedEffect(state.pageIndex, pageCount) {
         val targetPage = state.pageIndex.coerceIn(0, pageCount - 1)
@@ -139,12 +139,29 @@ fun OnboardingScreen(
             ) {
                 PageIndicator(
                     pageCount = pageCount,
-                    currentPage = state.pageIndex,
+                    // Drive the indicator from the pager, not from the view model: the model jumps
+                    // to the next page as soon as "Next" is pressed, which made the dot change
+                    // while the page was still sliding into place.
+                    currentPage = pagerState.currentPage,
                     onPageClick = { page -> onIntent(OnboardingIntent.SelectPage(page)) }
                 )
                 AppPrimaryButton(
-                    text = stringResource(if (isLast) Res.string.onboarding_done else Res.string.onboarding_next),
-                    onClick = { onIntent(if (isLast) OnboardingIntent.Finish else OnboardingIntent.Next) },
+                    text = stringResource(
+                        if (pagerState.currentPage >= pageCount - 1) {
+                            Res.string.onboarding_done
+                        } else {
+                            Res.string.onboarding_next
+                        }
+                    ),
+                    onClick = {
+                        onIntent(
+                            if (pagerState.currentPage >= pageCount - 1) {
+                                OnboardingIntent.Finish
+                            } else {
+                                OnboardingIntent.Next
+                            }
+                        )
+                    },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -224,3 +241,14 @@ private fun onboardingPages(): List<OnboardingPage> = listOf(
         darkImage = Res.drawable.onboarding_ai_jobs_dark
     )
 )
+
+@Preview
+@Composable
+private fun OnboardingScreenPreview() {
+    MaterialTheme {
+        OnboardingScreen(
+            state = OnboardingState(),
+            onIntent = {}
+        )
+    }
+}

@@ -15,6 +15,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import org.koin.java.KoinJavaComponent.inject
+import util.AppLog
 
 class AiJobProcessorWorker(
     context: Context,
@@ -30,7 +31,7 @@ class AiJobProcessorWorker(
         return try {
             doWorkInternal()
         } catch (t: Throwable) {
-            AiJobProgressLog.e(WORKER_LOG_TAG, "AiJobProcessorWorker crashed", t)
+            AppLog.e(WORKER_LOG_TAG, "AiJobProcessorWorker crashed", t)
             val interrupted = aiJobManager.recoverInterruptedJobs()
             AiJobNotificationSync.applyRecovery(
                 notificationHelper,
@@ -133,7 +134,7 @@ class AiJobProcessorWorker(
     private suspend fun safeSetForeground(foregroundInfo: ForegroundInfo) {
         runCatching { setForeground(foregroundInfo) }
             .onFailure { error ->
-                AiJobProgressLog.w(
+                AppLog.w(
                     WORKER_LOG_TAG,
                     "setForeground skipped: ${error.message}",
                     error

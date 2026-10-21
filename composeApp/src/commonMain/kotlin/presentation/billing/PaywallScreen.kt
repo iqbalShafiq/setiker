@@ -12,28 +12,30 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import domain.billing.BillingProductUiModel
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
+import presentation.components.AppSnackbarHostState
 import presentation.components.AiQuotaSummary
 import presentation.components.AppIllustration
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
 import presentation.components.AppTopBar
 import presentation.components.ContentLoadLayout
+import presentation.components.NeubrutalSnackbarHost
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.neubrutalBorderColor
@@ -49,14 +51,13 @@ import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.paywall_buy
 import setiker.composeapp.generated.resources.paywall_empty_desc
 import setiker.composeapp.generated.resources.paywall_empty_title
-import setiker.composeapp.generated.resources.paywall_load_failed_desc
 import setiker.composeapp.generated.resources.paywall_load_failed_title
+import setiker.composeapp.generated.resources.paywall_price_unavailable
 import setiker.composeapp.generated.resources.paywall_processing
 import setiker.composeapp.generated.resources.paywall_purchase_history
 import setiker.composeapp.generated.resources.paywall_restore
 import setiker.composeapp.generated.resources.paywall_title
 import setiker.composeapp.generated.resources.paywall_tokens_label
-import setiker.composeapp.generated.resources.retry
 
 @Composable
 fun PaywallScreenRoot(
@@ -64,17 +65,17 @@ fun PaywallScreenRoot(
     onNavigateToPurchaseHistory: () -> Unit = {},
     viewModel: PaywallViewModel = koinViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { AppSnackbarHostState() }
 
     LaunchedEffect(state.message, state.error) {
         state.message?.let {
-            snackbarHostState.showSnackbar(it.resolveOrDefault())
+            snackbarHostState.showMessage(it.resolveOrDefault())
             viewModel.onIntent(PaywallIntent.DismissMessage)
         }
         state.error?.let {
             if (!state.loadFailed || state.products.isNotEmpty()) {
-                snackbarHostState.showSnackbar(it.resolveOrDefault())
+                snackbarHostState.showMessage(it.resolveOrDefault())
                 viewModel.onIntent(PaywallIntent.DismissMessage)
             }
         }
@@ -92,7 +93,7 @@ fun PaywallScreenRoot(
 @Composable
 fun PaywallScreen(
     state: PaywallState,
-    snackbarHostState: SnackbarHostState,
+    snackbarHostState: AppSnackbarHostState,
     onIntent: (PaywallIntent) -> Unit,
     onBack: () -> Unit,
     onNavigateToPurchaseHistory: () -> Unit,
@@ -105,7 +106,7 @@ fun PaywallScreen(
                 onBackClick = onBack
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { padding ->
         ContentLoadLayout(
@@ -171,6 +172,11 @@ private fun PaywallProductCard(
     onPurchase: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val tokenLabel = product.tokenAmount?.let { amount ->
+        stringResource(Res.string.paywall_tokens_label, amount)
+    }
+    val presentation = paywallProductPresentation(product, tokenLabel)
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -191,32 +197,37 @@ private fun PaywallProductCard(
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Text(
-            text = product.name,
+            text = presentation.title,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = neubrutalOnSurface()
         )
-        product.description?.let {
+        presentation.description?.let {
             Text(
                 text = it,
                 style = MaterialTheme.typography.bodyMedium,
                 color = neubrutalMutedOnSurface()
             )
         }
-        product.formattedPrice?.let {
+        presentation.tokenLabel?.let {
             Text(
                 text = it,
-                style = MaterialTheme.typography.labelLarge,
-                color = neubrutalOnSurface()
-            )
-        }
-        product.tokenAmount?.let {
-            Text(
-                text = stringResource(Res.string.paywall_tokens_label, it),
                 style = MaterialTheme.typography.bodySmall,
                 color = neubrutalMutedOnSurface()
             )
         }
+        presentation.price?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = neubrutalOnSurface()
+            )
+        } ?: Text(
+            text = stringResource(Res.string.paywall_price_unavailable),
+            style = MaterialTheme.typography.labelMedium,
+            color = neubrutalMutedOnSurface()
+        )
         AppPrimaryButton(
             text = if (purchasingCode == product.code) {
                 stringResource(Res.string.paywall_processing)
@@ -224,8 +235,24 @@ private fun PaywallProductCard(
                 stringResource(Res.string.paywall_buy)
             },
             onClick = onPurchase,
-            enabled = purchasingCode == null,
+            // A product without a store price must not be purchasable: the user would have no
+            // idea what they are paying.
+            enabled = presentation.isPurchasable && purchasingCode == null,
             modifier = Modifier.padding(top = 4.dp)
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun PaywallScreenPreview() {
+    MaterialTheme {
+        PaywallScreen(
+            state = PaywallState(),
+            snackbarHostState = AppSnackbarHostState(),
+            onIntent = {},
+            onBack = {},
+            onNavigateToPurchaseHistory = {}
         )
     }
 }

@@ -6,12 +6,15 @@ import domain.model.StickerPack
 /**
  * Pure validator for animated sticker constraints derived from WhatsApp's official spec
  * (see https://github.com/WhatsApp/stickers/blob/main/Android/README.md).
+ *
+ * [StickerValidation] used to be named `Result`, which collided with `kotlin.Result` at every
+ * call site that also needed the typed `domain.error.Result` from P3b.
  */
 object AnimatedStickerValidator {
 
-    sealed class Result {
-        data object Ok : Result()
-        data class Failure(val reason: Reason) : Result()
+    sealed class StickerValidation {
+        data object Ok : StickerValidation()
+        data class Failure(val reason: Reason) : StickerValidation()
     }
 
     enum class Reason {
@@ -24,34 +27,34 @@ object AnimatedStickerValidator {
         TrimRangeInvalid
     }
 
-    fun validateFrameDuration(durationMs: Long): Result =
-        if (durationMs >= StickerPack.MIN_FRAME_DURATION_MS) Result.Ok
-        else Result.Failure(Reason.FrameDurationTooShort)
+    fun validateFrameDuration(durationMs: Long): StickerValidation =
+        if (durationMs >= StickerPack.MIN_FRAME_DURATION_MS) StickerValidation.Ok
+        else StickerValidation.Failure(Reason.FrameDurationTooShort)
 
-    fun validateTotalDuration(totalMs: Long): Result =
-        if (totalMs in 1..StickerPack.MAX_ANIMATION_DURATION_MS) Result.Ok
-        else Result.Failure(Reason.TotalDurationTooLong)
+    fun validateTotalDuration(totalMs: Long): StickerValidation =
+        if (totalMs in 1..StickerPack.MAX_ANIMATION_DURATION_MS) StickerValidation.Ok
+        else StickerValidation.Failure(Reason.TotalDurationTooLong)
 
-    fun validateFileSize(bytes: Long): Result =
-        if (bytes in 1..StickerPack.MAX_ANIMATED_STICKER_FILE_SIZE.toLong()) Result.Ok
-        else Result.Failure(Reason.FileSizeTooLarge)
+    fun validateFileSize(bytes: Long): StickerValidation =
+        if (bytes in 1..StickerPack.MAX_ANIMATED_STICKER_FILE_SIZE.toLong()) StickerValidation.Ok
+        else StickerValidation.Failure(Reason.FileSizeTooLarge)
 
-    fun validateDimensions(width: Int, height: Int): Result =
-        if (width == StickerPack.STICKER_SIZE && height == StickerPack.STICKER_SIZE) Result.Ok
-        else Result.Failure(Reason.DimensionsInvalid)
+    fun validateDimensions(width: Int, height: Int): StickerValidation =
+        if (width == StickerPack.STICKER_SIZE && height == StickerPack.STICKER_SIZE) StickerValidation.Ok
+        else StickerValidation.Failure(Reason.DimensionsInvalid)
 
-    fun validateSpec(spec: AnimatedStickerSpec): Result {
+    fun validateSpec(spec: AnimatedStickerSpec): StickerValidation {
         if (spec.fps !in AnimatedStickerSpec.MIN_FPS..AnimatedStickerSpec.MAX_FPS) {
-            return Result.Failure(Reason.FpsOutOfRange)
+            return StickerValidation.Failure(Reason.FpsOutOfRange)
         }
         if (spec.speed < AnimatedStickerSpec.MIN_SPEED || spec.speed > AnimatedStickerSpec.MAX_SPEED) {
-            return Result.Failure(Reason.SpeedOutOfRange)
+            return StickerValidation.Failure(Reason.SpeedOutOfRange)
         }
         if (spec.trimEndMs <= spec.trimStartMs) {
-            return Result.Failure(Reason.TrimRangeInvalid)
+            return StickerValidation.Failure(Reason.TrimRangeInvalid)
         }
-        validateFrameDuration(spec.frameDurationMs).let { if (it is Result.Failure) return it }
-        validateTotalDuration(spec.durationMs).let { if (it is Result.Failure) return it }
-        return Result.Ok
+        validateFrameDuration(spec.frameDurationMs).let { if (it is StickerValidation.Failure) return it }
+        validateTotalDuration(spec.durationMs).let { if (it is StickerValidation.Failure) return it }
+        return StickerValidation.Ok
     }
 }

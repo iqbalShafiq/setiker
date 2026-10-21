@@ -1,14 +1,13 @@
 package presentation.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -17,16 +16,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import org.jetbrains.compose.ui.tooling.preview.Preview
 import presentation.theme.AccentCoral
-import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.neubrutalBorderColor
-import presentation.theme.neubrutalCardSurface
-import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalGlossyHighlightColor
+import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 

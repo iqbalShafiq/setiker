@@ -7,24 +7,6 @@ import androidx.compose.runtime.Composable
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalCardSurface
-import presentation.theme.neubrutalOnSurface
-
-@Composable
-fun FollowPackBottomBarIconButton(
-    isFollowing: Boolean,
-    onClick: () -> Unit,
-    enabled: Boolean = true,
-    followContentDescription: String = "Follow",
-    unfollowContentDescription: String = "Unfollow"
-) {
-    PackBottomBarIconButton(
-        icon = if (isFollowing) Icons.Filled.HowToReg else Icons.Default.PersonAdd,
-        contentDescription = if (isFollowing) unfollowContentDescription else followContentDescription,
-        onClick = onClick,
-        enabled = enabled,
-        iconTint = if (isFollowing) AccentCoral else neubrutalOnSurface()
-    )
-}
 
 @Composable
 fun FollowPackBottomBarFab(

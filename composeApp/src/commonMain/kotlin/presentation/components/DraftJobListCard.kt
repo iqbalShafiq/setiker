@@ -27,15 +27,16 @@ import androidx.compose.ui.unit.dp
 import domain.model.aijob.AiJob
 import domain.model.aijob.WorkspaceDraft
 import org.jetbrains.compose.resources.stringResource
-import presentation.theme.NeubrutalBorderWidth
+import presentation.aijobs.AiJobProgressMode
+import presentation.aijobs.shouldShowFailureDetail
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
-import presentation.theme.neubrutalBorderWithGloss
-import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import setiker.composeapp.generated.resources.Res
@@ -49,7 +50,7 @@ fun DraftJobListCard(
     draft: WorkspaceDraft,
     latestJob: AiJob?,
     statusLabel: String,
-    showProgress: Boolean,
+    progressMode: AiJobProgressMode,
     canRetry: Boolean,
     onOpen: () -> Unit,
     onRetry: () -> Unit,
@@ -100,7 +101,7 @@ fun DraftJobListCard(
             )
         }
 
-        if (showProgress) {
+        if (progressMode == AiJobProgressMode.DETERMINATE) {
             latestJob?.progress?.let { progress ->
                 LinearProgressIndicator(
                     progress = { progress.fraction.coerceIn(0f, 1f) },
@@ -114,15 +115,21 @@ fun DraftJobListCard(
                     )
                 }
             }
+        } else if (progressMode == AiJobProgressMode.INDETERMINATE) {
+            // The job is running but the server has no progress payload yet. Keep an
+            // indeterminate bar on screen so the user still sees that work is happening.
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
         }
 
-        latestJob?.failureMessage?.takeIf { !showProgress }?.let { message ->
-            Text(
-                text = message,
-                style = MaterialTheme.typography.labelSmall,
-                color = neubrutalMutedOnSurface()
-            )
-        }
+        latestJob?.failureMessage
+            ?.takeIf { shouldShowFailureDetail(statusLabel, it, progressMode) }
+            ?.let { message ->
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = neubrutalMutedOnSurface()
+                )
+            }
 
         Row(
             modifier = Modifier.fillMaxWidth(),

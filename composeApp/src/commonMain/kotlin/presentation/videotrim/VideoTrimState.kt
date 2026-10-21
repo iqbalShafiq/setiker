@@ -26,6 +26,11 @@ data class VideoTrimState(
     val isPlaying: Boolean = false,
     val isLoading: Boolean = false,
     val isExtracting: Boolean = false,
+    /**
+     * True once an extraction run finished without producing a single frame. The screens show a
+     * retry instead of the infinite "loading frames" placeholder.
+     */
+    val previewUnavailable: Boolean = false,
     val error: UiText? = null
 ) {
     val maxAllowedTrimMs: Long get() = StickerPack.MAX_ANIMATION_DURATION_MS

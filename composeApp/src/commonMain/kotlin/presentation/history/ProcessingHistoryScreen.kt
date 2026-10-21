@@ -5,10 +5,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,12 +18,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,34 +31,37 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import data.remote.resolveApiUrl
+import org.jetbrains.compose.resources.stringResource
 import presentation.common.ContentStateAnimations
 import presentation.common.ListLoadPhase
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppIllustration
 import presentation.components.AppPrimaryButton
+import presentation.components.AppTopBar
 import presentation.components.EmptyState
+import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
 import presentation.components.NeubrutalSelectableChip
-import presentation.components.AppTopBar
-import presentation.components.InteractionBlockedBox
-import presentation.components.ReportContentBottomSheet
+import presentation.components.NeubrutalSnackbarHost
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
+import presentation.components.ReportContentBottomSheet
 import presentation.theme.NeubrutalCardRadius
-import presentation.theme.neubrutalBorderWithGloss
-import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
-import org.jetbrains.compose.resources.stringResource
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.deleting
 import setiker.composeapp.generated.resources.history_clear_all
@@ -72,10 +74,10 @@ import setiker.composeapp.generated.resources.history_filter_pack
 import setiker.composeapp.generated.resources.history_filter_video
 import setiker.composeapp.generated.resources.history_none_desc
 import setiker.composeapp.generated.resources.history_none_title
-import setiker.composeapp.generated.resources.history_outputs
-import setiker.composeapp.generated.resources.history_report_output
-import setiker.composeapp.generated.resources.history_refresh
 import setiker.composeapp.generated.resources.history_offline_banner
+import setiker.composeapp.generated.resources.history_outputs
+import setiker.composeapp.generated.resources.history_refresh
+import setiker.composeapp.generated.resources.history_report_output
 import setiker.composeapp.generated.resources.history_title
 import setiker.composeapp.generated.resources.retry
 
@@ -84,7 +86,7 @@ import setiker.composeapp.generated.resources.retry
 fun ProcessingHistoryScreen(
     state: ProcessingHistoryState,
     onIntent: (ProcessingHistoryIntent) -> Unit,
-    snackbarHostState: SnackbarHostState,
+    snackbarHostState: AppSnackbarHostState,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -122,7 +124,7 @@ fun ProcessingHistoryScreen(
                 }
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         InteractionBlockedBox(
@@ -200,6 +202,7 @@ fun ProcessingHistoryScreen(
                             title = stringResource(Res.string.history_none_title),
                             description = state.error ?: stringResource(Res.string.history_none_desc),
                             illustration = AppIllustration.ErrorState,
+                            isError = true,
                             modifier = Modifier.fillMaxSize(),
                             action = {
                                 AppPrimaryButton(
@@ -291,4 +294,16 @@ fun ProcessingHistoryScreen(
         onSubmit = { onIntent(ProcessingHistoryIntent.SubmitReport) },
         onDismiss = { onIntent(ProcessingHistoryIntent.DismissReport) }
     )
+}
+
+@Preview
+@Composable
+private fun ProcessingHistoryScreenPreview() {
+    MaterialTheme {
+        ProcessingHistoryScreen(
+            state = ProcessingHistoryState(),
+            onIntent = {},
+            snackbarHostState = AppSnackbarHostState()
+        )
+    }
 }

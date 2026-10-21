@@ -10,6 +10,8 @@ import data.remote.model.CloudStickerPack
 import data.remote.model.applySocialUpdate
 import data.remote.model.userHasLiked
 import data.remote.model.userHasSaved
+import domain.error.onFailure
+import domain.error.onSuccess
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -19,9 +21,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import presentation.common.UiText
 import presentation.common.toUiText
 import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.error_cloud_update_failed
 import setiker.composeapp.generated.resources.error_load_explore_failed
 
 class ExploreViewModel(
@@ -115,7 +117,7 @@ class ExploreViewModel(
 
     private fun loadFeatured() {
         viewModelScope.launch {
-            runCatching { exploreApiRepository.getFeaturedToday() }
+            exploreApiRepository.getFeaturedToday()
                 .onSuccess { featured ->
                     _state.update { it.copy(featuredPack = featured?.pack) }
                 }
@@ -147,15 +149,13 @@ class ExploreViewModel(
                     isAuthenticated = authManager.isAuthenticated()
                 )
             }
-            runCatching {
-                exploreApiRepository.getPublicPacks(
-                    page = 1,
-                    limit = current.limit,
-                    sort = current.sort,
-                    q = current.searchQuery.takeIf { it.isNotBlank() },
-                    feed = current.feed
-                )
-            }.onSuccess { result ->
+            exploreApiRepository.getPublicPacks(
+                page = 1,
+                limit = current.limit,
+                sort = current.sort,
+                q = current.searchQuery.takeIf { it.isNotBlank() },
+                feed = current.feed
+            ).onSuccess { result ->
                 _state.update {
                     it.copy(
                         isLoading = false,
@@ -181,15 +181,13 @@ class ExploreViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isLoadingMore = true) }
             val nextPage = current.page + 1
-            runCatching {
-                exploreApiRepository.getPublicPacks(
-                    page = nextPage,
-                    limit = current.limit,
-                    sort = current.sort,
-                    q = current.searchQuery.takeIf { it.isNotBlank() },
-                    feed = current.feed
-                )
-            }.onSuccess { result ->
+            exploreApiRepository.getPublicPacks(
+                page = nextPage,
+                limit = current.limit,
+                sort = current.sort,
+                q = current.searchQuery.takeIf { it.isNotBlank() },
+                feed = current.feed
+            ).onSuccess { result ->
                 _state.update {
                     it.copy(
                         isLoadingMore = false,
@@ -200,7 +198,7 @@ class ExploreViewModel(
                 }
             }.onFailure { error ->
                 _state.update { it.copy(isLoadingMore = false) }
-                _effect.send(ExploreEffect.ShowError(UiText.DynamicString(error.message ?: "Failed to load more")))
+                _effect.send(ExploreEffect.ShowError(error.toUiText(Res.string.error_load_explore_failed)))
             }
         }
     }
@@ -219,14 +217,12 @@ class ExploreViewModel(
             }
             val pack = findPack(packId) ?: return@launch
             val liked = pack.userHasLiked()
-            runCatching {
-                if (liked) exploreApiRepository.unlikePack(packId)
-                else exploreApiRepository.likePack(packId)
-            }.onSuccess { social ->
-                _state.update { current -> current.withPackSocial(packId, social) }
-            }.onFailure { error ->
-                _effect.send(ExploreEffect.ShowError(UiText.DynamicString(error.message ?: "Like failed")))
-            }
+            (if (liked) exploreApiRepository.unlikePack(packId) else exploreApiRepository.likePack(packId))
+                .onSuccess { social ->
+                    _state.update { current -> current.withPackSocial(packId, social) }
+                }.onFailure { error ->
+                    _effect.send(ExploreEffect.ShowError(error.toUiText(Res.string.error_cloud_update_failed)))
+                }
         }
     }
 
@@ -238,14 +234,12 @@ class ExploreViewModel(
             }
             val pack = findPack(packId) ?: return@launch
             val saved = pack.userHasSaved()
-            runCatching {
-                if (saved) exploreApiRepository.unsavePack(packId)
-                else exploreApiRepository.savePack(packId)
-            }.onSuccess { social ->
-                _state.update { current -> current.withPackSocial(packId, social) }
-            }.onFailure { error ->
-                _effect.send(ExploreEffect.ShowError(UiText.DynamicString(error.message ?: "Save failed")))
-            }
+            (if (saved) exploreApiRepository.unsavePack(packId) else exploreApiRepository.savePack(packId))
+                .onSuccess { social ->
+                    _state.update { current -> current.withPackSocial(packId, social) }
+                }.onFailure { error ->
+                    _effect.send(ExploreEffect.ShowError(error.toUiText(Res.string.error_cloud_update_failed)))
+                }
         }
     }
 

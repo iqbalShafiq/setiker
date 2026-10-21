@@ -1,6 +1,6 @@
 package presentation.aijob
 
-import data.aijob.AiJobJson
+import data.remote.json.ApiJson
 import domain.model.aijob.AiJobOrigin
 import domain.model.aijob.WorkspaceDraft
 import domain.model.aijob.WorkspaceDraftContext
@@ -32,12 +32,12 @@ object WorkspaceDraftFactory {
             packId = packId,
             stickerIndex = stickerIndex,
             displayTitle = displayTitle,
-            contextJson = AiJobJson.codec.encodeToString(context),
+            contextJson = ApiJson.codec.encodeToString(context),
             createdAt = now,
             updatedAt = now
         )
     }
 
     fun decodeContext(draft: WorkspaceDraft): WorkspaceDraftContext =
-        AiJobJson.codec.decodeFromString(draft.contextJson)
+        ApiJson.codec.decodeFromString(draft.contextJson)
 }

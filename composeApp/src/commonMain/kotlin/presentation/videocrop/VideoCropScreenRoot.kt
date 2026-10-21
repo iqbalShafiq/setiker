@@ -3,12 +3,13 @@ package presentation.videocrop
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import domain.model.AnimatedStickerSpec
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
+import presentation.components.AppSnackbarHostState
 
 @Composable
 fun VideoCropScreenRoot(
@@ -19,8 +20,8 @@ fun VideoCropScreenRoot(
     onNavigateToAnimatedEditor: (String) -> Unit,
     viewModel: VideoCropViewModel = koinViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { AppSnackbarHostState() }
 
     LaunchedEffect(videoPath, spec, packId) {
         viewModel.onIntent(VideoCropIntent.Load(videoPath, spec, packId))
@@ -32,7 +33,7 @@ fun VideoCropScreenRoot(
                 is VideoCropEffect.NavigateToAnimatedEditor -> onNavigateToAnimatedEditor(effect.draftId)
                 is VideoCropEffect.NavigateBack -> onBackClick()
                 is VideoCropEffect.ShowError -> {
-                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
+                    snackbarHostState.showMessage(effect.message.resolveOrDefault())
                 }
             }
         }

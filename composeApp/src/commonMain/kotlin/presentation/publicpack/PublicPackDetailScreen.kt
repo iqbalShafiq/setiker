@@ -23,15 +23,14 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.HowToReg
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
-import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -46,11 +45,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import data.remote.resolveApiUrl
+import org.jetbrains.compose.resources.stringResource
 import presentation.common.ContentStateAnimations
 import presentation.common.DetailLoadPhase
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppIllustration
 import presentation.components.AppPrimaryButton
 import presentation.components.AppTopBar
@@ -59,6 +61,7 @@ import presentation.components.BlockCreatorConfirmDialog
 import presentation.components.EmptyState
 import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
+import presentation.components.NeubrutalSnackbarHost
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
@@ -78,24 +81,23 @@ import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import presentation.theme.screenContentHorizontalPadding
-import org.jetbrains.compose.resources.stringResource
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.back_content_description
 import setiker.composeapp.generated.resources.close
+import setiker.composeapp.generated.resources.creator_follow
+import setiker.composeapp.generated.resources.creator_following
 import setiker.composeapp.generated.resources.error_dialog_title
 import setiker.composeapp.generated.resources.explore_pack_not_found_desc
 import setiker.composeapp.generated.resources.explore_pack_not_found_title
 import setiker.composeapp.generated.resources.processing
+import setiker.composeapp.generated.resources.public_pack_block_creator
 import setiker.composeapp.generated.resources.public_pack_by
 import setiker.composeapp.generated.resources.public_pack_import_body
 import setiker.composeapp.generated.resources.public_pack_import_cancel
 import setiker.composeapp.generated.resources.public_pack_import_confirm
 import setiker.composeapp.generated.resources.public_pack_import_owner_credit
-import setiker.composeapp.generated.resources.public_pack_block_creator
 import setiker.composeapp.generated.resources.public_pack_import_title
 import setiker.composeapp.generated.resources.public_pack_report
-import setiker.composeapp.generated.resources.creator_follow
-import setiker.composeapp.generated.resources.creator_following
 import setiker.composeapp.generated.resources.retry
 import setiker.composeapp.generated.resources.social_counts
 import setiker.composeapp.generated.resources.stickers_title
@@ -106,7 +108,7 @@ fun PublicPackDetailScreen(
     packId: String,
     state: PublicPackDetailState,
     onIntent: (PublicPackDetailIntent) -> Unit,
-    snackbarHostState: SnackbarHostState,
+    snackbarHostState: AppSnackbarHostState,
     modifier: Modifier = Modifier
 ) {
     var showUnfollowDialog by remember { mutableStateOf(false) }
@@ -195,7 +197,7 @@ fun PublicPackDetailScreen(
                 }
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         val phase = when {
@@ -405,6 +407,19 @@ fun PublicPackDetailScreen(
             onConfirm = { onIntent(PublicPackDetailIntent.ConfirmBlockCreator) },
             onDismiss = { onIntent(PublicPackDetailIntent.DismissBlockCreatorConfirm) },
             isLoading = state.isBlockingCreator
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun PublicPackDetailScreenPreview() {
+    MaterialTheme {
+        PublicPackDetailScreen(
+            state = PublicPackDetailState(),
+            packId = "",
+            onIntent = {},
+            snackbarHostState = AppSnackbarHostState()
         )
     }
 }

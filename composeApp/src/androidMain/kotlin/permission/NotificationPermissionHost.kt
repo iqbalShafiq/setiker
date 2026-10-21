@@ -6,9 +6,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.setiker.app.MainActivityHolder
 import presentation.components.PermissionEducationBottomSheet
 import presentation.theme.SetikerTheme
@@ -16,7 +16,7 @@ import presentation.theme.SetikerTheme
 @Composable
 fun NotificationPermissionHost() {
     val context = LocalContext.current
-    val showRationale by NotificationPermissionGate.showRationale.collectAsState()
+    val showRationale by NotificationPermissionGate.showRationale.collectAsStateWithLifecycle()
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) {

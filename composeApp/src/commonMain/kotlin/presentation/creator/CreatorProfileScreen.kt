@@ -23,11 +23,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Block
-import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import data.remote.ExploreSort
@@ -47,6 +47,7 @@ import data.remote.resolveApiUrl
 import org.jetbrains.compose.resources.stringResource
 import presentation.common.ContentStateAnimations
 import presentation.common.DetailLoadPhase
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppIllustration
 import presentation.components.AppPrimaryButton
 import presentation.components.AppTopBar
@@ -56,6 +57,7 @@ import presentation.components.ExploreSortBottomSheet
 import presentation.components.FollowPackBottomBarFab
 import presentation.components.LoadingIndicator
 import presentation.components.NeubrutalSelectableChip
+import presentation.components.NeubrutalSnackbarHost
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarIconButton
 import presentation.components.ScreenContentHorizontalScrollRow
@@ -97,7 +99,7 @@ fun CreatorProfileScreen(
     userId: String,
     state: CreatorProfileState,
     onIntent: (CreatorProfileIntent) -> Unit,
-    snackbarHostState: SnackbarHostState,
+    snackbarHostState: AppSnackbarHostState,
     modifier: Modifier = Modifier
 ) {
     var showSortSheet by remember { mutableStateOf(false) }
@@ -121,7 +123,7 @@ fun CreatorProfileScreen(
                             onClick = { onIntent(CreatorProfileIntent.NavigateBack) }
                         )
                         PackBottomBarIconButton(
-                            icon = Icons.Default.Sort,
+                            icon = Icons.AutoMirrored.Filled.Sort,
                             contentDescription = stringResource(Res.string.explore_sort),
                             onClick = { showSortSheet = true }
                         )
@@ -160,7 +162,7 @@ fun CreatorProfileScreen(
                 )
             }
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         val phase = when {
@@ -357,4 +359,17 @@ private fun ExploreSort.chipLabel(): String = when (this) {
     ExploreSort.DOWNLOADS -> stringResource(Res.string.explore_sort_downloads)
     ExploreSort.LIKES -> stringResource(Res.string.explore_sort_likes)
     ExploreSort.SAVES -> stringResource(Res.string.explore_sort_saves)
+}
+
+@Preview
+@Composable
+private fun CreatorProfileScreenPreview() {
+    MaterialTheme {
+        CreatorProfileScreen(
+            state = CreatorProfileState(),
+            userId = "",
+            onIntent = {},
+            snackbarHostState = AppSnackbarHostState()
+        )
+    }
 }

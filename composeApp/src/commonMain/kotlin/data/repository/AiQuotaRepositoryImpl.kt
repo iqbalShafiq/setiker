@@ -1,6 +1,8 @@
 package data.repository
 
 import data.remote.AiUsageApiRepository
+import data.remote.toApiException
+import domain.error.Result
 import domain.model.AiQuotaOperation
 import domain.model.AiQuotaReservation
 import domain.model.AiUsage
@@ -18,28 +20,39 @@ class AiQuotaRepositoryImpl(
         if (!forceRefresh && cachedUsage != null && now - cachedAtMillis < CACHE_TTL_MS) {
             return cachedUsage
         }
-        return runCatching { api.getUsage() }
-            .onSuccess {
-                cachedUsage = it
+        return when (val result = api.getUsage()) {
+            is Result.Success -> {
+                cachedUsage = result.data
                 cachedAtMillis = now
+                result.data
             }
-            .getOrNull()
+            is Result.Error -> null
+        }
     }
 
     override suspend fun reserve(operation: AiQuotaOperation): AiQuotaReservation {
         val result = api.reserve(operation)
         invalidateCache()
-        return result
+        return when (result) {
+            is Result.Success -> result.data
+            // Preserves the ApiException.code chain (R4): the AI job pipeline classifies
+            // quota failures by app code, not by message.
+            is Result.Error -> throw result.error.toApiException()
+        }
     }
 
     override suspend fun finalizeCommitted(reservationId: String) {
-        api.finalize(reservationId, committed = true)
-        invalidateCache()
+        when (val result = api.finalize(reservationId, committed = true)) {
+            is Result.Success -> invalidateCache()
+            is Result.Error -> throw result.error.toApiException()
+        }
     }
 
     override suspend fun finalizeReleased(reservationId: String) {
-        api.finalize(reservationId, committed = false)
-        invalidateCache()
+        when (val result = api.finalize(reservationId, committed = false)) {
+            is Result.Success -> invalidateCache()
+            is Result.Error -> throw result.error.toApiException()
+        }
     }
 
     override fun invalidateCache() {

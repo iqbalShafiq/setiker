@@ -4,11 +4,12 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
+import presentation.components.AppSnackbarHostState
 
 @Composable
 fun PackDetailScreenRoot(
@@ -25,8 +26,8 @@ fun PackDetailScreenRoot(
     onNavigateToPublicPack: (String) -> Unit = {},
     viewModel: PackDetailViewModel = koinViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { AppSnackbarHostState() }
 
     LaunchedEffect(packId) {
         viewModel.onIntent(PackDetailIntent.LoadPack(packId, silentRefresh = false))
@@ -53,16 +54,16 @@ fun PackDetailScreenRoot(
                 is PackDetailEffect.NavigateToAddSticker -> onAddSticker(packId)
                 is PackDetailEffect.NavigateToEditSticker -> onEditSticker(effect.index, packId)
                 is PackDetailEffect.ShowError -> {
-                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
+                    snackbarHostState.showMessage(effect.message.resolveOrDefault())
                 }
                 is PackDetailEffect.ShowSuccess -> {
-                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
+                    snackbarHostState.showMessage(effect.message.resolveOrDefault())
                 }
                 is PackDetailEffect.LaunchAddToWhatsApp -> {
                     onAddToWhatsApp?.invoke(effect.packId, effect.packName)
                 }
                 is PackDetailEffect.ShareText -> {
-                    snackbarHostState.showSnackbar(effect.text)
+                    snackbarHostState.showMessage(effect.text)
                 }
                 is PackDetailEffect.NavigateToDuplicatedPack -> onNavigateToPack(effect.packId)
                 is PackDetailEffect.NavigateToPublicPack -> onNavigateToPublicPack(effect.cloudPackId)

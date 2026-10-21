@@ -2,9 +2,9 @@ package data.local.database
 
 import data.local.entity.StickerEntity
 import data.local.entity.StickerPackEntity
-import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlinx.coroutines.test.runTest
 
 /**
  * Documents why metadata-only pack writes must use [StickerPackDao.upsert] instead of

@@ -2,18 +2,13 @@ package domain.actions
 
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.net.Uri
-import android.os.Build
 import android.util.Log
 import androidx.core.content.FileProvider
 import data.storage.StickerFileStorage
 import domain.repository.StickerRepository
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.FileOutputStream
 
 class AndroidPackActions(
     private val context: Context,
@@ -109,6 +104,7 @@ class AndroidPackActions(
                     putExtra("sticker_pack_id", packId)
                     putExtra("sticker_pack_authority", authority)
                     putExtra("sticker_pack_name", packName)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
 
                 context.startActivity(intent)

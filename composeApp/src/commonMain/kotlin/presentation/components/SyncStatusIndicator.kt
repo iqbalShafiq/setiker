@@ -16,11 +16,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.ErrorRed
+import presentation.theme.NeubrutalBlack
+import presentation.theme.NeubrutalGray
 import presentation.theme.NeubrutalSmallShadowOffset
+import presentation.theme.NeubrutalWhite
+import presentation.theme.SuccessGreen
+import presentation.theme.WarningYellow
+import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
@@ -35,11 +40,13 @@ fun SyncStatusIndicator(
     syncState: String,
     modifier: Modifier = Modifier
 ) {
+    // Palette colours instead of one-off Material greys, and a border that follows the theme: the
+    // previous hard-coded black ring disappeared against the dark surfaces.
     val (icon, color, contentColor) = when (syncState) {
-        "SYNCED" -> Triple(Icons.Default.CloudDone, Color(0xFF4CAF50), Color.White)
-        "PENDING" -> Triple(Icons.Default.CloudQueue, Color(0xFFFF9800), Color.White)
-        "FAILED" -> Triple(Icons.Default.CloudOff, Color(0xFFF44336), Color.White)
-        else -> Triple(Icons.Default.Cloud, Color(0xFF9E9E9E), Color.White)
+        "SYNCED" -> Triple(Icons.Default.CloudDone, SuccessGreen, NeubrutalBlack)
+        "PENDING" -> Triple(Icons.Default.CloudQueue, WarningYellow, NeubrutalBlack)
+        "FAILED" -> Triple(Icons.Default.CloudOff, ErrorRed, NeubrutalBlack)
+        else -> Triple(Icons.Default.Cloud, NeubrutalGray, NeubrutalWhite)
     }
 
     Box(
@@ -54,7 +61,7 @@ fun SyncStatusIndicator(
             .clip(CircleShape)
             .background(color)
             .neubrutalBorderWithGloss(
-                color = Color.Black,
+                color = neubrutalBorderColor(),
                 cornerRadius = 14.dp,
                 shape = CircleShape,
                 highlightColor = neubrutalGlossyHighlightColor(onFilledSurface = true)

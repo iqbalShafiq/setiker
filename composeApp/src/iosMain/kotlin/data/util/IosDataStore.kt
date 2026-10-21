@@ -1,18 +1,19 @@
 package data.util
 
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.Preferences
 import okio.Path.Companion.toPath
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
+import platform.Foundation.NSURL
 import platform.Foundation.NSUserDomainMask
 
 fun createIOSDataStore(): DataStore<Preferences> {
-    val documentDirectory = NSFileManager.defaultManager.URLsForDirectory(
+    val documentDirectory = (NSFileManager.defaultManager.URLsForDirectory(
         NSDocumentDirectory,
         NSUserDomainMask
-    ).firstOrNull()?.path ?: ""
+    ).firstOrNull() as? NSURL)?.path ?: ""
     
     return PreferenceDataStoreFactory.createWithPath {
         "$documentDirectory/setiker_preferences.preferences_pb".toPath()

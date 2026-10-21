@@ -33,22 +33,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import domain.model.DecorationFont
 import domain.model.DecorationFontWeight
 import domain.model.TextDecorationLayout
 import domain.model.TextDecorationStyle
 import org.jetbrains.compose.resources.stringResource
-import presentation.theme.neubrutalBorderColor
-import presentation.theme.neubrutalCardSurface
-import presentation.theme.neubrutalOnSurface
-import presentation.theme.neubrutalScreenBackground
-import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalScrim
 import presentation.theme.NeubrutalSmallRadius
+import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalGlossyHighlight
 import presentation.theme.neubrutalGlossyHighlightColor
+import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalScreenBackground
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.add_decoration
 import setiker.composeapp.generated.resources.add_text
@@ -78,7 +78,7 @@ fun AddTextDecorationBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = neubrutalScreenBackground(),
-        scrimColor = Color.Black.copy(alpha = 0.45f),
+        scrimColor = NeubrutalScrim,
         contentWindowInsets = { zeroBottomSheetWindowInsets() }
     ) {
         BottomSheetScrollColumn {
@@ -125,7 +125,7 @@ fun EditTextDecorationBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = neubrutalScreenBackground(),
-        scrimColor = Color.Black.copy(alpha = 0.45f),
+        scrimColor = NeubrutalScrim,
         contentWindowInsets = { zeroBottomSheetWindowInsets() }
     ) {
         BottomSheetScrollColumn {
@@ -170,7 +170,7 @@ fun StylePickerBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = neubrutalScreenBackground(),
-        scrimColor = Color.Black.copy(alpha = 0.45f)
+        scrimColor = NeubrutalScrim
     ) {
         Column(
             modifier = Modifier
@@ -316,7 +316,7 @@ fun ColorPickerBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = neubrutalScreenBackground(),
-        scrimColor = Color.Black.copy(alpha = 0.45f)
+        scrimColor = NeubrutalScrim
     ) {
         Column(
             modifier = Modifier
@@ -416,7 +416,7 @@ fun BorderStyleBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = neubrutalScreenBackground(),
-        scrimColor = Color.Black.copy(alpha = 0.45f)
+        scrimColor = NeubrutalScrim
     ) {
         Column(
             modifier = Modifier

@@ -9,8 +9,9 @@ import data.auth.GoogleSignInGateway
 import data.auth.GoogleSignInMode
 import data.auth.model.LoginRequest
 import data.auth.model.toDomainModel
-import data.remote.ApiException
 import domain.error.AppErrorCode
+import domain.error.DataError
+import domain.error.Result
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -107,14 +108,13 @@ class LoginViewModel(
 
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            try {
-                val response = authApiService.login(
-                    LoginRequest(email = currentState.email, password = currentState.password)
-                )
-                persistAuth(response)
-            } catch (e: Exception) {
-                _state.update {
-                    it.copy(isLoading = false, error = e.toUiText(Res.string.error_auth_login_failed))
+            val authOutcome = authApiService.login(
+                LoginRequest(email = currentState.email, password = currentState.password)
+            )
+            when (authOutcome) {
+                is Result.Success -> persistAuth(authOutcome.data)
+                is Result.Error -> _state.update {
+                    it.copy(isLoading = false, error = authOutcome.error.toUiText(Res.string.error_auth_login_failed))
                 }
             }
         }
@@ -140,38 +140,37 @@ class LoginViewModel(
     }
 
     private suspend fun completeGoogleAuth(idToken: String) {
-        try {
-            val response = authApiService.loginWithGoogle(idToken)
-            persistAuth(response)
-        } catch (e: Exception) {
-            if (e is ApiException &&
-                (e.code == AppErrorCode.AuthAccountExistsPassword ||
-                    e.subcode == "ACCOUNT_EXISTS_PASSWORD")
-            ) {
-                val googleEmail = decodeEmailFromJwt(idToken).orEmpty()
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        showLinkGoogleDialog = true,
-                        pendingGoogleIdToken = idToken,
-                        linkEmail = googleEmail.ifBlank { it.email },
-                        email = googleEmail.ifBlank { it.email },
-                        error = e.toUiText(Res.string.error_auth_login_failed)
-                    )
-                }
-            } else if (e is ApiException &&
-                (e.code == AppErrorCode.AuthAccountExistsOtherProvider ||
-                    e.subcode == "ACCOUNT_EXISTS_OTHER_PROVIDER")
-            ) {
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        error = e.toUiText(Res.string.error_auth_login_failed)
-                    )
-                }
-            } else {
-                _state.update {
-                    it.copy(isLoading = false, error = e.toUiText(Res.string.error_auth_login_failed))
+        when (val authOutcome = authApiService.loginWithGoogle(idToken)) {
+            is Result.Success -> persistAuth(authOutcome.data)
+            is Result.Error -> {
+                val rejected = authOutcome.error as? DataError.Network.ApiRejected
+                if (rejected?.appCode == AppErrorCode.AuthAccountExistsPassword ||
+                    rejected?.subcode == "ACCOUNT_EXISTS_PASSWORD"
+                ) {
+                    val googleEmail = decodeEmailFromJwt(idToken).orEmpty()
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            showLinkGoogleDialog = true,
+                            pendingGoogleIdToken = idToken,
+                            linkEmail = googleEmail.ifBlank { it.email },
+                            email = googleEmail.ifBlank { it.email },
+                            error = authOutcome.error.toUiText(Res.string.error_auth_login_failed)
+                        )
+                    }
+                } else if (rejected?.appCode == AppErrorCode.AuthAccountExistsOtherProvider ||
+                    rejected?.subcode == "ACCOUNT_EXISTS_OTHER_PROVIDER"
+                ) {
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            error = authOutcome.error.toUiText(Res.string.error_auth_login_failed)
+                        )
+                    }
+                } else {
+                    _state.update {
+                        it.copy(isLoading = false, error = authOutcome.error.toUiText(Res.string.error_auth_login_failed))
+                    }
                 }
             }
         }
@@ -192,28 +191,28 @@ class LoginViewModel(
                 return@launch
             }
             val idToken = tokenResult.getOrNull()?.idToken ?: return@launch
-            try {
-                val response = authApiService.loginWithApple(idToken)
-                persistAuth(response)
-            } catch (e: Exception) {
-                if (e is ApiException &&
-                    (e.code == AppErrorCode.AuthAccountExistsPassword ||
-                        e.subcode == "ACCOUNT_EXISTS_PASSWORD")
-                ) {
-                    val appleEmail = decodeEmailFromJwt(idToken).orEmpty()
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            showLinkAppleDialog = true,
-                            pendingAppleIdToken = idToken,
-                            linkEmail = appleEmail.ifBlank { it.email },
-                            email = appleEmail.ifBlank { it.email },
-                            error = e.toUiText(Res.string.error_auth_login_failed)
-                        )
-                    }
-                } else {
-                    _state.update {
-                        it.copy(isLoading = false, error = e.toUiText(Res.string.error_auth_login_failed))
+            when (val authOutcome = authApiService.loginWithApple(idToken)) {
+                is Result.Success -> persistAuth(authOutcome.data)
+                is Result.Error -> {
+                    val rejected = authOutcome.error as? DataError.Network.ApiRejected
+                    if (rejected?.appCode == AppErrorCode.AuthAccountExistsPassword ||
+                        rejected?.subcode == "ACCOUNT_EXISTS_PASSWORD"
+                    ) {
+                        val appleEmail = decodeEmailFromJwt(idToken).orEmpty()
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                showLinkAppleDialog = true,
+                                pendingAppleIdToken = idToken,
+                                linkEmail = appleEmail.ifBlank { it.email },
+                                email = appleEmail.ifBlank { it.email },
+                                error = authOutcome.error.toUiText(Res.string.error_auth_login_failed)
+                            )
+                        }
+                    } else {
+                        _state.update {
+                            it.copy(isLoading = false, error = authOutcome.error.toUiText(Res.string.error_auth_login_failed))
+                        }
                     }
                 }
             }
@@ -262,23 +261,23 @@ class LoginViewModel(
 
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            try {
-                val response = authApiService.linkGoogleWithPassword(
-                    idToken = idToken,
-                    email = email,
-                    password = current.linkPassword
-                )
-                _state.update {
-                    it.copy(
-                        showLinkGoogleDialog = false,
-                        pendingGoogleIdToken = null,
-                        linkPassword = ""
-                    )
+            when (val authOutcome = authApiService.linkGoogleWithPassword(
+                idToken = idToken,
+                email = email,
+                password = current.linkPassword
+            )) {
+                is Result.Success -> {
+                    _state.update {
+                        it.copy(
+                            showLinkGoogleDialog = false,
+                            pendingGoogleIdToken = null,
+                            linkPassword = ""
+                        )
+                    }
+                    persistAuth(authOutcome.data)
                 }
-                persistAuth(response)
-            } catch (e: Exception) {
-                _state.update {
-                    it.copy(isLoading = false, error = e.toUiText(Res.string.error_auth_login_failed))
+                is Result.Error -> _state.update {
+                    it.copy(isLoading = false, error = authOutcome.error.toUiText(Res.string.error_auth_login_failed))
                 }
             }
         }
@@ -292,23 +291,23 @@ class LoginViewModel(
 
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            try {
-                val response = authApiService.linkAppleWithPassword(
-                    idToken = idToken,
-                    email = email,
-                    password = current.linkPassword
-                )
-                _state.update {
-                    it.copy(
-                        showLinkAppleDialog = false,
-                        pendingAppleIdToken = null,
-                        linkPassword = ""
-                    )
+            when (val authOutcome = authApiService.linkAppleWithPassword(
+                idToken = idToken,
+                email = email,
+                password = current.linkPassword
+            )) {
+                is Result.Success -> {
+                    _state.update {
+                        it.copy(
+                            showLinkAppleDialog = false,
+                            pendingAppleIdToken = null,
+                            linkPassword = ""
+                        )
+                    }
+                    persistAuth(authOutcome.data)
                 }
-                persistAuth(response)
-            } catch (e: Exception) {
-                _state.update {
-                    it.copy(isLoading = false, error = e.toUiText(Res.string.error_auth_login_failed))
+                is Result.Error -> _state.update {
+                    it.copy(isLoading = false, error = authOutcome.error.toUiText(Res.string.error_auth_login_failed))
                 }
             }
         }

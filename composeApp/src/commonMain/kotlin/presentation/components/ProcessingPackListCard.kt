@@ -19,15 +19,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import presentation.home.HomeProcessingPack
-import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
-import presentation.theme.neubrutalBorderWithGloss
-import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 

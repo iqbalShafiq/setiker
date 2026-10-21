@@ -16,11 +16,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import presentation.components.scaffoldBottomBarScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Save
@@ -29,7 +27,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,28 +42,32 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import data.remote.readFileBytes
+import domain.model.AiQuotaOperation
 import domain.model.ResolvedVideoAnimatedSticker
 import domain.model.ResolvedVideoStickerPackPlan
 import domain.model.Sticker
-import domain.model.AiQuotaOperation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.stringResource
+import presentation.components.AppSnackbarHostState
+import presentation.components.AiQuotaSummary
 import presentation.components.AppIllustration
 import presentation.components.AppIllustrationImage
 import presentation.components.AppTextField
 import presentation.components.AppTopBar
-import presentation.components.AiQuotaSummary
 import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
+import presentation.components.NeubrutalSnackbarHost
 import presentation.components.NeubrutalStickerPreviewFrame
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
 import presentation.components.StickerCard
+import presentation.components.scaffoldBottomBarScroll
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalBlack
 import presentation.theme.NeubrutalBorderWidth
@@ -79,6 +80,7 @@ import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalSubtleOnSurface
 import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.animated_error_decode_failed
 import setiker.composeapp.generated.resources.back
 import setiker.composeapp.generated.resources.loading_frames
 import setiker.composeapp.generated.resources.pack_name_label
@@ -87,6 +89,7 @@ import setiker.composeapp.generated.resources.pause_preview
 import setiker.composeapp.generated.resources.play_preview
 import setiker.composeapp.generated.resources.publisher_label
 import setiker.composeapp.generated.resources.publisher_placeholder
+import setiker.composeapp.generated.resources.retry
 import setiker.composeapp.generated.resources.video_pack_ask_ai
 import setiker.composeapp.generated.resources.video_pack_ask_ai_hint
 import setiker.composeapp.generated.resources.video_pack_build_grids
@@ -109,7 +112,7 @@ fun VideoStickerPackScreen(
     state: VideoStickerPackState,
     onIntent: (VideoStickerPackIntent) -> Unit,
     onBackClick: () -> Unit,
-    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    snackbarHostState: AppSnackbarHostState = remember { AppSnackbarHostState() },
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -127,7 +130,7 @@ fun VideoStickerPackScreen(
                 onBackClick = onBackClick
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         InteractionBlockedBox(
@@ -308,7 +311,9 @@ private fun VideoPreviewSection(
     VideoSourcePreview(
         previewBitmap = previewBitmap,
         previewLabelMs = relativePreviewMs,
-        isLoading = state.isLoadingVideo || (state.currentPreviewPathResolved != null && previewBitmap == null)
+        isLoading = state.isLoadingVideo || (state.currentPreviewPathResolved != null && previewBitmap == null),
+        retryUnavailable = state.previewUnavailable,
+        onRetry = { onIntent(VideoStickerPackIntent.RetryPreview) }
     )
 
     LabeledSliderSection(
@@ -348,6 +353,8 @@ private fun VideoSourcePreview(
     previewBitmap: ImageBitmap?,
     previewLabelMs: Long,
     isLoading: Boolean,
+    retryUnavailable: Boolean,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     NeubrutalStickerPreviewFrame(
@@ -388,6 +395,29 @@ private fun VideoSourcePreview(
                         text = stringResource(Res.string.loading_frames),
                         style = MaterialTheme.typography.bodySmall,
                         color = neubrutalSubtleOnSurface()
+                    )
+                }
+            }
+
+            retryUnavailable -> {
+                // The device could not read a single frame from this source; without this branch the
+                // placeholder below would animate forever.
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = stringResource(Res.string.animated_error_decode_failed),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = neubrutalSubtleOnSurface()
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = stringResource(Res.string.retry),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = NeubrutalWhite,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(NeubrutalBlack)
+                            .clickable(onClick = onRetry)
+                            .padding(horizontal = 14.dp, vertical = 8.dp)
                     )
                 }
             }
@@ -675,4 +705,16 @@ private fun VideoStickerPackProcessingStep.toUiLabel(): String {
         VideoStickerPackProcessingStep.Saving -> Res.string.video_pack_save
     }
     return stringResource(resId)
+}
+
+@Preview
+@Composable
+private fun VideoStickerPackScreenPreview() {
+    MaterialTheme {
+        VideoStickerPackScreen(
+            state = VideoStickerPackState(),
+            onIntent = {},
+            onBackClick = {}
+        )
+    }
 }

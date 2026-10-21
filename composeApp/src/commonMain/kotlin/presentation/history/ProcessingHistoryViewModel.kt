@@ -7,13 +7,16 @@ import data.local.entity.ProcessingHistoryCacheEntity
 import data.remote.ExploreApiRepository
 import data.remote.model.ProcessingHistoryItem
 import data.remote.model.ProcessingHistoryOutputFile
+import domain.error.detailText
+import domain.error.onFailure
+import domain.error.onSuccess
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import presentation.common.UiText
 import setiker.composeapp.generated.resources.Res
@@ -54,48 +57,46 @@ class ProcessingHistoryViewModel(
         val reason = _state.value.reportReason ?: return
         viewModelScope.launch {
             _state.update { it.copy(isSubmittingReport = true) }
-            runCatching {
-                exploreApiRepository.reportProcessingHistory(id, reason, _state.value.reportDetails.takeIf { it.isNotBlank() })
-            }.onSuccess {
-                _state.update { it.copy(isSubmittingReport = false, showReportSheet = false) }
-                _effect.send(ProcessingHistoryEffect.ShowMessage(UiText.StringRes(Res.string.report_submitted)))
-            }.onFailure { error ->
-                _state.update { it.copy(isSubmittingReport = false) }
-                _effect.send(ProcessingHistoryEffect.ShowMessage(UiText.DynamicString(error.message ?: "Report failed")))
-            }
+            exploreApiRepository.reportProcessingHistory(id, reason, _state.value.reportDetails.takeIf { it.isNotBlank() })
+                .onSuccess {
+                    _state.update { it.copy(isSubmittingReport = false, showReportSheet = false) }
+                    _effect.send(ProcessingHistoryEffect.ShowMessage(UiText.StringRes(Res.string.report_submitted)))
+                }.onFailure { error ->
+                    _state.update { it.copy(isSubmittingReport = false) }
+                    _effect.send(ProcessingHistoryEffect.ShowMessage(UiText.DynamicString(error.detailText())))
+                }
         }
     }
 
     private fun load() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null, isShowingCachedData = false) }
-            runCatching {
-                exploreApiRepository.getProcessingHistory(_state.value.typeFilter)
-            }.onSuccess { items ->
-                cacheItems(items)
-                _state.update { it.copy(isLoading = false, items = items, isShowingCachedData = false) }
-            }.onFailure { error ->
-                val cached = loadCachedItems()
-                if (cached.isNotEmpty()) {
-                    _state.update {
-                        it.copy(isLoading = false, items = cached, isShowingCachedData = true, error = null)
+            exploreApiRepository.getProcessingHistory(_state.value.typeFilter)
+                .onSuccess { items ->
+                    cacheItems(items)
+                    _state.update { it.copy(isLoading = false, items = items, isShowingCachedData = false) }
+                }.onFailure { error ->
+                    val cached = loadCachedItems()
+                    if (cached.isNotEmpty()) {
+                        _state.update {
+                            it.copy(isLoading = false, items = cached, isShowingCachedData = true, error = null)
+                        }
+                    } else {
+                        _state.update { it.copy(isLoading = false, error = error.detailText()) }
+                        _effect.send(ProcessingHistoryEffect.ShowMessage(UiText.DynamicString(error.detailText())))
                     }
-                } else {
-                    _state.update { it.copy(isLoading = false, error = error.message ?: "Failed to load history") }
-                    _effect.send(ProcessingHistoryEffect.ShowMessage(UiText.DynamicString(error.message ?: "Failed to load history")))
                 }
-            }
         }
     }
 
     private fun deleteItem(id: String) {
         viewModelScope.launch {
-            runCatching { exploreApiRepository.deleteHistoryItem(id) }
+            exploreApiRepository.deleteHistoryItem(id)
                 .onSuccess {
                     _state.update { it.copy(items = it.items.filterNot { item -> item.id == id }) }
                 }
                 .onFailure { error ->
-                    _effect.send(ProcessingHistoryEffect.ShowMessage(UiText.DynamicString(error.message ?: "Failed to delete history item")))
+                    _effect.send(ProcessingHistoryEffect.ShowMessage(UiText.DynamicString(error.detailText())))
                 }
         }
     }
@@ -103,14 +104,13 @@ class ProcessingHistoryViewModel(
     private fun clearAll() {
         viewModelScope.launch {
             _state.update { it.copy(isClearing = true) }
-            runCatching {
-                exploreApiRepository.clearHistory(_state.value.typeFilter)
-            }.onSuccess {
-                _state.update { it.copy(isClearing = false, items = emptyList()) }
-            }.onFailure { error ->
-                _state.update { it.copy(isClearing = false) }
-                _effect.send(ProcessingHistoryEffect.ShowMessage(UiText.DynamicString(error.message ?: "Failed to clear history")))
-            }
+            exploreApiRepository.clearHistory(_state.value.typeFilter)
+                .onSuccess {
+                    _state.update { it.copy(isClearing = false, items = emptyList()) }
+                }.onFailure { error ->
+                    _state.update { it.copy(isClearing = false) }
+                    _effect.send(ProcessingHistoryEffect.ShowMessage(UiText.DynamicString(error.detailText())))
+                }
         }
     }
 

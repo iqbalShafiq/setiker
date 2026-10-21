@@ -4,39 +4,41 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
-import data.local.database.StickerDatabase
-import data.storage.StickerFileStorage
-import data.sync.NetworkMonitor
-import data.video.CandidateGridComposer
-import data.video.UnsupportedCandidateGridComposer
-import data.video.UnsupportedVideoFrameCandidateExtractor
-import data.video.VideoFrameCandidateExtractor
-import data.util.EmojiPreferences
 import data.aijob.AiBackgroundScheduler
-import data.util.IosOnDeviceImageProcessor
-import data.util.OnDeviceImageProcessor
-import data.util.createIOSDataStore
-import domain.actions.IosPackActions
-import domain.actions.PackActions
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
-import data.billing.PlatformBillingStore
 import data.auth.AppleSignInGateway
 import data.auth.GoogleSignInGateway
 import data.auth.IosAppleSignInGateway
 import data.auth.IosGoogleSignInGateway
+import data.billing.PlatformBillingStore
+import data.local.database.DatabaseMigrations
+import data.local.database.StickerDatabase
+import data.storage.StickerFileStorage
+import data.sync.NetworkMonitor
+import data.util.EmojiPreferences
+import data.util.IosOnDeviceImageProcessor
+import data.util.OnDeviceImageProcessor
+import data.util.createIOSDataStore
+import data.video.CandidateGridComposer
+import data.video.UnsupportedCandidateGridComposer
+import data.video.UnsupportedVideoFrameCandidateExtractor
+import data.video.VideoFrameCandidateExtractor
+import domain.actions.IosPackActions
+import domain.actions.PackActions
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import org.koin.core.module.Module
 import org.koin.dsl.module
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
+import platform.Foundation.NSURL
 import platform.Foundation.NSUserDomainMask
 
 actual fun platformModule(): Module = module {
     single<StickerDatabase> {
-        val documentsDir = NSFileManager.defaultManager.URLsForDirectory(
+        val documentsDir = (NSFileManager.defaultManager.URLsForDirectory(
             NSDocumentDirectory,
             NSUserDomainMask
-        ).firstOrNull()?.path ?: ""
+        ).firstOrNull() as? NSURL)?.path ?: ""
         val dbFile = "$documentsDir/${StickerDatabase.DATABASE_NAME}"
 
         Room.databaseBuilder<StickerDatabase>(
@@ -44,7 +46,7 @@ actual fun platformModule(): Module = module {
         )
             .setDriver(BundledSQLiteDriver())
             .setQueryCoroutineContext(Dispatchers.IO)
-            .fallbackToDestructiveMigration(dropAllTables = true)
+            .addMigrations(*DatabaseMigrations.ALL)
             .build()
     }
 

@@ -9,33 +9,34 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.ui.Alignment
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.jetbrains.compose.resources.stringResource
-import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.neubrutalBorderColor
-import presentation.theme.neubrutalCardSurface
-import presentation.theme.neubrutalOnSurface
-import presentation.theme.neubrutalSubtleOnSurface
 import presentation.theme.neubrutalBorderWithGloss
+import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalGlossyHighlightColor
+import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalSubtleOnSurface
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.pack_name_label
 import setiker.composeapp.generated.resources.pack_name_placeholder
@@ -52,6 +53,13 @@ fun AppTextField(
     leadingIcon: @Composable (() -> Unit)? = null,
     trailingIcon: @Composable (() -> Unit)? = null,
     isError: Boolean = false,
+    /**
+     * The reason the field is invalid, in words.
+     *
+     * A red border is invisible to a screen reader. This is what makes TalkBack say that the
+     * field is invalid and what is wrong with it.
+     */
+    errorText: String? = null,
     supportingText: @Composable (() -> Unit)? = null,
     keyboardType: KeyboardType = KeyboardType.Text,
     imeAction: ImeAction = ImeAction.Done,
@@ -102,6 +110,15 @@ fun AppTextField(
                         .padding(
                             start = if (leadingIcon != null) 8.dp else 0.dp,
                             end = if (trailingIcon != null) 4.dp else 0.dp
+                        )
+                        .then(
+                            // A red border is invisible to a screen reader. This is what makes
+                            // TalkBack say that the field is invalid and what is wrong with it.
+                            if (isError && errorText != null) {
+                                Modifier.semantics { error(errorText) }
+                            } else {
+                                Modifier
+                            }
                         ),
                     singleLine = singleLine,
                     maxLines = maxLines,

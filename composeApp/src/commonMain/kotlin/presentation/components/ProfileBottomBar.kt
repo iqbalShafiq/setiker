@@ -2,7 +2,7 @@ package presentation.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import org.jetbrains.compose.resources.stringResource
@@ -32,7 +32,7 @@ fun ProfileBottomBar(
         },
         floatingActionButton = {
             PackBottomBarFab(
-                icon = Icons.Default.Logout,
+                icon = Icons.AutoMirrored.Filled.Logout,
                 contentDescription = stringResource(Res.string.logout),
                 onClick = onLogoutClick
             )

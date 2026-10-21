@@ -18,10 +18,10 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import domain.model.StickerDecoration
+import kotlin.coroutines.resume
 import kotlinx.coroutines.suspendCancellableCoroutine
 import presentation.components.ReadOnlyDecorationOverlay
 import presentation.theme.SetikerTheme
-import kotlin.coroutines.resume
 
 /**
  * Renders [decorations] with the same Compose stack as the editor overlay

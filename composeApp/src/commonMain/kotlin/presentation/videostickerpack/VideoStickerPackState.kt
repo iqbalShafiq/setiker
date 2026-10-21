@@ -1,7 +1,7 @@
 package presentation.videostickerpack
 
-import domain.model.CandidateGridImage
 import domain.model.AiUsage
+import domain.model.CandidateGridImage
 import domain.model.ResolvedVideoStickerPackPlan
 import domain.model.VideoFrameCandidate
 import domain.model.VideoStickerCandidateManifestItem
@@ -34,6 +34,11 @@ data class VideoStickerPackState(
     val selectedStaticStickerKeys: Set<String> = emptySet(),
     val selectedAnimatedStickerKeys: Set<String> = emptySet(),
     val errorMessage: String? = null,
+    /**
+     * True once a preview extraction run finished without producing a single frame, so the screens
+     * show a retry instead of the infinite "loading frames" placeholder.
+     */
+    val previewUnavailable: Boolean = false,
     val workspaceDraftId: String? = null,
     val backgroundJobMessage: String? = null,
     val aiUsage: AiUsage? = null,

@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,16 +17,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import domain.model.ShareLinkUi
@@ -35,6 +30,7 @@ import domain.model.preferredShareText
 import org.jetbrains.compose.resources.stringResource
 import presentation.common.ContentStateAnimations
 import presentation.common.ShareLinksBodyPhase
+import presentation.common.rememberCopyToClipboardAction
 import presentation.common.rememberShareTextAction
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.neubrutalBorderColor
@@ -64,7 +60,7 @@ fun ShareLinksSheet(
     modifier: Modifier = Modifier,
     title: String = stringResource(Res.string.cloud_links_title)
 ) {
-    val clipboard = LocalClipboardManager.current
+    val copyToClipboard = rememberCopyToClipboardAction()
     val shareText = rememberShareTextAction()
     val bodyPhase = when {
         isLoading -> ShareLinksBodyPhase.Loading
@@ -95,8 +91,10 @@ fun ShareLinksSheet(
         AnimatedContent(
             targetState = bodyPhase,
             transitionSpec = {
-                fadeIn(animationSpec = tween(ContentStateAnimations.SHEET_MS)) togetherWith
+                ContentStateAnimations.contentTransform(
+                    fadeIn(animationSpec = tween(ContentStateAnimations.SHEET_MS)),
                     fadeOut(animationSpec = tween(ContentStateAnimations.EXIT_MS))
+                )
             },
             label = "share_links_body"
         ) { phase ->
@@ -143,38 +141,32 @@ fun ShareLinksSheet(
                                     color = neubrutalOnSurface(),
                                     modifier = Modifier.weight(1f)
                                 )
-                                IconButton(
+                                NeubrutalIconButton(
+                                    icon = Icons.Default.Check,
+                                    contentDescription = stringResource(Res.string.cloud_links_copy),
                                     onClick = {
                                         val value = link.preferredShareText()
-                                        clipboard.setText(AnnotatedString(value))
+                                        copyToClipboard(value)
                                     },
-                                    enabled = enabled
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = stringResource(Res.string.cloud_links_copy)
-                                    )
-                                }
-                                IconButton(
+                                    enabled = enabled,
+                                    label = "share_link_copy_scale"
+                                )
+                                NeubrutalIconButton(
+                                    icon = Icons.Default.Edit,
+                                    contentDescription = stringResource(Res.string.cloud_links_share),
                                     onClick = {
                                         shareText(link.preferredShareText())
                                     },
-                                    enabled = enabled
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Edit,
-                                        contentDescription = stringResource(Res.string.cloud_links_share)
-                                    )
-                                }
-                                IconButton(
+                                    enabled = enabled,
+                                    label = "share_link_share_scale"
+                                )
+                                NeubrutalIconButton(
+                                    icon = Icons.Default.Delete,
+                                    contentDescription = stringResource(Res.string.cloud_links_revoke),
                                     onClick = { onRevoke(link.id) },
-                                    enabled = enabled
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Delete,
-                                        contentDescription = stringResource(Res.string.cloud_links_revoke)
-                                    )
-                                }
+                                    enabled = enabled,
+                                    label = "share_link_revoke_scale"
+                                )
                             }
                         }
                     }

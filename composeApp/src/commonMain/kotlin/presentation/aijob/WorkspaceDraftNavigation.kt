@@ -1,11 +1,11 @@
 package presentation.aijob
 
+import data.remote.json.ApiJson
 import domain.model.aijob.AiJob
 import domain.model.aijob.AiJobStatus
 import domain.model.aijob.AiJobType
-import domain.model.aijob.WorkspaceDraft
-import data.aijob.AiJobJson
 import domain.model.aijob.GeneratePackResult
+import domain.model.aijob.WorkspaceDraft
 import domain.model.aijob.WorkspaceDraftStatus
 import domain.repository.AiJobRepository
 import domain.repository.WorkspaceDraftRepository
@@ -69,7 +69,7 @@ object WorkspaceDraftNavigation {
             AiJobStatus.COMPLETED -> {
                 if (job.type == AiJobType.GENERATE_PACK) {
                     val packId = job.resultJson?.let {
-                        AiJobJson.codec.decodeFromString<GeneratePackResult>(it).packId
+                        ApiJson.codec.decodeFromString<GeneratePackResult>(it).packId
                     } ?: context.resultPackId
                     if (!packId.isNullOrBlank()) {
                         return Target(route = "packDetail/$packId")

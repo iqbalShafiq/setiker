@@ -5,13 +5,16 @@ import androidx.lifecycle.viewModelScope
 import data.remote.ExploreApiRepository
 import data.remote.model.CreateStickerPackLinkRequest
 import data.remote.model.SharePackWithUserRequest
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import data.storage.StickerFileStorage
+import domain.error.onFailure
+import domain.error.onSuccess
 import domain.model.Sticker
 import domain.model.StickerPack
 import domain.repository.StickerRepository
+import kotlin.time.Clock
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,22 +23,22 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlin.time.Clock
+import presentation.common.UiText
 import presentation.common.preferredShareText
 import presentation.common.toShareLinkUi
-import presentation.common.UiText
 import presentation.common.toUiText
 import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.error_cloud_fetch_failed
 import setiker.composeapp.generated.resources.error_failed_add_pack
 import setiker.composeapp.generated.resources.error_failed_add_stickers
 import setiker.composeapp.generated.resources.error_failed_delete_pack
-import setiker.composeapp.generated.resources.pack_collaborators_sync_required
 import setiker.composeapp.generated.resources.error_failed_delete_sticker
-import setiker.composeapp.generated.resources.reorder_failed
-import setiker.composeapp.generated.resources.sticker_links_need_sync
 import setiker.composeapp.generated.resources.error_pack_min_stickers_whatsapp
 import setiker.composeapp.generated.resources.error_tray_icon_required_whatsapp
+import setiker.composeapp.generated.resources.pack_collaborators_sync_required
 import setiker.composeapp.generated.resources.pack_duplicate_success
+import setiker.composeapp.generated.resources.reorder_failed
+import setiker.composeapp.generated.resources.sticker_links_need_sync
 import setiker.composeapp.generated.resources.success_stickers_added
 
 class PackDetailViewModel(
@@ -185,7 +188,7 @@ class PackDetailViewModel(
         }
         collaboratorSearchJob = viewModelScope.launch {
             delay(300)
-            runCatching { exploreApiRepository.searchUsers(query) }
+            exploreApiRepository.searchUsers(query)
                 .onSuccess { results ->
                     _state.update { it.copy(collaboratorSearchResults = results) }
                 }
@@ -204,7 +207,7 @@ class PackDetailViewModel(
         }
         viewModelScope.launch {
             _state.update { it.copy(collaboratorsLoading = true) }
-            runCatching { exploreApiRepository.listPackCollaborators(cloudId) }
+            exploreApiRepository.listPackCollaborators(cloudId)
                 .onSuccess { list ->
                     _state.update { it.copy(collaboratorsLoading = false, collaborators = list) }
                 }
@@ -226,12 +229,10 @@ class PackDetailViewModel(
         }
         val permission = _state.value.collaboratorInvitePermission
         viewModelScope.launch {
-            runCatching {
-                exploreApiRepository.sharePackWithUser(
-                    cloudId,
-                    SharePackWithUserRequest(userId = userId, permission = permission)
-                )
-            }.onSuccess {
+            exploreApiRepository.sharePackWithUser(
+                cloudId,
+                SharePackWithUserRequest(userId = userId, permission = permission)
+            ).onSuccess {
                 refreshCollaborators()
                 _state.update { it.copy(collaboratorSearchResults = emptyList(), collaboratorSearchQuery = "") }
             }.onFailure { error ->
@@ -373,14 +374,13 @@ class PackDetailViewModel(
                 return@launch
             }
             _state.update { it.copy(cloudShareLinksLoading = true) }
-            runCatching {
-                exploreApiRepository.getPackLinks(cloudId)
-            }.onSuccess { links ->
-                _state.update { it.copy(cloudShareLinksLoading = false, cloudShareLinks = links) }
-            }.onFailure { error ->
-                _state.update { it.copy(cloudShareLinksLoading = false) }
-                _effect.send(PackDetailEffect.ShowError(UiText.DynamicString(error.message ?: "Failed to load cloud links")))
-            }
+            exploreApiRepository.getPackLinks(cloudId)
+                .onSuccess { links ->
+                    _state.update { it.copy(cloudShareLinksLoading = false, cloudShareLinks = links) }
+                }.onFailure { error ->
+                    _state.update { it.copy(cloudShareLinksLoading = false) }
+                    _effect.send(PackDetailEffect.ShowError(error.toUiText(Res.string.error_cloud_fetch_failed)))
+                }
         }
     }
 
@@ -393,21 +393,20 @@ class PackDetailViewModel(
                 return@launch
             }
             _state.update { it.copy(cloudShareLinksLoading = true) }
-            runCatching {
-                exploreApiRepository.createPackLink(cloudId, CreateStickerPackLinkRequest())
-            }.onSuccess { link ->
-                val shareUrl = link.preferredShareText()
-                _state.update {
-                    it.copy(
-                        cloudShareLinksLoading = false,
-                        cloudShareLinks = listOf(link) + it.cloudShareLinks
-                    )
+            exploreApiRepository.createPackLink(cloudId, CreateStickerPackLinkRequest())
+                .onSuccess { link ->
+                    val shareUrl = link.preferredShareText()
+                    _state.update {
+                        it.copy(
+                            cloudShareLinksLoading = false,
+                            cloudShareLinks = listOf(link) + it.cloudShareLinks
+                        )
+                    }
+                    _effect.send(PackDetailEffect.ShareText(shareUrl))
+                }.onFailure { error ->
+                    _state.update { it.copy(cloudShareLinksLoading = false) }
+                    _effect.send(PackDetailEffect.ShowError(error.toUiText(Res.string.error_cloud_fetch_failed)))
                 }
-                _effect.send(PackDetailEffect.ShareText(shareUrl))
-            }.onFailure { error ->
-                _state.update { it.copy(cloudShareLinksLoading = false) }
-                _effect.send(PackDetailEffect.ShowError(UiText.DynamicString(error.message ?: "Failed to create cloud link")))
-            }
         }
     }
 
@@ -420,19 +419,18 @@ class PackDetailViewModel(
                 return@launch
             }
             _state.update { it.copy(cloudShareLinksLoading = true) }
-            runCatching {
-                exploreApiRepository.revokePackLink(cloudId, linkId)
-            }.onSuccess {
-                _state.update {
-                    it.copy(
-                        cloudShareLinksLoading = false,
-                        cloudShareLinks = it.cloudShareLinks.filterNot { link -> link.id == linkId }
-                    )
+            exploreApiRepository.revokePackLink(cloudId, linkId)
+                .onSuccess {
+                    _state.update {
+                        it.copy(
+                            cloudShareLinksLoading = false,
+                            cloudShareLinks = it.cloudShareLinks.filterNot { link -> link.id == linkId }
+                        )
+                    }
+                }.onFailure { error ->
+                    _state.update { it.copy(cloudShareLinksLoading = false) }
+                    _effect.send(PackDetailEffect.ShowError(error.toUiText(Res.string.error_cloud_fetch_failed)))
                 }
-            }.onFailure { error ->
-                _state.update { it.copy(cloudShareLinksLoading = false) }
-                _effect.send(PackDetailEffect.ShowError(UiText.DynamicString(error.message ?: "Failed to revoke link")))
-            }
         }
     }
 
@@ -514,13 +512,13 @@ class PackDetailViewModel(
                 return@launch
             }
             _state.update { it.copy(stickerShareLinksLoading = true) }
-            runCatching { exploreApiRepository.getStickerLinks(stickerId) }
+            exploreApiRepository.getStickerLinks(stickerId)
                 .onSuccess { links ->
                     _state.update { it.copy(stickerShareLinksLoading = false, stickerShareLinks = links) }
                 }
                 .onFailure { error ->
                     _state.update { it.copy(stickerShareLinksLoading = false) }
-                    _effect.send(PackDetailEffect.ShowError(UiText.DynamicString(error.message ?: "Failed")))
+                    _effect.send(PackDetailEffect.ShowError(error.toUiText(Res.string.error_cloud_fetch_failed)))
                 }
         }
     }
@@ -533,25 +531,24 @@ class PackDetailViewModel(
                 return@launch
             }
             _state.update { it.copy(stickerShareLinksLoading = true) }
-            runCatching {
-                exploreApiRepository.createStickerLink(stickerId, CreateStickerPackLinkRequest())
-            }.onSuccess { link ->
-                _state.update {
-                    it.copy(
-                        stickerShareLinksLoading = false,
-                        stickerShareLinks = listOf(link) + it.stickerShareLinks
-                    )
+            exploreApiRepository.createStickerLink(stickerId, CreateStickerPackLinkRequest())
+                .onSuccess { link ->
+                    _state.update {
+                        it.copy(
+                            stickerShareLinksLoading = false,
+                            stickerShareLinks = listOf(link) + it.stickerShareLinks
+                        )
+                    }
+                    _effect.send(PackDetailEffect.ShareText(link.toShareLinkUi().let { ui ->
+                        ui.deepLinkUrl?.takeIf { it.isNotBlank() }
+                            ?: ui.webFallbackUrl?.takeIf { it.isNotBlank() }
+                            ?: ui.shareUrl?.takeIf { it.isNotBlank() }
+                            ?: ui.token
+                    }))
+                }.onFailure { error ->
+                    _state.update { it.copy(stickerShareLinksLoading = false) }
+                    _effect.send(PackDetailEffect.ShowError(error.toUiText(Res.string.error_cloud_fetch_failed)))
                 }
-                _effect.send(PackDetailEffect.ShareText(link.toShareLinkUi().let { ui ->
-                    ui.deepLinkUrl?.takeIf { it.isNotBlank() }
-                        ?: ui.webFallbackUrl?.takeIf { it.isNotBlank() }
-                        ?: ui.shareUrl?.takeIf { it.isNotBlank() }
-                        ?: ui.token
-                }))
-            }.onFailure { error ->
-                _state.update { it.copy(stickerShareLinksLoading = false) }
-                _effect.send(PackDetailEffect.ShowError(UiText.DynamicString(error.message ?: "Failed")))
-            }
         }
     }
 
@@ -560,7 +557,7 @@ class PackDetailViewModel(
             val stickerId = currentStickerCloudId()
             if (stickerId.isNullOrBlank()) return@launch
             _state.update { it.copy(stickerShareLinksLoading = true) }
-            runCatching { exploreApiRepository.revokeStickerLink(stickerId, linkId) }
+            exploreApiRepository.revokeStickerLink(stickerId, linkId)
                 .onSuccess {
                     _state.update {
                         it.copy(
@@ -571,7 +568,7 @@ class PackDetailViewModel(
                 }
                 .onFailure { error ->
                     _state.update { it.copy(stickerShareLinksLoading = false) }
-                    _effect.send(PackDetailEffect.ShowError(UiText.DynamicString(error.message ?: "Failed")))
+                    _effect.send(PackDetailEffect.ShowError(error.toUiText(Res.string.error_cloud_fetch_failed)))
                 }
         }
     }
@@ -587,7 +584,7 @@ class PackDetailViewModel(
         }
         stickerCollaboratorSearchJob = viewModelScope.launch {
             delay(300)
-            runCatching { exploreApiRepository.searchUsers(query) }
+            exploreApiRepository.searchUsers(query)
                 .onSuccess { results ->
                     _state.update { it.copy(stickerCollaboratorSearchResults = results) }
                 }
@@ -602,7 +599,7 @@ class PackDetailViewModel(
                 return@launch
             }
             _state.update { it.copy(stickerCollaboratorsLoading = true) }
-            runCatching { exploreApiRepository.listStickerCollaborators(stickerId) }
+            exploreApiRepository.listStickerCollaborators(stickerId)
                 .onSuccess { list ->
                     _state.update {
                         it.copy(stickerCollaboratorsLoading = false, stickerCollaborators = list)
@@ -610,7 +607,7 @@ class PackDetailViewModel(
                 }
                 .onFailure { error ->
                     _state.update { it.copy(stickerCollaboratorsLoading = false) }
-                    _effect.send(PackDetailEffect.ShowError(UiText.DynamicString(error.message ?: "Failed")))
+                    _effect.send(PackDetailEffect.ShowError(error.toUiText(Res.string.error_cloud_fetch_failed)))
                 }
         }
     }
@@ -623,15 +620,13 @@ class PackDetailViewModel(
                 return@launch
             }
             val permission = _state.value.stickerCollaboratorInvitePermission
-            runCatching {
-                exploreApiRepository.shareStickerWithUser(
-                    stickerId,
-                    SharePackWithUserRequest(userId = userId, permission = permission)
-                )
-            }.onSuccess {
+            exploreApiRepository.shareStickerWithUser(
+                stickerId,
+                SharePackWithUserRequest(userId = userId, permission = permission)
+            ).onSuccess {
                 refreshStickerCollaborators()
             }.onFailure { error ->
-                _effect.send(PackDetailEffect.ShowError(UiText.DynamicString(error.message ?: "Failed")))
+                _effect.send(PackDetailEffect.ShowError(error.toUiText(Res.string.error_cloud_fetch_failed)))
             }
         }
     }
@@ -640,10 +635,10 @@ class PackDetailViewModel(
         viewModelScope.launch {
             val stickerId = currentStickerCloudId()
             if (stickerId.isNullOrBlank()) return@launch
-            runCatching { exploreApiRepository.removeStickerShare(stickerId, userId) }
+            exploreApiRepository.removeStickerShare(stickerId, userId)
                 .onSuccess { refreshStickerCollaborators() }
                 .onFailure { error ->
-                    _effect.send(PackDetailEffect.ShowError(UiText.DynamicString(error.message ?: "Failed")))
+                    _effect.send(PackDetailEffect.ShowError(error.toUiText(Res.string.error_cloud_fetch_failed)))
                 }
         }
     }

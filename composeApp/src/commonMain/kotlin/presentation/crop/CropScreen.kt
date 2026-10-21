@@ -26,7 +26,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,27 +41,29 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
 import org.jetbrains.compose.resources.stringResource
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppIllustration
 import presentation.components.AppIllustrationImage
 import presentation.components.AppTopBar
 import presentation.components.InteractionBlockedBox
+import presentation.components.NeubrutalSnackbarHost
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalCardRadius
-import presentation.theme.neubrutalBorderWithGloss
-import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.NeubrutalDialogRadius
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
@@ -72,14 +73,14 @@ import presentation.theme.neubrutalSubtleOnSurface
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.back
 import setiker.composeapp.generated.resources.crop_image_title
-import setiker.composeapp.generated.resources.processing
-import setiker.composeapp.generated.resources.save_sticker
 import setiker.composeapp.generated.resources.flip_horizontal
 import setiker.composeapp.generated.resources.image_to_crop
 import setiker.composeapp.generated.resources.no_image_selected
+import setiker.composeapp.generated.resources.processing
 import setiker.composeapp.generated.resources.reset
 import setiker.composeapp.generated.resources.rotate_left
 import setiker.composeapp.generated.resources.rotate_right
+import setiker.composeapp.generated.resources.save_sticker
 import setiker.composeapp.generated.resources.zoom
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -88,7 +89,7 @@ fun CropScreen(
     state: CropState,
     onIntent: (CropIntent) -> Unit,
     onBackClick: () -> Unit,
-    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    snackbarHostState: AppSnackbarHostState = remember { AppSnackbarHostState() },
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -124,7 +125,7 @@ fun CropScreen(
                 }
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         val border = neubrutalBorderColor()

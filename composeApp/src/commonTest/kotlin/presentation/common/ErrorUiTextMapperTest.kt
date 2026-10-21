@@ -6,8 +6,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import setiker.composeapp.generated.resources.Res
-import setiker.composeapp.generated.resources.error_auth_login_failed
 import setiker.composeapp.generated.resources.error_ai_quota_exceeded
+import setiker.composeapp.generated.resources.error_auth_login_failed
 
 class ErrorUiTextMapperTest {
 

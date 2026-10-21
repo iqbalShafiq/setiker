@@ -2,7 +2,7 @@ package data.auth.model
 
 import domain.model.User
 import domain.model.UserRole
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 fun UserDto.toDomainModel(): User {
     return User(

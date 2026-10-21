@@ -3,7 +3,6 @@ package presentation.sync
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import data.sync.SyncManager
-import domain.model.SyncOperationStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

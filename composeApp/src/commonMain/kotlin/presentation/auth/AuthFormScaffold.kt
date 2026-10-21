@@ -4,11 +4,14 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppTopBar
 import presentation.components.InteractionBlockedBox
+import presentation.components.NeubrutalSnackbarHost
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
@@ -19,6 +22,7 @@ fun AuthFormScaffold(
     title: String,
     isLoading: Boolean,
     loadingStatusText: String,
+    snackbarHostState: AppSnackbarHostState,
     onPrimaryAction: () -> Unit,
     primaryFabIcon: ImageVector,
     primaryFabContentDescription: String,
@@ -35,6 +39,9 @@ fun AuthFormScaffold(
                 title = title,
                 onBackClick = null
             )
+        },
+        snackbarHost = {
+            NeubrutalSnackbarHost(snackbarHostState)
         },
         bottomBar = {
             PackBottomBar(

@@ -2,9 +2,9 @@ package presentation.editor
 
 import domain.model.DecorationFont
 import domain.model.TextDecoration
-import presentation.createpack.DraftSticker
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import presentation.createpack.DraftSticker
 
 class EditorGeneratedDraftStateTest {
     @Test

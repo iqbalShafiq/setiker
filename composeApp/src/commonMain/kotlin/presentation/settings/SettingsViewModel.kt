@@ -10,10 +10,11 @@ import data.auth.GoogleSignInGateway
 import data.auth.GoogleSignInMode
 import data.auth.model.ChangePasswordRequest
 import data.auth.model.toDomainModel
-import data.remote.ApiException
 import data.preferences.UserPreferencesRepository
 import data.remote.AiUsageApiRepository
 import data.remote.LegalApiRepository
+import domain.error.onFailure
+import domain.error.onSuccess
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +25,7 @@ import kotlinx.coroutines.launch
 import presentation.common.UiText
 import presentation.common.toUiText
 import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.error_auth_change_password_failed
 import setiker.composeapp.generated.resources.error_auth_not_authenticated
 import setiker.composeapp.generated.resources.error_cloud_delete_failed
 import setiker.composeapp.generated.resources.settings_apple_linked
@@ -33,7 +35,6 @@ import setiker.composeapp.generated.resources.settings_google_unlinked
 import setiker.composeapp.generated.resources.settings_password_changed
 import setiker.composeapp.generated.resources.settings_password_mismatch
 import setiker.composeapp.generated.resources.settings_password_set_success
-import setiker.composeapp.generated.resources.error_auth_change_password_failed
 
 class SettingsViewModel(
     private val legalApiRepository: LegalApiRepository,
@@ -141,15 +142,13 @@ class SettingsViewModel(
                 return@launch
             }
             _state.update { it.copy(isChangingPassword = true, changePasswordError = null, showSavePasswordConfirm = false) }
-            runCatching {
-                authApiService.changePassword(
-                    token,
-                    ChangePasswordRequest(
-                        currentPassword = current.currentPassword,
-                        newPassword = current.newPassword
-                    )
+            authApiService.changePassword(
+                token,
+                ChangePasswordRequest(
+                    currentPassword = current.currentPassword,
+                    newPassword = current.newPassword
                 )
-            }.onSuccess {
+            ).onSuccess {
                 _state.update {
                     it.copy(
                         isChangingPassword = false,
@@ -182,9 +181,8 @@ class SettingsViewModel(
                 return@launch
             }
             _state.update { it.copy(isSettingPassword = true, changePasswordError = null) }
-            runCatching {
-                authApiService.setPassword(token, current.newPassword)
-            }.onSuccess {
+            authApiService.setPassword(token, current.newPassword)
+                .onSuccess {
                 val user = authManager.getUser()?.copy(hasPassword = true, authProviders = (authManager.getUser()?.authProviders.orEmpty() + "PASSWORD").distinct())
                 if (user != null) authManager.saveUser(user)
                 _state.update {
@@ -224,9 +222,8 @@ class SettingsViewModel(
                 return@launch
             }
             val idToken = idTokenResult.getOrNull()?.idToken ?: return@launch
-            runCatching {
-                authApiService.linkGoogle(token, idToken)
-            }.onSuccess { response ->
+            authApiService.linkGoogle(token, idToken)
+                .onSuccess { response ->
                 val user = response.data?.toDomainModel()
                 if (user != null) authManager.saveUser(user)
                 _state.update {
@@ -253,9 +250,8 @@ class SettingsViewModel(
                 return@launch
             }
             _state.update { it.copy(isLinkingGoogle = true) }
-            runCatching {
-                authApiService.unlinkGoogle(token)
-            }.onSuccess { response ->
+            authApiService.unlinkGoogle(token)
+                .onSuccess { response ->
                 val user = response.data?.toDomainModel()
                 if (user != null) authManager.saveUser(user)
                 _state.update {
@@ -290,9 +286,8 @@ class SettingsViewModel(
                 return@launch
             }
             val idToken = idTokenResult.getOrNull()?.idToken ?: return@launch
-            runCatching {
-                authApiService.linkApple(token, idToken)
-            }.onSuccess { response ->
+            authApiService.linkApple(token, idToken)
+                .onSuccess { response ->
                 val user = response.data?.toDomainModel()
                 if (user != null) authManager.saveUser(user)
                 _state.update {
@@ -319,9 +314,8 @@ class SettingsViewModel(
                 return@launch
             }
             _state.update { it.copy(isLinkingApple = true) }
-            runCatching {
-                authApiService.unlinkApple(token)
-            }.onSuccess { response ->
+            authApiService.unlinkApple(token)
+                .onSuccess { response ->
                 val user = response.data?.toDomainModel()
                 if (user != null) authManager.saveUser(user)
                 _state.update {
@@ -356,7 +350,7 @@ class SettingsViewModel(
                     usageError = false
                 )
             }
-            runCatching { legalApiRepository.getSummary() }
+            legalApiRepository.getSummary()
                 .onSuccess { summary ->
                     _state.update { it.copy(isLoadingLegal = false, legalSummary = summary) }
                 }
@@ -366,8 +360,9 @@ class SettingsViewModel(
             if (authManager.isAuthenticated()) {
                 val token = authManager.getValidAccessToken() ?: authManager.getAccessToken()
                 if (!token.isNullOrBlank()) {
-                    runCatching { authApiService.getProfile(token).data?.toDomainModel() }
-                        .onSuccess { profile ->
+                    authApiService.getProfile(token)
+                        .onSuccess { response ->
+                            val profile = response.data?.toDomainModel()
                             if (profile != null) {
                                 authManager.saveUser(profile)
                                 _state.update {
@@ -381,7 +376,7 @@ class SettingsViewModel(
                             }
                         }
                 }
-                runCatching { aiUsageApiRepository.getUsage() }
+                aiUsageApiRepository.getUsage()
                     .onSuccess { usage ->
                         _state.update { it.copy(isLoadingUsage = false, aiUsage = usage, usageError = false) }
                     }
@@ -410,12 +405,10 @@ class SettingsViewModel(
                 return@launch
             }
             _state.update { it.copy(isDeletingAccount = true, deleteAccountError = null) }
-            runCatching {
-                authApiService.deleteAccount(
-                    token,
-                    if (current.hasPassword) current.deleteConfirmPassword else null
-                )
-            }.onSuccess {
+            authApiService.deleteAccount(
+                token,
+                if (current.hasPassword) current.deleteConfirmPassword else null
+            ).onSuccess {
                 authSessionCoordinator.endSession()
                 _state.update {
                     it.copy(
@@ -427,10 +420,7 @@ class SettingsViewModel(
                 }
                 _effect.send(SettingsEffect.AccountDeleted)
             }.onFailure { error ->
-                val message = when (error) {
-                    is ApiException -> error.toUiText(Res.string.error_cloud_delete_failed)
-                    else -> error.toUiText(Res.string.error_cloud_delete_failed)
-                }
+                val message = error.toUiText(Res.string.error_cloud_delete_failed)
                 _state.update { it.copy(isDeletingAccount = false, deleteAccountError = message) }
             }
         }

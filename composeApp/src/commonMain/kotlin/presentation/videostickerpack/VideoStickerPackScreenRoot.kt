@@ -3,11 +3,12 @@ package presentation.videostickerpack
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
+import presentation.components.AppSnackbarHostState
 
 @Composable
 fun VideoStickerPackScreenRoot(
@@ -16,8 +17,8 @@ fun VideoStickerPackScreenRoot(
     onNavigateToPackDetail: (String) -> Unit,
     viewModel: VideoStickerPackViewModel = koinViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { AppSnackbarHostState() }
 
     LaunchedEffect(videoPath) {
         viewModel.onIntent(VideoStickerPackIntent.LoadVideo(videoPath))
@@ -29,7 +30,7 @@ fun VideoStickerPackScreenRoot(
                 is VideoStickerPackEffect.NavigateToPackDetail -> onNavigateToPackDetail(effect.packId)
                 is VideoStickerPackEffect.NavigateBack -> onBackClick()
                 is VideoStickerPackEffect.ShowError -> {
-                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
+                    snackbarHostState.showMessage(effect.message.resolveOrDefault())
                 }
             }
         }

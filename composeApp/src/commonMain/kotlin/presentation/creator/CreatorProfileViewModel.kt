@@ -3,9 +3,12 @@ package presentation.creator
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import data.remote.ExploreApiRepository
-import data.remote.ExploreSort
 import data.remote.model.applyFollowUpdate
 import data.remote.model.withOptimisticFollow
+import domain.error.Result
+import domain.error.detailText
+import domain.error.onFailure
+import domain.error.onSuccess
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -56,13 +59,16 @@ class CreatorProfileViewModel(
         userId = id
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, loadFailed = false) }
-            runCatching {
-                val profile = exploreApiRepository.getPublicUserProfile(id)
-                val packs = exploreApiRepository.getPublicUserPacks(id, page = 1, limit = 20, sort = _state.value.sort)
-                profile to packs.data
-            }.onSuccess { (profile, packs) ->
-                _state.update { it.copy(isLoading = false, profile = profile, packs = packs) }
-            }.onFailure {
+            val attempt = when (val profileResult = exploreApiRepository.getPublicUserProfile(id)) {
+                is Result.Error -> null
+                is Result.Success -> when (val packsResult = exploreApiRepository.getPublicUserPacks(id, page = 1, limit = 20, sort = _state.value.sort)) {
+                    is Result.Error -> null
+                    is Result.Success -> profileResult.data to packsResult.data.data
+                }
+            }
+            if (attempt != null) {
+                _state.update { it.copy(isLoading = false, profile = attempt.first, packs = attempt.second) }
+            } else {
                 _state.update { it.copy(isLoading = false, loadFailed = true) }
             }
         }
@@ -71,11 +77,10 @@ class CreatorProfileViewModel(
     private fun reloadPacks() {
         if (userId.isBlank()) return
         viewModelScope.launch {
-            runCatching {
-                exploreApiRepository.getPublicUserPacks(userId, page = 1, limit = 20, sort = _state.value.sort).data
-            }.onSuccess { packs ->
-                _state.update { it.copy(packs = packs) }
-            }
+            exploreApiRepository.getPublicUserPacks(userId, page = 1, limit = 20, sort = _state.value.sort)
+                .onSuccess { result ->
+                    _state.update { it.copy(packs = result.data) }
+                }
         }
     }
 
@@ -86,17 +91,15 @@ class CreatorProfileViewModel(
             val wasFollowing = profile.isFollowing
             val targetFollowing = !wasFollowing
             applyOptimisticFollow(targetFollowing)
-            runCatching {
-                if (wasFollowing) exploreApiRepository.unfollowUser(profile.id)
-                else exploreApiRepository.followUser(profile.id)
-            }.onSuccess { result ->
-                _state.update { current ->
-                    current.copy(profile = current.profile?.applyFollowUpdate(result))
+            (if (wasFollowing) exploreApiRepository.unfollowUser(profile.id) else exploreApiRepository.followUser(profile.id))
+                .onSuccess { result ->
+                    _state.update { current ->
+                        current.copy(profile = current.profile?.applyFollowUpdate(result))
+                    }
+                }.onFailure { error ->
+                    restoreFollowSnapshot(snapshot)
+                    _effect.send(CreatorProfileEffect.ShowMessage(UiText.DynamicString(error.detailText())))
                 }
-            }.onFailure { error ->
-                restoreFollowSnapshot(snapshot)
-                _effect.send(CreatorProfileEffect.ShowMessage(UiText.DynamicString(error.message ?: "Follow failed")))
-            }
         }
     }
 
@@ -114,29 +117,28 @@ class CreatorProfileViewModel(
         val profile = _state.value.profile ?: return
         viewModelScope.launch {
             _state.update { it.copy(isBlockingCreator = true) }
-            runCatching {
-                exploreApiRepository.blockUser(profile.id)
-            }.onSuccess {
-                _state.update {
-                    it.copy(
-                        isBlockingCreator = false,
-                        showBlockCreatorConfirm = false
+            exploreApiRepository.blockUser(profile.id)
+                .onSuccess {
+                    _state.update {
+                        it.copy(
+                            isBlockingCreator = false,
+                            showBlockCreatorConfirm = false
+                        )
+                    }
+                    _effect.send(
+                        CreatorProfileEffect.ShowMessage(
+                            UiText.StringRes(Res.string.block_creator_success)
+                        )
+                    )
+                    _effect.send(CreatorProfileEffect.NavigateBack)
+                }.onFailure { error ->
+                    _state.update { it.copy(isBlockingCreator = false, showBlockCreatorConfirm = false) }
+                    _effect.send(
+                        CreatorProfileEffect.ShowMessage(
+                            UiText.DynamicString(error.detailText())
+                        )
                     )
                 }
-                _effect.send(
-                    CreatorProfileEffect.ShowMessage(
-                        UiText.StringRes(Res.string.block_creator_success)
-                    )
-                )
-                _effect.send(CreatorProfileEffect.NavigateBack)
-            }.onFailure { error ->
-                _state.update { it.copy(isBlockingCreator = false, showBlockCreatorConfirm = false) }
-                _effect.send(
-                    CreatorProfileEffect.ShowMessage(
-                        UiText.DynamicString(error.message ?: "Block failed")
-                    )
-                )
-            }
         }
     }
 }

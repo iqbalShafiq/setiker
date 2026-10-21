@@ -16,9 +16,9 @@ import domain.model.TextDecorationLayout
 import domain.model.isBottomCaption
 import domain.model.resolveEmojiStyle
 import domain.model.resolveStyle
-import presentation.components.decorationTypeface
 import kotlin.math.max
 import kotlin.math.min
+import presentation.components.decorationTypeface
 
 /**
  * Canvas-based decoration render that does **not** need a foreground Activity.

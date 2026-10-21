@@ -24,7 +24,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -34,6 +33,7 @@ import domain.model.AiQuotaOperation
 import domain.model.AiUsage
 import org.jetbrains.compose.resources.stringResource
 import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalScrim
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
@@ -88,7 +88,7 @@ fun AiGenerateStickerPackBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = neubrutalScreenBackground(),
-        scrimColor = Color.Black.copy(alpha = 0.45f),
+        scrimColor = NeubrutalScrim,
         contentWindowInsets = { zeroBottomSheetWindowInsets() }
     ) {
         BottomSheetScrollColumn {

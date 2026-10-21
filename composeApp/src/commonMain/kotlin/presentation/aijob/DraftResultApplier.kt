@@ -1,6 +1,6 @@
 package presentation.aijob
 
-import data.aijob.AiJobJson
+import data.remote.json.ApiJson
 import domain.model.aijob.AiJob
 import domain.model.aijob.AiJobStatus
 import domain.model.aijob.AiJobType
@@ -21,7 +21,6 @@ import kotlinx.coroutines.flow.map
 import presentation.aijob.toDraftSticker
 import presentation.createpack.CreatePackState
 import presentation.createpack.GeneratedPreviewMode
-import presentation.createpack.DraftSticker
 import presentation.editor.EditorState
 import presentation.home.HomeState
 import presentation.videostickerpack.VideoStickerPackState
@@ -53,7 +52,7 @@ class DraftResultApplier(
         when (job.type) {
             AiJobType.GENERATE_STICKERS -> {
                 val result = job.resultJson?.let {
-                    AiJobJson.codec.decodeFromString<GenerateStickersResult>(it)
+                    ApiJson.codec.decodeFromString<GenerateStickersResult>(it)
                 } ?: return next
                 next = next.copy(
                     generatedPreview = result.previews.map { it.toDraftSticker() },
@@ -64,7 +63,7 @@ class DraftResultApplier(
             }
             AiJobType.IMPROVE_STICKERS -> {
                 val result = job.resultJson?.let {
-                    AiJobJson.codec.decodeFromString<ImproveStickersResult>(it)
+                    ApiJson.codec.decodeFromString<ImproveStickersResult>(it)
                 } ?: return next
                 next = next.copy(
                     generatedPreview = result.previews.map { it.toDraftSticker() },
@@ -79,7 +78,7 @@ class DraftResultApplier(
             }
             AiJobType.GRID_SPLIT -> {
                 val result = job.resultJson?.let {
-                    AiJobJson.codec.decodeFromString<GridSplitResult>(it)
+                    ApiJson.codec.decodeFromString<GridSplitResult>(it)
                 } ?: return next
                 next = next.copy(
                     splitPreview = result.previews.map { it.toDraftSticker() },
@@ -100,9 +99,9 @@ class DraftResultApplier(
             AiJobType.GENERATE_STICKERS, AiJobType.IMPROVE_STICKERS -> {
                 val result = job.resultJson?.let {
                     if (job.type == AiJobType.GENERATE_STICKERS) {
-                        AiJobJson.codec.decodeFromString<GenerateStickersResult>(it)
+                        ApiJson.codec.decodeFromString<GenerateStickersResult>(it)
                     } else {
-                        AiJobJson.codec.decodeFromString<ImproveStickersResult>(it).let { improve ->
+                        ApiJson.codec.decodeFromString<ImproveStickersResult>(it).let { improve ->
                             GenerateStickersResult(improve.previews)
                         }
                     }
@@ -114,7 +113,7 @@ class DraftResultApplier(
             }
             AiJobType.REMOVE_BACKGROUND -> {
                 val result = job.resultJson?.let {
-                    AiJobJson.codec.decodeFromString<RemoveBackgroundResult>(it)
+                    ApiJson.codec.decodeFromString<RemoveBackgroundResult>(it)
                 } ?: return next
                 next = next.copy(
                     backgroundRemoverPreviewPath = result.outputPath,
@@ -134,11 +133,11 @@ class DraftResultApplier(
         if (job == null || job.status != AiJobStatus.COMPLETED) return state
         val context = WorkspaceDraftFactory.decodeContext(draft)
         val planJson = job.resultJson?.let {
-            AiJobJson.codec.decodeFromString<VideoPackResult>(it).videoPlanResultJson
+            ApiJson.codec.decodeFromString<VideoPackResult>(it).videoPlanResultJson
         } ?: context.videoPlanResultJson
         val plan = planJson?.let { json ->
             runCatching {
-                AiJobJson.codec.decodeFromString<domain.model.aijob.StoredVideoPackPlan>(json).toResolved()
+                ApiJson.codec.decodeFromString<domain.model.aijob.StoredVideoPackPlan>(json).toResolved()
             }.getOrNull()
         }
         return state.copy(
@@ -170,7 +169,7 @@ class DraftResultApplier(
     fun applyGeneratePackCompletion(state: HomeState, draft: WorkspaceDraft, job: AiJob?): String? {
         if (job == null || job.status != AiJobStatus.COMPLETED || job.type != AiJobType.GENERATE_PACK) return null
         return job.resultJson?.let {
-            AiJobJson.codec.decodeFromString<GeneratePackResult>(it).packId
+            ApiJson.codec.decodeFromString<GeneratePackResult>(it).packId
         } ?: WorkspaceDraftFactory.decodeContext(draft).resultPackId
     }
 

@@ -1,5 +1,7 @@
 package presentation.splash
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -12,8 +14,9 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import com.setiker.app.App
 import kotlinx.coroutines.delay
-import presentation.navigation.NotificationDeepLink
 import permission.NotificationPermissionHost
+import presentation.navigation.NotificationDeepLink
+import presentation.theme.SetikerMotion
 import presentation.theme.SetikerTheme
 
 /**
@@ -35,28 +38,37 @@ fun AndroidAppEntryPoint(
     var showMainContent by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        if (!showMainContent) {
-            SetikerTheme {
-                AppBrandedSplashScreen()
-            }
-
-            LaunchedEffect(Unit) {
-                withFrameNanos { }
-                if (keepSystemSplash()) {
-                    onSystemSplashReadyToDismiss()
+        // The splash used to be swapped for the app content in a single frame, which read as a
+        // glitch. Cross-fading keeps the transition legible.
+        Crossfade(
+            targetState = showMainContent,
+            animationSpec = tween(
+                durationMillis = SetikerMotion.DURATION_SLOW_MS,
+                easing = SetikerMotion.EaseOut
+            ),
+            label = "splash_to_app"
+        ) { showApp ->
+            if (!showApp) {
+                SetikerTheme {
+                    AppBrandedSplashScreen()
                 }
-                delay(SplashBranding.MIN_VISIBLE_DURATION_MS)
-                showMainContent = true
+            } else {
+                NotificationPermissionHost()
+                App(
+                    onAddToWhatsApp = onAddToWhatsApp,
+                    notificationDeepLink = notificationDeepLink,
+                    notificationDeepLinkVersion = notificationDeepLinkVersion
+                )
             }
         }
 
-        if (showMainContent) {
-            NotificationPermissionHost()
-            App(
-                onAddToWhatsApp = onAddToWhatsApp,
-                notificationDeepLink = notificationDeepLink,
-                notificationDeepLinkVersion = notificationDeepLinkVersion
-            )
+        LaunchedEffect(Unit) {
+            withFrameNanos { }
+            if (keepSystemSplash()) {
+                onSystemSplashReadyToDismiss()
+            }
+            delay(SplashBranding.MIN_VISIBLE_DURATION_MS)
+            showMainContent = true
         }
     }
 }

@@ -15,8 +15,8 @@ import setiker.composeapp.generated.resources.animated_error_missing_files
 import setiker.composeapp.generated.resources.animated_error_no_frames
 import setiker.composeapp.generated.resources.animated_error_save_failed
 import setiker.composeapp.generated.resources.animated_error_speed_out_of_range
-import setiker.composeapp.generated.resources.animated_error_total_duration_too_long
 import setiker.composeapp.generated.resources.animated_error_too_many_frames
+import setiker.composeapp.generated.resources.animated_error_total_duration_too_long
 import setiker.composeapp.generated.resources.animated_error_trim_invalid
 
 fun AnimatedStickerValidator.Reason.toUiText(): UiText =

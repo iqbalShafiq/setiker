@@ -3,11 +3,12 @@ package presentation.sharepreview
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
+import presentation.components.AppSnackbarHostState
 
 @Composable
 fun SharePreviewScreenRoot(
@@ -18,8 +19,8 @@ fun SharePreviewScreenRoot(
     onNavigateToLocalPack: (String) -> Unit,
     viewModel: SharePreviewViewModel = koinViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { AppSnackbarHostState() }
 
     LaunchedEffect(kind, token) {
         viewModel.onIntent(SharePreviewIntent.Load(kind, token))
@@ -31,7 +32,7 @@ fun SharePreviewScreenRoot(
                 SharePreviewEffect.NavigateBack -> onBackClick()
                 SharePreviewEffect.NavigateToLogin -> onNavigateToLogin()
                 is SharePreviewEffect.NavigateToLocalPack -> onNavigateToLocalPack(effect.packId)
-                is SharePreviewEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
+                is SharePreviewEffect.ShowMessage -> snackbarHostState.showMessage(effect.message.resolveOrDefault())
             }
         }
     }

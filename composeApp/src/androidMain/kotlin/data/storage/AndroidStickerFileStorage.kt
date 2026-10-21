@@ -9,12 +9,9 @@ import android.graphics.Movie
 import android.graphics.Paint
 import android.net.Uri
 import android.os.Build
-import android.text.Layout
-import android.text.StaticLayout
-import android.text.TextPaint
 import androidx.concurrent.futures.await
 import androidx.media3.common.MediaItem
-import androidx.media3.transformer.ExperimentalFrameExtractor
+import androidx.media3.inspector.frame.FrameExtractor
 import com.aureusapps.android.webpandroid.encoder.WebPAnimEncoder
 import com.aureusapps.android.webpandroid.encoder.WebPAnimEncoderOptions
 import com.aureusapps.android.webpandroid.encoder.WebPConfig
@@ -23,16 +20,14 @@ import com.aureusapps.android.webpandroid.encoder.WebPPreset
 import domain.model.AnimatedStickerSpec
 import domain.model.CropTransform
 import domain.model.DecodedFrame
-import domain.model.DecorationFont
-import domain.model.DecorationFontWeight
 import domain.model.StickerDecoration
 import domain.model.StickerPack
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 actual class StickerFileStorage(private val context: Context) {
 
@@ -251,7 +246,14 @@ actual class StickerFileStorage(private val context: Context) {
                 rawFrame.recycle()
             }
             outFile.absolutePath
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            // The preview screens surface a failure with a retry when nothing can be extracted;
+            // swallowing the reason here made that impossible to diagnose from a bug report.
+            android.util.Log.w(
+                "StickerFileStorage",
+                "extractVideoFrameToFile failed for $videoPath at ${atMs}ms",
+                e
+            )
             null
         } finally {
             try {
@@ -289,7 +291,9 @@ actual class StickerFileStorage(private val context: Context) {
             retriever.setDataSource(videoPath)
             retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)
                 ?.toLongOrNull() ?: -1L
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            // A duration we cannot read silently becomes the 10 s default upstream, so log why.
+            android.util.Log.w("StickerFileStorage", "getVideoDurationMs failed for $videoPath", e)
             -1L
         } finally {
             try {
@@ -319,16 +323,12 @@ actual class StickerFileStorage(private val context: Context) {
 
         onProgress(0, frameCount)
 
-        // ExperimentalFrameExtractor must be created and accessed from a single application
-        // thread. We use Dispatchers.Main.immediate so the underlying ExoPlayer attaches to
-        // the main looper; getFrame() returns a future and decoding happens off-thread.
+        // FrameExtractor must be created and accessed from a single application thread.
+        // We use Dispatchers.Main.immediate so the underlying ExoPlayer attaches to the main
+        // looper; getFrame() returns a future and decoding happens off-thread.
         return withContext(Dispatchers.Main.immediate) {
-            val extractor = ExperimentalFrameExtractor(
-                context,
-                ExperimentalFrameExtractor.Configuration.Builder().build()
-            )
+            val extractor = FrameExtractor.Builder(context, mediaItem).build()
             try {
-                extractor.setMediaItem(mediaItem, /* effects = */ emptyList())
                 val out = ArrayList<DecodedFrame>(frameCount)
                 for (i in 0 until frameCount) {
                     val positionMs = if (frameCount == 1) {
@@ -354,7 +354,7 @@ actual class StickerFileStorage(private val context: Context) {
                 }
                 out
             } finally {
-                extractor.release()
+                extractor.close()
             }
         }
     }

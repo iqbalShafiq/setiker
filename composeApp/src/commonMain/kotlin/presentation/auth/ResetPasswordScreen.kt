@@ -6,17 +6,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import data.auth.AuthApiService
+import domain.error.onFailure
+import domain.error.onSuccess
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,22 +29,24 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.UiText
-import presentation.common.resolveLocal
+import presentation.common.rememberErrorSnackbar
 import presentation.common.toUiText
 import presentation.components.AppPasswordTextField
 import presentation.components.AppPrimaryButton
+import presentation.components.NeubrutalSnackbarHost
 import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalSubtleOnSurface
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_auth_invalid_reset_token
+import setiker.composeapp.generated.resources.login_password_label
+import setiker.composeapp.generated.resources.login_password_placeholder
 import setiker.composeapp.generated.resources.reset_password_confirm_label
 import setiker.composeapp.generated.resources.reset_password_submit
 import setiker.composeapp.generated.resources.reset_password_subtitle
 import setiker.composeapp.generated.resources.reset_password_success
 import setiker.composeapp.generated.resources.reset_password_title
 import setiker.composeapp.generated.resources.settings_password_mismatch
-import setiker.composeapp.generated.resources.login_password_label
-import setiker.composeapp.generated.resources.login_password_placeholder
 
 data class ResetPasswordState(
     val token: String = "",
@@ -85,9 +91,8 @@ class ResetPasswordViewModel(
         }
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            runCatching {
-                authApiService.resetPassword(current.token, current.password)
-            }.onSuccess {
+            authApiService.resetPassword(current.token, current.password)
+                .onSuccess {
                 _state.update { it.copy(isLoading = false, success = true) }
             }.onFailure { error ->
                 _state.update {
@@ -108,7 +113,7 @@ fun ResetPasswordScreenRoot(
     viewModel: ResetPasswordViewModel = koinViewModel()
 ) {
     LaunchedEffectToken(token, viewModel)
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     ResetPasswordScreen(
         state = state,
         onPasswordChange = viewModel::updatePassword,
@@ -133,12 +138,19 @@ fun ResetPasswordScreen(
     onSubmit: () -> Unit,
     onDone: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
+    val snackbarHostState = rememberErrorSnackbar(state.error)
+
+    Scaffold(
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
+        containerColor = neubrutalScreenBackground()
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
         Text(
             text = stringResource(Res.string.reset_password_title),
             style = MaterialTheme.typography.headlineMedium,
@@ -180,9 +192,6 @@ fun ResetPasswordScreen(
                 imeAction = ImeAction.Done,
                 modifier = Modifier.fillMaxWidth()
             )
-            state.error?.let {
-                Text(text = it.resolveLocal(), color = MaterialTheme.colorScheme.error)
-            }
             AppPrimaryButton(
                 text = stringResource(Res.string.reset_password_submit),
                 onClick = onSubmit,
@@ -190,7 +199,22 @@ fun ResetPasswordScreen(
                     state.password.length >= 8 &&
                     state.confirmPassword.isNotBlank(),
                 modifier = Modifier.fillMaxWidth()
-            )
+                )
+            }
         }
+    }
+}
+
+@Preview
+@Composable
+private fun ResetPasswordScreenPreview() {
+    MaterialTheme {
+        ResetPasswordScreen(
+            state = ResetPasswordState(),
+            onPasswordChange = {},
+            onConfirmChange = {},
+            onSubmit = {},
+            onDone = {}
+        )
     }
 }

@@ -3,11 +3,11 @@ package data.sync
 import data.local.entity.StickerPackEntity
 import data.remote.model.DeleteStickerSyncPayload
 import data.remote.model.UpdateStickerPackRequest
-import domain.model.SyncOperationType
-import kotlinx.serialization.json.Json
 import data.sync.operationBelongsToPack
+import domain.model.SyncOperationType
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlinx.serialization.json.Json
 
 class StickerPackSyncOperationsTest {
 

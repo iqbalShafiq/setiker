@@ -1,7 +1,6 @@
 package com.setiker.app
 
 import android.content.ContentProvider
-import android.content.ContentResolver
 import android.content.ContentValues
 import android.content.res.AssetFileDescriptor
 import android.database.Cursor
@@ -14,9 +13,9 @@ import data.local.database.DatabaseMigrations
 import data.local.database.StickerDatabase
 import data.storage.StickerFileStorage
 import domain.model.decodeStickerDecorationsForCurrentSchema
+import java.io.File
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
-import java.io.File
 
 class StickerContentProvider : ContentProvider() {
 
@@ -64,10 +63,7 @@ class StickerContentProvider : ContentProvider() {
                 StickerDatabase::class.java,
                 StickerDatabase.DATABASE_NAME
             )
-                .addMigrations(DatabaseMigrations.MIGRATION_1_2)
-                .addMigrations(DatabaseMigrations.MIGRATION_2_3)
-                .addMigrations(DatabaseMigrations.MIGRATION_3_4)
-                .addMigrations(DatabaseMigrations.MIGRATION_4_5)
+                .addMigrations(*DatabaseMigrations.ALL)
                 .build()
         }
         return database!!

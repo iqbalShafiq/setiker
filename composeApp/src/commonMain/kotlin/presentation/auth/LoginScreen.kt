@@ -1,10 +1,5 @@
 package presentation.auth
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Login
+import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -21,7 +16,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,11 +23,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
-import org.jetbrains.compose.ui.tooling.preview.Preview
-import presentation.common.UiText
-import presentation.common.resolveLocal
+import presentation.common.rememberErrorSnackbar
 import presentation.components.AppIllustration
 import presentation.components.AppIllustrationImage
 import presentation.components.AppPasswordTextField
@@ -50,9 +44,9 @@ import setiker.composeapp.generated.resources.login_forgot_password
 import setiker.composeapp.generated.resources.login_forgot_password_hint
 import setiker.composeapp.generated.resources.login_google
 import setiker.composeapp.generated.resources.login_google_or
-import setiker.composeapp.generated.resources.login_link_google_confirm
 import setiker.composeapp.generated.resources.login_link_apple_message
 import setiker.composeapp.generated.resources.login_link_apple_title
+import setiker.composeapp.generated.resources.login_link_google_confirm
 import setiker.composeapp.generated.resources.login_link_google_message
 import setiker.composeapp.generated.resources.login_link_google_title
 import setiker.composeapp.generated.resources.login_password_invalid
@@ -72,8 +66,8 @@ fun LoginScreenRoot(
     onNavigateToForgotPassword: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val state by viewModel.state.collectAsState()
-    val effect by viewModel.effect.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val effect by viewModel.effect.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         viewModel.onIntent(LoginIntent.TryOneTap)
@@ -109,8 +103,9 @@ fun LoginScreen(
         title = stringResource(Res.string.login_submit),
         isLoading = state.isLoading,
         loadingStatusText = stringResource(Res.string.login_signing_in),
+        snackbarHostState = rememberErrorSnackbar(state.error),
         onPrimaryAction = { onIntent(LoginIntent.Submit) },
-        primaryFabIcon = Icons.Filled.Login,
+        primaryFabIcon = Icons.AutoMirrored.Filled.Login,
         primaryFabContentDescription = stringResource(Res.string.login_submit),
         onSecondaryAction = { onIntent(LoginIntent.NavigateToRegister) },
         secondaryActionIcon = Icons.Filled.PersonAdd,
@@ -191,6 +186,7 @@ fun LoginScreen(
                 label = stringResource(Res.string.login_email_label),
                 placeholder = stringResource(Res.string.login_email_placeholder),
                 isError = !state.isEmailValid,
+                errorText = if (!state.isEmailValid) stringResource(Res.string.login_email_invalid) else null,
                 supportingText = if (!state.isEmailValid) {
                     { Text(stringResource(Res.string.login_email_invalid), color = MaterialTheme.colorScheme.error) }
                 } else null,
@@ -206,6 +202,7 @@ fun LoginScreen(
                 label = stringResource(Res.string.login_password_label),
                 placeholder = stringResource(Res.string.login_password_placeholder),
                 isError = !state.isPasswordValid,
+                errorText = if (!state.isPasswordValid) stringResource(Res.string.login_password_invalid) else null,
                 supportingText = if (!state.isPasswordValid) {
                     { Text(stringResource(Res.string.login_password_invalid), color = MaterialTheme.colorScheme.error) }
                 } else null,
@@ -232,18 +229,6 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        AnimatedVisibility(
-            visible = state.error != null,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
-        ) {
-            AuthErrorMessageBox(
-                message = state.error?.resolveLocal().orEmpty(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-            )
-        }
 
         Spacer(modifier = Modifier.height(24.dp))
     }

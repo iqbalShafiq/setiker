@@ -6,8 +6,11 @@ import data.auth.AuthApiService
 import data.auth.AuthManager
 import data.auth.model.UpdateProfileRequest
 import data.auth.model.toDomainModel
-import data.remote.ApiException
 import domain.error.AppErrorCode
+import domain.error.DataError
+import domain.error.Result
+import domain.error.onFailure
+import domain.error.onSuccess
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -59,12 +62,13 @@ class EditProfileViewModel(
             val cached = authManager.getUser()
             val token = authManager.getValidAccessToken()
             val user = if (token != null) {
-                runCatching {
-                    authApiService.getProfile(token).data?.toDomainModel()?.also { authManager.saveUser(it) }
-                }.getOrNull() ?: cached
+                when (val profileResult = authApiService.getProfile(token)) {
+                    is Result.Success -> profileResult.data.data?.toDomainModel()?.also { authManager.saveUser(it) }
+                    is Result.Error -> null
+                }
             } else {
                 cached
-            }
+            } ?: cached
             if (user == null) {
                 _state.update {
                     it.copy(
@@ -106,15 +110,13 @@ class EditProfileViewModel(
                 }
                 return@launch
             }
-            runCatching {
-                authApiService.updateProfile(
-                    token = token,
-                    request = UpdateProfileRequest(
-                        displayName = current.displayName.trim().ifEmpty { null },
-                        username = username
-                    )
+            authApiService.updateProfile(
+                token = token,
+                request = UpdateProfileRequest(
+                    displayName = current.displayName.trim().ifEmpty { null },
+                    username = username
                 )
-            }.onSuccess { response ->
+            ).onSuccess { response ->
                 val user = response.data?.toDomainModel()
                 if (user != null) {
                     authManager.saveUser(user)
@@ -123,15 +125,18 @@ class EditProfileViewModel(
                 _effect.send(EditProfileEffect.ShowMessage(UiText.StringRes(Res.string.edit_profile_success)))
                 _effect.send(EditProfileEffect.NavigateBack)
             }.onFailure { error ->
-                val uiError = when ((error as? ApiException)?.code) {
-                    AppErrorCode.AuthUsernameTaken -> error.toUiText(Res.string.error_username_taken)
-                    else -> error.toUiText(Res.string.error_edit_profile_failed)
+                val isUsernameTaken = error is DataError.Network.ApiRejected &&
+                    error.appCode == AppErrorCode.AuthUsernameTaken
+                val uiError = if (isUsernameTaken) {
+                    error.toUiText(Res.string.error_username_taken)
+                } else {
+                    error.toUiText(Res.string.error_edit_profile_failed)
                 }
                 _state.update {
                     it.copy(
                         isSaving = false,
                         error = uiError,
-                        usernameError = if ((error as? ApiException)?.code == AppErrorCode.AuthUsernameTaken) {
+                        usernameError = if (isUsernameTaken) {
                             uiError
                         } else {
                             it.usernameError

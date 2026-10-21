@@ -29,16 +29,22 @@ import domain.model.decodeStickerDecorationsForCurrentSchema
 import domain.model.normalizedForCurrentSchema
 import domain.repository.StickerRepository
 import domain.repository.SyncStatus
+import kotlin.time.Clock
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import kotlin.time.Clock
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
+import util.AppLog
+
+private const val TAG_ASYNC_PUSH = "SyncTrigger"
 
 @OptIn(ExperimentalUuidApi::class)
 class StickerRepositoryImpl(
@@ -49,6 +55,36 @@ class StickerRepositoryImpl(
     private val authManager: AuthManager? = null,
     private val cloudSyncedLocalDataCleaner: CloudSyncedLocalDataCleaner? = null,
 ) : StickerRepository {
+
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    private fun triggerAsyncPush(packId: String, cloudPackId: String? = null) {
+        scope.launch {
+            runCatching {
+                syncManager?.pushPackOperations(packId, cloudPackId)
+            }.onFailure { failure ->
+                if (failure is kotlinx.coroutines.CancellationException) {
+                    throw failure
+                }
+                // R5: async push must never fail silently; there is no awaiter to show an error.
+                AppLog.e(TAG_ASYNC_PUSH, "push failed for pack=$packId cloudPackId=$cloudPackId", failure)
+            }
+        }
+    }
+
+    private fun triggerAsyncPushVisibility(packId: String, cloudPackId: String?) {
+        scope.launch {
+            runCatching {
+                syncManager?.pushPackVisibilityOperations(packId, cloudPackId)
+            }.onFailure { failure ->
+                if (failure is kotlinx.coroutines.CancellationException) {
+                    throw failure
+                }
+                // R5: async push must never fail silently; there is no awaiter to show an error.
+                AppLog.e(TAG_ASYNC_PUSH, "visibility push failed for pack=$packId cloudPackId=$cloudPackId", failure)
+            }
+        }
+    }
 
     override suspend fun getAllPacks(): List<StickerPack> = withContext(Dispatchers.Default) {
         packDao.getAll().map { it.toDomainModel(emptyList()) }
@@ -133,7 +169,7 @@ class StickerRepositoryImpl(
                 syncTarget = syncTarget,
             )
             syncManager?.enqueue(syncOp)
-            syncManager?.pushPackOperations(identifier)
+            triggerAsyncPush(identifier)
         }
     }
 
@@ -155,7 +191,7 @@ class StickerRepositoryImpl(
                 createdAt = Clock.System.now().toEpochMilliseconds()
             )
             syncManager?.enqueue(syncOp)
-            syncManager?.pushPackOperations(identifier, cloudPackId)
+            triggerAsyncPush(identifier, cloudPackId)
         }
 
         val stickers = stickerDao.getByPackId(identifier)
@@ -193,7 +229,7 @@ class StickerRepositoryImpl(
                 markPackDirty(pack)
             }
         }
-        syncManager?.pushPackOperations(packId)
+        triggerAsyncPush(packId)
     }
 
     override suspend fun updateStickerInPack(packId: String, index: Int, sticker: Sticker) {
@@ -218,7 +254,7 @@ class StickerRepositoryImpl(
                 markPackDirty(pack)
             }
         }
-        syncManager?.pushPackOperations(packId)
+        triggerAsyncPush(packId)
     }
 
     override suspend fun removeStickerFromPack(packId: String, index: Int) = withContext(Dispatchers.Default) {
@@ -256,7 +292,7 @@ class StickerRepositoryImpl(
         } else {
             markPackDirty(pack)
         }
-        syncManager?.pushPackOperations(packId, cloudPackId)
+        triggerAsyncPush(packId, cloudPackId)
     }
 
     override suspend fun reorderStickers(packId: String, fromIndex: Int, toIndex: Int) = withContext(Dispatchers.Default) {
@@ -298,7 +334,7 @@ class StickerRepositoryImpl(
         val reordered = stickerDao.getByPackId(packId).sortedBy { it.sortOrder }
         if (reordered.any { it.cloudId.isNullOrBlank() }) {
             markPackDirty(pack)
-            syncManager?.pushPackOperations(packId, cloudPackId)
+            triggerAsyncPush(packId, cloudPackId)
             return
         }
         syncManager?.enqueue(
@@ -314,7 +350,7 @@ class StickerRepositoryImpl(
                 createdAt = now,
             )
         )
-        syncManager?.pushPackOperations(packId, cloudPackId)
+        triggerAsyncPush(packId, cloudPackId)
     }
 
     private suspend fun markPackDirty(pack: StickerPackEntity) {
@@ -398,11 +434,11 @@ class StickerRepositoryImpl(
                     createdAt = now,
                 )
             )
-            syncManager?.pushPackVisibilityOperations(packId, cloudId)
+            triggerAsyncPushVisibility(packId, cloudId)
         } else {
             // Pack belum ada di cloud: upload sekali dengan visibility target.
             markPackDirty(existing.copy(visibility = normalizedVisibility))
-            syncManager?.pushPackOperations(packId)
+            triggerAsyncPush(packId)
         }
     }
 

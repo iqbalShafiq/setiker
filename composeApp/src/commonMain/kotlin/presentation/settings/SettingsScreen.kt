@@ -13,34 +13,36 @@ import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveLocal
 import presentation.common.resolveOrDefault
+import presentation.components.AppSnackbarHostState
 import presentation.components.AiQuotaSummary
 import presentation.components.AppDialog
-import presentation.components.AppPrimaryButton
-import presentation.components.DeleteAccountConfirmDialog
 import presentation.components.AppIllustration
 import presentation.components.AppIllustrationImage
 import presentation.components.AppPasswordTextField
+import presentation.components.AppPrimaryButton
 import presentation.components.AppTopBar
-import presentation.components.ScaffoldBottomBarLazyColumn
+import presentation.components.DeleteAccountConfirmDialog
+import presentation.components.NeubrutalSnackbarHost
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
+import presentation.components.ScaffoldBottomBarLazyColumn
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
@@ -57,7 +59,6 @@ import setiker.composeapp.generated.resources.settings_new_password
 import setiker.composeapp.generated.resources.settings_save_password_confirm_message
 import setiker.composeapp.generated.resources.settings_set_password
 import setiker.composeapp.generated.resources.settings_set_password_message
-import setiker.composeapp.generated.resources.settings_set_password_title
 import setiker.composeapp.generated.resources.settings_show_onboarding
 import setiker.composeapp.generated.resources.settings_title
 import setiker.composeapp.generated.resources.settings_username
@@ -71,8 +72,8 @@ fun SettingsScreenRoot(
     onPurchaseHistory: () -> Unit = {},
     viewModel: SettingsViewModel = koinViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { AppSnackbarHostState() }
     val openUrl = rememberUrlLauncher()
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -82,7 +83,7 @@ fun SettingsScreenRoot(
                 SettingsEffect.NavigateToPurchaseHistory -> onPurchaseHistory()
                 is SettingsEffect.OpenUrl -> openUrl(effect.url)
                 SettingsEffect.AccountDeleted -> onAccountDeleted()
-                is SettingsEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
+                is SettingsEffect.ShowMessage -> snackbarHostState.showMessage(effect.message.resolveOrDefault())
             }
         }
     }
@@ -97,7 +98,7 @@ fun SettingsScreenRoot(
 fun SettingsScreen(
     state: SettingsState,
     onIntent: (SettingsIntent) -> Unit,
-    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
+    snackbarHostState: AppSnackbarHostState = remember { AppSnackbarHostState() }
 ) {
     val canSavePassword = state.currentPassword.isNotBlank() &&
         state.newPassword.isNotBlank() &&
@@ -130,7 +131,7 @@ fun SettingsScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
         topBar = {
             AppTopBar(title = stringResource(Res.string.settings_title))
         },
@@ -262,6 +263,7 @@ fun SettingsScreen(
                         label = stringResource(Res.string.settings_confirm_password),
                         placeholder = stringResource(Res.string.settings_confirm_password),
                         isError = state.changePasswordError != null,
+                        errorText = state.changePasswordError?.resolveLocal(),
                         supportingText = state.changePasswordError?.let { error ->
                             { Text(text = error.resolveLocal()) }
                         }
@@ -309,5 +311,16 @@ fun SettingsScreen(
             }
             item { Spacer(modifier = Modifier.height(16.dp)) }
         }
+    }
+}
+
+@Preview
+@Composable
+private fun SettingsScreenPreview() {
+    MaterialTheme {
+        SettingsScreen(
+            state = SettingsState(),
+            onIntent = {}
+        )
     }
 }

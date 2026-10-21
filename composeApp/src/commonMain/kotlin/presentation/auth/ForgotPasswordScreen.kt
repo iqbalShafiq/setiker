@@ -8,18 +8,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import data.auth.AuthApiService
+import domain.error.onFailure
+import domain.error.onSuccess
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,11 +32,13 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.UiText
-import presentation.common.resolveLocal
+import presentation.common.rememberErrorSnackbar
 import presentation.common.toUiText
 import presentation.components.AppPrimaryButton
 import presentation.components.AppTextField
+import presentation.components.NeubrutalSnackbarHost
 import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalSubtleOnSurface
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_auth_password_reset_failed
@@ -67,7 +73,7 @@ class ForgotPasswordViewModel(
         if (!email.contains("@")) return
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            runCatching { authApiService.forgotPassword(email) }
+            authApiService.forgotPassword(email)
                 .onSuccess {
                     _state.update { it.copy(isLoading = false, sent = true) }
                 }
@@ -88,7 +94,7 @@ fun ForgotPasswordScreenRoot(
     onBack: () -> Unit,
     viewModel: ForgotPasswordViewModel = koinViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     ForgotPasswordScreen(
         state = state,
         onEmailChange = viewModel::updateEmail,
@@ -104,12 +110,19 @@ fun ForgotPasswordScreen(
     onSubmit: () -> Unit,
     onBack: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
+    val snackbarHostState = rememberErrorSnackbar(state.error)
+
+    Scaffold(
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
+        containerColor = neubrutalScreenBackground()
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
         Text(
             text = stringResource(Res.string.forgot_password_title),
             style = MaterialTheme.typography.headlineMedium,
@@ -148,9 +161,6 @@ fun ForgotPasswordScreen(
                 enabled = !state.isLoading,
                 modifier = Modifier.fillMaxWidth()
             )
-            state.error?.let {
-                Text(text = it.resolveLocal(), color = MaterialTheme.colorScheme.error)
-            }
             AppPrimaryButton(
                 text = if (state.isLoading) {
                     stringResource(Res.string.forgot_password_sending)
@@ -162,6 +172,20 @@ fun ForgotPasswordScreen(
                 modifier = Modifier.fillMaxWidth()
             )
         }
-        Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun ForgotPasswordScreenPreview() {
+    MaterialTheme {
+        ForgotPasswordScreen(
+            state = ForgotPasswordState(),
+            onEmailChange = {},
+            onSubmit = {},
+            onBack = {}
+        )
     }
 }

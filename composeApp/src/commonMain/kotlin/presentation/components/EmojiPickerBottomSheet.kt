@@ -32,27 +32,39 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import org.jetbrains.compose.ui.tooling.preview.Preview
 import presentation.theme.AccentCoral
+import presentation.theme.NeubrutalScrim
 import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
-import presentation.theme.neubrutalBorderWithGloss
-import presentation.theme.neubrutalGlossyHighlightColor
-import presentation.theme.neubrutalShadow
+
+/** Converts a Unicode code point (e.g. `0x1F600`) into a Kotlin string, surrogate pair included. */
+private fun emojiForCodePoint(codePoint: Int): String =
+    if (codePoint <= 0xFFFF) {
+        codePoint.toChar().toString()
+    } else {
+        val offset = codePoint - 0x10000
+        charArrayOf(
+            (0xD800 + (offset shr 10)).toChar(),
+            (0xDC00 + (offset and 0x3FF)).toChar()
+        ).concatToString()
+    }
 
 private val EMOJI_CATEGORIES = listOf(
     "Recent" to emptyList<String>(),
-    "Smileys" to (0x1F600..0x1F64F).map { String(Character.toChars(it)) },
-    "Animals" to (0x1F400..0x1F4FF).map { String(Character.toChars(it)) },
-    "Food" to (0x1F32D..0x1F37F).map { String(Character.toChars(it)) },
-    "Activities" to (0x1F3C0..0x1F3FF).map { String(Character.toChars(it)) },
-    "Travel" to (0x1F680..0x1F6FF).map { String(Character.toChars(it)) },
-    "Objects" to (0x1F4E0..0x1F4FF).map { String(Character.toChars(it)) },
-    "Symbols" to (0x1F300..0x1F5FF).map { String(Character.toChars(it)) }
+    "Smileys" to (0x1F600..0x1F64F).map(::emojiForCodePoint),
+    "Animals" to (0x1F400..0x1F4FF).map(::emojiForCodePoint),
+    "Food" to (0x1F32D..0x1F37F).map(::emojiForCodePoint),
+    "Activities" to (0x1F3C0..0x1F3FF).map(::emojiForCodePoint),
+    "Travel" to (0x1F680..0x1F6FF).map(::emojiForCodePoint),
+    "Objects" to (0x1F4E0..0x1F4FF).map(::emojiForCodePoint),
+    "Symbols" to (0x1F300..0x1F5FF).map(::emojiForCodePoint)
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -84,7 +96,7 @@ fun EmojiPickerBottomSheet(
         modifier = modifier,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         containerColor = bg,
-        scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f)
+        scrimColor = NeubrutalScrim
     ) {
         Column(
             modifier = Modifier
@@ -142,7 +154,7 @@ fun EmojiPickerBottomSheet(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    items(currentEmojis) { emoji ->
+                    items(currentEmojis, key = { it }) { emoji ->
                         Box(
                             modifier = Modifier
                                 .size(40.dp)

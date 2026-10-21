@@ -15,11 +15,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import presentation.components.scaffoldBottomBarScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.BorderColor
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FontDownload
 import androidx.compose.material.icons.filled.FormatColorText
@@ -33,12 +32,10 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,29 +45,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import domain.model.EmojiDecoration
 import domain.model.ImageDecoration
 import domain.model.Sticker
 import domain.model.TextDecoration
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.stringResource
-import presentation.common.resolveLocal
-import presentation.components.AppIllustration
+import presentation.components.AppSnackbarHostState
 import presentation.components.AddTextDecorationBottomSheet
+import presentation.components.AppIllustration
 import presentation.components.AppTextField
 import presentation.components.AppTopBar
+import presentation.components.BorderStyleBottomSheet
 import presentation.components.ColorPickerBottomSheet
 import presentation.components.DecorationActionChip
 import presentation.components.DecorationPreviewLayer
 import presentation.components.EditTextDecorationBottomSheet
 import presentation.components.EmojiPickerBottomSheet
-import presentation.components.StylePickerBottomSheet
-import presentation.components.BorderStyleBottomSheet
 import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
 import presentation.components.MediaPreviewBottomBar
 import presentation.components.NeubrutalAddTagPill
+import presentation.components.NeubrutalSnackbarHost
 import presentation.components.NeubrutalStickerPreviewFrame
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
@@ -78,12 +77,13 @@ import presentation.components.PackBottomBarIconButton
 import presentation.components.ProgressDialog
 import presentation.components.ScreenSectionTitle
 import presentation.components.StickerEmojiTagChip
+import presentation.components.StylePickerBottomSheet
+import presentation.components.rememberImagePicker
+import presentation.components.scaffoldBottomBarScroll
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.neubrutalMutedOnSurface
-import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalSubtleOnSurface
-import presentation.components.rememberImagePicker
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.accessibility_text
 import setiker.composeapp.generated.resources.accessibility_text_placeholder
@@ -95,13 +95,11 @@ import setiker.composeapp.generated.resources.add_text
 import setiker.composeapp.generated.resources.apply_all_frames
 import setiker.composeapp.generated.resources.back
 import setiker.composeapp.generated.resources.cancel
-import setiker.composeapp.generated.resources.change_color
-import setiker.composeapp.generated.resources.change_border_color
 import setiker.composeapp.generated.resources.change_border_thickness
+import setiker.composeapp.generated.resources.change_color
 import setiker.composeapp.generated.resources.change_emoji
-import setiker.composeapp.generated.resources.change_font
-import setiker.composeapp.generated.resources.change_style
 import setiker.composeapp.generated.resources.change_image
+import setiker.composeapp.generated.resources.change_style
 import setiker.composeapp.generated.resources.edit_animated_sticker_title
 import setiker.composeapp.generated.resources.edit_text_decoration
 import setiker.composeapp.generated.resources.encoding_progress_title
@@ -122,12 +120,15 @@ fun AnimatedEditorScreen(
     state: AnimatedEditorState,
     onIntent: (AnimatedEditorIntent) -> Unit,
     onBackClick: () -> Unit,
-    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    snackbarHostState: AppSnackbarHostState = remember { AppSnackbarHostState() },
     modifier: Modifier = Modifier
 ) {
-    val frameBitmap: ImageBitmap? by remember(state.frames, state.currentFrameIndex) {
-        derivedStateOf {
-            state.frames.getOrNull(state.currentFrameIndex)?.bytes?.let { decodeImageBitmap(it) }
+    // Decoding a frame takes tens of milliseconds for full-size stickers, so it is done off the
+    // main thread. The previously decoded frame stays on screen until the new one is ready.
+    var frameBitmap: ImageBitmap? by remember { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(state.frames, state.currentFrameIndex) {
+        frameBitmap = state.frames.getOrNull(state.currentFrameIndex)?.bytes?.let { bytes ->
+            withContext(Dispatchers.Default) { decodeImageBitmap(bytes) }
         }
     }
 
@@ -277,7 +278,7 @@ fun AnimatedEditorScreen(
                 }
             }
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         if (state.isLoading) {
@@ -448,14 +449,6 @@ fun AnimatedEditorScreen(
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
-                    state.error?.let { error ->
-                        Text(
-                            text = error.resolveLocal(),
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
 
                     Spacer(modifier = Modifier.height(120.dp))
                 }

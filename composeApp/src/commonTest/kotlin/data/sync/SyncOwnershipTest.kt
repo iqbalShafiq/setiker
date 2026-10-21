@@ -3,7 +3,6 @@ package data.sync
 import data.local.entity.StickerPackEntity
 import data.remote.model.CloudStickerPack
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 

@@ -1,5 +1,7 @@
 package presentation.publicpack
 
+
+
 sealed interface PublicPackDetailIntent {
     data class Load(val packId: String) : PublicPackDetailIntent
     data object ToggleLike : PublicPackDetailIntent

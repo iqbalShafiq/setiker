@@ -1,5 +1,7 @@
 package presentation.videotrim
 
+
+
 sealed interface VideoTrimIntent {
     data class LoadVideo(val videoPath: String) : VideoTrimIntent
     data class UpdateTrimStart(val ms: Long) : VideoTrimIntent
@@ -9,5 +11,6 @@ sealed interface VideoTrimIntent {
     data object PlayPreview : VideoTrimIntent
     data object PausePreview : VideoTrimIntent
     data object Confirm : VideoTrimIntent
+    data object RetryPreviewExtraction : VideoTrimIntent
     data object Cancel : VideoTrimIntent
 }

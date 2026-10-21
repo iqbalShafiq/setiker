@@ -20,27 +20,28 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import data.remote.model.BlockedUserItem
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
-import presentation.common.resolveLocal
 import presentation.common.resolveOrDefault
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppDialog
 import presentation.components.AppTopBar
 import presentation.components.ContentLoadLayout
+import presentation.components.NeubrutalSnackbarHost
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
@@ -68,15 +69,18 @@ fun BlockedUsersScreenRoot(
     onBack: () -> Unit,
     viewModel: BlockedUsersViewModel = koinViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { AppSnackbarHostState() }
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
                 BlockedUsersEffect.NavigateBack -> onBack()
                 is BlockedUsersEffect.ShowMessage -> {
-                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
+                    snackbarHostState.showMessage(effect.message.resolveOrDefault())
+                }
+                is BlockedUsersEffect.ShowError -> {
+                    snackbarHostState.showError(effect.message.resolveOrDefault())
                 }
             }
         }
@@ -95,7 +99,7 @@ fun BlockedUsersScreen(
     state: BlockedUsersState,
     onIntent: (BlockedUsersIntent) -> Unit,
     onBack: () -> Unit,
-    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
+    snackbarHostState: AppSnackbarHostState = remember { AppSnackbarHostState() }
 ) {
     if (state.pendingUnblockUserId != null) {
         AppDialog(
@@ -116,7 +120,7 @@ fun BlockedUsersScreen(
                 onBackClick = onBack
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         ContentLoadLayout(
@@ -228,5 +232,17 @@ private fun BlockedUserRow(
                 color = AccentCoral
             )
         }
+    }
+}
+
+@Preview
+@Composable
+private fun BlockedUsersScreenPreview() {
+    MaterialTheme {
+        BlockedUsersScreen(
+            state = BlockedUsersState(),
+            onIntent = {},
+            onBack = {}
+        )
     }
 }
