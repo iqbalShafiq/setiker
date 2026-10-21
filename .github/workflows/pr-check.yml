@@ -33,9 +33,8 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Set up the Android SDK
-        uses: android-actions/setup-android@v3
-
+      # The runner image already ships the SDK and the command line tools. The platform the app
+      # compiles against is not on the image, so it is installed here.
       - name: Install the SDK platform
         run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0" "platform-tools"
 
