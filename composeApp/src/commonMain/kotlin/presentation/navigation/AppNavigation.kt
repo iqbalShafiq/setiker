@@ -106,8 +106,12 @@ fun AppNavigation(
         onDispose { unbind() }
     }
 
-    LaunchedEffect(Unit) {
+    // The connectivity callback belongs to the process, not to this composition. The sync manager
+    // keeps it alive for as long as it needs it; the navigation only reads the state. Registering
+    // it again on every composition left another callback behind in the connectivity manager.
+    DisposableEffect(networkMonitor) {
         networkMonitor.startMonitoring()
+        onDispose { networkMonitor.stopMonitoring() }
     }
 
     LaunchedEffect(onboardingCompleted, currentRoute) {

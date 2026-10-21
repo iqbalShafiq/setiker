@@ -13,6 +13,16 @@ actual class NetworkMonitor(private val context: Context) {
     private val _isOnline = MutableStateFlow(checkCurrentNetwork())
     actual val isOnline: StateFlow<Boolean> = _isOnline
 
+    /**
+     * How many callers want the callback registered.
+     *
+     * The callback lives in the connectivity manager, which holds a strong reference to it. If
+     * every caller registered its own, a screen that came and went would leave a callback behind
+     * each time, and the manager would keep calling all of them. The count makes the registration
+     * happen once and the unregistration happen when the last caller is gone.
+     */
+    private var registrations = 0
+
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
             _isOnline.value = true
@@ -28,6 +38,9 @@ actual class NetworkMonitor(private val context: Context) {
     }
 
     actual fun startMonitoring() {
+        registrations++
+        if (registrations > 1) return
+
         val request = NetworkRequest.Builder()
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             .build()
@@ -35,7 +48,12 @@ actual class NetworkMonitor(private val context: Context) {
     }
 
     actual fun stopMonitoring() {
-        connectivityManager.unregisterNetworkCallback(networkCallback)
+        if (registrations == 0) return
+        registrations--
+        if (registrations > 0) return
+
+        // The callback can be gone already when the connectivity manager tears it down on its own.
+        runCatching { connectivityManager.unregisterNetworkCallback(networkCallback) }
     }
 
     private fun checkCurrentNetwork(): Boolean {

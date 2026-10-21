@@ -19,8 +19,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -71,8 +69,14 @@ fun AppBrandedSplashScreen(
         AppLogoMark(
             modifier = Modifier
                 .align(Alignment.Center)
-                .scale(logoScale.value)
-                .alpha(logoAlpha.value),
+                // The animation lives in the draw phase: reading the values here instead would
+                // recompose the logo on every frame of the animation.
+                .graphicsLayer {
+                    val scale = logoScale.value
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = logoAlpha.value
+                },
             accent = AccentCoral
         )
 

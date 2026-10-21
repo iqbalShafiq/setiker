@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
@@ -84,16 +85,24 @@ fun PageIndicator(
             )
 
             Box(
-                modifier = if (onPageClick != null) {
-                    Modifier
-                        .size(32.dp)
-                        // Each dot is a real target here (onPageClick), so it needs a spoken label;
-                        // without it TalkBack announces a nameless button.
-                        .semantics { contentDescription = pageDescription }
-                        .clickable { onPageClick(index) }
-                } else {
-                    Modifier.size(32.dp)
-                },
+                modifier = Modifier
+                    .size(32.dp)
+                    // Every dot says which page it is, whether or not it can be tapped. A screen
+                    // reader has to be able to tell where it is, and "selected" is what tells it
+                    // that this is the page on screen.
+                    .semantics {
+                        contentDescription = pageDescription
+                        this.selected = selected
+                    }
+                    .then(
+                        if (onPageClick != null) {
+                            // Each dot is a real target here (onPageClick), so it needs a spoken
+                            // label; without it TalkBack announces a nameless button.
+                            Modifier.clickable { onPageClick(index) }
+                        } else {
+                            Modifier
+                        }
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Box(modifier = dotModifier)
