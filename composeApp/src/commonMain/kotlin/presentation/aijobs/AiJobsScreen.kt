@@ -19,6 +19,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -27,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import domain.model.aijob.AiJobStatus
 import domain.model.aijob.WorkspaceDraft
 import domain.model.aijob.WorkspaceDraftStatus
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
@@ -115,7 +117,9 @@ fun AiJobsScreen(
 
 ) {
 
-    val grouped = groupDrafts(state.drafts, state.jobs)
+    // Grouping walks the drafts and the jobs a few times over. The result only changes when the
+    // lists change, so it is worth keeping instead of rebuilding it on every recomposition.
+    val grouped = remember(state.drafts, state.jobs) { groupDrafts(state.drafts, state.jobs) }
 
     Scaffold(
 
@@ -215,7 +219,7 @@ fun AiJobsScreen(
 
                         Text(
 
-                            text = section.title,
+                            text = stringResource(section.title),
 
                             style = MaterialTheme.typography.titleMedium,
 
@@ -296,7 +300,7 @@ private data class DraftSection(
 
     val titleKey: String,
 
-    val title: String,
+    val title: StringResource,
 
     val items: List<DraftJobItem>
 
@@ -356,8 +360,6 @@ private fun canRetry(draft: WorkspaceDraft, job: domain.model.aijob.AiJob?): Boo
 }
 
 
-
-@Composable
 
 private fun groupDrafts(
 
@@ -431,7 +433,7 @@ private fun groupDrafts(
 
                     titleKey = "running",
 
-                    title = stringResource(Res.string.ai_jobs_section_running),
+                    title = Res.string.ai_jobs_section_running,
 
                     items = running
 
@@ -449,7 +451,7 @@ private fun groupDrafts(
 
                     titleKey = "needs_attention",
 
-                    title = stringResource(Res.string.ai_jobs_section_needs_attention),
+                    title = Res.string.ai_jobs_section_needs_attention,
 
                     items = needsAttention
 
@@ -467,7 +469,7 @@ private fun groupDrafts(
 
                     titleKey = "ready",
 
-                    title = stringResource(Res.string.ai_jobs_section_ready),
+                    title = Res.string.ai_jobs_section_ready,
 
                     items = ready
 
@@ -485,7 +487,7 @@ private fun groupDrafts(
 
                     titleKey = "saved",
 
-                    title = stringResource(Res.string.ai_jobs_section_saved),
+                    title = Res.string.ai_jobs_section_saved,
 
                     items = saved
 
@@ -503,7 +505,7 @@ private fun groupDrafts(
 
                     titleKey = "cancelled",
 
-                    title = stringResource(Res.string.ai_jobs_section_cancelled),
+                    title = Res.string.ai_jobs_section_cancelled,
 
                     items = cancelled
 
@@ -521,7 +523,7 @@ private fun groupDrafts(
 
                     titleKey = "other",
 
-                    title = stringResource(Res.string.ai_jobs_section_other),
+                    title = Res.string.ai_jobs_section_other,
 
                     items = other
 

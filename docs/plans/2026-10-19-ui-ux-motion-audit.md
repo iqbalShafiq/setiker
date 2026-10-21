@@ -186,7 +186,100 @@ Steady-state scroll of the 16-sticker grid: 6.25 % janky frames, p50 12 ms, p90 
 
 ---
 
-## 7. Methodology (cheap, repeatable, and how to keep it cheap)
+# 9. Test and performance round (2026-10-21)
+
+The audit produced findings; this round made sure they stay fixed, and made the performance claims
+measurable instead of anecdotal.
+
+## 9.1 The two test suites that did not run, and why
+
+Both failures had the same shape: the test code was right, the build was wrong.
+
+**The Compose compiler plugin was missing from the app module.** The shared module has it, the app
+module did not. Every `@Composable` lambda in `androidApp` therefore compiled to the wrong JVM
+signature: `setContent` was emitted as a call to a method that takes a plain lambda, while the
+runtime class expects the composable one. The screenshot test died with
+
+```
+java.lang.NoSuchMethodError: 'void androidx.compose.ui.test.junit4.AndroidComposeTestRule.setContent(kotlin.jvm.functions.Function0)'
+```
+
+and the instrumented test never got past its first composition. The bytecode says it plainly: the
+call site was `setContent(Function0)`, the class on the classpath declares `setContent(Function2)`.
+The app module holds no UI of its own, but both of its test source sets do, so the plugin belongs
+there.
+
+**Xiaomi's MIUI blocks an activity that starts in the background.** The instrumentation restarts
+the app, so the Compose test harness always launches its activity from the background, and MIUI
+denies it. The denial is not an error - the test waits for a window that never arrives, so the
+suite hangs on the first assertion instead of failing. The permission (`appops set <pkg> 10021
+allow`) is reset every time the package is replaced, so it has to be granted between the install
+and the run. AGP's `connectedDebugAndroidTest` installs and runs in one step and leaves no room
+for that; `:androidApp:connectedUiTest` does the three steps in the order they need to happen in.
+
+## 9.2 What runs now
+
+| Suite | Command | Result |
+| --- | --- | --- |
+| Unit and view-model tests | `:composeApp:testAndroidHostTest` | 51 suites, green |
+| Screenshot and performance tests | `:androidApp:testDebugUnitTest` | 7 tests, green |
+| Roborazzi references | `:androidApp:recordRoborazziDebug` / `verifyRoborazziDebug` | 4 components |
+| Instrumented UI and accessibility | `:androidApp:connectedUiTest` | 7 tests, 34 s on the phone |
+| Visual regression of the screens | `python tools/screenshot_tests.py` | 6 screens, 0.00 % |
+| Memory over the navigation cycles | `python tools/memory_check.py` | no growth |
+| Frame times of the sticker grid | `python tools/frame_stats.py` | 3.9 % janky, 0 slow draw |
+
+## 9.3 The leaks
+
+**The connectivity callback was registered again on every composition.** `AppNavigation` started
+the network monitor in a `LaunchedEffect(Unit)` and never stopped it, while the sync manager
+started the same monitor for the whole process. The connectivity manager keeps a strong reference
+to every callback it is given, so a navigation that came and went left another one behind each
+time. The monitor now counts its callers: one registration, unregistered when the last caller is
+gone.
+
+**The splash screen recomposed its logo on every frame.** The scale and the alpha were read in the
+composition, so each frame of the animation recomposed the logo. Both now live in the draw phase,
+in a `graphicsLayer`.
+
+**No leak in the app itself.** Three cycles, twenty-one screen visits: one activity, seven views,
+five app contexts and one view root, all constant. The footprint moved by 3 %, which is the
+picture cache warming up. `tools/memory_check.py` is the tool, and it is in the repository so the
+next person can run it.
+
+## 9.4 The recompositions
+
+The sticker cell and the pack card are skipped when something else on the screen changes.
+`RecompositionTest` proves it: it renders the grid and the list, counts how often the cell and
+the card are composed, and fails when a change that does not touch the list composes the list
+again. The rule renders on a Robolectric device, so it is the same composition and the same
+skipping the app does.
+
+The first version of that test counted the wrong thing twice, and both are worth writing down:
+
+- It counted the item scope, which re-enters whenever the parent recomposes no matter what. That
+  is the "leaving the house" cost, and the Compose guidance is not to chase it.
+- It counted through a lambda that was recreated on every pass, which made every parameter
+  unstable and every cell skippable - the test then failed for a reason that had nothing to do
+  with the app.
+
+**The AI jobs screen regrouped its whole list on every recomposition.** `groupDrafts` groups the
+drafts, maps them into items and filters them into five sections - several passes over the data,
+with a new list each time - and it ran in the composable body. The section titles were resolved
+with `stringResource` inside the grouping, which is what stopped it from being cached. The titles
+are resources now, the grouping is a plain function, and the result is kept with `remember`.
+
+**Two lazy lists were missing their keys.** The sync operations and the emoji picker rebuilt their
+rows whenever the data changed.
+
+## 9.5 The frame times
+
+On the sticker grid, with the phone under its usual memory pressure: 587 frames, 3.9 % janky, and
+no slow draw or sync commands at all. The p50 sits at 16 ms rather than the 9.8 ms measured
+earlier in the session, because the phone had 61 MB of free memory instead of 289 MB; the frame
+counters are the meaningful number, the milliseconds are relative.
+
+# 7. Methodology (cheap, repeatable, and how to keep it cheap)
 
 ### What I used for this audit — and why it costs ~nothing
 
