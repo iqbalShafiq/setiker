@@ -76,6 +76,19 @@ are composed. A change on the screen that does not touch the list must not compo
 The count is the real one: the rule renders on a Robolectric device, so it is the same composition
 and the same skipping the app does.
 
+## The screenshot comparison is a local gate
+
+The references are recorded with the graphics library of the machine that recorded them, and that
+library renders text and shadows differently on every operating system. A reference recorded on
+Windows does not match a render on Linux, so the comparison runs where the references were made:
+
+`ash
+./gradlew :androidApp:verifyRoborazziDebug
+`
+
+The continuous integration draws the screenshots (which is the part that can break on a machine
+without a screen) and checks everything else. The comparison stays with the developer.
+
 ## The screenshot references
 
 Two sets of references, for two different jobs:
