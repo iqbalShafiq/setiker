@@ -33,13 +33,17 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      # The runner image already ships the SDK and the command line tools. The platform the app
-      # compiles against is not on the image, so it is installed here.
+      # The runner image already ships the SDK and the command line tools, but the tools are not
+      # on the path. The platform the app compiles against is not on the image either.
       - name: Install the SDK platform
-        run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0" "platform-tools"
+        run: |
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -1)
+          "$SDKMANAGER" "platforms;android-37.0" "build-tools;36.0.0" "platform-tools"
 
       - name: Accept the SDK licenses
-        run: yes | sdkmanager --licenses > /dev/null
+        run: |
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -1)
+          yes | "$SDKMANAGER" --licenses > /dev/null
 
       - name: Unit and view-model tests
         run: ./gradlew :composeApp:testAndroidHostTest --stacktrace
