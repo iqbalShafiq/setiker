@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -31,6 +32,18 @@ import presentation.theme.neubrutalSubtleOnSurface
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.remove_emoji
 
+/**
+ * The height of a tag chip and of the add pill.
+ *
+ * The two sit next to each other in a row, so they have to be the same height, and they have to
+ * be the same height as every other chip in the app. The remove button inside a chip used to be
+ * the full 48 dp touch target, which made the chip twice as tall as the pill next to it.
+ */
+private val TagChipHeight = 32.dp
+
+/** The touch target of the remove button inside a chip. */
+private val TagRemoveTarget = 24.dp
+
 @Composable
 fun StickerEmojiTagChip(
     emoji: String,
@@ -39,6 +52,7 @@ fun StickerEmojiTagChip(
 ) {
     Row(
         modifier = modifier
+            .height(TagChipHeight)
             .neubrutalShadow(
                 offsetX = NeubrutalShadowOffset,
                 offsetY = NeubrutalShadowOffset,
@@ -53,19 +67,20 @@ fun StickerEmojiTagChip(
                 shape = CircleShape,
                 highlightColor = neubrutalGlossyHighlightColor()
             )
-            .padding(start = 14.dp, end = 6.dp, top = 4.dp, bottom = 4.dp),
+            .padding(start = 12.dp, end = 2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = emoji,
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.bodyMedium,
             color = neubrutalOnSurface()
         )
         NeubrutalIconButton(
             icon = Icons.Default.Close,
             contentDescription = stringResource(Res.string.remove_emoji),
             onClick = onRemove,
-            iconSize = 14.dp,
+            size = TagRemoveTarget,
+            iconSize = 13.dp,
             tint = neubrutalSubtleOnSurface(),
             pressedScale = 0.85f,
             label = "emoji_remove_scale"
@@ -82,6 +97,7 @@ fun NeubrutalAddTagPill(
 ) {
     Box(
         modifier = modifier
+            .height(TagChipHeight)
             .neubrutalShadow(
                 offsetX = NeubrutalShadowOffset,
                 offsetY = NeubrutalShadowOffset,
@@ -97,7 +113,7 @@ fun NeubrutalAddTagPill(
                 highlightColor = neubrutalGlossyHighlightColor()
             )
             .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 6.dp),
+            .padding(horizontal = 12.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -115,7 +131,7 @@ fun NeubrutalAddTagPill(
 private fun StickerEmojiTagChipPreview() {
     MaterialTheme {
         StickerEmojiTagChip(
-            emoji = "🔥",
+            emoji = "dY",
             onRemove = {}
         )
     }
