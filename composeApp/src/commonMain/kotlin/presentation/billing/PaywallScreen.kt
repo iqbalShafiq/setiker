@@ -28,13 +28,14 @@ import domain.billing.BillingProductUiModel
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
-import presentation.components.NeubrutalSnackbarHost
+import presentation.components.AppSnackbarHostState
 import presentation.components.AiQuotaSummary
 import presentation.components.AppIllustration
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
 import presentation.components.AppTopBar
 import presentation.components.ContentLoadLayout
+import presentation.components.NeubrutalSnackbarHost
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.neubrutalBorderColor
@@ -65,16 +66,16 @@ fun PaywallScreenRoot(
     viewModel: PaywallViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = remember { AppSnackbarHostState() }
 
     LaunchedEffect(state.message, state.error) {
         state.message?.let {
-            snackbarHostState.showSnackbar(it.resolveOrDefault())
+            snackbarHostState.showMessage(it.resolveOrDefault())
             viewModel.onIntent(PaywallIntent.DismissMessage)
         }
         state.error?.let {
             if (!state.loadFailed || state.products.isNotEmpty()) {
-                snackbarHostState.showSnackbar(it.resolveOrDefault())
+                snackbarHostState.showMessage(it.resolveOrDefault())
                 viewModel.onIntent(PaywallIntent.DismissMessage)
             }
         }
@@ -92,7 +93,7 @@ fun PaywallScreenRoot(
 @Composable
 fun PaywallScreen(
     state: PaywallState,
-    snackbarHostState: SnackbarHostState,
+    snackbarHostState: AppSnackbarHostState,
     onIntent: (PaywallIntent) -> Unit,
     onBack: () -> Unit,
     onNavigateToPurchaseHistory: () -> Unit,
@@ -105,7 +106,7 @@ fun PaywallScreen(
                 onBackClick = onBack
             )
         },
-        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState, isError = state.error != null) },
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { padding ->
         ContentLoadLayout(
@@ -248,7 +249,7 @@ private fun PaywallScreenPreview() {
     MaterialTheme {
         PaywallScreen(
             state = PaywallState(),
-            snackbarHostState = SnackbarHostState(),
+            snackbarHostState = AppSnackbarHostState(),
             onIntent = {},
             onBack = {},
             onNavigateToPurchaseHistory = {}

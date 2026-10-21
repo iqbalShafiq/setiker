@@ -21,7 +21,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarData
 import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,6 +33,8 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import presentation.components.AppSnackbarHostState
+import presentation.components.NeubrutalSnackbarHost
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalSmallRadius
@@ -47,7 +48,7 @@ import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 
 /** How long a message stays before it dismisses itself, unless the user closes it first. */
-private const val DEFAULT_AUTO_DISMISS_MS = 10_000L
+internal const val DEFAULT_AUTO_DISMISS_MS = 10_000L
 
 /**
  * How long a failure stays.
@@ -56,7 +57,7 @@ private const val DEFAULT_AUTO_DISMISS_MS = 10_000L
  * on. Ten seconds is Material's "long" snackbar; on a phone that takes a while to answer, half
  * of that is gone before the request has even finished.
  */
-private const val ERROR_AUTO_DISMISS_MS = 15_000L
+internal const val ERROR_AUTO_DISMISS_MS = 15_000L
 
 /**
  * The app's snackbar.
@@ -74,19 +75,19 @@ private const val ERROR_AUTO_DISMISS_MS = 15_000L
  */
 @Composable
 fun NeubrutalSnackbarHost(
-    hostState: SnackbarHostState,
-    modifier: Modifier = Modifier,
-    isError: Boolean = false,
-    autoDismissMs: Long = DEFAULT_AUTO_DISMISS_MS
+    state: AppSnackbarHostState,
+    modifier: Modifier = Modifier
 ) {
     SnackbarHost(
-        hostState = hostState,
+        hostState = state.hostState,
         modifier = modifier,
         snackbar = { data ->
+            // The kind of message travels with the snackbar, so the treatment is never a guess
+            // about the state of the screen.
             NeubrutalSnackbar(
                 data = data,
-                isError = isError,
-                autoDismissMs = if (isError) ERROR_AUTO_DISMISS_MS else autoDismissMs
+                isError = state.isError,
+                autoDismissMs = if (state.isError) ERROR_AUTO_DISMISS_MS else DEFAULT_AUTO_DISMISS_MS
             )
         }
     )

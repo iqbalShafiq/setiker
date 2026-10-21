@@ -1,12 +1,12 @@
 package presentation.common
 
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import presentation.common.UiText
 import presentation.common.resolveLocal
+import presentation.components.AppSnackbarHostState
 
 /**
  * The form error, shown in the snackbar.
@@ -20,8 +20,8 @@ import presentation.common.resolveLocal
  * the state, so the screen can show it again the next time the request fails.
  */
 @Composable
-internal fun rememberErrorSnackbar(error: UiText?): SnackbarHostState {
-    val hostState = remember { SnackbarHostState() }
+internal fun rememberErrorSnackbar(error: UiText?): AppSnackbarHostState {
+    val hostState = remember { AppSnackbarHostState() }
     // The message is resolved in the composition: a string resource cannot be read from inside
     // the effect.
     val message = error?.resolveLocal()
@@ -29,11 +29,8 @@ internal fun rememberErrorSnackbar(error: UiText?): SnackbarHostState {
     LaunchedEffect(message) {
         if (message == null) return@LaunchedEffect
         // A second failure replaces the first message instead of queueing behind it.
-        hostState.currentSnackbarData?.dismiss()
-        hostState.showSnackbar(
-            message = message,
-            duration = SnackbarDuration.Indefinite
-        )
+        hostState.hostState.currentSnackbarData?.dismiss()
+        hostState.showError(message)
     }
 
     return hostState

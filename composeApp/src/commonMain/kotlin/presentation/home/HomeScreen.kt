@@ -28,7 +28,6 @@ import androidx.compose.material.icons.filled.Workspaces
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -49,6 +48,7 @@ import domain.model.Sticker
 import domain.model.StickerPack
 import org.jetbrains.compose.resources.stringResource
 import presentation.common.ContentStateAnimations
+import presentation.components.AppSnackbarHostState
 import presentation.components.AiGenerateStickerPackBottomSheet
 import presentation.components.AppIllustration
 import presentation.components.AppTopBar
@@ -57,6 +57,7 @@ import presentation.components.EmptyState
 import presentation.components.HomeBottomBar
 import presentation.components.LoadingIndicator
 import presentation.components.NeubrutalIconButton
+import presentation.components.NeubrutalSnackbarHost
 import presentation.components.OfflineBanner
 import presentation.components.ProcessingPackListCard
 import presentation.components.PromptPresetPickerSheet
@@ -92,7 +93,7 @@ fun HomeScreen(
     state: HomeState,
     onIntent: (HomeIntent) -> Unit,
     onPackClick: (String) -> Unit,
-    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    snackbarHostState: AppSnackbarHostState = remember { AppSnackbarHostState() },
     showOfflineBanner: Boolean = false,
     modifier: Modifier = Modifier
 ) {
@@ -243,7 +244,7 @@ fun HomeScreen(
                 onAddPackClick = { onIntent(HomeIntent.CreateNewPack) }
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         when {

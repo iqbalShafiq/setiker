@@ -1,5 +1,7 @@
 package presentation.crop
 
+
+
 sealed interface CropIntent {
     data class LoadImage(val path: String) : CropIntent
     data object RotateLeft : CropIntent

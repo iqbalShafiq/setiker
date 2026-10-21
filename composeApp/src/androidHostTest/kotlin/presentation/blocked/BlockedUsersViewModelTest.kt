@@ -118,6 +118,7 @@ class BlockedUsersViewModelTest {
 
         assertEquals(1, viewModel.state.value.users.size)
         assertEquals(null, viewModel.state.value.unblockingUserId)
-        assertTrue(viewModel.effect.first() is BlockedUsersEffect.ShowMessage)
+        // A failed unblock is a failure, not a note, so it gets the danger treatment.
+        assertTrue(viewModel.effect.first() is BlockedUsersEffect.ShowError)
     }
 }

@@ -28,7 +28,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -55,6 +54,7 @@ import data.remote.resolveApiUrl
 import org.jetbrains.compose.resources.stringResource
 import presentation.common.ContentStateAnimations
 import presentation.common.ExploreBodyPhase
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppIllustration
 import presentation.components.AppPrimaryButton
 import presentation.components.AppTopBar
@@ -64,6 +64,7 @@ import presentation.components.LoadingIndicator
 import presentation.components.NeubrutalIconButton
 import presentation.components.NeubrutalSearchBar
 import presentation.components.NeubrutalSelectableChip
+import presentation.components.NeubrutalSnackbarHost
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
@@ -115,7 +116,7 @@ import setiker.composeapp.generated.resources.social_counts
 fun ExploreScreen(
     state: ExploreState,
     onIntent: (ExploreIntent) -> Unit,
-    snackbarHostState: SnackbarHostState,
+    snackbarHostState: AppSnackbarHostState,
     modifier: Modifier = Modifier
 ) {
     LaunchedEffect(Unit) {
@@ -154,7 +155,7 @@ fun ExploreScreen(
                 }
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         PullToRefreshBox(
@@ -483,7 +484,7 @@ private fun ExploreScreenPreview() {
         ExploreScreen(
             state = ExploreState(),
             onIntent = {},
-            snackbarHostState = SnackbarHostState()
+            snackbarHostState = AppSnackbarHostState()
         )
     }
 }

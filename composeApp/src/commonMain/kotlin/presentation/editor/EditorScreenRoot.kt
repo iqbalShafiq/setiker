@@ -11,6 +11,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
+import presentation.components.AppSnackbarHostState
 import util.AppLog
 
 @Composable
@@ -25,7 +26,7 @@ fun EditorScreenRoot(
     viewModel: EditorViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = remember { AppSnackbarHostState() }
     var showCelebration by remember { mutableStateOf(false) }
 
     // Always set packId and stickerIndex when entering the screen or recomposing.
@@ -65,10 +66,10 @@ fun EditorScreenRoot(
                 is EditorEffect.NavigateBack -> onBackClick()
                 is EditorEffect.NavigateToCrop -> onNavigateToCrop(effect.imagePath)
                 is EditorEffect.ShowError -> {
-                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
+                    snackbarHostState.showMessage(effect.message.resolveOrDefault())
                 }
                 is EditorEffect.ShowMessage -> {
-                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
+                    snackbarHostState.showMessage(effect.message.resolveOrDefault())
                 }
             }
         }

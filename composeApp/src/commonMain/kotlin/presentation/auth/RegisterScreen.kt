@@ -96,7 +96,6 @@ fun RegisterScreen(
         isLoading = state.isLoading,
         loadingStatusText = stringResource(Res.string.register_creating_account),
         snackbarHostState = rememberErrorSnackbar(state.error),
-        hasError = state.error != null,
         onPrimaryAction = { onIntent(RegisterIntent.Submit) },
         primaryFabIcon = Icons.Filled.PersonAdd,
         primaryFabContentDescription = stringResource(Res.string.register_submit),

@@ -39,8 +39,8 @@ import setiker.composeapp.generated.resources.error_invalid_background_remove_re
 import setiker.composeapp.generated.resources.error_invalid_generate_response
 import setiker.composeapp.generated.resources.error_invalid_grid_split_response
 import setiker.composeapp.generated.resources.error_network_unavailable
-import setiker.composeapp.generated.resources.error_server_unreachable
 import setiker.composeapp.generated.resources.error_pack_not_found
+import setiker.composeapp.generated.resources.error_server_unreachable
 import setiker.composeapp.generated.resources.error_sticker_not_found
 import setiker.composeapp.generated.resources.error_username_taken
 

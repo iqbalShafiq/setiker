@@ -1,5 +1,7 @@
 package presentation.aijobs
 
+
+
 sealed interface AiJobsIntent {
     data object Load : AiJobsIntent
     data class RetryDraft(val draftId: String) : AiJobsIntent

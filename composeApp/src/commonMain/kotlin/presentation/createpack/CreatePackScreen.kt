@@ -33,7 +33,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -50,6 +49,7 @@ import coil3.compose.AsyncImage
 import domain.model.StickerPack
 import org.jetbrains.compose.resources.stringResource
 import presentation.aijob.AiResultSheetVisibility
+import presentation.components.AppSnackbarHostState
 import presentation.components.AiGenerateBottomSheet
 import presentation.components.AppIllustration
 import presentation.components.AppPrimaryButton
@@ -62,6 +62,7 @@ import presentation.components.ImproveConfirmDialog
 import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
 import presentation.components.NeubrutalIconButton
+import presentation.components.NeubrutalSnackbarHost
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
@@ -147,7 +148,7 @@ fun CreatePackScreen(
     onNavigateToCropTray: (String) -> Unit,
     onNavigateToVideoTrim: (String) -> Unit = {},
     onPreviewPublicPack: (String) -> Unit = {},
-    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    snackbarHostState: AppSnackbarHostState = remember { AppSnackbarHostState() },
     modifier: Modifier = Modifier
 ) {
     val trayIconPicker = rememberImagePicker { path ->
@@ -632,7 +633,7 @@ fun CreatePackScreen(
                 }
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         if (state.isLoading) {

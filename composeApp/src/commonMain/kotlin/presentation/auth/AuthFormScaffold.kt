@@ -8,6 +8,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppTopBar
 import presentation.components.InteractionBlockedBox
 import presentation.components.NeubrutalSnackbarHost
@@ -21,8 +22,7 @@ fun AuthFormScaffold(
     title: String,
     isLoading: Boolean,
     loadingStatusText: String,
-    snackbarHostState: SnackbarHostState,
-    hasError: Boolean = false,
+    snackbarHostState: AppSnackbarHostState,
     onPrimaryAction: () -> Unit,
     primaryFabIcon: ImageVector,
     primaryFabContentDescription: String,
@@ -41,10 +41,7 @@ fun AuthFormScaffold(
             )
         },
         snackbarHost = {
-            NeubrutalSnackbarHost(
-                hostState = snackbarHostState,
-                isError = hasError
-            )
+            NeubrutalSnackbarHost(snackbarHostState)
         },
         bottomBar = {
             PackBottomBar(

@@ -103,7 +103,7 @@ class AiJobsViewModel(
         viewModelScope.launch {
             val job = aiJobManager.retryDraft(draftId)
             if (job == null) {
-                _effect.send(AiJobsEffect.ShowMessage(UiText.StringRes(Res.string.ai_jobs_retry_failed)))
+                _effect.send(AiJobsEffect.ShowError(UiText.StringRes(Res.string.ai_jobs_retry_failed)))
             }
         }
     }

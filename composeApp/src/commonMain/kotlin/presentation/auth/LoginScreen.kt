@@ -104,7 +104,6 @@ fun LoginScreen(
         isLoading = state.isLoading,
         loadingStatusText = stringResource(Res.string.login_signing_in),
         snackbarHostState = rememberErrorSnackbar(state.error),
-        hasError = state.error != null,
         onPrimaryAction = { onIntent(LoginIntent.Submit) },
         primaryFabIcon = Icons.AutoMirrored.Filled.Login,
         primaryFabContentDescription = stringResource(Res.string.login_submit),

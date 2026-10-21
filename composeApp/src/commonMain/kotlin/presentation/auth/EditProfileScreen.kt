@@ -22,9 +22,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.ContentStateAnimations
+import presentation.common.rememberErrorSnackbar
 import presentation.common.resolveLocal
 import presentation.common.resolveOrDefault
-import presentation.common.rememberErrorSnackbar
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppTextField
 import presentation.components.LoadingIndicator
 import presentation.theme.neubrutalMutedOnSurface
@@ -44,14 +45,14 @@ fun EditProfileScreenRoot(
     viewModel: EditProfileViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = remember { AppSnackbarHostState() }
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
                 EditProfileEffect.NavigateBack -> onBack()
                 is EditProfileEffect.ShowMessage -> {
-                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
+                    snackbarHostState.showMessage(effect.message.resolveOrDefault())
                 }
             }
         }
@@ -83,7 +84,6 @@ fun EditProfileScreen(
                 isLoading = state.isSaving,
                 loadingStatusText = stringResource(Res.string.processing),
                 snackbarHostState = rememberErrorSnackbar(state.error),
-                hasError = state.error != null,
                 onPrimaryAction = { onIntent(EditProfileIntent.Save) },
                 primaryFabIcon = Icons.Default.Check,
                 primaryFabContentDescription = stringResource(Res.string.edit_profile_save),

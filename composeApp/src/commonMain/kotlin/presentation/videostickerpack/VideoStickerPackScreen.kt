@@ -27,7 +27,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -54,6 +53,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.stringResource
+import presentation.components.AppSnackbarHostState
 import presentation.components.AiQuotaSummary
 import presentation.components.AppIllustration
 import presentation.components.AppIllustrationImage
@@ -61,6 +61,7 @@ import presentation.components.AppTextField
 import presentation.components.AppTopBar
 import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
+import presentation.components.NeubrutalSnackbarHost
 import presentation.components.NeubrutalStickerPreviewFrame
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
@@ -111,7 +112,7 @@ fun VideoStickerPackScreen(
     state: VideoStickerPackState,
     onIntent: (VideoStickerPackIntent) -> Unit,
     onBackClick: () -> Unit,
-    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    snackbarHostState: AppSnackbarHostState = remember { AppSnackbarHostState() },
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -129,7 +130,7 @@ fun VideoStickerPackScreen(
                 onBackClick = onBackClick
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         InteractionBlockedBox(

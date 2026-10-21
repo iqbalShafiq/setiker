@@ -1,5 +1,7 @@
 package presentation.crop
 
+
+
 data class CropState(
     val imagePath: String = "",
     val isProcessing: Boolean = false,

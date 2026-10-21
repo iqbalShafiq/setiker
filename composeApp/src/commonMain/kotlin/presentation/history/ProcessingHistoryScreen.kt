@@ -23,7 +23,6 @@ import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,6 +38,7 @@ import data.remote.resolveApiUrl
 import org.jetbrains.compose.resources.stringResource
 import presentation.common.ContentStateAnimations
 import presentation.common.ListLoadPhase
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppIllustration
 import presentation.components.AppPrimaryButton
 import presentation.components.AppTopBar
@@ -46,6 +46,7 @@ import presentation.components.EmptyState
 import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
 import presentation.components.NeubrutalSelectableChip
+import presentation.components.NeubrutalSnackbarHost
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
@@ -85,7 +86,7 @@ import setiker.composeapp.generated.resources.retry
 fun ProcessingHistoryScreen(
     state: ProcessingHistoryState,
     onIntent: (ProcessingHistoryIntent) -> Unit,
-    snackbarHostState: SnackbarHostState,
+    snackbarHostState: AppSnackbarHostState,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -123,7 +124,7 @@ fun ProcessingHistoryScreen(
                 }
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         InteractionBlockedBox(
@@ -302,7 +303,7 @@ private fun ProcessingHistoryScreenPreview() {
         ProcessingHistoryScreen(
             state = ProcessingHistoryState(),
             onIntent = {},
-            snackbarHostState = SnackbarHostState()
+            snackbarHostState = AppSnackbarHostState()
         )
     }
 }

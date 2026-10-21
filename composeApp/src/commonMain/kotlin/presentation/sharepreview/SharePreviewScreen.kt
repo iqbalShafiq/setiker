@@ -9,7 +9,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,11 +17,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppIllustration
 import presentation.components.AppTopBar
 import presentation.components.EmptyState
 import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
+import presentation.components.NeubrutalSnackbarHost
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.theme.neubrutalMutedOnSurface
@@ -42,7 +43,7 @@ import setiker.composeapp.generated.resources.share_preview_unavailable_title
 fun SharePreviewScreen(
     state: SharePreviewState,
     onIntent: (SharePreviewIntent) -> Unit,
-    snackbarHostState: SnackbarHostState
+    snackbarHostState: AppSnackbarHostState
 ) {
     Scaffold(
         topBar = {
@@ -71,7 +72,7 @@ fun SharePreviewScreen(
                 }
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         when {
@@ -157,7 +158,7 @@ private fun SharePreviewScreenPreview() {
         SharePreviewScreen(
             state = SharePreviewState(),
             onIntent = {},
-            snackbarHostState = SnackbarHostState()
+            snackbarHostState = AppSnackbarHostState()
         )
     }
 }

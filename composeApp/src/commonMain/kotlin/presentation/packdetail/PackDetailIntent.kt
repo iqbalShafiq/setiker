@@ -1,5 +1,7 @@
 package presentation.packdetail
 
+
+
 sealed interface PackDetailIntent {
     /**
      * @param silentRefresh When true and this pack is already in state, skips the full-screen blocking loader

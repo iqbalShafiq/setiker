@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
+import presentation.components.AppSnackbarHostState
 
 @Composable
 fun CropScreenRoot(
@@ -17,7 +18,7 @@ fun CropScreenRoot(
     viewModel: CropViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = remember { AppSnackbarHostState() }
 
     LaunchedEffect(imagePath) {
         viewModel.onIntent(CropIntent.LoadImage(imagePath))
@@ -29,7 +30,7 @@ fun CropScreenRoot(
                 is CropEffect.ImageCropped -> onImageCropped(effect.path)
                 is CropEffect.NavigateBack -> onBackClick()
                 is CropEffect.ShowError -> {
-                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
+                    snackbarHostState.showMessage(effect.message.resolveOrDefault())
                 }
             }
         }

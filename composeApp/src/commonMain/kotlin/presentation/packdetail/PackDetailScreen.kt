@@ -36,7 +36,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -62,6 +61,7 @@ import org.jetbrains.compose.resources.stringResource
 import presentation.common.ContentStateAnimations
 import presentation.common.DetailLoadPhase
 import presentation.common.toShareLinkUi
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppDialog
 import presentation.components.AppIllustration
 import presentation.components.AppPrimaryButton
@@ -75,6 +75,7 @@ import presentation.components.EmptyState
 import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
 import presentation.components.NeubrutalSelectableChip
+import presentation.components.NeubrutalSnackbarHost
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
@@ -150,6 +151,7 @@ import setiker.composeapp.generated.resources.stickers_with_count
 import setiker.composeapp.generated.resources.tray_icon_content_description
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyGridState
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PackDetailScreen(
@@ -160,7 +162,7 @@ fun PackDetailScreen(
     onAddSticker: () -> Unit,
     onEditSticker: (Int) -> Unit,
     onNavigateToCropStickerImport: (String) -> Unit,
-    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    snackbarHostState: AppSnackbarHostState = remember { AppSnackbarHostState() },
     modifier: Modifier = Modifier
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -495,7 +497,7 @@ fun PackDetailScreen(
                 }
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         val phase = when {

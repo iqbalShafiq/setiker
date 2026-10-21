@@ -31,7 +31,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -53,6 +52,7 @@ import data.remote.resolveApiUrl
 import org.jetbrains.compose.resources.stringResource
 import presentation.common.ContentStateAnimations
 import presentation.common.DetailLoadPhase
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppIllustration
 import presentation.components.AppPrimaryButton
 import presentation.components.AppTopBar
@@ -61,6 +61,7 @@ import presentation.components.BlockCreatorConfirmDialog
 import presentation.components.EmptyState
 import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
+import presentation.components.NeubrutalSnackbarHost
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
@@ -107,7 +108,7 @@ fun PublicPackDetailScreen(
     packId: String,
     state: PublicPackDetailState,
     onIntent: (PublicPackDetailIntent) -> Unit,
-    snackbarHostState: SnackbarHostState,
+    snackbarHostState: AppSnackbarHostState,
     modifier: Modifier = Modifier
 ) {
     var showUnfollowDialog by remember { mutableStateOf(false) }
@@ -196,7 +197,7 @@ fun PublicPackDetailScreen(
                 }
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         val phase = when {
@@ -418,7 +419,7 @@ private fun PublicPackDetailScreenPreview() {
             state = PublicPackDetailState(),
             packId = "",
             onIntent = {},
-            snackbarHostState = SnackbarHostState()
+            snackbarHostState = AppSnackbarHostState()
         )
     }
 }

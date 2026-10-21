@@ -10,6 +10,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveLocal
 import presentation.common.resolveOrDefault
+import presentation.components.AppSnackbarHostState
 
 @Composable
 fun AnimatedEditorScreenRoot(
@@ -20,7 +21,7 @@ fun AnimatedEditorScreenRoot(
     viewModel: AnimatedEditorViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = remember { AppSnackbarHostState() }
 
     LaunchedEffect(packId) {
         viewModel.onIntent(AnimatedEditorIntent.SetPackId(packId))
@@ -36,7 +37,7 @@ fun AnimatedEditorScreenRoot(
                 is AnimatedEditorEffect.NavigateBack -> onBackClick()
                 is AnimatedEditorEffect.AnimatedDraftReady -> onAnimatedDraftReady(effect)
                 is AnimatedEditorEffect.ShowError -> {
-                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
+                    snackbarHostState.showMessage(effect.message.resolveOrDefault())
                 }
             }
         }
@@ -47,8 +48,8 @@ fun AnimatedEditorScreenRoot(
     val errorMessage = state.error?.resolveLocal()
     LaunchedEffect(errorMessage) {
         if (errorMessage == null) return@LaunchedEffect
-        snackbarHostState.currentSnackbarData?.dismiss()
-        snackbarHostState.showSnackbar(errorMessage, duration = SnackbarDuration.Indefinite)
+        snackbarHostState.hostState.currentSnackbarData?.dismiss()
+        snackbarHostState.showError(errorMessage)
     }
 
     AnimatedEditorScreen(

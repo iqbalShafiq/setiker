@@ -54,7 +54,7 @@ import domain.model.TextDecoration
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.stringResource
-import presentation.components.NeubrutalSnackbarHost
+import presentation.components.AppSnackbarHostState
 import presentation.components.AddTextDecorationBottomSheet
 import presentation.components.AppIllustration
 import presentation.components.AppTextField
@@ -69,6 +69,7 @@ import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
 import presentation.components.MediaPreviewBottomBar
 import presentation.components.NeubrutalAddTagPill
+import presentation.components.NeubrutalSnackbarHost
 import presentation.components.NeubrutalStickerPreviewFrame
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
@@ -119,7 +120,7 @@ fun AnimatedEditorScreen(
     state: AnimatedEditorState,
     onIntent: (AnimatedEditorIntent) -> Unit,
     onBackClick: () -> Unit,
-    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    snackbarHostState: AppSnackbarHostState = remember { AppSnackbarHostState() },
     modifier: Modifier = Modifier
 ) {
     // Decoding a frame takes tens of milliseconds for full-size stickers, so it is done off the
@@ -277,7 +278,7 @@ fun AnimatedEditorScreen(
                 }
             }
         },
-        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState, isError = state.error != null) },
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         if (state.isLoading) {

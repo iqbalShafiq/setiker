@@ -36,7 +36,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -53,15 +52,15 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import coil3.size.Precision
 import coil3.compose.rememberAsyncImagePainter
+import coil3.size.Precision
 import domain.model.EmojiDecoration
 import domain.model.ImageDecoration
 import domain.model.Sticker
 import domain.model.TextDecoration
 import org.jetbrains.compose.resources.stringResource
 import presentation.aijob.AiResultSheetVisibility
-import presentation.components.CelebrationBadge
+import presentation.components.AppSnackbarHostState
 import presentation.components.AddTextDecorationBottomSheet
 import presentation.components.AiGenerateBottomSheet
 import presentation.components.AppIllustration
@@ -73,6 +72,7 @@ import presentation.components.AppTopBar
 import presentation.components.AppTopBarActionIcon
 import presentation.components.BorderStyleBottomSheet
 import presentation.components.BottomSheetScrollColumn
+import presentation.components.CelebrationBadge
 import presentation.components.CheckerboardBackground
 import presentation.components.ColorPickerBottomSheet
 import presentation.components.DecorationActionChip
@@ -84,6 +84,7 @@ import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
 import presentation.components.NeubrutalAddTagPill
 import presentation.components.NeubrutalAsyncImage
+import presentation.components.NeubrutalSnackbarHost
 import presentation.components.NeubrutalStickerPreviewFrame
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
@@ -107,89 +108,48 @@ import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalSubtleOnSurface
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.Res
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.accessibility_text
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.accessibility_text_example
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.accessibility_text_placeholder
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.add
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.add_emoji
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.add_image
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.add_text
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.back
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.cancel
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.change_border_thickness
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.change_color
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.change_emoji
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.change_image
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.change_style
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.crop
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.decoration_hint
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.edit_sticker_title
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.edit_text_decoration
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.editor_action_hint
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.editor_redo
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.editor_remove_bg_progress_hint
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.editor_undo
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.generate_ai
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.generate_pick_result
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.generate_replace_sticker_subtitle
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.generate_replace_sticker_title
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.history_report_output
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.improve_confirm_message_sticker
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.improve_sticker
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.processing
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.remove_background_title
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.remove_bg
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.remove_bg_preview_content_description
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.remove_bg_result_hint
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.result_confirmation_title
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.save_sticker
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.saving
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.select_image
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.sticker_preview
 import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.tags_with_count
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.use_result
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -198,7 +158,7 @@ fun EditorScreen(
     state: EditorState,
     onIntent: (EditorIntent) -> Unit,
     onBackClick: () -> Unit,
-    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    snackbarHostState: AppSnackbarHostState = remember { AppSnackbarHostState() },
     showCelebration: Boolean = false,
     modifier: Modifier = Modifier
 ) {
@@ -359,7 +319,7 @@ fun EditorScreen(
                 )
             }
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         if (state.isLoading) {

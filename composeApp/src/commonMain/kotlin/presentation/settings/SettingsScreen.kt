@@ -13,7 +13,6 @@ import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,6 +29,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveLocal
 import presentation.common.resolveOrDefault
+import presentation.components.AppSnackbarHostState
 import presentation.components.AiQuotaSummary
 import presentation.components.AppDialog
 import presentation.components.AppIllustration
@@ -38,6 +38,7 @@ import presentation.components.AppPasswordTextField
 import presentation.components.AppPrimaryButton
 import presentation.components.AppTopBar
 import presentation.components.DeleteAccountConfirmDialog
+import presentation.components.NeubrutalSnackbarHost
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
@@ -72,7 +73,7 @@ fun SettingsScreenRoot(
     viewModel: SettingsViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = remember { AppSnackbarHostState() }
     val openUrl = rememberUrlLauncher()
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -82,7 +83,7 @@ fun SettingsScreenRoot(
                 SettingsEffect.NavigateToPurchaseHistory -> onPurchaseHistory()
                 is SettingsEffect.OpenUrl -> openUrl(effect.url)
                 SettingsEffect.AccountDeleted -> onAccountDeleted()
-                is SettingsEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
+                is SettingsEffect.ShowMessage -> snackbarHostState.showMessage(effect.message.resolveOrDefault())
             }
         }
     }
@@ -97,7 +98,7 @@ fun SettingsScreenRoot(
 fun SettingsScreen(
     state: SettingsState,
     onIntent: (SettingsIntent) -> Unit,
-    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
+    snackbarHostState: AppSnackbarHostState = remember { AppSnackbarHostState() }
 ) {
     val canSavePassword = state.currentPassword.isNotBlank() &&
         state.newPassword.isNotBlank() &&
@@ -130,7 +131,7 @@ fun SettingsScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
         topBar = {
             AppTopBar(title = stringResource(Res.string.settings_title))
         },

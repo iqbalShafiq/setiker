@@ -1,7 +1,5 @@
 package presentation.aijobs
 
-
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,12 +29,13 @@ import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
-import presentation.components.NeubrutalSnackbarHost
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppIllustration
 import presentation.components.AppTopBar
 import presentation.components.DraftJobListCard
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
+import presentation.components.NeubrutalSnackbarHost
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
@@ -61,8 +60,6 @@ import setiker.composeapp.generated.resources.ai_jobs_status_saved
 import setiker.composeapp.generated.resources.ai_jobs_title
 import setiker.composeapp.generated.resources.back_content_description
 
-
-
 @Composable
 
 fun AiJobsScreenRoot(
@@ -79,7 +76,7 @@ fun AiJobsScreenRoot(
 
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    val snackbarHostState = androidx.compose.runtime.remember { SnackbarHostState() }
+    val snackbarHostState = androidx.compose.runtime.remember { AppSnackbarHostState() }
 
     androidx.compose.runtime.LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -87,7 +84,7 @@ fun AiJobsScreenRoot(
                 AiJobsEffect.NavigateBack -> onBackClick()
                 is AiJobsEffect.NavigateToDraft -> onOpenDraft(effect.draftId, effect.originRoute)
                 is AiJobsEffect.NavigateToPack -> onOpenPack(effect.packId)
-                is AiJobsEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
+                is AiJobsEffect.ShowError -> snackbarHostState.showError(effect.message.resolveOrDefault())
             }
         }
     }
@@ -111,7 +108,7 @@ fun AiJobsScreen(
     onIntent: (AiJobsIntent) -> Unit,
 
     onBackClick: () -> Unit,
-    snackbarHostState: SnackbarHostState,
+    snackbarHostState: AppSnackbarHostState,
 
     modifier: Modifier = Modifier
 
@@ -545,7 +542,7 @@ private fun AiJobsScreenPreview() {
             state = AiJobsState(),
             onIntent = {},
             onBackClick = {},
-            snackbarHostState = SnackbarHostState()
+            snackbarHostState = AppSnackbarHostState()
         )
     }
 }

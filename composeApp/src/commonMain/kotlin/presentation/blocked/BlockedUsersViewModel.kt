@@ -77,7 +77,7 @@ class BlockedUsersViewModel(
                 }
                 .onFailure { error ->
                     _state.update { it.copy(unblockingUserId = null) }
-                    _effect.send(BlockedUsersEffect.ShowMessage(error.toUiText(Res.string.blocked_users_load_failed)))
+                    _effect.send(BlockedUsersEffect.ShowError(error.toUiText(Res.string.blocked_users_load_failed)))
                 }
         }
     }

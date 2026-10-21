@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
+import presentation.components.AppSnackbarHostState
 
 @Composable
 fun CreatePackScreenRoot(
@@ -28,7 +29,7 @@ fun CreatePackScreenRoot(
     viewModel: CreatePackViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = remember { AppSnackbarHostState() }
 
     LaunchedEffect(packId) {
         packId?.let { viewModel.onIntent(CreatePackIntent.LoadPack(it)) }
@@ -64,10 +65,10 @@ fun CreatePackScreenRoot(
             when (effect) {
                 is CreatePackEffect.PackSaved -> onPackSaved(effect.packId)
                 is CreatePackEffect.NavigateToPublicPack -> onNavigateToPublicPack(effect.cloudPackId)
-                is CreatePackEffect.ShowSuccess -> snackbarHostState.showSnackbar(effect.message)
+                is CreatePackEffect.ShowSuccess -> snackbarHostState.showMessage(effect.message)
                 is CreatePackEffect.NavigateBack -> onBackClick()
                 is CreatePackEffect.ShowError -> {
-                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
+                    snackbarHostState.showMessage(effect.message.resolveOrDefault())
                 }
             }
         }

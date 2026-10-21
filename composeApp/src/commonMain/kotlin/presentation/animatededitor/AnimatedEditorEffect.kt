@@ -17,4 +17,3 @@ sealed interface AnimatedEditorEffect {
     ) : AnimatedEditorEffect
     data class ShowError(val message: UiText) : AnimatedEditorEffect
 }
-

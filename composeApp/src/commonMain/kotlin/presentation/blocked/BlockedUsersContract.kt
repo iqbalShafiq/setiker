@@ -22,5 +22,10 @@ sealed interface BlockedUsersIntent {
 
 sealed interface BlockedUsersEffect {
     data object NavigateBack : BlockedUsersEffect
+
+    /** A confirmation. */
     data class ShowMessage(val message: UiText) : BlockedUsersEffect
+
+    /** A failure. */
+    data class ShowError(val message: UiText) : BlockedUsersEffect
 }

@@ -1,5 +1,7 @@
 package presentation.navigation
 
+
+
 /**
  * Parsed AI notification / deep-link payload for [AppNavigation].
  */

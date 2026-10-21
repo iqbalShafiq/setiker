@@ -9,6 +9,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import domain.model.AnimatedStickerSpec
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
+import presentation.components.AppSnackbarHostState
 
 @Composable
 fun VideoTrimScreenRoot(
@@ -18,7 +19,7 @@ fun VideoTrimScreenRoot(
     viewModel: VideoTrimViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = remember { AppSnackbarHostState() }
 
     LaunchedEffect(videoPath) {
         viewModel.onIntent(VideoTrimIntent.LoadVideo(videoPath))
@@ -30,7 +31,7 @@ fun VideoTrimScreenRoot(
                 is VideoTrimEffect.NavigateToVideoCrop -> onNavigateToVideoCrop(effect.videoPath, effect.spec)
                 is VideoTrimEffect.NavigateBack -> onBackClick()
                 is VideoTrimEffect.ShowError -> {
-                    snackbarHostState.showSnackbar(effect.message.resolveOrDefault())
+                    snackbarHostState.showMessage(effect.message.resolveOrDefault())
                 }
             }
         }

@@ -343,7 +343,19 @@ An error that looks like an empty state reads as "there is nothing here", and th
 content that is never going to arrive. The empty state has a danger treatment now: a solid error
 icon, a bold title in the error colour, and the two screens that show a full screen failure use it.
 
-## 10.5 The evidence
+## 10.5 Every screen, not the six that needed it
+
+The first version put the app's snackbar on the screens that carry a form error and left the other
+sixteen on Material's stock pill, which is how the app ended up with two different snackbars. All
+twenty-two use the same one now.
+
+The kind of message travels with the snackbar itself, in an `AppSnackbarHostState`. It used to be a
+flag on the host, read from the state of the screen, which is wrong the moment the state changes
+while the message is still on screen: a confirmation would turn into a failure, or the other way
+round. Two effects also lied about what they carried - the AI jobs screen and the blocked users
+screen both sent a failure as a "message" - so they have a `ShowError` of their own now.
+
+## 10.6 The evidence
 
 | | |
 | --- | --- |

@@ -21,7 +21,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,11 +39,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.stringResource
 import presentation.common.resolveLocal
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppIllustration
 import presentation.components.AppTopBar
 import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
 import presentation.components.MediaPreviewBottomBar
+import presentation.components.NeubrutalSnackbarHost
 import presentation.components.NeubrutalStickerPreviewFrame
 import presentation.components.ScreenSectionTitle
 import presentation.theme.NeubrutalBlack
@@ -74,7 +75,7 @@ fun VideoTrimScreen(
     state: VideoTrimState,
     onIntent: (VideoTrimIntent) -> Unit,
     onBackClick: () -> Unit,
-    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    snackbarHostState: AppSnackbarHostState = remember { AppSnackbarHostState() },
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -104,7 +105,7 @@ fun VideoTrimScreen(
                 )
             }
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         if (state.isLoading) {
