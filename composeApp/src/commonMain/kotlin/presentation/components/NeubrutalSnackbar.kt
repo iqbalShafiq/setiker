@@ -48,8 +48,17 @@ import presentation.theme.neubrutalPressable
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 
-/** How long a snackbar stays before it dismisses itself, unless the user closes it first. */
+/** How long a message stays before it dismisses itself, unless the user closes it first. */
 private const val DEFAULT_AUTO_DISMISS_MS = 10_000L
+
+/**
+ * How long a failure stays.
+ *
+ * Longer than a message, because a failure is the one thing in the app that the user has to act
+ * on. Ten seconds is Material's "long" snackbar; on a phone that takes a while to answer, half
+ * of that is gone before the request has even finished.
+ */
+private const val ERROR_AUTO_DISMISS_MS = 15_000L
 
 /** The height of the draining timer line along the bottom of the snackbar. */
 private val TimerBarHeight = 4.dp
@@ -83,7 +92,7 @@ fun NeubrutalSnackbarHost(
             NeubrutalSnackbar(
                 data = data,
                 isError = isError,
-                autoDismissMs = autoDismissMs
+                autoDismissMs = if (isError) ERROR_AUTO_DISMISS_MS else autoDismissMs
             )
         }
     )
