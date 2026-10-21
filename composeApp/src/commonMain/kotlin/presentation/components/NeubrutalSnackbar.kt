@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -30,9 +29,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -40,6 +36,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
+import presentation.theme.NeubrutalSmallRadius
+import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
@@ -60,9 +58,6 @@ private const val DEFAULT_AUTO_DISMISS_MS = 10_000L
  */
 private const val ERROR_AUTO_DISMISS_MS = 15_000L
 
-/** The height of the draining timer line along the bottom of the snackbar. */
-private val TimerBarHeight = 4.dp
-
 /**
  * The app's snackbar.
  *
@@ -75,8 +70,7 @@ private val TimerBarHeight = 4.dp
  * read as a note, and a note gets ignored. So a failure carries the error colour, a solid icon in
  * a filled circle, and a bold message, and it says so to a screen reader as well.
  *
- * The snackbar dismisses itself after [autoDismissMs] and shows a draining line while it waits,
- * so the user can see how long they have. The close button ends it right away.
+ * The snackbar dismisses itself after [autoDismissMs], and the close button ends it right away.
  */
 @Composable
 fun NeubrutalSnackbarHost(
@@ -142,7 +136,6 @@ fun NeubrutalSnackbarContent(
     val surface = if (isError) MaterialTheme.colorScheme.errorContainer else neubrutalCardSurface()
     val content = if (isError) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurface
     val border = if (isError) MaterialTheme.colorScheme.error else neubrutalBorderColor()
-    val timerColor = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
 
     // The timer is one animation: it drains the line and, when it is done, the snackbar goes
     // away. Reading the value in the draw phase keeps the frame work out of composition.
@@ -175,13 +168,27 @@ fun NeubrutalSnackbarContent(
             )
             .padding(start = 12.dp, end = 8.dp, top = 12.dp, bottom = 12.dp)
     ) {
+        Box {
         Row(verticalAlignment = Alignment.Top) {
             if (isError) {
+                // The same shape as every other icon button in the app: a square with a thick
+                // border and a hard shadow, filled with the error colour.
                 Box(
                     modifier = Modifier
                         .size(28.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.error),
+                        .neubrutalShadow(
+                            offsetX = NeubrutalSmallShadowOffset,
+                            offsetY = NeubrutalSmallShadowOffset,
+                            cornerRadius = NeubrutalSmallRadius,
+                            color = neubrutalShadowColor()
+                        )
+                        .clip(RoundedCornerShape(NeubrutalSmallRadius))
+                        .background(MaterialTheme.colorScheme.error)
+                        .neubrutalBorderWithGloss(
+                            color = neubrutalBorderColor(),
+                            cornerRadius = NeubrutalSmallRadius,
+                            highlightColor = neubrutalGlossyHighlightColor(onFilledSurface = true)
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -194,7 +201,13 @@ fun NeubrutalSnackbarContent(
                 Spacer(modifier = Modifier.width(10.dp))
             }
 
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    // The close button floats over the top right corner, so the message keeps
+                    // clear of it.
+                    .padding(end = 40.dp)
+            ) {
                 Text(
                     text = message,
                     style = MaterialTheme.typography.bodyMedium,
@@ -221,54 +234,25 @@ fun NeubrutalSnackbarContent(
                 }
             }
 
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .neubrutalPressable(pressScale = 0.88f, onClick = onDismiss),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = null,
-                    tint = content,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // The draining line: the time the user has left, made visible.
+        // The close button floats over the top right corner. Its 48 dp touch target stays out
+        // of the flow, so the card is only as tall as the message needs, and the glyph sits at
+        // the top of it, on the first line of the message.
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(TimerBarHeight)
-                .clip(RoundedCornerShape(TimerBarHeight))
-                .background(timerColor.copy(alpha = 0.18f))
+                .align(Alignment.TopEnd)
+                .size(48.dp)
+                .neubrutalPressable(pressScale = 0.88f, onClick = onDismiss),
+            contentAlignment = Alignment.TopCenter
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(TimerBarHeight)
-                    .drawTimerFill(timerColor, timer)
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = null,
+                tint = content,
+                modifier = Modifier.size(18.dp)
             )
+        }
         }
     }
 }
-
-/**
- * Fills the timer line by the fraction that is left.
- *
- * The animated value is read in the draw phase, so the line drains without a recomposition on
- * every frame.
- */
-private fun Modifier.drawTimerFill(color: Color, timer: Animatable<Float, *>) = drawBehind {
-        val fraction = timer.value.coerceIn(0f, 1f)
-        if (fraction <= 0f) return@drawBehind
-        drawRect(
-            color = color,
-            size = Size(width = size.width * fraction, height = size.height)
-        )
-    }
