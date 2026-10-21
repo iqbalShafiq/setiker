@@ -1,0 +1,58 @@
+name: PR Checks
+
+# The gate for every pull request: the app builds, the tests pass, the lint is clean, and the
+# screenshot references still match what the app draws.
+#
+# The instrumented UI tests live in their own workflow, because they need an emulator and take
+# much longer than the rest.
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Build, test and lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Set up the Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install the SDK platform
+        run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0" "platform-tools"
+
+      - name: Accept the SDK licenses
+        run: yes | sdkmanager --licenses > /dev/null
+
+      - name: Unit and view-model tests
+        run: ./gradlew :composeApp:testAndroidHostTest --stacktrace
+
+      - name: Screenshot and performance tests
+        run: ./gradlew :androidApp:testDebugUnitTest --stacktrace
+
+      - name: The screenshot references still match
+        run: ./gradlew :androidApp:verifyRoborazziDebug --stacktrace
+
+      - name: Lint
+        run: ./gradlew :composeApp:lint --stacktrace
+
+      - name: The app builds
+        run: ./gradlew :androidApp:assembleDebug --stacktrace
