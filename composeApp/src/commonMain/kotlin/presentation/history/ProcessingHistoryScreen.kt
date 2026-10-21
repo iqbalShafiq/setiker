@@ -201,6 +201,7 @@ fun ProcessingHistoryScreen(
                             title = stringResource(Res.string.history_none_title),
                             description = state.error ?: stringResource(Res.string.history_none_desc),
                             illustration = AppIllustration.ErrorState,
+                            isError = true,
                             modifier = Modifier.fillMaxSize(),
                             action = {
                                 AppPrimaryButton(

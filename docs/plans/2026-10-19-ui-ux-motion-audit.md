@@ -279,6 +279,76 @@ no slow draw or sync commands at all. The p50 sits at 16 ms rather than the 9.8 
 earlier in the session, because the phone had 61 MB of free memory instead of 289 MB; the frame
 counters are the meaningful number, the milliseconds are relative.
 
+# 10. The error states (2026-10-21)
+
+The complaint that started this: the register screen said "You are offline" to a phone that was
+online, and the error itself sat at the bottom of the form where nobody was looking. Both were
+true. The offline claim was false, and the error was invisible.
+
+## 10.1 The message that lied
+
+A failed connection to one server says nothing about the device's connectivity. The phone can be
+perfectly online and still not reach the API - a captive portal, a proxy, a server that is down,
+a tunnel that is not there. The classifier mapped every I/O failure to `NoInternet` and every
+`NoInternet` to "You are offline. Check your connection and try again."
+
+The network monitor already knew the difference, so the classifier now asks it:
+
+- the device has no network -> `NoInternet` -> "You are offline. Check your connection and try
+  again."
+- the device has a network and the server could not be reached -> `ServerUnreachable` -> "Can't
+  reach the server. Try again in a moment."
+
+A new `ConnectivityState` holds the last known connectivity. The monitor writes it, the classifier
+reads it, and the message tells the truth.
+
+This is not a theory: the screenshot in the evidence folder is the real app, on a phone with wifi,
+with the API tunnel removed, saying "Can't reach the server. Try again in a moment."
+
+## 10.2 The error nobody could see
+
+The form error was a card at the bottom of the form, below the last field. The submit button is in
+the bottom bar, so the user pressed the button at the bottom of the screen and the error appeared
+off the bottom of the screen.
+
+The error is now a snackbar:
+
+- it appears where the thumb is, above the bottom bar;
+- it is built on Material's `SnackbarHost`, so the state machine, the placement and the enter and
+  exit animation are the platform's, and only the look is the app's;
+- the look is neubrutalist - the thick border and the hard offset shadow every other surface in
+  the app has, instead of the stock grey pill;
+- the error variant carries the error container, a full strength error border, a solid icon in a
+  filled circle and a bold message, because an error that does not look like an error gets read as
+  a note, and a note gets ignored;
+- the line that drains along its bottom edge is the time the user has. The close button ends it
+  right away, and the buttons press with the app's spring;
+- it announces itself to a screen reader with a polite live region, so it does not interrupt the
+  speech but is not missed either.
+
+The error card at the bottom of the forms, the bare red line under a field and the small red text
+in the editor are gone. What is left in their place: the snackbar for the errors of the screen,
+and the inline text for the errors of a field.
+
+## 10.3 What a screen reader hears
+
+A red border is invisible to a screen reader, so the text fields now carry the reason they are
+invalid in the `error` semantics, and TalkBack says that the field is invalid and what is wrong
+with it. `ErrorSemanticsTest` holds both properties in place: the snackbar is a live region, and
+an invalid field says what is wrong with it.
+
+## 10.4 The full screen errors
+
+An error that looks like an empty state reads as "there is nothing here", and the user waits for
+content that is never going to arrive. The empty state has a danger treatment now: a solid error
+icon, a bold title in the error colour, and the two screens that show a full screen failure use it.
+
+## 10.5 The evidence
+
+| | |
+| --- | --- |
+| ![error](https://github.com/iqbalShafiq/setiker/raw/audit/android-modernization/androidApp/src/screenshots/debug/error_snackbar.png) | The error snackbar: the error container, the solid icon, the bold message, the close button, and the draining timer line. The reference image lives with the tests, so a change in the look has to be a deliberate one. |
+
 # 7. Methodology (cheap, repeatable, and how to keep it cheap)
 
 ### What I used for this audit — and why it costs ~nothing

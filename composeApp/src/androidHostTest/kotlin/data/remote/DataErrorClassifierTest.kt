@@ -1,5 +1,6 @@
 package data.remote
 
+import data.sync.ConnectivityState
 import domain.error.AppErrorCode
 import domain.error.DataError
 import domain.error.detailText
@@ -47,6 +48,31 @@ class DataErrorClassifierTest {
         val out = java.io.IOException("net down").toDataError()
         assertIs<DataError.Network.NoInternet>(out)
         assertTrue(out.retryable)
+    }
+
+@Test
+    fun `a failed connection while the device is online is not an offline device`() {
+        // The phone is online and the server could not be reached. Calling that "offline" is
+        // false, and it sends the user looking at the wrong thing.
+        ConnectivityState.update(true)
+        try {
+            val out = java.io.IOException("connection refused").toDataError()
+            assertIs<DataError.Network.ServerUnreachable>(out)
+            assertTrue(out.retryable)
+        } finally {
+            ConnectivityState.update(false)
+        }
+    }
+
+    @Test
+    fun `a connect timeout while the device is online is an unreachable server`() {
+        ConnectivityState.update(true)
+        try {
+            val out = ConnectTimeoutException("connect timeout").toDataError()
+            assertIs<DataError.Network.ServerUnreachable>(out)
+        } finally {
+            ConnectivityState.update(false)
+        }
     }
 
     @Test

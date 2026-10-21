@@ -1,10 +1,5 @@
 package presentation.auth
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -30,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
 import presentation.common.UiText
-import presentation.common.resolveLocal
+import presentation.common.rememberErrorSnackbar
 import presentation.components.AppIllustration
 import presentation.components.AppIllustrationImage
 import presentation.components.AppPasswordTextField
@@ -100,6 +95,8 @@ fun RegisterScreen(
         title = stringResource(Res.string.register_title),
         isLoading = state.isLoading,
         loadingStatusText = stringResource(Res.string.register_creating_account),
+        snackbarHostState = rememberErrorSnackbar(state.error),
+        hasError = state.error != null,
         onPrimaryAction = { onIntent(RegisterIntent.Submit) },
         primaryFabIcon = Icons.Filled.PersonAdd,
         primaryFabContentDescription = stringResource(Res.string.register_submit),
@@ -181,6 +178,7 @@ fun RegisterScreen(
                     label = stringResource(Res.string.register_username_label),
                     placeholder = stringResource(Res.string.register_username_placeholder),
                     isError = !state.isUsernameValid,
+                    errorText = if (!state.isUsernameValid) stringResource(Res.string.register_username_required) else null,
                     supportingText = if (!state.isUsernameValid) {
                         { Text(stringResource(Res.string.register_username_required), color = MaterialTheme.colorScheme.error) }
                     } else null,
@@ -195,6 +193,7 @@ fun RegisterScreen(
                     label = stringResource(Res.string.login_email_label),
                     placeholder = stringResource(Res.string.login_email_placeholder),
                     isError = !state.isEmailValid,
+                    errorText = if (!state.isEmailValid) stringResource(Res.string.login_email_invalid) else null,
                     supportingText = if (!state.isEmailValid) {
                         { Text(stringResource(Res.string.login_email_invalid), color = MaterialTheme.colorScheme.error) }
                     } else null,
@@ -210,6 +209,7 @@ fun RegisterScreen(
                     label = stringResource(Res.string.login_password_label),
                     placeholder = stringResource(Res.string.login_password_placeholder),
                     isError = !state.isPasswordValid,
+                    errorText = if (!state.isPasswordValid) stringResource(Res.string.login_password_invalid) else null,
                     supportingText = if (!state.isPasswordValid) {
                         { Text(stringResource(Res.string.login_password_invalid), color = MaterialTheme.colorScheme.error) }
                     } else null,
@@ -231,18 +231,6 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            AnimatedVisibility(
-                visible = state.error != null,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut()
-            ) {
-                AuthErrorMessageBox(
-                    message = state.error?.resolveLocal().orEmpty(),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                )
-            }
 
         Spacer(modifier = Modifier.height(24.dp))
     }

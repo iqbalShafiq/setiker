@@ -1,10 +1,5 @@
 package presentation.auth
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -32,7 +27,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
-import presentation.common.resolveLocal
+import presentation.common.rememberErrorSnackbar
 import presentation.components.AppIllustration
 import presentation.components.AppIllustrationImage
 import presentation.components.AppPasswordTextField
@@ -108,6 +103,8 @@ fun LoginScreen(
         title = stringResource(Res.string.login_submit),
         isLoading = state.isLoading,
         loadingStatusText = stringResource(Res.string.login_signing_in),
+        snackbarHostState = rememberErrorSnackbar(state.error),
+        hasError = state.error != null,
         onPrimaryAction = { onIntent(LoginIntent.Submit) },
         primaryFabIcon = Icons.AutoMirrored.Filled.Login,
         primaryFabContentDescription = stringResource(Res.string.login_submit),
@@ -190,6 +187,7 @@ fun LoginScreen(
                 label = stringResource(Res.string.login_email_label),
                 placeholder = stringResource(Res.string.login_email_placeholder),
                 isError = !state.isEmailValid,
+                errorText = if (!state.isEmailValid) stringResource(Res.string.login_email_invalid) else null,
                 supportingText = if (!state.isEmailValid) {
                     { Text(stringResource(Res.string.login_email_invalid), color = MaterialTheme.colorScheme.error) }
                 } else null,
@@ -205,6 +203,7 @@ fun LoginScreen(
                 label = stringResource(Res.string.login_password_label),
                 placeholder = stringResource(Res.string.login_password_placeholder),
                 isError = !state.isPasswordValid,
+                errorText = if (!state.isPasswordValid) stringResource(Res.string.login_password_invalid) else null,
                 supportingText = if (!state.isPasswordValid) {
                     { Text(stringResource(Res.string.login_password_invalid), color = MaterialTheme.colorScheme.error) }
                 } else null,
@@ -231,18 +230,6 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        AnimatedVisibility(
-            visible = state.error != null,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
-        ) {
-            AuthErrorMessageBox(
-                message = state.error?.resolveLocal().orEmpty(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-            )
-        }
 
         Spacer(modifier = Modifier.height(24.dp))
     }

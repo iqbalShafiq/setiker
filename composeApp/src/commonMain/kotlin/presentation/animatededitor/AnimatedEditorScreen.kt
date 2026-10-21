@@ -32,7 +32,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -55,7 +54,7 @@ import domain.model.TextDecoration
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.stringResource
-import presentation.common.resolveLocal
+import presentation.components.NeubrutalSnackbarHost
 import presentation.components.AddTextDecorationBottomSheet
 import presentation.components.AppIllustration
 import presentation.components.AppTextField
@@ -278,7 +277,7 @@ fun AnimatedEditorScreen(
                 }
             }
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState, isError = state.error != null) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
         if (state.isLoading) {
@@ -449,14 +448,6 @@ fun AnimatedEditorScreen(
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
-                    state.error?.let { error ->
-                        Text(
-                            text = error.resolveLocal(),
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
 
                     Spacer(modifier = Modifier.height(120.dp))
                 }

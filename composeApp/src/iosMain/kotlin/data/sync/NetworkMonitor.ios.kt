@@ -32,7 +32,7 @@ actual class NetworkMonitor {
 
         nw_path_monitor_set_update_handler(pathMonitor) { path ->
             val isOnline = nw_path_get_status(path) == nw_path_status_satisfied
-            _isOnline.value = isOnline
+            setOnline(isOnline)
         }
 
         nw_path_monitor_start(pathMonitor)
@@ -47,5 +47,10 @@ actual class NetworkMonitor {
             nw_path_monitor_cancel(it)
             monitor = null
         }
+    }
+
+    private fun setOnline(online: Boolean) {
+        _isOnline.value = online
+        ConnectivityState.update(online)
     }
 }

@@ -81,6 +81,11 @@ fun DeleteAccountConfirmDialog(
                     placeholder = stringResource(Res.string.settings_delete_phrase_hint),
                     enabled = !isLoading,
                     isError = confirmPhrase.isNotBlank() && !phraseMatches,
+                    errorText = if (confirmPhrase.isNotBlank() && !phraseMatches) {
+                        stringResource(Res.string.settings_delete_phrase_hint)
+                    } else {
+                        null
+                    },
                     supportingText = if (confirmPhrase.isNotBlank() && !phraseMatches) {
                         { Text(stringResource(Res.string.settings_delete_phrase_hint)) }
                     } else {

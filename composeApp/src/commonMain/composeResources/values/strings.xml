@@ -320,6 +320,7 @@
     <string name="quota_exceeded_get_more">Get more points</string>
     <string name="profile_upgrade_premium">Upgrade to Premium</string>
     <string name="error_network_unavailable">You are offline. Check your connection and try again.</string>
+    <string name="error_server_unreachable">Can\'t reach the server. Try again in a moment.</string>
     <string name="error_load_packs_failed">Could not load your sticker packs.</string>
     <string name="error_load_explore_failed">Could not load public packs.</string>
     <string name="error_load_explore_failed_desc">Check your connection and try again.</string>

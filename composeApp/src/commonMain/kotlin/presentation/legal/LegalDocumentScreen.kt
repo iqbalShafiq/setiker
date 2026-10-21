@@ -114,6 +114,7 @@ fun LegalDocumentScreen(
                 DocumentLoadPhase.Error -> EmptyState(
                     title = state.error?.resolveLocal().orEmpty(),
                     description = "",
+                    isError = true,
                     modifier = Modifier.fillMaxSize()
                 )
                 DocumentLoadPhase.Ready -> {

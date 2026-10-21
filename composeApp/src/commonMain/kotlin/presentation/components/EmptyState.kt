@@ -5,19 +5,26 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import org.jetbrains.compose.resources.stringResource
@@ -73,7 +80,14 @@ fun EmptyState(
     description: String,
     modifier: Modifier = Modifier,
     illustration: AppIllustration = AppIllustration.EmptyPack,
-    action: @Composable (() -> Unit)? = null
+    action: @Composable (() -> Unit)? = null,
+    /**
+     * Whether this empty state reports a failure.
+     *
+     * A failure that looks like an empty state reads as "there is nothing here" and the user
+     * waits for content that is never going to arrive. The danger treatment says what happened.
+     */
+    isError: Boolean = false
 ) {
     BoxWithConstraints(
         modifier = modifier,
@@ -103,10 +117,30 @@ fun EmptyState(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            if (isError) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.error),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ErrorOutline,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onError,
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
             Text(
                 text = title,
                 style = MaterialTheme.typography.headlineMedium,
-                color = neubrutalOnSurface(),
+                color = if (isError) MaterialTheme.colorScheme.error else neubrutalOnSurface(),
+                fontWeight = if (isError) FontWeight.Bold else FontWeight.Normal,
                 textAlign = TextAlign.Center
             )
 

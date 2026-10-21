@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -28,10 +29,12 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.UiText
-import presentation.common.resolveLocal
 import presentation.common.toUiText
+import presentation.common.rememberErrorSnackbar
 import presentation.components.AppPasswordTextField
 import presentation.components.AppPrimaryButton
+import presentation.components.NeubrutalSnackbarHost
+import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalSubtleOnSurface
 import setiker.composeapp.generated.resources.Res
@@ -135,12 +138,19 @@ fun ResetPasswordScreen(
     onSubmit: () -> Unit,
     onDone: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
+    val snackbarHostState = rememberErrorSnackbar(state.error)
+
+    Scaffold(
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
+        containerColor = neubrutalScreenBackground()
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
         Text(
             text = stringResource(Res.string.reset_password_title),
             style = MaterialTheme.typography.headlineMedium,
@@ -182,9 +192,6 @@ fun ResetPasswordScreen(
                 imeAction = ImeAction.Done,
                 modifier = Modifier.fillMaxWidth()
             )
-            state.error?.let {
-                Text(text = it.resolveLocal(), color = MaterialTheme.colorScheme.error)
-            }
             AppPrimaryButton(
                 text = stringResource(Res.string.reset_password_submit),
                 onClick = onSubmit,
@@ -192,7 +199,8 @@ fun ResetPasswordScreen(
                     state.password.length >= 8 &&
                     state.confirmPassword.isNotBlank(),
                 modifier = Modifier.fillMaxWidth()
-            )
+                )
+            }
         }
     }
 }

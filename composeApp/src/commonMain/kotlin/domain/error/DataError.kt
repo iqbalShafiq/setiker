@@ -28,6 +28,17 @@ sealed interface DataError : AppError {
         val retryable: Boolean
 
         data object NoInternet : Network { override val retryable: Boolean get() = true }
+
+        /**
+         * The connection failed while the device had a working network.
+         *
+         * A failed connection to one server says nothing about the device's connectivity, so
+         * calling it "offline" is a guess. The phone can be perfectly online and still not reach
+         * the API - a captive portal, a proxy, a server that is down. This error says what
+         * actually happened, and the UI can say it in words that are true.
+         */
+        data object ServerUnreachable : Network { override val retryable: Boolean get() = true }
+
         data object ConnectTimeout : Network { override val retryable: Boolean get() = true }
         data object RequestTimeout : Network { override val retryable: Boolean get() = true }
         data object Serialization : Network { override val retryable: Boolean get() = false }
@@ -67,6 +78,7 @@ fun DataError.detailText(): String = when (this) {
         message ?: (status?.let { "HTTP $it" } ?: "HTTP failure code=${appCode?.name ?: "unknown"}")
     is DataError.Network.ApiRejected -> message ?: appCode?.name ?: "API rejected"
     is DataError.Network.NoInternet -> "Network unavailable"
+    is DataError.Network.ServerUnreachable -> "Server unreachable"
     is DataError.Network.ConnectTimeout -> "Connection timed out"
     is DataError.Network.RequestTimeout -> "Request timed out"
     is DataError.Network.Serialization -> "Malformed response body"

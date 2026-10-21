@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +28,7 @@ import domain.billing.BillingProductUiModel
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
+import presentation.components.NeubrutalSnackbarHost
 import presentation.components.AiQuotaSummary
 import presentation.components.AppIllustration
 import presentation.components.AppPrimaryButton
@@ -105,7 +105,7 @@ fun PaywallScreen(
                 onBackClick = onBack
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { NeubrutalSnackbarHost(snackbarHostState, isError = state.error != null) },
         containerColor = neubrutalScreenBackground()
     ) { padding ->
         ContentLoadLayout(

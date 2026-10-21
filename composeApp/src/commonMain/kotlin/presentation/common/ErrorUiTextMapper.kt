@@ -39,6 +39,7 @@ import setiker.composeapp.generated.resources.error_invalid_background_remove_re
 import setiker.composeapp.generated.resources.error_invalid_generate_response
 import setiker.composeapp.generated.resources.error_invalid_grid_split_response
 import setiker.composeapp.generated.resources.error_network_unavailable
+import setiker.composeapp.generated.resources.error_server_unreachable
 import setiker.composeapp.generated.resources.error_pack_not_found
 import setiker.composeapp.generated.resources.error_sticker_not_found
 import setiker.composeapp.generated.resources.error_username_taken
@@ -55,8 +56,12 @@ fun Throwable.toUiText(defaultRes: StringResource): UiText {
 fun DataError.Network.toUiText(defaultRes: StringResource): UiText = when (this) {
     is DataError.Network.ApiRejected -> appCode?.toUiText() ?: UiText.StringRes(defaultRes)
     is DataError.Network.HttpFailure -> appCode?.toUiText() ?: UiText.StringRes(defaultRes)
-    DataError.Network.NoInternet, DataError.Network.ConnectTimeout, DataError.Network.RequestTimeout ->
-        UiText.StringRes(Res.string.error_network_unavailable)
+    DataError.Network.NoInternet -> UiText.StringRes(Res.string.error_network_unavailable)
+    // The device is online; the server is the one that could not be reached. Saying "you are
+    // offline" here is false, and it sends the user looking at the wrong thing.
+    DataError.Network.ServerUnreachable, DataError.Network.RequestTimeout ->
+        UiText.StringRes(Res.string.error_server_unreachable)
+    DataError.Network.ConnectTimeout -> UiText.StringRes(Res.string.error_server_unreachable)
     DataError.Network.Serialization, DataError.Network.Unknown -> UiText.StringRes(defaultRes)
 }
 

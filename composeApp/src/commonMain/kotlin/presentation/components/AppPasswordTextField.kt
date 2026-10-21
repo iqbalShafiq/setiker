@@ -28,6 +28,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -55,6 +57,13 @@ fun AppPasswordTextField(
     modifier: Modifier = Modifier,
     placeholder: String = "",
     isError: Boolean = false,
+    /**
+     * The reason the field is invalid, in words.
+     *
+     * A red border is invisible to a screen reader. This is what makes TalkBack say that the
+     * field is invalid and what is wrong with it.
+     */
+    errorText: String? = null,
     supportingText: @Composable (() -> Unit)? = null,
     imeAction: ImeAction = ImeAction.Done,
     enabled: Boolean = true
@@ -98,7 +107,16 @@ fun AppPasswordTextField(
                 onValueChange = { if (enabled) onValueChange(it) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(end = 24.dp),
+                    .padding(end = 24.dp)
+                    .then(
+                        // A red border is invisible to a screen reader. This is what makes
+                        // TalkBack say that the field is invalid and what is wrong with it.
+                        if (isError && errorText != null) {
+                            Modifier.semantics { error(errorText) }
+                        } else {
+                            Modifier
+                        }
+                    ),
                 singleLine = true,
                 maxLines = 1,
                 enabled = enabled,

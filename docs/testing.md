@@ -62,6 +62,13 @@ adb reverse tcp:7845 tcp:7845
 - and the accessibility checks run over the empty state and the icon button
   (`enableAccessibilityChecks()` from `androidx.compose.ui:ui-test-junit4-accessibility`).
 
+`androidApp/src/androidTest/.../ErrorSemanticsTest.kt` holds the two properties that a screen
+reader needs and nobody sees:
+
+- the error snackbar is a live region, so it announces itself when it appears;
+- an invalid field carries the reason in the `error` semantics, so TalkBack says that the field
+  is invalid and what is wrong with it.
+
 ## What the performance tests pin
 
 `androidApp/src/test/.../RecompositionTest.kt` counts how often the sticker cell and the pack card
