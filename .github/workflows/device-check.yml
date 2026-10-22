@@ -9,6 +9,9 @@ name: Device Checks
 on:
   pull_request:
     branches: [main]
+  # The work lands on main directly, so the checks have to run there too.
+  push:
+    branches: [main]
 
 concurrency:
   group: device-${{ github.event.pull_request.number }}
