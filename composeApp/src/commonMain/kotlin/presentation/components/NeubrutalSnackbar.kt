@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -28,13 +29,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathMeasure
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import presentation.components.AppSnackbarHostState
-import presentation.components.NeubrutalSnackbarHost
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalSmallRadius
@@ -73,6 +79,20 @@ internal const val ERROR_AUTO_DISMISS_MS = 15_000L
  *
  * The snackbar dismisses itself after [autoDismissMs], and the close button ends it right away.
  */
+/** The size of the danger badge, and of the square that shows the timer. */
+private val DangerBadgeSize = 28.dp
+private val DismissButtonSize = 26.dp
+private val DismissGlyphSize = 12.dp
+private val DismissStrokeWidth = 2.5.dp
+
+/**
+ * The gap between the snackbar and the action bar below it.
+ *
+ * A snackbar that sits directly on the bottom bar looks like part of it, and the two read as one
+ * control. A gap says the snackbar is a message that came on top of the screen.
+ */
+private val SnackbarBottomGap = 20.dp
+
 @Composable
 fun NeubrutalSnackbarHost(
     state: AppSnackbarHostState,
@@ -80,7 +100,7 @@ fun NeubrutalSnackbarHost(
 ) {
     SnackbarHost(
         hostState = state.hostState,
-        modifier = modifier,
+        modifier = modifier.padding(bottom = SnackbarBottomGap),
         snackbar = { data ->
             // The kind of message travels with the snackbar, so the treatment is never a guess
             // about the state of the screen.
@@ -131,19 +151,29 @@ fun NeubrutalSnackbarContent(
     autoDismissMs: Long = DEFAULT_AUTO_DISMISS_MS,
     onAction: () -> Unit = {},
     onDismiss: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /**
+     * The timer that drains the square of the close button.
+     *
+     * `null` means the snackbar runs its own. A screenshot needs to hold it still, because the
+     * test renderer runs the animation to its end before it takes the picture.
+     */
+    timer: Animatable<Float, *>? = null
 ) {
 
     val surface = if (isError) MaterialTheme.colorScheme.errorContainer else neubrutalCardSurface()
     val content = if (isError) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurface
     val border = if (isError) MaterialTheme.colorScheme.error else neubrutalBorderColor()
 
-    // The timer is one animation: it drains the line and, when it is done, the snackbar goes
-    // away. Reading the value in the draw phase keeps the frame work out of composition.
-    val timer = remember { Animatable(1f) }
-    LaunchedEffect(message) {
-        timer.snapTo(1f)
-        timer.animateTo(
+    // The timer is one animation: it drains the square of the close button and, when it is
+    // done, the snackbar goes away. Reading the value in the draw phase keeps the frame work out
+    // of composition.
+    val ownTimer = remember { Animatable(1f) }
+    val activeTimer = timer ?: ownTimer
+    LaunchedEffect(message, timer) {
+        if (timer != null) return@LaunchedEffect
+        ownTimer.snapTo(1f)
+        ownTimer.animateTo(
             targetValue = 0f,
             animationSpec = tween(durationMillis = autoDismissMs.toInt(), easing = LinearEasing)
         )
@@ -167,16 +197,17 @@ fun NeubrutalSnackbarContent(
                 cornerRadius = NeubrutalCardRadius,
                 highlightColor = neubrutalGlossyHighlightColor()
             )
-            .padding(start = 12.dp, end = 8.dp, top = 12.dp, bottom = 12.dp)
+            .padding(start = 12.dp, end = 14.dp, top = 12.dp, bottom = 12.dp)
     ) {
         Box {
-        Row(verticalAlignment = Alignment.Top) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             if (isError) {
                 // The same shape as every other icon button in the app: a square with a thick
                 // border and a hard shadow, filled with the error colour.
                 Box(
                     modifier = Modifier
-                        .size(28.dp)
+                        .size(DangerBadgeSize)
+                        .offset(y = (-2).dp)
                         .neubrutalShadow(
                             offsetX = NeubrutalSmallShadowOffset,
                             offsetY = NeubrutalSmallShadowOffset,
@@ -202,18 +233,16 @@ fun NeubrutalSnackbarContent(
                 Spacer(modifier = Modifier.width(10.dp))
             }
 
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    // The close button floats over the top right corner, so the message keeps
-                    // clear of it.
-                    .padding(end = 40.dp)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = message,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = if (isError) FontWeight.Bold else FontWeight.Medium,
                     color = content,
+                    // Two lines, then an ellipsis. A snackbar that grows with its message pushes
+                    // the screen around, and the third line is never the part that matters.
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                     // A snackbar that appears without being announced is a snackbar a screen
                     // reader user never learns about. Polite is the right level: it waits for a
                     // pause in the speech instead of interrupting it.
@@ -235,25 +264,81 @@ fun NeubrutalSnackbarContent(
                 }
             }
 
-        }
+            Spacer(modifier = Modifier.width(10.dp))
 
-        // The close button floats over the top right corner. Its 48 dp touch target stays out
-        // of the flow, so the card is only as tall as the message needs, and the glyph sits at
-        // the top of it, on the first line of the message.
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .size(48.dp)
-                .neubrutalPressable(pressScale = 0.88f, onClick = onDismiss),
-            contentAlignment = Alignment.TopCenter
-        ) {
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = null,
-                tint = content,
-                modifier = Modifier.size(18.dp)
+            DismissTimerButton(
+                timer = activeTimer,
+                color = content,
+                onClick = onDismiss
             )
         }
+
         }
     }
+}
+
+/**
+ * The close button: a square whose border drains as the snackbar's timer runs out.
+ *
+ * The border is the timer, so the user can see how long the message has left instead of
+ * guessing. It is drawn as a path that is trimmed to the fraction that is left, which keeps the
+ * corners joined, and it goes clockwise so the eye can follow it.
+ */
+@Composable
+private fun DismissTimerButton(
+    timer: Animatable<Float, *>,
+    color: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .size(DismissButtonSize)
+            .drawDrainingSquare(timer, color)
+            .neubrutalPressable(pressScale = 0.88f, onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.Close,
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier.size(DismissGlyphSize)
+        )
+    }
+}
+
+/**
+ * Draws the outline of a square, trimmed to the fraction of the timer that is left.
+ *
+ * The value is read in the draw phase, so the outline drains without a recomposition on every
+ * frame.
+ */
+private fun Modifier.drawDrainingSquare(
+    timer: Animatable<Float, *>,
+    color: Color
+) = drawBehind {
+    val fraction = timer.value.coerceIn(0f, 1f)
+    if (fraction <= 0f) return@drawBehind
+
+    val stroke = DismissStrokeWidth.toPx()
+    val inset = stroke / 2f
+
+    // A sharp square, like every other border in the app.
+    val outline = Path().apply {
+        moveTo(inset, inset)
+        lineTo(size.width - inset, inset)
+        lineTo(size.width - inset, size.height - inset)
+        lineTo(inset, size.height - inset)
+        close()
+    }
+
+    val measure = PathMeasure().apply { setPath(outline, false) }
+    val segment = Path()
+    measure.getSegment(0f, measure.length * fraction, segment, true)
+
+    drawPath(
+        path = segment,
+        color = color,
+        style = Stroke(width = stroke, cap = StrokeCap.Butt)
+    )
 }

@@ -1,5 +1,6 @@
 package com.setiker.app.ui
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -47,12 +48,36 @@ class ErrorSnackbarScreenshotTest {
                 ) {
                     NeubrutalSnackbarContent(
                         message = "Can't reach the server. Try again in a moment.",
-                        isError = true
+                        isError = true,
+                        // The test renderer runs the animation to its end, so the timer is held
+                        // still here: the square is drawn at two thirds.
+                        timer = Animatable(0.65f)
                     )
                 }
             }
         }
 
         composeTestRule.onRoot().captureRoboImage("error_snackbar.png")
+    }
+
+    @Test
+    fun theErrorSnackbarWithALongMessage() {
+        composeTestRule.setContent {
+            SetikerTheme {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                ) {
+                    NeubrutalSnackbarContent(
+                        message = "The pack could not be saved because the cloud refused the " +
+                            "upload and the local copy is out of date. Try again in a moment.",
+                        isError = true
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onRoot().captureRoboImage("error_snackbar_long.png")
     }
 }
