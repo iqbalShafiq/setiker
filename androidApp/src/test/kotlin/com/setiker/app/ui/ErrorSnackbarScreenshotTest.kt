@@ -72,7 +72,10 @@ class ErrorSnackbarScreenshotTest {
                     NeubrutalSnackbarContent(
                         message = "The pack could not be saved because the cloud refused the " +
                             "upload and the local copy is out of date. Try again in a moment.",
-                        isError = true
+                        isError = true,
+                        // Held still for the same reason as the test above: the renderer runs
+                        // the countdown to its end, and the end is not the state to review.
+                        timer = Animatable(0.65f)
                     )
                 }
             }

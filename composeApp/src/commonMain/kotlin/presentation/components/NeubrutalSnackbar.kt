@@ -3,6 +3,7 @@ package presentation.components
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,7 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -29,18 +29,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.stringResource
+import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalSmallRadius
@@ -52,6 +57,8 @@ import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalPressable
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.close
 
 /** How long a message stays before it dismisses itself, unless the user closes it first. */
 internal const val DEFAULT_AUTO_DISMISS_MS = 10_000L
@@ -66,24 +73,25 @@ internal const val DEFAULT_AUTO_DISMISS_MS = 10_000L
 internal const val ERROR_AUTO_DISMISS_MS = 15_000L
 
 /**
- * The app's snackbar.
- *
- * The stock Material snackbar is a rounded grey pill, which does not belong here: every other
- * surface in this app has a thick border and a hard offset shadow. This one keeps Material's
- * machinery - the state machine, the placement above the bottom bar, the enter and exit
- * animation - and replaces the look.
- *
- * The error variant is the one that matters most. An error that fails to look like an error gets
- * read as a note, and a note gets ignored. So a failure carries the error colour, a solid icon in
- * a filled circle, and a bold message, and it says so to a screen reader as well.
- *
- * The snackbar dismisses itself after [autoDismissMs], and the close button ends it right away.
+ * The size of the danger badge and of the close button, so the two balance across the message.
  */
-/** The size of the danger badge, and of the square that shows the timer. */
 private val DangerBadgeSize = 28.dp
-private val DismissButtonSize = 26.dp
-private val DismissGlyphSize = 12.dp
-private val DismissStrokeWidth = 2.5.dp
+private val DismissButtonSize = 28.dp
+/** The close button carries the same corner as every other small control. */
+private val DismissCornerRadius = NeubrutalSmallRadius
+private val DismissStrokeWidth = NeubrutalBorderWidth
+private val DismissGlyphSize = 13.dp
+private val DismissGlyphStrokeWidth = 2.dp
+
+/**
+ * How much of the outline stays visible behind the countdown.
+ *
+ * The timer is a part of an outline for most of its life. Without a track, two thirds of the way
+ * through the countdown the button reads as a broken bracket rather than as a control, so the
+ * full shape has to stay on screen; the track is quiet enough to sit behind the glyph and strong
+ * enough to hold the corner.
+ */
+private const val DismissTrackAlpha = 0.18f
 
 /**
  * The gap between the snackbar and the action bar below it.
@@ -93,6 +101,20 @@ private val DismissStrokeWidth = 2.5.dp
  */
 private val SnackbarBottomGap = 20.dp
 
+/**
+ * The app's snackbar.
+ *
+ * The stock Material snackbar is a rounded grey pill, which does not belong here: every other
+ * surface in this app has a thick border and a hard offset shadow. This one keeps Material's
+ * machinery - the state machine, the placement above the bottom bar, the enter and exit
+ * animation - and replaces the look.
+ *
+ * The error variant is the one that matters most. An error that fails to look like an error gets
+ * read as a note, and a note gets ignored. So a failure carries the error colour, a solid icon in
+ * a bordered square, and a bold message, and it says so to a screen reader as well.
+ *
+ * The snackbar dismisses itself after [autoDismissMs], and the close button ends it right away.
+ */
 @Composable
 fun NeubrutalSnackbarHost(
     state: AppSnackbarHostState,
@@ -153,7 +175,7 @@ fun NeubrutalSnackbarContent(
     onDismiss: () -> Unit = {},
     modifier: Modifier = Modifier,
     /**
-     * The timer that drains the square of the close button.
+     * The timer that drains the outline of the close button.
      *
      * `null` means the snackbar runs its own. A screenshot needs to hold it still, because the
      * test renderer runs the animation to its end before it takes the picture.
@@ -268,7 +290,9 @@ fun NeubrutalSnackbarContent(
 
             DismissTimerButton(
                 timer = activeTimer,
-                color = content,
+                // The timer is a border, so it is drawn in the border colour rather than in the
+                // colour of the message: it belongs to the shape of the control, not to the text.
+                color = neubrutalBorderColor(),
                 onClick = onDismiss
             )
         }
@@ -278,11 +302,11 @@ fun NeubrutalSnackbarContent(
 }
 
 /**
- * The close button: a square whose border drains as the snackbar's timer runs out.
+ * The close button: a small rounded square whose outline is the snackbar's timer.
  *
  * The border is the timer, so the user can see how long the message has left instead of
- * guessing. It is drawn as a path that is trimmed to the fraction that is left, which keeps the
- * corners joined, and it goes clockwise so the eye can follow it.
+ * guessing. The remaining time is drawn on top of a full track, so the control never breaks into
+ * a stray bracket as it drains, and it drains clockwise from twelve o'clock like a clock.
  */
 @Composable
 private fun DismissTimerButton(
@@ -291,54 +315,134 @@ private fun DismissTimerButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val closeLabel = stringResource(Res.string.close)
+
     Box(
         modifier = modifier
             .size(DismissButtonSize)
-            .drawDrainingSquare(timer, color)
-            .neubrutalPressable(pressScale = 0.88f, onClick = onClick),
+            .drawDrainingOutline(timer, color)
+            .neubrutalPressable(pressScale = 0.88f, onClick = onClick)
+            .semantics { contentDescription = closeLabel },
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector = Icons.Default.Close,
-            contentDescription = null,
-            tint = color,
-            modifier = Modifier.size(DismissGlyphSize)
+        CloseGlyph(color = color, modifier = Modifier.size(DismissGlyphSize))
+    }
+}
+
+/**
+ * Draws the close glyph.
+ *
+ * Drawn rather than loaded from the icon set because it has to carry the same weight as the
+ * border around it: the stock glyph thins out badly at this size next to a 2.5 dp stroke.
+ */
+@Composable
+private fun CloseGlyph(
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Canvas(modifier = modifier) {
+        val stroke = DismissGlyphStrokeWidth.toPx()
+        val inset = stroke / 2f
+        drawLine(
+            color = color,
+            start = Offset(inset, inset),
+            end = Offset(size.width - inset, size.height - inset),
+            strokeWidth = stroke,
+            cap = StrokeCap.Round
+        )
+        drawLine(
+            color = color,
+            start = Offset(size.width - inset, inset),
+            end = Offset(inset, size.height - inset),
+            strokeWidth = stroke,
+            cap = StrokeCap.Round
         )
     }
 }
 
 /**
- * Draws the outline of a square, trimmed to the fraction of the timer that is left.
+ * Draws a rounded square outline, trimmed to the fraction of the timer that is left.
  *
  * The value is read in the draw phase, so the outline drains without a recomposition on every
- * frame.
+ * frame. The outline is measured once per size, and the timer only trims the cached path.
  */
-private fun Modifier.drawDrainingSquare(
+private fun Modifier.drawDrainingOutline(
     timer: Animatable<Float, *>,
     color: Color
-) = drawBehind {
-    val fraction = timer.value.coerceIn(0f, 1f)
-    if (fraction <= 0f) return@drawBehind
-
+): Modifier = drawWithCache {
     val stroke = DismissStrokeWidth.toPx()
     val inset = stroke / 2f
+    val radius = DismissCornerRadius.toPx()
+        .coerceAtMost((size.minDimension - stroke) / 2f)
+    val outline = roundedSquareOutline(
+        width = size.width,
+        height = size.height,
+        inset = inset,
+        radius = radius
+    )
+    val measure = PathMeasure().apply { setPath(outline, false) }
+    val length = measure.length
+    val trackColor = color.copy(alpha = DismissTrackAlpha)
+    val segment = Path()
 
-    // A sharp square, like every other border in the app.
-    val outline = Path().apply {
-        moveTo(inset, inset)
-        lineTo(size.width - inset, inset)
-        lineTo(size.width - inset, size.height - inset)
-        lineTo(inset, size.height - inset)
+    onDrawBehind {
+        // The full outline stays visible as a track, so the button keeps its shape while the
+        // countdown drains it.
+        drawPath(
+            path = outline,
+            color = trackColor,
+            style = Stroke(width = stroke)
+        )
+
+        val fraction = timer.value.coerceIn(0f, 1f)
+        if (fraction <= 0f) return@onDrawBehind
+
+        // Keep the tail of the path, so the gap opens at twelve o'clock and travels clockwise
+        // the way the hand of a clock would.
+        segment.reset()
+        measure.getSegment(
+            startDistance = length * (1f - fraction),
+            stopDistance = length,
+            destination = segment,
+            startWithMoveTo = true
+        )
+        drawPath(
+            path = segment,
+            color = color,
+            style = Stroke(width = stroke, cap = StrokeCap.Round)
+        )
+    }
+}
+
+/**
+ * The outline of a rounded square, starting at twelve o'clock and running clockwise.
+ *
+ * The corners are real arcs rather than a plain [Path.close], because the timer is trimmed by
+ * distance: a sharp corner would make the outline jump as the countdown passes it.
+ */
+private fun roundedSquareOutline(
+    width: Float,
+    height: Float,
+    inset: Float,
+    radius: Float
+): Path {
+    val left = inset
+    val top = inset
+    val right = width - inset
+    val bottom = height - inset
+    val corner = radius.coerceAtMost(minOf(right - left, bottom - top) / 2f)
+    val centerX = (left + right) / 2f
+
+    return Path().apply {
+        moveTo(centerX, top)
+        lineTo(right - corner, top)
+        arcTo(Rect(right - corner * 2f, top, right, top + corner * 2f), -90f, 90f, false)
+        lineTo(right, bottom - corner)
+        arcTo(Rect(right - corner * 2f, bottom - corner * 2f, right, bottom), 0f, 90f, false)
+        lineTo(left + corner, bottom)
+        arcTo(Rect(left, bottom - corner * 2f, left + corner * 2f, bottom), 90f, 90f, false)
+        lineTo(left, top + corner)
+        arcTo(Rect(left, top, left + corner * 2f, top + corner * 2f), 180f, 90f, false)
         close()
     }
-
-    val measure = PathMeasure().apply { setPath(outline, false) }
-    val segment = Path()
-    measure.getSegment(0f, measure.length * fraction, segment, true)
-
-    drawPath(
-        path = segment,
-        color = color,
-        style = Stroke(width = stroke, cap = StrokeCap.Butt)
-    )
 }
