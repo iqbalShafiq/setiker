@@ -1,8 +1,12 @@
 package presentation.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -21,11 +25,14 @@ import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarData
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,19 +44,24 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.dismiss
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.first
 import org.jetbrains.compose.resources.stringResource
 import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalSmallRadius
 import presentation.theme.NeubrutalSmallShadowOffset
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
@@ -102,37 +114,118 @@ private const val DismissTrackAlpha = 0.18f
 private val SnackbarBottomGap = 20.dp
 
 /**
+ * How long the card takes to travel in and out of the bottom edge.
+ *
+ * The distance is the card's own height plus [SnackbarBottomGap], so the movement is a push, not
+ * a nudge. A shorter slide would read as a jump; a longer one would keep the user waiting after
+ * they have already asked for the message to go away.
+ */
+private val SnackbarSlideDurationMs = SetikerMotion.DURATION_SLOW_MS
+private val SnackbarSlideSpec = SetikerMotion.out<IntOffset>(SnackbarSlideDurationMs)
+
+/**
+ * The snackbar on screen, together with the treatment it was shown with.
+ *
+ * The state's `isError` flag moves on to the next message, but a card that is still leaving has
+ * to keep the look it had while it was readable.
+ */
+private data class DisplayedSnackbar(
+    val data: SnackbarData,
+    val isError: Boolean
+)
+
+/**
  * The app's snackbar.
  *
  * The stock Material snackbar is a rounded grey pill, which does not belong here: every other
  * surface in this app has a thick border and a hard offset shadow. This one keeps Material's
- * machinery - the state machine, the placement above the bottom bar, the enter and exit
- * animation - and replaces the look.
+ * state machine and the placement above the bottom bar, and replaces the look and the motion:
+ * the card is pushed up from behind the bottom bar, and pushed back down into it when it goes.
  *
  * The error variant is the one that matters most. An error that fails to look like an error gets
  * read as a note, and a note gets ignored. So a failure carries the error colour, a solid icon in
  * a bordered square, and a bold message, and it says so to a screen reader as well.
  *
- * The snackbar dismisses itself after [autoDismissMs], and the close button ends it right away.
+ * The snackbar dismisses itself after its timeout, and the close button ends it right away.
  */
 @Composable
 fun NeubrutalSnackbarHost(
     state: AppSnackbarHostState,
     modifier: Modifier = Modifier
 ) {
-    SnackbarHost(
-        hostState = state.hostState,
-        modifier = modifier.padding(bottom = SnackbarBottomGap),
-        snackbar = { data ->
-            // The kind of message travels with the snackbar, so the treatment is never a guess
-            // about the state of the screen.
-            NeubrutalSnackbar(
-                data = data,
-                isError = state.isError,
-                autoDismissMs = if (state.isError) ERROR_AUTO_DISMISS_MS else DEFAULT_AUTO_DISMISS_MS
-            )
+    val current = state.hostState.currentSnackbarData
+
+    // The state drops the data the moment it is dismissed, but the card still has to slide out.
+    // Keep the last one until the exit has actually played.
+    var displayed by remember { mutableStateOf<DisplayedSnackbar?>(null) }
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(current) {
+        if (current != null) {
+            displayed = DisplayedSnackbar(current, state.isError)
+            visible = true
+        } else {
+            visible = false
         }
-    )
+    }
+
+    // A transition per snackbar starts hidden, so the first frame is already below the edge and
+    // the enter slide actually runs instead of the card popping into place.
+    val transition = remember(displayed) { MutableTransitionState(false) }
+    LaunchedEffect(transition, visible) {
+        transition.targetState = visible
+        if (visible) return@LaunchedEffect
+
+        // Wait for the transition rather than for a fixed duration: the system can stretch
+        // animations (reduced motion settings, or a slowed clock while inspecting them), and a
+        // fixed wait would cut the exit off halfway through.
+        snapshotFlow { transition.isIdle }.first { it }
+        displayed = null
+    }
+
+    // The card travels its own height plus the gap, so it comes out of the space behind the
+    // bottom bar and returns there, instead of stopping halfway above it.
+    val bottomGapPx = with(LocalDensity.current) { SnackbarBottomGap.roundToPx() }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(bottom = SnackbarBottomGap),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        displayed?.let { snackbar ->
+            AnimatedVisibility(
+                visibleState = transition,
+                enter = slideInVertically(
+                    animationSpec = SnackbarSlideSpec,
+                    initialOffsetY = { it + bottomGapPx }
+                ),
+                exit = slideOutVertically(
+                    animationSpec = SnackbarSlideSpec,
+                    targetOffsetY = { it + bottomGapPx }
+                )
+            ) {
+                NeubrutalSnackbar(
+                    data = snackbar.data,
+                    // The kind of message travels with the snackbar, so the treatment is never a
+                    // guess about the state of the screen.
+                    isError = snackbar.isError,
+                    autoDismissMs = if (snackbar.isError) {
+                        ERROR_AUTO_DISMISS_MS
+                    } else {
+                        DEFAULT_AUTO_DISMISS_MS
+                    },
+                    modifier = Modifier.semantics {
+                        // Material's host offered this action; keep it, so a screen reader can
+                        // dismiss the card without hunting for the close button.
+                        dismiss {
+                            snackbar.data.dismiss()
+                            true
+                        }
+                    }
+                )
+            }
+        }
+    }
 }
 
 /**
