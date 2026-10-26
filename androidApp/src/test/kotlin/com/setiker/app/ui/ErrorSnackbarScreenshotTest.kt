@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -51,7 +52,7 @@ class ErrorSnackbarScreenshotTest {
                         isError = true,
                         // The test renderer runs the animation to its end, so the timer is held
                         // still here: the square is drawn at two thirds.
-                        timer = Animatable(0.65f)
+                        timer = remember { Animatable(0.65f) }
                     )
                 }
             }
@@ -75,7 +76,7 @@ class ErrorSnackbarScreenshotTest {
                         isError = true,
                         // Held still for the same reason as the test above: the renderer runs
                         // the countdown to its end, and the end is not the state to review.
-                        timer = Animatable(0.65f)
+                        timer = remember { Animatable(0.65f) }
                     )
                 }
             }

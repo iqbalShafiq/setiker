@@ -71,6 +71,11 @@ android {
 dependencies {
     implementation(project(":composeApp"))
 
+    // The manifest below names WorkManager's foreground service to add the `dataSync` type, so
+    // this module has to see WorkManager on its own classpath. It already arrives at runtime
+    // through :composeApp; declaring it here is what lets lint resolve the manifest class.
+    implementation(libs.androidx.work.runtime)
+
     // --- Screenshot tests: Robolectric + Roborazzi, on the JVM, no device needed -----------------
     testImplementation(project(":composeApp"))
     testImplementation(libs.androidx.compose.foundation)

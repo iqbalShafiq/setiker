@@ -104,7 +104,6 @@ kotlin {
             implementation(libs.androidx.media3.effect)
             implementation(libs.androidx.media3.inspector.frame)
             implementation(libs.androidx.concurrent.futures.ktx)
-            implementation(libs.webp.android)
             implementation(libs.coil.gif)
             implementation(libs.androidx.work.runtime)
             implementation(libs.androidx.core.ktx)

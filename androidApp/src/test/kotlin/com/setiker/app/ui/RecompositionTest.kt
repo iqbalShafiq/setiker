@@ -72,7 +72,7 @@ class RecompositionTest {
         }
         composeTestRule.waitForIdle()
 
-        val afterTheFirstLayout = compositions.value
+        val afterTheFirstLayout = compositions.intValue
         assertEquals("the grid should have composed its items once", 12, afterTheFirstLayout)
 
         unrelated = 1
@@ -81,7 +81,7 @@ class RecompositionTest {
         assertEquals(
             "the sticker cells were recomposed because of a change that did not touch them",
             afterTheFirstLayout,
-            compositions.value
+            compositions.intValue
         )
     }
 
@@ -107,7 +107,7 @@ class RecompositionTest {
         }
         composeTestRule.waitForIdle()
 
-        val afterTheFirstLayout = compositions.value
+        val afterTheFirstLayout = compositions.intValue
         assertEquals("the list should have composed its items once", 8, afterTheFirstLayout)
 
         unrelated = 1
@@ -116,7 +116,7 @@ class RecompositionTest {
         assertEquals(
             "the pack cards were recomposed because of a change that did not touch them",
             afterTheFirstLayout,
-            compositions.value
+            compositions.intValue
         )
     }
 
@@ -141,12 +141,12 @@ class RecompositionTest {
             }
         }
         composeTestRule.waitForIdle()
-        val afterTheFirstLayout = compositions.value
+        val afterTheFirstLayout = compositions.intValue
 
         unrelated = 1
         composeTestRule.waitForIdle()
 
-        assertEquals(afterTheFirstLayout, compositions.value)
+        assertEquals(afterTheFirstLayout, compositions.intValue)
     }
 
     /**
@@ -162,7 +162,7 @@ class RecompositionTest {
         onClick: () -> Unit,
         compositions: androidx.compose.runtime.MutableIntState
     ) {
-        SideEffect { compositions.value++ }
+        SideEffect { compositions.intValue++ }
         StickerCard(sticker = sticker, onClick = onClick)
     }
 
@@ -173,7 +173,7 @@ class RecompositionTest {
         onClick: () -> Unit,
         compositions: androidx.compose.runtime.MutableIntState
     ) {
-        SideEffect { compositions.value++ }
+        SideEffect { compositions.intValue++ }
         StickerPackListCard(pack = pack, onClick = onClick)
     }
 
