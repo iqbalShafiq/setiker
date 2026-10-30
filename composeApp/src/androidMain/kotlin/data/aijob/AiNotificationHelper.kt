@@ -8,6 +8,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -45,7 +46,7 @@ class AiNotificationHelper(private val context: Context) {
         val fraction = (job.progress?.fraction ?: 0f).coerceIn(0f, 1f)
         val percent = (fraction * 100).toInt().coerceIn(0, 100)
         val stepLabel = job.progress?.stepLabel ?: "Processing..."
-        return childBuilder(job, title)
+        return childBuilder(job)
             .setContentTitle(title)
             .setContentText(stepLabel)
             .setStyle(NotificationCompat.BigTextStyle().bigText(stepLabel))
@@ -160,7 +161,7 @@ class AiNotificationHelper(private val context: Context) {
         notificationManager.cancel(terminalNotificationId(jobId))
     }
 
-    private fun childBuilder(job: AiJob, title: String): NotificationCompat.Builder =
+    private fun childBuilder(job: AiJob): NotificationCompat.Builder =
         baseBuilder()
             .setGroup(GROUP_KEY)
             .setSubText(jobTypeLabel(job.type))
@@ -240,7 +241,7 @@ class AiNotificationHelper(private val context: Context) {
         val intent = Intent(context, MainActivity::class.java).apply {
             action = Intent.ACTION_VIEW
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            data = android.net.Uri.parse("setiker://ai/draft/$draftId?jobId=$jobId")
+            data = Uri.parse("setiker://ai/draft/$draftId?jobId=$jobId")
             putExtra(EXTRA_DRAFT_ID, draftId)
             putExtra(EXTRA_JOB_ID, jobId)
         }
@@ -256,7 +257,7 @@ class AiNotificationHelper(private val context: Context) {
         val intent = Intent(context, MainActivity::class.java).apply {
             action = Intent.ACTION_VIEW
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            data = android.net.Uri.parse("setiker://ai/jobs")
+            data = Uri.parse("setiker://ai/jobs")
             putExtra(EXTRA_OPEN_AI_JOBS, true)
         }
         return PendingIntent.getActivity(

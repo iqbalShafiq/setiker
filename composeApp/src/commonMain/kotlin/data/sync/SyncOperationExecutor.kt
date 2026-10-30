@@ -5,8 +5,10 @@ import data.local.database.StickerDao
 import data.local.database.StickerPackDao
 import data.remote.CloudStickerRepository
 import data.remote.json.ApiJson
+import data.remote.model.CloudSticker
 import data.remote.model.CreateStickerPackRequest
 import data.remote.model.DeleteStickerSyncPayload
+import data.remote.model.ReorderStickersSyncPayload
 import data.remote.model.UpdateStickerPackRequest
 import data.remote.toDataError
 import data.sync.normalizePackVisibilityForStorage
@@ -16,6 +18,7 @@ import domain.error.Result
 import domain.model.SyncOperation
 import domain.model.SyncOperationType
 import kotlin.time.Clock
+import kotlinx.coroutines.CancellationException
 
 private const val SYNC_STATE_SYNCED = "SYNCED"
 
@@ -125,7 +128,7 @@ internal class SyncOperationExecutor(
                     Result.Success(Unit)
                 }
                 SyncOperationType.REORDER_STICKERS -> {
-                    val payload = json.decodeFromString<data.remote.model.ReorderStickersSyncPayload>(operation.payload)
+                    val payload = json.decodeFromString<ReorderStickersSyncPayload>(operation.payload)
                     when (val outcome = cloudRepo.reorderStickers(payload.stickerPackId, payload.stickerOrders)) {
                         is Result.Success -> outcome.data
                         is Result.Error -> return Result.Error(outcome.error)
@@ -140,7 +143,7 @@ internal class SyncOperationExecutor(
                 )
             }
             return Result.Success(Unit)
-        } catch (e: kotlinx.coroutines.CancellationException) {
+        } catch (e: CancellationException) {
             // Cancelling the queue worker must not be recorded as an operation failure.
             throw e
         } catch (e: Exception) {
@@ -148,7 +151,7 @@ internal class SyncOperationExecutor(
         }
     }
 
-    private suspend fun updateLocalStickerCloudInfo(packId: String, cloudStickers: List<data.remote.model.CloudSticker>) {
+    private suspend fun updateLocalStickerCloudInfo(packId: String, cloudStickers: List<CloudSticker>) {
         val now = Clock.System.now().toEpochMilliseconds()
         val localStickers = stickerDao.getByPackId(packId).sortedBy { it.sortOrder }
         localStickers.zip(cloudStickers).forEach { (localSticker, cloudSticker) ->

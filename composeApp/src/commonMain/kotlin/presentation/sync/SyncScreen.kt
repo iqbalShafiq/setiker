@@ -1,6 +1,7 @@
 package presentation.sync
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -43,6 +44,7 @@ import domain.model.SyncReport
 import domain.model.SyncResult
 import domain.model.SyncStage
 import kotlin.time.Clock
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import presentation.common.ContentStateAnimations
 import presentation.common.ListLoadPhase
@@ -259,7 +261,7 @@ private fun SyncStatusCard(
         colors = CardDefaults.cardColors(
             containerColor = neubrutalCardSurface()
         ),
-        border = androidx.compose.foundation.BorderStroke(2.dp, neubrutalBorderColor())
+        border = BorderStroke(2.dp, neubrutalBorderColor())
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -373,7 +375,7 @@ private fun SyncOperationItem(
         colors = CardDefaults.cardColors(
             containerColor = neubrutalCardSurface()
         ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, neubrutalBorderColor())
+        border = BorderStroke(1.dp, neubrutalBorderColor())
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Row(
@@ -433,7 +435,7 @@ private fun SyncOperationItem(
 }
 
 @Composable
-private fun syncOperationTitleRes(type: SyncOperationType): org.jetbrains.compose.resources.StringResource =
+private fun syncOperationTitleRes(type: SyncOperationType): StringResource =
     when (syncOperationTitle(type)) {
         SyncOperationTypeTitle.CREATING_PACK -> Res.string.sync_op_creating_pack
         SyncOperationTypeTitle.UPDATING_PACK -> Res.string.sync_op_updating_pack
@@ -446,7 +448,7 @@ private fun syncOperationTitleRes(type: SyncOperationType): org.jetbrains.compos
     }
 
 @Composable
-private fun syncOperationStatusRes(status: SyncOperationStatus): org.jetbrains.compose.resources.StringResource =
+private fun syncOperationStatusRes(status: SyncOperationStatus): StringResource =
     when (syncOperationStatusLabel(status)) {
         SyncOperationStatusLabel.PENDING -> Res.string.sync_status_pending
         SyncOperationStatusLabel.RUNNING -> Res.string.sync_status_running

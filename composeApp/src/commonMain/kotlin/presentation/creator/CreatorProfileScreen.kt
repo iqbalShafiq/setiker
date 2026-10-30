@@ -27,7 +27,6 @@ import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -47,9 +46,9 @@ import data.remote.resolveApiUrl
 import org.jetbrains.compose.resources.stringResource
 import presentation.common.ContentStateAnimations
 import presentation.common.DetailLoadPhase
-import presentation.components.AppSnackbarHostState
 import presentation.components.AppIllustration
 import presentation.components.AppPrimaryButton
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppTopBar
 import presentation.components.BlockCreatorConfirmDialog
 import presentation.components.EmptyState

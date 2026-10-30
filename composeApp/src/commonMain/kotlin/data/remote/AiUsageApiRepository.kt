@@ -21,6 +21,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
@@ -91,7 +92,7 @@ class AiUsageApiRepository(
         }
 
     private suspend inline fun <T> parseSuccess(
-        response: io.ktor.client.statement.HttpResponse,
+        response: HttpResponse,
         crossinline onSuccess: (String) -> T
     ): T {
         val bodyText = response.bodyAsText()
@@ -106,8 +107,8 @@ class AiUsageApiRepository(
     }
 
     private suspend fun withAuthRetry(
-        request: suspend (String) -> io.ktor.client.statement.HttpResponse
-    ): io.ktor.client.statement.HttpResponse {
+        request: suspend (String) -> HttpResponse
+    ): HttpResponse {
         val firstToken = resolveAccessToken() ?: throw ApiException(AppErrorCode.AuthNotAuthenticated)
         val firstResponse = request(firstToken)
         if (firstResponse.status != HttpStatusCode.Unauthorized) return firstResponse

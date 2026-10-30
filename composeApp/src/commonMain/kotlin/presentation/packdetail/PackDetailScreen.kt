@@ -36,7 +36,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -48,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -61,11 +61,11 @@ import org.jetbrains.compose.resources.stringResource
 import presentation.common.ContentStateAnimations
 import presentation.common.DetailLoadPhase
 import presentation.common.toShareLinkUi
-import presentation.components.AppSnackbarHostState
 import presentation.components.AppDialog
 import presentation.components.AppIllustration
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppTopBar
 import presentation.components.AppTopBarActionIcon
 import presentation.components.BottomSheetScrollColumn
@@ -471,8 +471,8 @@ fun PackDetailScreen(
                             state.pack?.let { onIntent(PackDetailIntent.AddToWhatsApp(it.identifier)) }
                         },
                         enabled = !state.isLoading && !isOperationInProgress && state.pack != null,
-                        containerColor = androidx.compose.ui.graphics.Color(0xFF25D366),
-                        iconTint = androidx.compose.ui.graphics.Color.White
+                        containerColor = Color(0xFF25D366),
+                        iconTint = Color.White
                     )
                     PackBottomBarIconButton(
                         icon = Icons.Default.Share,

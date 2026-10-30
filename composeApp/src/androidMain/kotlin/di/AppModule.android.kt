@@ -9,7 +9,9 @@ import com.setiker.app.MainActivityHolder
 import data.aijob.AiBackgroundScheduler
 import data.aijob.AiNotificationHelper
 import data.auth.AndroidGoogleSignInGateway
+import data.auth.AppleSignInGateway
 import data.auth.GoogleSignInGateway
+import data.auth.UnavailableAppleSignInGateway
 import data.billing.PlatformBillingStore
 import data.local.database.DatabaseMigrations
 import data.local.database.StickerDatabase
@@ -58,5 +60,5 @@ actual fun platformModule(): Module = module {
     single { AiNotificationHelper(androidContext()) }
     single { PlatformBillingStore { MainActivityHolder.current } }
     single<GoogleSignInGateway> { AndroidGoogleSignInGateway() }
-    single<data.auth.AppleSignInGateway> { data.auth.UnavailableAppleSignInGateway() }
+    single<AppleSignInGateway> { UnavailableAppleSignInGateway() }
 }

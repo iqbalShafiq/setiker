@@ -6,6 +6,7 @@ import data.storage.StickerFileStorage
 import domain.model.StickerPack
 import domain.util.AnimatedStickerValidator
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -106,7 +107,7 @@ class VideoTrimViewModel(
             // (and start re-extracting) when the user has paused for a moment.
             // While they're actively dragging we keep the previous trim's frames
             // visible so the preview doesn't flash to a loader on every tick.
-            if (!immediate) delay(TRIM_EXTRACT_DEBOUNCE_MS)
+            if (!immediate) delay(TRIM_EXTRACT_DEBOUNCE_MS.milliseconds)
             val current = _state.value
             val startMs = current.trimStartMs
             val endMs = current.trimEndMs
@@ -198,7 +199,7 @@ class VideoTrimViewModel(
                 val pool = _state.value.thumbnailsInRange
                 if (pool.isEmpty()) break
                 _state.update { it.copy(currentThumbIndex = (it.currentThumbIndex + 1) % pool.size) }
-                delay(intervalProvider())
+                delay(intervalProvider().milliseconds)
             }
             _state.update { it.copy(isPlaying = false) }
         }

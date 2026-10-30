@@ -25,6 +25,7 @@ import domain.model.aijob.AiJobType
 import domain.model.aijob.GenerateStickersPayload
 import domain.model.aijob.ImproveStickersPayload
 import domain.model.aijob.RemoveBackgroundPayload
+import domain.model.aijob.WorkspaceDraft
 import domain.model.aijob.WorkspaceDraftContext
 import domain.model.aijob.WorkspaceDraftKind
 import domain.model.applyStylePreset
@@ -52,6 +53,7 @@ import presentation.aijob.WorkspaceDraftFactory
 import presentation.common.AiQuotaGate
 import presentation.common.UiText
 import presentation.common.toUiText
+import presentation.createpack.DraftSticker
 import presentation.moderation.AiOutputReportSupport
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_failed_generate_sticker
@@ -399,7 +401,7 @@ class EditorViewModel(
         }
     }
 
-    private fun applyGeneratedSticker(draft: presentation.createpack.DraftSticker) {
+    private fun applyGeneratedSticker(draft: DraftSticker) {
         if (draft.imagePath.isBlank()) return
         // Replacing the sticker invalidates the existing decorations because the underlying
         // image likely has a different composition. API-provided decorations are part of the
@@ -465,7 +467,7 @@ class EditorViewModel(
         }
     }
 
-    private suspend fun upsertEditorDraft(state: EditorState): domain.model.aijob.WorkspaceDraft {
+    private suspend fun upsertEditorDraft(state: EditorState): WorkspaceDraft {
         val context = WorkspaceDraftContext(
             prompt = state.generatePrompt,
             inputImagePath = state.generateInputImage,

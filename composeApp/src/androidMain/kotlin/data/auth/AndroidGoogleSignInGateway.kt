@@ -2,6 +2,7 @@ package data.auth
 
 import android.app.Activity
 import androidx.credentials.CredentialManager
+import androidx.credentials.CredentialOption
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
@@ -84,7 +85,7 @@ class AndroidGoogleSignInGateway(
     private suspend fun extractIdToken(
         credentialManager: CredentialManager,
         activity: Activity,
-        option: androidx.credentials.CredentialOption
+        option: CredentialOption
     ): String? {
         val request = GetCredentialRequest.Builder()
             .addCredentialOption(option)

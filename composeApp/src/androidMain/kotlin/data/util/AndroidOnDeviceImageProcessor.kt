@@ -53,7 +53,7 @@ class AndroidOnDeviceImageProcessor(
             }
         } catch (oom: OutOfMemoryError) {
             Log.e(TAG, "removeBackground OOM, retrying with smaller decode", oom)
-            data.util.releaseMemoryAfterStickerStep()
+            releaseMemoryAfterStickerStep()
             val source = decodeArgb(imagePath, maxDimension = MAX_DECODE_DIMENSION_OOM)
             try {
                 val working = downscaleIfNeeded(source, MAX_WORKING_DIMENSION)

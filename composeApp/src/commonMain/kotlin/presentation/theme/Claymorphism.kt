@@ -21,9 +21,11 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Dp
@@ -136,7 +138,7 @@ fun Modifier.neubrutalShadow(
         drawRoundRect(
             color = color,
             topLeft = Offset(offsetXPx, offsetYPx),
-            size = androidx.compose.ui.geometry.Size(
+            size = Size(
                 width = size.width,
                 height = size.height
             ),
@@ -187,7 +189,7 @@ fun Modifier.neubrutalGlossyHighlight(
         drawPath(
             path = geo.rimPath,
             color = geo.rimColor,
-            style = androidx.compose.ui.graphics.drawscope.Stroke(width = geo.rimWidth)
+            style = Stroke(width = geo.rimWidth)
         )
     }
 }

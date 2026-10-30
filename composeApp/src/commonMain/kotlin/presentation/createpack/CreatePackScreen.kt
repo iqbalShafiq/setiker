@@ -33,7 +33,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -41,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -49,11 +49,11 @@ import coil3.compose.AsyncImage
 import domain.model.StickerPack
 import org.jetbrains.compose.resources.stringResource
 import presentation.aijob.AiResultSheetVisibility
-import presentation.components.AppSnackbarHostState
 import presentation.components.AiGenerateBottomSheet
 import presentation.components.AppIllustration
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppTextField
 import presentation.components.AppTopBar
 import presentation.components.BottomSheetScrollColumn
@@ -73,12 +73,14 @@ import presentation.components.ReportContentBottomSheet
 import presentation.components.SelectableStickerGrid
 import presentation.components.rememberImagePicker
 import presentation.components.rememberStickerImagePicker
+import presentation.components.rememberVideoPicker
 import presentation.components.scaffoldBottomBarScroll
 import presentation.components.zeroBottomSheetWindowInsets
 import presentation.theme.AccentCoral
 import presentation.theme.AccentCoralLight
 import presentation.theme.ErrorRed
 import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalDark
 import presentation.theme.NeubrutalScrim
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalSmallRadius
@@ -167,7 +169,7 @@ fun CreatePackScreen(
         }
     }
 
-    val videoPicker = presentation.components.rememberVideoPicker { path ->
+    val videoPicker = rememberVideoPicker { path ->
         path?.let { onNavigateToVideoTrim(it) }
     }
 
@@ -888,7 +890,7 @@ private fun TrayIconSelector(
                 imageVector = Icons.Default.Add,
                 contentDescription = stringResource(Res.string.select_tray_icon),
                 modifier = Modifier.size(32.dp),
-                tint = presentation.theme.NeubrutalDark
+                tint = NeubrutalDark
             )
         }
     }
@@ -955,7 +957,7 @@ private fun StickerPreviewItem(
                 imageVector = Icons.Default.Close,
                 contentDescription = stringResource(Res.string.remove_sticker),
                 modifier = Modifier.size(14.dp),
-                tint = androidx.compose.ui.graphics.Color.White
+                tint = Color.White
             )
         }
     }

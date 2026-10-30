@@ -12,6 +12,7 @@ import domain.model.Sticker
 import domain.model.StickerPack
 import domain.repository.StickerRepository
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -187,7 +188,7 @@ class PackDetailViewModel(
             return
         }
         collaboratorSearchJob = viewModelScope.launch {
-            delay(300)
+            delay(300.milliseconds)
             exploreApiRepository.searchUsers(query)
                 .onSuccess { results ->
                     _state.update { it.copy(collaboratorSearchResults = results) }
@@ -583,7 +584,7 @@ class PackDetailViewModel(
             return
         }
         stickerCollaboratorSearchJob = viewModelScope.launch {
-            delay(300)
+            delay(300.milliseconds)
             exploreApiRepository.searchUsers(query)
                 .onSuccess { results ->
                     _state.update { it.copy(stickerCollaboratorSearchResults = results) }

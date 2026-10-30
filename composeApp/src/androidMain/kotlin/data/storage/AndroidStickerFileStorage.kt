@@ -7,8 +7,10 @@ import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.Movie
 import android.graphics.Paint
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
+import android.util.Log
 import androidx.concurrent.futures.await
 import androidx.media3.common.MediaItem
 import androidx.media3.inspector.frame.FrameExtractor
@@ -118,13 +120,13 @@ actual class StickerFileStorage(private val context: Context) {
                 val bytes = compressTrayBitmapForWhatsApp(bitmap) ?: return@withContext null
                 val destFile = File(stickersDir, fileName)
                 destFile.writeBytes(bytes)
-                android.util.Log.d(
+                Log.d(
                     "StickerFileStorage",
                     "Tray icon saved: ${destFile.absolutePath}, size: ${bytes.size} bytes (${bytes.size / 1024}KB)"
                 )
                 destFile.absolutePath
             } catch (e: Exception) {
-                android.util.Log.w("StickerFileStorage", "Failed to save tray icon from $sourcePath", e)
+                Log.w("StickerFileStorage", "Failed to save tray icon from $sourcePath", e)
                 null
             } finally {
                 bitmap.recycle()
@@ -164,7 +166,7 @@ actual class StickerFileStorage(private val context: Context) {
                 val destFile = File(stickersDir, fileName)
                 destFile.writeBytes(bytes)
 
-                android.util.Log.d("StickerFileStorage",
+                Log.d("StickerFileStorage",
                     "Sticker saved: ${destFile.absolutePath}, size: ${bytes.size} bytes (${bytes.size / 1024}KB)")
 
                 if (scaledBitmap != bitmap) scaledBitmap.recycle()
@@ -216,12 +218,12 @@ actual class StickerFileStorage(private val context: Context) {
         if (source.isGif()) {
             return@withContext extractGifFrameToFile(source, atMs, fileName)
         }
-        val retriever = android.media.MediaMetadataRetriever()
+        val retriever = MediaMetadataRetriever()
         try {
             retriever.setDataSource(videoPath)
             val rawFrame = retriever.getFrameAtTime(
                 atMs.coerceAtLeast(0L) * 1000L,
-                android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC
+                MediaMetadataRetriever.OPTION_CLOSEST_SYNC
             ) ?: return@withContext null
             // Downscale to a preview-friendly size so we can keep dozens of decoded
             // frames in memory for smooth playback without OOMing on 1080p+ sources.
@@ -245,7 +247,7 @@ actual class StickerFileStorage(private val context: Context) {
         } catch (e: Exception) {
             // The preview screens surface a failure with a retry when nothing can be extracted;
             // swallowing the reason here made that impossible to diagnose from a bug report.
-            android.util.Log.w(
+            Log.w(
                 "StickerFileStorage",
                 "extractVideoFrameToFile failed for $videoPath at ${atMs}ms",
                 e
@@ -282,14 +284,14 @@ actual class StickerFileStorage(private val context: Context) {
         if (file.isGif()) {
             return@withContext getGifDurationMs(file)
         }
-        val retriever = android.media.MediaMetadataRetriever()
+        val retriever = MediaMetadataRetriever()
         try {
             retriever.setDataSource(videoPath)
-            retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)
+            retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
                 ?.toLongOrNull() ?: -1L
         } catch (e: Exception) {
             // A duration we cannot read silently becomes the 10 s default upstream, so log why.
-            android.util.Log.w("StickerFileStorage", "getVideoDurationMs failed for $videoPath", e)
+            Log.w("StickerFileStorage", "getVideoDurationMs failed for $videoPath", e)
             -1L
         } finally {
             try {
@@ -420,7 +422,7 @@ actual class StickerFileStorage(private val context: Context) {
                         quality = quality
                     )
                     val size = destFile.length()
-                    android.util.Log.d(
+                    Log.d(
                         "StickerFileStorage",
                         "Animated encode attempt: frames=${attempt.first.size}, q=$quality, size=${size / 1024}KB"
                     )
@@ -880,7 +882,7 @@ actual class StickerFileStorage(private val context: Context) {
         decorations: List<StickerDecoration>
     ) {
         if (decorations.isEmpty()) return
-        val overlay = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+        val overlay = withContext(Dispatchers.Main) {
             AndroidDecorationBitmapRenderer.render(
                 context = context,
                 width = target.width,

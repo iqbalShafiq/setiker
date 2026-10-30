@@ -1,5 +1,6 @@
 package data.util
 
+import kotlin.math.PI
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.useContents
 import kotlinx.coroutines.Dispatchers
@@ -55,7 +56,7 @@ actual suspend fun applyCropTransformation(
     )
     CGContextConcatCTM(context, transform)
 
-    CGContextRotateCTM(context, rotation.toDouble() * kotlin.math.PI / 180.0)
+    CGContextRotateCTM(context, rotation.toDouble() * PI / 180.0)
 
     val scaleX = if (flipHorizontal) -finalScale else finalScale
     val scaleY = if (flipVertical) -finalScale else finalScale

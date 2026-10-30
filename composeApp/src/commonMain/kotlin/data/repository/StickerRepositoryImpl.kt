@@ -6,6 +6,7 @@ import data.local.database.StickerPackDao
 import data.local.database.compactSortOrders
 import data.local.entity.StickerEntity
 import data.local.entity.StickerPackEntity
+import data.remote.model.StickerOrderItem
 import data.storage.StickerFileStorage
 import data.sync.SyncManager
 import data.sync.createDeleteStickerSyncOperation
@@ -32,6 +33,7 @@ import domain.repository.SyncStatus
 import kotlin.time.Clock
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -63,7 +65,7 @@ class StickerRepositoryImpl(
             runCatching {
                 syncManager?.pushPackOperations(packId, cloudPackId)
             }.onFailure { failure ->
-                if (failure is kotlinx.coroutines.CancellationException) {
+                if (failure is CancellationException) {
                     throw failure
                 }
                 // R5: async push must never fail silently; there is no awaiter to show an error.
@@ -77,7 +79,7 @@ class StickerRepositoryImpl(
             runCatching {
                 syncManager?.pushPackVisibilityOperations(packId, cloudPackId)
             }.onFailure { failure ->
-                if (failure is kotlinx.coroutines.CancellationException) {
+                if (failure is CancellationException) {
                     throw failure
                 }
                 // R5: async push must never fail silently; there is no awaiter to show an error.
@@ -341,7 +343,7 @@ class StickerRepositoryImpl(
             createReorderStickersSyncOperation(
                 cloudPackId = cloudPackId,
                 stickerOrders = reordered.mapIndexed { index, sticker ->
-                    data.remote.model.StickerOrderItem(
+                    StickerOrderItem(
                         stickerId = sticker.cloudId!!,
                         order = index
                     )

@@ -39,6 +39,7 @@ import presentation.auth.ProfileViewModel
 import presentation.auth.RegisterScreenRoot
 import presentation.auth.RegisterViewModel
 import presentation.auth.ResetPasswordScreenRoot
+import presentation.billing.PaywallScreenRoot
 import presentation.blocked.BlockedUsersScreenRoot
 import presentation.createpack.CreatePackScreenRoot
 import presentation.createpack.DraftSticker
@@ -331,7 +332,7 @@ fun AppNavigation(
            }
   
         composable("paywall") {
-            presentation.billing.PaywallScreenRoot(
+            PaywallScreenRoot(
                 onBack = { navController.navigateUp() },
                 onNavigateToPurchaseHistory = { navBottomUp("purchaseHistory") }
             )

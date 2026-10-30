@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
@@ -27,6 +28,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
+import presentation.theme.ErrorRed
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.neubrutalBorderColor
@@ -91,7 +93,7 @@ fun AppTextField(
                 .clip(shape)
                 .background(surface)
                 .neubrutalBorderWithGloss(
-                    color = if (isError) presentation.theme.ErrorRed else border,
+                    color = if (isError) ErrorRed else border,
                     cornerRadius = NeubrutalCardRadius,
                     highlightColor = neubrutalGlossyHighlightColor()
                 )
@@ -128,7 +130,7 @@ fun AppTextField(
                         fontSize = MaterialTheme.typography.bodyLarge.fontSize,
                         fontWeight = FontWeight.Normal
                     ),
-                    cursorBrush = androidx.compose.ui.graphics.SolidColor(onSurface),
+                    cursorBrush = SolidColor(onSurface),
                     keyboardOptions = KeyboardOptions(
                         imeAction = imeAction,
                         keyboardType = keyboardType

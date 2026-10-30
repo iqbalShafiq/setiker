@@ -158,8 +158,8 @@ class HomeViewModelGeneratePackTest {
         val applier = mockk<DraftResultApplier> {
             every { observeDraft(any()) } returns draftFlow
             every { observeJobCompletion(any()) } returns jobFlow
-            every { applyGeneratePackCompletion(any(), any(), any()) } answers {
-                val job = thirdArg<AiJob?>()
+            every { applyGeneratePackCompletion(any(), any()) } answers {
+                val job = secondArg<AiJob?>()
                 if (job?.status == AiJobStatus.COMPLETED && job.type == AiJobType.GENERATE_PACK) packId else null
             }
         }

@@ -1,5 +1,7 @@
 package data.sync
 
+import kotlin.concurrent.Volatile
+
 /**
  * The last known connectivity of the device.
  *

@@ -36,7 +36,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -60,13 +59,13 @@ import domain.model.Sticker
 import domain.model.TextDecoration
 import org.jetbrains.compose.resources.stringResource
 import presentation.aijob.AiResultSheetVisibility
-import presentation.components.AppSnackbarHostState
 import presentation.components.AddTextDecorationBottomSheet
 import presentation.components.AiGenerateBottomSheet
 import presentation.components.AppIllustration
 import presentation.components.AppIllustrationImage
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppTextField
 import presentation.components.AppTopBar
 import presentation.components.AppTopBarActionIcon

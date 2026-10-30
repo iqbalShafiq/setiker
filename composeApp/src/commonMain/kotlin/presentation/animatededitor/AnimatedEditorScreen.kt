@@ -32,7 +32,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,9 +53,9 @@ import domain.model.TextDecoration
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.stringResource
-import presentation.components.AppSnackbarHostState
 import presentation.components.AddTextDecorationBottomSheet
 import presentation.components.AppIllustration
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppTextField
 import presentation.components.AppTopBar
 import presentation.components.BorderStyleBottomSheet
@@ -94,7 +93,6 @@ import setiker.composeapp.generated.resources.add_image
 import setiker.composeapp.generated.resources.add_text
 import setiker.composeapp.generated.resources.apply_all_frames
 import setiker.composeapp.generated.resources.back
-import setiker.composeapp.generated.resources.cancel
 import setiker.composeapp.generated.resources.change_border_thickness
 import setiker.composeapp.generated.resources.change_color
 import setiker.composeapp.generated.resources.change_emoji

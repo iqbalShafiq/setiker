@@ -12,11 +12,13 @@ import domain.model.StickerDraftInput
 import domain.model.StickerPack
 import domain.model.SyncReport
 import domain.model.SyncResult
+import domain.model.aijob.AiJob
 import domain.model.aijob.AiJobOrigin
 import domain.model.aijob.AiJobStatus
 import domain.model.aijob.GenerateStickersPayload
 import domain.model.aijob.GridSplitPayload
 import domain.model.aijob.ImproveStickersPayload
+import domain.model.aijob.WorkspaceDraft
 import domain.model.aijob.WorkspaceDraftContext
 import domain.model.aijob.WorkspaceDraftKind
 import domain.repository.AiJobRepository
@@ -446,7 +448,7 @@ class CreatePackViewModel(
         }
     }
 
-    private suspend fun upsertCreatePackDraft(state: CreatePackState): domain.model.aijob.WorkspaceDraft {
+    private suspend fun upsertCreatePackDraft(state: CreatePackState): WorkspaceDraft {
         val context = WorkspaceDraftContext(
             prompt = state.generatePrompt,
             inputImagePath = state.generateInputImage,
@@ -509,7 +511,7 @@ class CreatePackViewModel(
                 _state.update { it.copy(isLoading = false) }
                 _effect.send(
                     CreatePackEffect.ShowError(
-                        e.toUiText(setiker.composeapp.generated.resources.Res.string.error_failed_save_pack)
+                        e.toUiText(Res.string.error_failed_save_pack)
                     )
                 )
             }
@@ -840,10 +842,10 @@ class CreatePackViewModel(
     }
 
     private data class WorkspaceDraftJobState(
-        val draft: domain.model.aijob.WorkspaceDraft?,
-        val active: domain.model.aijob.AiJob?,
-        val completed: domain.model.aijob.AiJob?,
-        val failed: domain.model.aijob.AiJob?
+        val draft: WorkspaceDraft?,
+        val active: AiJob?,
+        val completed: AiJob?,
+        val failed: AiJob?
     )
 
     private companion object {

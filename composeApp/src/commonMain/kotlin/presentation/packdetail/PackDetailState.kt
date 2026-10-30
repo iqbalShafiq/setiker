@@ -1,7 +1,9 @@
 package presentation.packdetail
 
 import data.remote.model.CloudStickerPackShareLink
+import data.remote.model.CloudStickerShareLink
 import data.remote.model.PackCollaborator
+import data.remote.model.StickerCollaborator
 import data.remote.model.UserSearchResult
 import domain.model.StickerPack
 
@@ -25,9 +27,9 @@ data class PackDetailState(
     val stickerShareIndex: Int? = null,
     val stickerShareTab: StickerShareTab = StickerShareTab.Links,
     val stickerShareLinksLoading: Boolean = false,
-    val stickerShareLinks: List<data.remote.model.CloudStickerShareLink> = emptyList(),
+    val stickerShareLinks: List<CloudStickerShareLink> = emptyList(),
     val stickerCollaboratorsLoading: Boolean = false,
-    val stickerCollaborators: List<data.remote.model.StickerCollaborator> = emptyList(),
+    val stickerCollaborators: List<StickerCollaborator> = emptyList(),
     val stickerCollaboratorSearchQuery: String = "",
     val stickerCollaboratorSearchResults: List<UserSearchResult> = emptyList(),
     val stickerCollaboratorInvitePermission: String = "view",

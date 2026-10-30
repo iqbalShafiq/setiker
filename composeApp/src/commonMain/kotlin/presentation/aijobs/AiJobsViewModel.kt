@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import presentation.aijob.WorkspaceDraftFactory
 import presentation.common.UiText
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.ai_jobs_retry_failed
@@ -113,7 +114,7 @@ class AiJobsViewModel(
             val draft = draftRepository.getById(draftId) ?: return@launch
             when (draft.status) {
                 WorkspaceDraftStatus.APPLIED -> {
-                    val packId = presentation.aijob.WorkspaceDraftFactory
+                    val packId = WorkspaceDraftFactory
                         .decodeContext(draft)
                         .resultPackId
                     if (!packId.isNullOrBlank()) {

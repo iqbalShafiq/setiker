@@ -1,6 +1,7 @@
 package domain.repository
 
 import domain.model.aijob.AiJob
+import domain.model.aijob.AiJobFailureKind
 import domain.model.aijob.AiJobProgress
 import domain.model.aijob.AiJobStatus
 import kotlinx.coroutines.flow.Flow
@@ -20,7 +21,7 @@ interface AiJobRepository {
     suspend fun updateStatus(
         id: String,
         status: AiJobStatus,
-        failureKind: domain.model.aijob.AiJobFailureKind = domain.model.aijob.AiJobFailureKind.NONE,
+        failureKind: AiJobFailureKind = AiJobFailureKind.NONE,
         failureMessage: String? = null,
         resultJson: String? = null,
         checkpointJson: String? = null,

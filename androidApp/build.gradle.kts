@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.roborazzi)
 }
 
+import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import java.util.Properties
 
 // Dev-only secret. Source of truth: local.properties (fallback: -PGOOGLE_WEB_CLIENT_ID).
@@ -110,7 +111,7 @@ kotlin {
 
 // The screenshot references live with the tests, so they are reviewed next to the code they
 // belong to. `separateOutputDirs` keeps the reference, the actual image and the diff apart.
-@OptIn(com.github.takahirom.roborazzi.ExperimentalRoborazziApi::class)
+@OptIn(ExperimentalRoborazziApi::class)
 roborazzi {
     outputDir.set(layout.projectDirectory.dir("src/screenshots"))
     separateOutputDirs.set(true)

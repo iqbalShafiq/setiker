@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalSmallRadius
@@ -82,7 +83,7 @@ private fun NeubrutalBouncingDot(index: Int) {
     val shadow = neubrutalShadowColor()
 
     LaunchedEffect(Unit) {
-        delay(delayMs.toLong())
+        delay(delayMs.milliseconds)
         while (true) {
             animatable.animateTo(
                 targetValue = 1.4f,
@@ -92,7 +93,7 @@ private fun NeubrutalBouncingDot(index: Int) {
                 targetValue = 1f,
                 animationSpec = tween(300, easing = FastOutSlowInEasing)
             )
-            delay(300)
+            delay(300.milliseconds)
         }
     }
 

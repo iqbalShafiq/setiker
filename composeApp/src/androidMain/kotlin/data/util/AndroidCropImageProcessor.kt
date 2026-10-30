@@ -6,6 +6,7 @@ import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.os.Build
+import android.util.Log
 import java.io.File
 import java.io.FileOutputStream
 import kotlinx.coroutines.Dispatchers
@@ -21,15 +22,15 @@ actual suspend fun applyCropTransformation(
     flipVertical: Boolean,
     outputSize: Int
 ): String = withContext(Dispatchers.IO) {
-    android.util.Log.d("CropProcessor", "Starting crop transformation")
-    android.util.Log.d("CropProcessor", "Source: $sourcePath")
-    android.util.Log.d("CropProcessor", "Params: scale=$scale, rotation=$rotation, offset=($offsetX, $offsetY), flipH=$flipHorizontal, flipV=$flipVertical")
+    Log.d("CropProcessor", "Starting crop transformation")
+    Log.d("CropProcessor", "Source: $sourcePath")
+    Log.d("CropProcessor", "Params: scale=$scale, rotation=$rotation, offset=($offsetX, $offsetY), flipH=$flipHorizontal, flipV=$flipVertical")
 
     // Load source bitmap
     val sourceBitmap = BitmapFactory.decodeFile(sourcePath)
         ?: throw IllegalArgumentException("Cannot decode image: $sourcePath")
 
-    android.util.Log.d("CropProcessor", "Source image: ${sourceBitmap.width}x${sourceBitmap.height}")
+    Log.d("CropProcessor", "Source image: ${sourceBitmap.width}x${sourceBitmap.height}")
 
     // Create output bitmap
     val outputBitmap = Bitmap.createBitmap(outputSize, outputSize, Bitmap.Config.ARGB_8888)
@@ -75,7 +76,7 @@ actual suspend fun applyCropTransformation(
         outputBitmap.compress(format, 90, out)
     }
 
-    android.util.Log.d("CropProcessor", "Output saved: ${outputFile.absolutePath}, size: ${outputFile.length()} bytes")
+    Log.d("CropProcessor", "Output saved: ${outputFile.absolutePath}, size: ${outputFile.length()} bytes")
 
     // Cleanup
     if (sourceBitmap != outputBitmap) sourceBitmap.recycle()

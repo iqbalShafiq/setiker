@@ -1,5 +1,6 @@
 package data.aijob
 
+import android.app.Notification
 import android.content.Context
 import android.content.pm.ServiceInfo
 import android.os.Build
@@ -10,6 +11,7 @@ import domain.model.aijob.AiJobStatus
 import domain.repository.AiJobRepository
 import domain.repository.WorkspaceDraftRepository
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -64,19 +66,17 @@ class AiJobProcessorWorker(
             val initial = jobRepository.getById(jobId) ?: continue
             safeSetForeground(
                 createForegroundInfo(
-                    title = title,
                     notification = notificationHelper.buildProgressNotification(initial, title)
                 )
             )
 
             val progressTicker = async {
                 while (isActive) {
-                    delay(PROGRESS_POLL_INTERVAL_MS)
+                    delay(PROGRESS_POLL_INTERVAL_MS.milliseconds)
                     val latest = jobRepository.getById(jobId) ?: break
                     if (latest.status !in ACTIVE_JOB_STATUSES) break
                     safeSetForeground(
                         createForegroundInfo(
-                            title = title,
                             notification = notificationHelper.buildProgressNotification(latest, title)
                         )
                     )
@@ -143,8 +143,7 @@ class AiJobProcessorWorker(
     }
 
     private fun createForegroundInfo(
-        title: String,
-        notification: android.app.Notification
+        notification: Notification
     ): ForegroundInfo {
         notificationHelper.ensureChannel()
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

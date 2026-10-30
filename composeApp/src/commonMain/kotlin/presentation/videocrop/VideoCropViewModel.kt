@@ -8,6 +8,7 @@ import domain.model.AnimatedStickerSpec
 import domain.model.CropTransform
 import domain.model.StickerPack
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -148,7 +149,7 @@ class VideoCropViewModel(
                 val pool = _state.value.previewFrames
                 if (pool.isEmpty()) break
                 _state.update { it.copy(currentPreviewIndex = (it.currentPreviewIndex + 1) % pool.size) }
-                delay(intervalProvider())
+                delay(intervalProvider().milliseconds)
             }
             _state.update { it.copy(isPlaying = false) }
         }

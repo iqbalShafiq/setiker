@@ -24,7 +24,6 @@ import data.repository.AiQuotaRepositoryImpl
 import data.repository.CloudSyncedLocalDataCleaner
 import data.repository.StickerPackDraftSaver
 import data.repository.StickerRepositoryImpl
-import data.sync.NetworkMonitor
 import data.sync.SyncCursorStore
 import data.sync.SyncManager
 import data.sync.SyncManagerImpl
@@ -37,6 +36,8 @@ import org.koin.core.module.Module
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
+import presentation.aijob.AiJobEnqueueHelper
+import presentation.aijob.DraftResultApplier
 import presentation.aijobs.AiJobsViewModel
 import presentation.animatededitor.AnimatedEditorViewModel
 import presentation.auth.EditProfileViewModel
@@ -100,8 +101,8 @@ val appModule = module {
     single<AiJobRepository> { RoomAiJobRepository(get()) }
     single<WorkspaceDraftRepository> { RoomWorkspaceDraftRepository(get()) }
     single { AiJobManager(get(), get(), get(), get()) }
-    single { presentation.aijob.AiJobEnqueueHelper(get()) }
-    single { presentation.aijob.DraftResultApplier(get(), get()) }
+    single { AiJobEnqueueHelper(get()) }
+    single { DraftResultApplier(get(), get()) }
     single {
         AiJobRunner(
             jobRepository = get(),

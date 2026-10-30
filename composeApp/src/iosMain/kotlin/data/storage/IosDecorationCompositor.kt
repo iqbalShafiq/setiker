@@ -15,7 +15,6 @@ import kotlinx.cinterop.useContents
 import kotlinx.cinterop.usePinned
 import platform.CoreGraphics.CGRectMake
 import platform.CoreGraphics.CGSizeMake
-import platform.Foundation.NSAttributedString
 import platform.Foundation.NSString
 import platform.Foundation.create
 import platform.UIKit.NSFontAttributeName
@@ -31,6 +30,7 @@ import platform.UIKit.UIImage
 import platform.UIKit.UIImagePNGRepresentation
 import platform.UIKit.drawAtPoint
 import platform.UIKit.sizeWithAttributes
+import platform.posix.memcpy
 
 @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 internal object IosDecorationCompositor {
@@ -58,7 +58,7 @@ internal object IosDecorationCompositor {
         val pngData = composed?.let { UIImagePNGRepresentation(it) } ?: return null
         return ByteArray(pngData.length.toInt()).apply {
             usePinned { pinned ->
-                platform.posix.memcpy(pinned.addressOf(0), pngData.bytes, pngData.length)
+                memcpy(pinned.addressOf(0), pngData.bytes, pngData.length)
             }
         }
     }

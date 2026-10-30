@@ -16,6 +16,7 @@ import domain.model.StickerDecoration
 import domain.model.TextDecoration
 import domain.model.TextDecorationLayout
 import domain.model.TextDecorationSource
+import domain.model.TextDecorationStyle
 import domain.model.VideoAnimatedStickerPlan
 import domain.model.VideoAnimatedTimelineFrame
 import domain.model.VideoRejectedCandidatePlan
@@ -75,7 +76,7 @@ private fun ApiVideoStickerDecoration.toDomain(id: String): StickerDecoration = 
         font = style.toDecorationFont(),
         fontWeight = style.toDecorationFontWeight(),
         textColorArgb = parseApiColorToArgb(style?.color) ?: 0xFFFFFFFFL,
-        style = domain.model.TextDecorationStyle.ApiCaption,
+        style = TextDecorationStyle.ApiCaption,
         source = TextDecorationSource.ApiOutsideForeground,
         layout = TextDecorationLayout.BottomCaption,
         centerX = centerX,

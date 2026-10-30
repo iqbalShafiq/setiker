@@ -1,6 +1,5 @@
 package presentation.editor
 
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -8,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
@@ -60,7 +60,7 @@ fun EditorScreenRoot(
                     // Let the celebration land before leaving: saving a sticker is the moment the
                     // whole app has been building towards.
                     showCelebration = true
-                    delay(CELEBRATION_DURATION_MS)
+                    delay(CELEBRATION_DURATION_MS.milliseconds)
                     onStickerSaved()
                 }
                 is EditorEffect.NavigateBack -> onBackClick()

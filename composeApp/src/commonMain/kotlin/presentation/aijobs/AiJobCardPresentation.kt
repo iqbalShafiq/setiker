@@ -1,5 +1,6 @@
 package presentation.aijobs
 
+import domain.model.aijob.AiJob
 import domain.model.aijob.AiJobStatus
 
 /**
@@ -47,7 +48,7 @@ internal fun aiJobProgressMode(status: AiJobStatus?, hasProgress: Boolean): AiJo
  * its last step in the payload, and showing it made a card claim "Removing background" long after
  * the job had ended — with no progress indicator to contradict it.
  */
-internal fun activeJobStepLabel(job: domain.model.aijob.AiJob?): String? =
+internal fun activeJobStepLabel(job: AiJob?): String? =
     job?.takeIf { it.status in ACTIVE_JOB_STATUSES }
         ?.progress
         ?.stepLabel

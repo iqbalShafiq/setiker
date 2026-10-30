@@ -1,6 +1,7 @@
 package data.aijob
 
 import data.remote.json.ApiJson
+import domain.model.aijob.AiJobFailureKind
 import domain.model.aijob.GenerateStickersPayload
 import domain.model.aijob.WorkspaceDraftContext
 import kotlin.test.Test
@@ -36,7 +37,7 @@ class AiJobCodecTest {
             IllegalStateException("connection timeout while waiting for response")
         )
         assertTrue(retryable)
-        assertEquals(domain.model.aijob.AiJobFailureKind.NETWORK, kind)
+        assertEquals(AiJobFailureKind.NETWORK, kind)
     }
 
     @Test
@@ -44,12 +45,12 @@ class AiJobCodecTest {
         val (seedKind, seedRetryable) = AiJobFailureClassifier.classify(
             IllegalStateException("AiModel row for role 'agent' is missing — run `prisma db seed` first.")
         )
-        assertEquals(domain.model.aijob.AiJobFailureKind.SERVER, seedKind)
+        assertEquals(AiJobFailureKind.SERVER, seedKind)
         assertTrue(seedRetryable)
 
         val (keyKind, _) = AiJobFailureClassifier.classify(
             IllegalStateException("AGENT_API_KEY is required for AI features")
         )
-        assertEquals(domain.model.aijob.AiJobFailureKind.SERVER, keyKind)
+        assertEquals(AiJobFailureKind.SERVER, keyKind)
     }
 }

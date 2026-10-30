@@ -8,6 +8,7 @@ import domain.error.isRateLimited
 import domain.error.isServerError
 import domain.error.isUnauthorized
 import io.ktor.client.network.sockets.ConnectTimeoutException
+import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -45,7 +46,7 @@ class DataErrorClassifierTest {
 
     @Test
     fun `io exception maps to NoInternet and is retryable`() {
-        val out = java.io.IOException("net down").toDataError()
+        val out = IOException("net down").toDataError()
         assertIs<DataError.Network.NoInternet>(out)
         assertTrue(out.retryable)
     }
@@ -56,7 +57,7 @@ class DataErrorClassifierTest {
         // false, and it sends the user looking at the wrong thing.
         ConnectivityState.update(true)
         try {
-            val out = java.io.IOException("connection refused").toDataError()
+            val out = IOException("connection refused").toDataError()
             assertIs<DataError.Network.ServerUnreachable>(out)
             assertTrue(out.retryable)
         } finally {

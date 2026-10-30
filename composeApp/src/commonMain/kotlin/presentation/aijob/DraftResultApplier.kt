@@ -1,6 +1,8 @@
 package presentation.aijob
 
 import data.remote.json.ApiJson
+import domain.model.CandidateGridImage
+import domain.model.VideoFrameCandidate
 import domain.model.aijob.AiJob
 import domain.model.aijob.AiJobStatus
 import domain.model.aijob.AiJobType
@@ -9,8 +11,10 @@ import domain.model.aijob.GenerateStickersResult
 import domain.model.aijob.GridSplitResult
 import domain.model.aijob.ImproveStickersResult
 import domain.model.aijob.RemoveBackgroundResult
+import domain.model.aijob.StoredVideoPackPlan
 import domain.model.aijob.VideoPackResult
 import domain.model.aijob.WorkspaceDraft
+import domain.model.aijob.WorkspaceDraftContext
 import domain.model.aijob.toResolved
 import domain.repository.AiJobRepository
 import domain.repository.WorkspaceDraftRepository
@@ -21,8 +25,8 @@ import kotlinx.coroutines.flow.map
 import presentation.aijob.toDraftSticker
 import presentation.createpack.CreatePackState
 import presentation.createpack.GeneratedPreviewMode
+import presentation.createpack.GridSplitSheetPhase
 import presentation.editor.EditorState
-import presentation.home.HomeState
 import presentation.videostickerpack.VideoStickerPackState
 
 class DraftResultApplier(
@@ -83,7 +87,7 @@ class DraftResultApplier(
                 next = next.copy(
                     splitPreview = result.previews.map { it.toDraftSticker() },
                     selectedSplitPreview = result.previews.indices.toSet(),
-                    gridSplitSheetPhase = presentation.createpack.GridSplitSheetPhase.Results
+                    gridSplitSheetPhase = GridSplitSheetPhase.Results
                 )
             }
             else -> Unit
@@ -137,7 +141,7 @@ class DraftResultApplier(
         } ?: context.videoPlanResultJson
         val plan = planJson?.let { json ->
             runCatching {
-                ApiJson.codec.decodeFromString<domain.model.aijob.StoredVideoPackPlan>(json).toResolved()
+                ApiJson.codec.decodeFromString<StoredVideoPackPlan>(json).toResolved()
             }.getOrNull()
         }
         return state.copy(
@@ -148,7 +152,7 @@ class DraftResultApplier(
             selectedStaticStickerKeys = context.selectedStaticKeys,
             selectedAnimatedStickerKeys = context.selectedAnimatedKeys,
             candidates = context.candidatePaths.map { path ->
-                domain.model.VideoFrameCandidate(
+                VideoFrameCandidate(
                     filePath = path,
                     timestampMs = 0L,
                     sharpnessScore = 0.0,
@@ -157,7 +161,7 @@ class DraftResultApplier(
                 )
             },
             candidateGrids = context.candidateGridPaths.map { path ->
-                domain.model.CandidateGridImage(filePath = path, frameCount = 16)
+                CandidateGridImage(filePath = path, frameCount = 16)
             },
             candidateManifest = context.candidateManifest,
             prompt = context.prompt,
@@ -166,14 +170,14 @@ class DraftResultApplier(
         )
     }
 
-    fun applyGeneratePackCompletion(state: HomeState, draft: WorkspaceDraft, job: AiJob?): String? {
+    fun applyGeneratePackCompletion(draft: WorkspaceDraft, job: AiJob?): String? {
         if (job == null || job.status != AiJobStatus.COMPLETED || job.type != AiJobType.GENERATE_PACK) return null
         return job.resultJson?.let {
             ApiJson.codec.decodeFromString<GeneratePackResult>(it).packId
         } ?: WorkspaceDraftFactory.decodeContext(draft).resultPackId
     }
 
-    private fun CreatePackState.mergeContext(context: domain.model.aijob.WorkspaceDraftContext): CreatePackState =
+    private fun CreatePackState.mergeContext(context: WorkspaceDraftContext): CreatePackState =
         copy(
             name = context.packName.ifBlank { name },
             publisher = context.publisher.ifBlank { publisher },

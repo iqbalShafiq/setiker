@@ -10,6 +10,7 @@ import data.remote.model.ProcessingHistoryOutputFile
 import domain.error.detailText
 import domain.error.onFailure
 import domain.error.onSuccess
+import kotlin.time.Clock
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -116,7 +117,7 @@ class ProcessingHistoryViewModel(
 
     private suspend fun cacheItems(items: List<ProcessingHistoryItem>) {
         val dao = historyCacheDao ?: return
-        val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+        val now = Clock.System.now().toEpochMilliseconds()
         dao.replaceAll(
             items.map { item ->
                 ProcessingHistoryCacheEntity(

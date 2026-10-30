@@ -7,9 +7,11 @@ import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.os.Build
+import android.util.Log
 import androidx.compose.ui.unit.IntSize
 import java.io.File
 import java.io.FileOutputStream
+import kotlin.math.max
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -18,15 +20,15 @@ actual suspend fun applyMaskToImage(
     paths: List<DrawPath>,
     canvasSize: IntSize
 ): String = withContext(Dispatchers.IO) {
-    android.util.Log.d("MaskProcessor", "Starting mask application")
-    android.util.Log.d("MaskProcessor", "Image: $imagePath")
-    android.util.Log.d("MaskProcessor", "Canvas size: ${canvasSize.width}x${canvasSize.height}")
-    android.util.Log.d("MaskProcessor", "Paths: ${paths.size}")
+    Log.d("MaskProcessor", "Starting mask application")
+    Log.d("MaskProcessor", "Image: $imagePath")
+    Log.d("MaskProcessor", "Canvas size: ${canvasSize.width}x${canvasSize.height}")
+    Log.d("MaskProcessor", "Paths: ${paths.size}")
 
     val sourceBitmap = BitmapFactory.decodeFile(imagePath)
         ?: throw IllegalArgumentException("Cannot decode image: $imagePath")
 
-    android.util.Log.d("MaskProcessor", "Source image: ${sourceBitmap.width}x${sourceBitmap.height}")
+    Log.d("MaskProcessor", "Source image: ${sourceBitmap.width}x${sourceBitmap.height}")
 
     // Create mutable copy with transparency support
     val resultBitmap = sourceBitmap.copy(Bitmap.Config.ARGB_8888, true)
@@ -41,17 +43,17 @@ actual suspend fun applyMaskToImage(
     val scaleX = sourceBitmap.width.toFloat() / canvasSize.width
     val scaleY = sourceBitmap.height.toFloat() / canvasSize.height
 
-    android.util.Log.d("MaskProcessor", "Scale factors: $scaleX, $scaleY")
+    Log.d("MaskProcessor", "Scale factors: $scaleX, $scaleY")
 
     paths.forEachIndexed { index, brushPath ->
-        paint.strokeWidth = brushPath.brushSize * kotlin.math.max(scaleX, scaleY)
+        paint.strokeWidth = brushPath.brushSize * max(scaleX, scaleY)
         paint.xfermode = if (brushPath.isErasing) {
             PorterDuffXfermode(PorterDuff.Mode.CLEAR)
         } else {
             null // Restore mode - just draw normally (simplified)
         }
 
-        android.util.Log.d("MaskProcessor", "Path $index: ${brushPath.points.size} points, erasing=${brushPath.isErasing}, brushSize=${brushPath.brushSize}")
+        Log.d("MaskProcessor", "Path $index: ${brushPath.points.size} points, erasing=${brushPath.isErasing}, brushSize=${brushPath.brushSize}")
 
         if (brushPath.points.size > 1) {
             for (i in 1 until brushPath.points.size) {
@@ -85,7 +87,7 @@ actual suspend fun applyMaskToImage(
         resultBitmap.compress(format, 90, out)
     }
 
-    android.util.Log.d("MaskProcessor", "Output saved: ${outputFile.absolutePath}, size: ${outputFile.length()} bytes")
+    Log.d("MaskProcessor", "Output saved: ${outputFile.absolutePath}, size: ${outputFile.length()} bytes")
 
     sourceBitmap.recycle()
     resultBitmap.recycle()

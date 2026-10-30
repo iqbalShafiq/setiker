@@ -2,8 +2,12 @@ package presentation.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import data.auth.AppleSignInGateway
 import data.auth.AuthApiService
 import data.auth.AuthManager
+import data.auth.GoogleSignInGateway
+import data.auth.GoogleSignInMode
+import data.auth.model.AuthResponse
 import data.auth.model.RegisterRequest
 import data.auth.model.toDomainModel
 import domain.error.Result
@@ -55,8 +59,8 @@ sealed class RegisterEffect {
 class RegisterViewModel(
     private val authApiService: AuthApiService,
     private val authManager: AuthManager,
-    private val googleSignInGateway: data.auth.GoogleSignInGateway,
-    private val appleSignInGateway: data.auth.AppleSignInGateway
+    private val googleSignInGateway: GoogleSignInGateway,
+    private val appleSignInGateway: AppleSignInGateway
 ) : ViewModel() {
     
     private val _state = MutableStateFlow(
@@ -77,7 +81,7 @@ class RegisterViewModel(
             is RegisterIntent.UpdatePassword -> _state.update { it.copy(password = intent.password, error = null, isPasswordValid = true) }
             is RegisterIntent.UpdateConfirmPassword -> _state.update { it.copy(confirmPassword = intent.confirmPassword, error = null) }
             is RegisterIntent.Submit -> register()
-            is RegisterIntent.SignInWithGoogle -> signInWithGoogle(data.auth.GoogleSignInMode.Button)
+            is RegisterIntent.SignInWithGoogle -> signInWithGoogle(GoogleSignInMode.Button)
             is RegisterIntent.SignInWithApple -> signInWithApple()
             is RegisterIntent.TryOneTap -> tryOneTap()
             is RegisterIntent.NavigateToLogin -> _effect.value = RegisterEffect.NavigateToLogin
@@ -88,7 +92,7 @@ class RegisterViewModel(
         if (!googleSignInGateway.isAvailable() || _state.value.oneTapAttempted) return
         _state.update { it.copy(oneTapAttempted = true) }
         viewModelScope.launch {
-            val tokenResult = googleSignInGateway.signIn(data.auth.GoogleSignInMode.OneTap)
+            val tokenResult = googleSignInGateway.signIn(GoogleSignInMode.OneTap)
             tokenResult.onFailure { return@launch }
             val idToken = tokenResult.getOrNull()?.idToken ?: return@launch
             _state.update { it.copy(isLoading = true, error = null) }
@@ -96,7 +100,7 @@ class RegisterViewModel(
         }
     }
 
-    private fun signInWithGoogle(mode: data.auth.GoogleSignInMode) {
+    private fun signInWithGoogle(mode: GoogleSignInMode) {
         if (!googleSignInGateway.isAvailable()) return
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
@@ -142,7 +146,7 @@ class RegisterViewModel(
         }
     }
 
-    private suspend fun persistAuth(response: data.auth.model.AuthResponse) {
+    private suspend fun persistAuth(response: AuthResponse) {
         val data = response.data
         val user = data?.user
         val accessToken = data?.accessToken

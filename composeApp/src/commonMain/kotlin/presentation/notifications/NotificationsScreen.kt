@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import data.remote.model.UserNotificationItem
 import org.jetbrains.compose.resources.stringResource
 import presentation.components.AppTopBar
 import presentation.components.ContentLoadLayout
@@ -37,7 +38,7 @@ fun NotificationsScreen(
     onBackClick: () -> Unit,
     onRefresh: () -> Unit,
     onMarkAllRead: () -> Unit,
-    onItemClick: (data.remote.model.UserNotificationItem) -> Unit,
+    onItemClick: (UserNotificationItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val title = if (state.unreadCount > 0) {

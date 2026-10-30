@@ -200,7 +200,6 @@ class HomeViewModel(
                     }
 
                     val packId = draftResultApplier.applyGeneratePackCompletion(
-                        _state.value,
                         draft,
                         completedJob
                     )

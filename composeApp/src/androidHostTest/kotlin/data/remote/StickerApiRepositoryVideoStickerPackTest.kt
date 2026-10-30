@@ -1,5 +1,7 @@
 package data.remote
 
+import data.remote.model.ApiVideoStaticStickerPlan
+import data.remote.model.ApiVideoStickerPackPlan
 import data.storage.StickerFileStorage
 import data.util.OnDeviceImageProcessor
 import domain.model.CandidateGridImage
@@ -31,10 +33,10 @@ class StickerApiRepositoryVideoStickerPackTest {
         val manifest = VideoStickerPackPlanner.buildCandidateManifest(candidates, grids)
         coEvery {
             api.generateVideoStickerPack(any(), any(), any(), any(), any(), any())
-        } returns data.remote.model.ApiVideoStickerPackPlan(
+        } returns ApiVideoStickerPackPlan(
             packTitle = "Plan",
             staticStickers = listOf(
-                data.remote.model.ApiVideoStaticStickerPlan(
+                ApiVideoStaticStickerPlan(
                     candidateId = "frame_0001",
                     frameIndex = 1,
                     timestampMs = 2_000L,
@@ -77,10 +79,10 @@ class StickerApiRepositoryVideoStickerPackTest {
         )
         coEvery {
             api.generateVideoStickerPack(any(), any(), any(), any(), any(), any())
-        } returns data.remote.model.ApiVideoStickerPackPlan(
+        } returns ApiVideoStickerPackPlan(
             packTitle = "Plan",
             staticStickers = listOf(
-                data.remote.model.ApiVideoStaticStickerPlan(
+                ApiVideoStaticStickerPlan(
                     candidateId = "frame_0001",
                     frameIndex = 1,
                     timestampMs = 2_000L,
@@ -125,10 +127,10 @@ class StickerApiRepositoryVideoStickerPackTest {
         )
         coEvery {
             api.generateVideoStickerPack(any(), any(), any(), any(), any(), any())
-        } returns data.remote.model.ApiVideoStickerPackPlan(
+        } returns ApiVideoStickerPackPlan(
             packTitle = "Plan",
             staticStickers = listOf(
-                data.remote.model.ApiVideoStaticStickerPlan(
+                ApiVideoStaticStickerPlan(
                     candidateId = "missing",
                     frameIndex = 99,
                     timestampMs = 9_999L,

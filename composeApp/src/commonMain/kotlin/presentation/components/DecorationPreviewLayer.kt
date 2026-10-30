@@ -41,11 +41,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
+import domain.model.DecorationFont
+import domain.model.DecorationFontWeight
 import domain.model.DecorationRenderSpec
 import domain.model.EmojiDecoration
 import domain.model.ImageDecoration
 import domain.model.StickerDecoration
 import domain.model.TextDecoration
+import domain.model.TextDecorationStyle
 import domain.model.resolveEmojiStyle
 import kotlin.math.roundToInt
 import org.jetbrains.compose.resources.stringResource
@@ -325,9 +328,9 @@ private fun DecorationPreviewLayerPreview() {
         TextDecoration(
             id = "txt_1",
             text = "Hello World",
-            font = domain.model.DecorationFont.Fredoka,
-            fontWeight = domain.model.DecorationFontWeight.Bold,
-            style = domain.model.TextDecorationStyle.ClassicOutline,
+            font = DecorationFont.Fredoka,
+            fontWeight = DecorationFontWeight.Bold,
+            style = TextDecorationStyle.ClassicOutline,
             textColorArgb = 0xFF000000L,
             centerX = 0.5f,
             centerY = 0.35f,

@@ -1,8 +1,10 @@
 package presentation.settings
 
+import data.auth.AppleSignInGateway
 import data.auth.AuthApiService
 import data.auth.AuthManager
 import data.auth.AuthSessionCoordinator
+import data.auth.GoogleSignInGateway
 import data.auth.model.UserProfileResponse
 import data.preferences.UserPreferencesRepository
 import data.remote.AiUsageApiRepository
@@ -158,10 +160,10 @@ class SettingsViewModelDeleteAccountTest {
         authApiService: AuthApiService = mockk(relaxed = true),
         authSessionCoordinator: AuthSessionCoordinator = mockk(relaxed = true),
         userPreferencesRepository: UserPreferencesRepository = mockk(relaxed = true),
-        googleSignInGateway: data.auth.GoogleSignInGateway = mockk(relaxed = true) {
+        googleSignInGateway: GoogleSignInGateway = mockk(relaxed = true) {
             every { isAvailable() } returns false
         },
-        appleSignInGateway: data.auth.AppleSignInGateway = mockk(relaxed = true) {
+        appleSignInGateway: AppleSignInGateway = mockk(relaxed = true) {
             every { isAvailable() } returns false
         },
     ): SettingsViewModel = SettingsViewModel(

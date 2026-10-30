@@ -25,11 +25,11 @@ private class InMemoryStickerDao : StickerDao {
     }
 
     override suspend fun deleteByPackId(packId: String) {
-        stickers.entries.removeIf { it.value.packId == packId }
+        stickers.entries.removeAll { it.value.packId == packId }
     }
 
     override suspend fun deleteByCloudId(cloudId: String) {
-        stickers.entries.removeIf { it.value.cloudId == cloudId }
+        stickers.entries.removeAll { it.value.cloudId == cloudId }
     }
 
     override suspend fun deleteById(id: String) {

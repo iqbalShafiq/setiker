@@ -20,7 +20,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -37,8 +36,8 @@ import data.remote.model.BlockedUserItem
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
-import presentation.components.AppSnackbarHostState
 import presentation.components.AppDialog
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppTopBar
 import presentation.components.ContentLoadLayout
 import presentation.components.NeubrutalSnackbarHost

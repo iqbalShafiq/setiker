@@ -17,6 +17,7 @@ import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
@@ -244,7 +245,7 @@ class BillingApiRepository(
     ): Result<Int, DataError.Network> = restorePurchases(googlePlay = items)
 
     private suspend inline fun <T> parseSuccess(
-        response: io.ktor.client.statement.HttpResponse,
+        response: HttpResponse,
         fallback: AppErrorCode = AppErrorCode.CloudFetchFailed,
         crossinline onSuccess: (String) -> T
     ): T {
@@ -264,8 +265,8 @@ class BillingApiRepository(
     }
 
     private suspend fun withAuthRetry(
-        request: suspend (String) -> io.ktor.client.statement.HttpResponse
-    ): io.ktor.client.statement.HttpResponse {
+        request: suspend (String) -> HttpResponse
+    ): HttpResponse {
         val firstToken = authManager.getValidAccessToken()
             ?: authTokenRefresher?.refreshAccessToken(clearTokensOnFailure = false)
             ?: authManager.getAccessToken()

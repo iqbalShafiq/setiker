@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -132,7 +133,7 @@ fun RegisterScreen(
             }
 
             if (state.appleAvailable) {
-                androidx.compose.material3.OutlinedButton(
+                OutlinedButton(
                     onClick = { onIntent(RegisterIntent.SignInWithApple) },
                     enabled = !state.isLoading,
                     modifier = Modifier
@@ -145,7 +146,7 @@ fun RegisterScreen(
             }
 
             if (state.googleAvailable) {
-                androidx.compose.material3.OutlinedButton(
+                OutlinedButton(
                     onClick = { onIntent(RegisterIntent.SignInWithGoogle) },
                     enabled = !state.isLoading,
                     modifier = Modifier

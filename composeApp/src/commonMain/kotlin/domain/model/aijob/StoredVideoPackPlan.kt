@@ -1,6 +1,7 @@
 package domain.model.aijob
 
 import domain.model.ResolvedVideoAnimatedSticker
+import domain.model.ResolvedVideoAnimatedTimelineFrame
 import domain.model.ResolvedVideoStaticSticker
 import domain.model.ResolvedVideoStickerPackPlan
 import domain.model.VideoAnimatedStickerPlan
@@ -131,7 +132,7 @@ fun StoredVideoPackPlan.toResolved(): ResolvedVideoStickerPackPlan {
                 accessibilityText = stored.plan.accessibilityText
             ),
             timeline = stored.timeline.map {
-                domain.model.ResolvedVideoAnimatedTimelineFrame(
+                ResolvedVideoAnimatedTimelineFrame(
                     frame = VideoAnimatedTimelineFrame(
                         candidateId = it.candidateId,
                         frameIndex = it.frameIndex,

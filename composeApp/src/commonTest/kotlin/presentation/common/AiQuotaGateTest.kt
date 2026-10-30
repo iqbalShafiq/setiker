@@ -1,5 +1,6 @@
 package presentation.common
 
+import domain.model.AiQuotaOperation
 import domain.model.AiUsage
 import domain.model.AiUsageCounts
 import kotlin.test.Test
@@ -16,7 +17,7 @@ class AiQuotaGateTest {
             pointsRemaining = 85,
             operationCosts = AiUsageCounts(generate = 1)
         )
-        assertTrue(AiQuotaGate.canAfford(usage, domain.model.AiQuotaOperation.GENERATE))
+        assertTrue(AiQuotaGate.canAfford(usage, AiQuotaOperation.GENERATE))
     }
 
     @Test
@@ -29,7 +30,7 @@ class AiQuotaGateTest {
             purchasedTokenBalance = 10,
             operationCosts = AiUsageCounts(generate = 1)
         )
-        assertTrue(AiQuotaGate.canAfford(usage, domain.model.AiQuotaOperation.GENERATE))
+        assertTrue(AiQuotaGate.canAfford(usage, AiQuotaOperation.GENERATE))
     }
 
     @Test
@@ -41,6 +42,6 @@ class AiQuotaGateTest {
             pointsRemaining = 0,
             operationCosts = AiUsageCounts(generate = 1)
         )
-        assertFalse(AiQuotaGate.canAfford(usage, domain.model.AiQuotaOperation.GENERATE))
+        assertFalse(AiQuotaGate.canAfford(usage, AiQuotaOperation.GENERATE))
     }
 }

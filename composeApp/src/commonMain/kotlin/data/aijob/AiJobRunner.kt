@@ -43,6 +43,7 @@ import domain.repository.WorkspaceDraftRepository
 import domain.util.VideoStickerPackPlanner
 import kotlin.random.Random
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -54,6 +55,7 @@ import presentation.aijob.toSnapshot
 import presentation.common.PackIdentifierSanitizer
 import presentation.common.settlesQuotaOnApi
 import presentation.common.toQuotaOperation
+import presentation.createpack.DraftSticker
 import presentation.videostickerpack.selectionKey
 import util.AppLog
 
@@ -121,7 +123,7 @@ class AiJobRunner(
         )
         val result = GenerateStickersResult(
             previews = generated.map { file ->
-                presentation.createpack.DraftSticker(
+                DraftSticker(
                     imagePath = file.localPath,
                     decorations = file.decorations
                 ).toSnapshot()
@@ -146,7 +148,7 @@ class AiJobRunner(
             val waiter = launch {
                 var pulse = 0.15f
                 while (isActive) {
-                    delay(2_000)
+                    delay(2_000.milliseconds)
                     pulse = (pulse + 0.04f).coerceAtMost(0.45f)
                     updateProgress(
                         job.id,
@@ -217,7 +219,7 @@ class AiJobRunner(
         )
         val result = ImproveStickersResult(
             previews = improved.map { file ->
-                presentation.createpack.DraftSticker(
+                DraftSticker(
                     imagePath = file.localPath,
                     decorations = file.decorations
                 ).toSnapshot()
@@ -244,7 +246,7 @@ class AiJobRunner(
         val splitImages = splitGridWithProgress(job.id, payload.imagePath, payload.layout)
         val result = GridSplitResult(
             previews = splitImages.map { file ->
-                presentation.createpack.DraftSticker(
+                DraftSticker(
                     imagePath = file.localPath,
                     decorations = file.decorations
                 ).toSnapshot()
@@ -545,7 +547,7 @@ class AiJobRunner(
     }
 
     private suspend fun updateProgress(jobId: String, stepKey: String, stepLabel: String, fraction: Float) {
-        if (isCancelled(jobId)) throw kotlinx.coroutines.CancellationException("Job cancelled")
+        if (isCancelled(jobId)) throw CancellationException("Job cancelled")
         jobRepository.updateProgress(
             jobId,
             AiJobProgress(stepKey = stepKey, stepLabel = stepLabel, fraction = fraction)

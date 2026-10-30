@@ -4,6 +4,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -33,7 +34,7 @@ class MainActivity : ComponentActivity() {
 
         whatsAppLauncher.register(this) { success, error ->
             if (!success) {
-                android.util.Log.e("MainActivity", "WhatsApp error: $error")
+                Log.e("MainActivity", "WhatsApp error: $error")
             }
         }
 

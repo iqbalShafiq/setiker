@@ -6,6 +6,8 @@ import data.auth.AuthManager
 import data.remote.ApiException
 import data.remote.CloudStickerRepository
 import data.remote.ExploreApiRepository
+import data.remote.model.SharePreviewPackData
+import data.remote.model.SharePreviewStickerData
 import data.storage.StickerFileStorage
 import domain.error.AppErrorCode
 import domain.error.Result
@@ -59,13 +61,13 @@ class SharePreviewViewModel(
                 exploreApiRepository.previewPackShare(token)
             }
             result.onSuccess { preview ->
-                if (preview is data.remote.model.SharePreviewStickerData) {
+                if (preview is SharePreviewStickerData) {
                     _state.update { it.copy(isLoading = false, stickerPreview = preview, packPreview = null) }
                 } else {
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            packPreview = preview as data.remote.model.SharePreviewPackData,
+                            packPreview = preview as SharePreviewPackData,
                             stickerPreview = null
                         )
                     }

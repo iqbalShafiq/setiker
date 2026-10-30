@@ -7,6 +7,7 @@ import data.auth.AuthApiService
 import data.auth.AuthManager
 import data.auth.GoogleSignInGateway
 import data.auth.GoogleSignInMode
+import data.auth.model.AuthResponse
 import data.auth.model.LoginRequest
 import data.auth.model.toDomainModel
 import domain.error.AppErrorCode
@@ -313,7 +314,7 @@ class LoginViewModel(
         }
     }
 
-    private suspend fun persistAuth(response: data.auth.model.AuthResponse) {
+    private suspend fun persistAuth(response: AuthResponse) {
         val data = response.data
         val user = data?.user
         val accessToken = data?.accessToken

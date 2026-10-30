@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -160,7 +161,7 @@ class RecompositionTest {
     private fun CountedStickerCard(
         sticker: Sticker,
         onClick: () -> Unit,
-        compositions: androidx.compose.runtime.MutableIntState
+        compositions: MutableIntState
     ) {
         SideEffect { compositions.intValue++ }
         StickerCard(sticker = sticker, onClick = onClick)
@@ -171,7 +172,7 @@ class RecompositionTest {
     private fun CountedPackCard(
         pack: StickerPack,
         onClick: () -> Unit,
-        compositions: androidx.compose.runtime.MutableIntState
+        compositions: MutableIntState
     ) {
         SideEffect { compositions.intValue++ }
         StickerPackListCard(pack = pack, onClick = onClick)

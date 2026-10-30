@@ -19,6 +19,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -60,7 +61,7 @@ class CreatePackViewModelImproveTest {
         viewModel.onIntent(CreatePackIntent.RequestImprovePackStickers)
         advanceUntilIdle()
 
-        val effect = withTimeout(1_000) { viewModel.effect.first() }
+        val effect = withTimeout(1_000.milliseconds) { viewModel.effect.first() }
         val error = assertIs<CreatePackEffect.ShowError>(effect)
         val message = assertIs<UiText.StringRes>(error.message)
         assertEquals(Res.string.error_no_static_stickers_to_improve, message.resource)

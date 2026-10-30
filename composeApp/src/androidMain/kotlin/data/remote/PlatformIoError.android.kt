@@ -1,3 +1,5 @@
 package data.remote
 
-actual fun Throwable.isPlatformIoException(): Boolean = this is java.io.IOException
+import java.io.IOException
+
+actual fun Throwable.isPlatformIoException(): Boolean = this is IOException

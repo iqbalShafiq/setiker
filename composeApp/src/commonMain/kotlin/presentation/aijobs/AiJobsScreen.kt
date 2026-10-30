@@ -12,9 +12,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import domain.model.aijob.AiJob
 import domain.model.aijob.AiJobStatus
 import domain.model.aijob.WorkspaceDraft
 import domain.model.aijob.WorkspaceDraftStatus
@@ -29,8 +30,8 @@ import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
-import presentation.components.AppSnackbarHostState
 import presentation.components.AppIllustration
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppTopBar
 import presentation.components.DraftJobListCard
 import presentation.components.EmptyState
@@ -76,9 +77,9 @@ fun AiJobsScreenRoot(
 
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    val snackbarHostState = androidx.compose.runtime.remember { AppSnackbarHostState() }
+    val snackbarHostState = remember { AppSnackbarHostState() }
 
-    androidx.compose.runtime.LaunchedEffect(Unit) {
+    LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
                 AiJobsEffect.NavigateBack -> onBackClick()
@@ -309,7 +310,7 @@ private data class DraftJobItem(
 
     val draft: WorkspaceDraft,
 
-    val latestJob: domain.model.aijob.AiJob?
+    val latestJob: AiJob?
 
 )
 
@@ -317,7 +318,7 @@ private data class DraftJobItem(
 
 @Composable
 
-private fun statusLabel(draft: WorkspaceDraft, job: domain.model.aijob.AiJob?): String {
+private fun statusLabel(draft: WorkspaceDraft, job: AiJob?): String {
 
     // Only a job that is still running may describe itself with its current step. A finished job
     // keeps its last step label in the payload, and showing it made a card claim "Removing
@@ -346,7 +347,7 @@ private fun statusLabel(draft: WorkspaceDraft, job: domain.model.aijob.AiJob?): 
 
 
 
-private fun canRetry(draft: WorkspaceDraft, job: domain.model.aijob.AiJob?): Boolean {
+private fun canRetry(draft: WorkspaceDraft, job: AiJob?): Boolean {
 
     return draft.status == WorkspaceDraftStatus.NEEDS_ATTENTION ||
 
@@ -362,7 +363,7 @@ private fun groupDrafts(
 
     drafts: List<WorkspaceDraft>,
 
-    jobs: List<domain.model.aijob.AiJob>
+    jobs: List<AiJob>
 
 ): List<DraftSection> {
 

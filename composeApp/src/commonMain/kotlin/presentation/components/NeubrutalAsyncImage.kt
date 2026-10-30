@@ -20,6 +20,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import coil3.compose.AsyncImagePainter
 import coil3.compose.LocalPlatformContext
 import coil3.compose.rememberAsyncImagePainter
 import coil3.compose.rememberConstraintsSizeResolver
@@ -71,8 +72,8 @@ fun NeubrutalAsyncImage(
         error = SolidColorPainter(errorColor)
     )
     val state by painter.state.collectAsState()
-    val isLoading = state is coil3.compose.AsyncImagePainter.State.Empty ||
-        state is coil3.compose.AsyncImagePainter.State.Loading
+    val isLoading = state is AsyncImagePainter.State.Empty ||
+        state is AsyncImagePainter.State.Loading
 
     Box(modifier = modifier) {
         if (isLoading) {

@@ -12,6 +12,7 @@ import domain.model.StickerDecoration
 import domain.model.TextDecoration
 import domain.model.TextDecorationStyle
 import domain.model.TextDecorationStyleRegistry
+import domain.model.aijob.AiJob
 import domain.model.aijob.AiJobStatus
 import domain.model.aijob.AiJobType
 import domain.model.aijob.AnimatedEncodePayload
@@ -21,6 +22,7 @@ import domain.model.applyStylePreset
 import domain.repository.AiJobRepository
 import kotlin.random.Random
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -124,7 +126,7 @@ class AnimatedEditorViewModel(
         }
     }
 
-    private suspend fun handleEncodeCompleted(job: domain.model.aijob.AiJob) {
+    private suspend fun handleEncodeCompleted(job: AiJob) {
         val draft = aiJobManager.getDraft(job.workspaceDraftId) ?: return
         val context = WorkspaceDraftFactory.decodeContext(draft)
         val outputPath = job.resultJson?.let {
@@ -291,7 +293,7 @@ class AnimatedEditorViewModel(
                 val next = (current + 1) % frames.size
                 val frameDuration = frames[current].durationMs.coerceAtLeast(8L)
                 _state.update { it.copy(currentFrameIndex = next) }
-                delay(frameDuration)
+                delay(frameDuration.milliseconds)
             }
             _state.update { it.copy(isPlaying = false) }
         }

@@ -7,11 +7,13 @@ import data.remote.ExploreApiRepository
 import data.remote.ExploreFeed
 import data.remote.ExploreSort
 import data.remote.model.CloudStickerPack
+import data.remote.model.PackSocialStateData
 import data.remote.model.applySocialUpdate
 import data.remote.model.userHasLiked
 import data.remote.model.userHasSaved
 import domain.error.onFailure
 import domain.error.onSuccess
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -77,7 +79,7 @@ class ExploreViewModel(
         _state.update { it.copy(searchQuery = query) }
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
-            delay(300)
+            delay(300.milliseconds)
             loadInitial(refreshing = false)
         }
     }
@@ -251,7 +253,7 @@ class ExploreViewModel(
 
     private fun ExploreState.withPackSocial(
         packId: String,
-        social: data.remote.model.PackSocialStateData
+        social: PackSocialStateData
     ): ExploreState {
         val updated = { pack: CloudStickerPack ->
             if (pack.id == packId) pack.applySocialUpdate(social) else pack

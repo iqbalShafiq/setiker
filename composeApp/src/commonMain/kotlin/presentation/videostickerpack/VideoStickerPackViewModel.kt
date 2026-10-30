@@ -27,6 +27,7 @@ import domain.repository.StickerRepository
 import domain.util.VideoStickerPackPlanner
 import kotlin.random.Random
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.Job
@@ -262,7 +263,7 @@ class VideoStickerPackViewModel(
         if (snapshot.selectedEndMs <= snapshot.selectedStartMs) return
 
         previewExtractJob = viewModelScope.launch {
-            if (!immediate) delay(PREVIEW_EXTRACT_DEBOUNCE_MS)
+            if (!immediate) delay(PREVIEW_EXTRACT_DEBOUNCE_MS.milliseconds)
             val current = _state.value
             if (current.videoPath.isBlank()) return@launch
             if (current.selectedEndMs <= current.selectedStartMs) return@launch
@@ -326,7 +327,7 @@ class VideoStickerPackViewModel(
                 _state.update {
                     it.copy(currentPreviewIndex = (it.currentPreviewIndex + 1) % frames.size)
                 }
-                delay(previewFrameDelayMs())
+                delay(previewFrameDelayMs().milliseconds)
             }
             _state.update { it.copy(isPreviewPlaying = false) }
         }

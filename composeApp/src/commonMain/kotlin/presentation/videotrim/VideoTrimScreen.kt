@@ -21,7 +21,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -39,8 +38,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.stringResource
 import presentation.common.resolveLocal
-import presentation.components.AppSnackbarHostState
 import presentation.components.AppIllustration
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppTopBar
 import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator

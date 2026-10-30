@@ -13,7 +13,6 @@ import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -27,15 +26,17 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
+import presentation.auth.ConnectedAccountsSection
+import presentation.auth.ConnectedAccountsUiState
 import presentation.common.resolveLocal
 import presentation.common.resolveOrDefault
-import presentation.components.AppSnackbarHostState
 import presentation.components.AiQuotaSummary
 import presentation.components.AppDialog
 import presentation.components.AppIllustration
 import presentation.components.AppIllustrationImage
 import presentation.components.AppPasswordTextField
 import presentation.components.AppPrimaryButton
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppTopBar
 import presentation.components.DeleteAccountConfirmDialog
 import presentation.components.NeubrutalSnackbarHost
@@ -221,8 +222,8 @@ fun SettingsScreen(
                 )
             }
             item {
-                presentation.auth.ConnectedAccountsSection(
-                    state = presentation.auth.ConnectedAccountsUiState(
+                ConnectedAccountsSection(
+                    state = ConnectedAccountsUiState(
                         hasPassword = state.hasPassword,
                         hasGoogle = state.hasGoogle,
                         hasApple = state.hasApple,

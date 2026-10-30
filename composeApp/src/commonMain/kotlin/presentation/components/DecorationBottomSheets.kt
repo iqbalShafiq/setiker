@@ -37,6 +37,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import domain.model.DecorationFont
 import domain.model.DecorationFontWeight
+import domain.model.TextDecoration
 import domain.model.TextDecorationLayout
 import domain.model.TextDecorationStyle
 import org.jetbrains.compose.resources.stringResource
@@ -185,7 +186,7 @@ fun StylePickerBottomSheet(
                 contentAlignment = Alignment.Center
             ) {
                 DecorationTextContent(
-                    decoration = domain.model.TextDecoration(
+                    decoration = TextDecoration(
                         id = "preview",
                         text = previewText.ifBlank { "Sample" },
                         font = selectedFont,

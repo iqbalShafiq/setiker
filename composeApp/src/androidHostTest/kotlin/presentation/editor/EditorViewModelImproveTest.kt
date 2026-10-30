@@ -8,6 +8,7 @@ import data.util.OnDeviceImageProcessor
 import domain.model.DecorationFont
 import domain.model.StickerDecoration
 import domain.model.TextDecoration
+import domain.model.TextDecorationStyle
 import domain.model.aijob.DraftStickerSnapshot
 import domain.repository.AiQuotaRepository
 import domain.repository.StickerRepository
@@ -21,6 +22,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -58,7 +60,7 @@ class EditorViewModelImproveTest {
         viewModel.onIntent(EditorIntent.RequestImproveSticker)
         advanceUntilIdle()
 
-        val effect = withTimeout(1_000) { viewModel.effect.first() }
+        val effect = withTimeout(1_000.milliseconds) { viewModel.effect.first() }
         val error = assertIs<EditorEffect.ShowError>(effect)
         val message = assertIs<UiText.StringRes>(error.message)
         assertEquals(Res.string.error_select_image, message.resource)
@@ -132,7 +134,7 @@ class EditorViewModelImproveTest {
         )
 
         viewModel.onIntent(EditorIntent.UpdateImagePath("/tmp/source.png"))
-        viewModel.onIntent(EditorIntent.AddTextDecoration("Local", domain.model.TextDecorationStyle.ClassicOutline))
+        viewModel.onIntent(EditorIntent.AddTextDecoration("Local", TextDecorationStyle.ClassicOutline))
         assertTrue(viewModel.state.value.selectedDecorationId != null)
         viewModel.onIntent(EditorIntent.ApplyGeneratedSticker(draft))
 

@@ -1,5 +1,6 @@
 package domain.model.aijob
 
+import domain.model.VideoStickerCandidateManifestItem
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -73,7 +74,7 @@ data class RemoveBackgroundResult(
 data class VideoPackCheckpoint(
     val candidatePaths: List<String> = emptyList(),
     val candidateGridPaths: List<String> = emptyList(),
-    val candidateManifest: List<domain.model.VideoStickerCandidateManifestItem> = emptyList(),
+    val candidateManifest: List<VideoStickerCandidateManifestItem> = emptyList(),
     val videoPlanResultJson: String? = null
 )
 

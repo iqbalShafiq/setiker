@@ -1,17 +1,17 @@
 package com.setiker.app.storage
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.ColorSpace
-import android.graphics.drawable.AnimatedImageDrawable
 import android.graphics.ImageDecoder
+import android.graphics.drawable.AnimatedImageDrawable
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import data.storage.StickerFileStorage
 import domain.model.DecodedFrame
 import java.io.ByteArrayOutputStream
 import java.io.File
+import kotlin.math.abs
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -142,10 +142,10 @@ class AnimatedWebpDeviceTest {
     /** Assert that [actual] is [expected] within a few levels per channel, opaque. */
     private fun assertColorClose(expected: Int, actual: Int) {
         val tolerance = 12
-        val dr = kotlin.math.abs(Color.red(expected) - Color.red(actual))
-        val dg = kotlin.math.abs(Color.green(expected) - Color.green(actual))
-        val db = kotlin.math.abs(Color.blue(expected) - Color.blue(actual))
-        val da = kotlin.math.abs(Color.alpha(expected) - Color.alpha(actual))
+        val dr = abs(Color.red(expected) - Color.red(actual))
+        val dg = abs(Color.green(expected) - Color.green(actual))
+        val db = abs(Color.blue(expected) - Color.blue(actual))
+        val da = abs(Color.alpha(expected) - Color.alpha(actual))
         assertTrue(
             "expected ${Integer.toHexString(expected)} but decoded " +
                 "${Integer.toHexString(actual)} (at 256,256)",

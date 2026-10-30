@@ -6,6 +6,7 @@ import data.auth.AuthManager
 import data.remote.ApiException
 import data.remote.CloudStickerRepository
 import data.remote.ExploreApiRepository
+import data.remote.model.CloudStickerPack
 import data.remote.model.applyFollowUpdate
 import data.remote.model.applySocialUpdate
 import data.remote.model.userHasLiked
@@ -26,6 +27,7 @@ import domain.model.StickerPack
 import domain.repository.AiQuotaRepository
 import domain.repository.StickerRepository
 import kotlin.time.Clock
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -299,7 +301,7 @@ class PublicPackDetailViewModel(
                     }
                 }
             } catch (e: Exception) {
-                if (e is kotlinx.coroutines.CancellationException) throw e
+                if (e is CancellationException) throw e
                 e.message ?: "Import failed"
             }
         }
@@ -308,7 +310,7 @@ class PublicPackDetailViewModel(
         }
     }
 
-    private suspend fun buildLocalPack(pack: data.remote.model.CloudStickerPack): StickerPack {
+    private suspend fun buildLocalPack(pack: CloudStickerPack): StickerPack {
         val stickers = mutableListOf<Sticker>()
         pack.stickers.sortedBy { it.order }.forEachIndexed { index, relation ->
             val sticker = relation.sticker ?: return@forEachIndexed

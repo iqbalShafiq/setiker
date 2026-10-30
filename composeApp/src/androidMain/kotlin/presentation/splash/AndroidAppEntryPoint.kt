@@ -13,6 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import com.setiker.app.App
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import permission.NotificationPermissionHost
 import presentation.navigation.NotificationDeepLink
@@ -67,7 +68,7 @@ fun AndroidAppEntryPoint(
             if (keepSystemSplash()) {
                 onSystemSplashReadyToDismiss()
             }
-            delay(SplashBranding.MIN_VISIBLE_DURATION_MS)
+            delay(SplashBranding.MIN_VISIBLE_DURATION_MS.milliseconds)
             showMainContent = true
         }
     }

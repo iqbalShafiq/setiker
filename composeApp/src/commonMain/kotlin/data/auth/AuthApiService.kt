@@ -38,6 +38,7 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.Cookie
 import io.ktor.http.HttpHeaders
+import io.ktor.http.Url
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
@@ -354,7 +355,7 @@ private class RefreshTokenStorage : CookiesStorage {
     var refreshToken: String? = null
         private set
 
-    override suspend fun addCookie(requestUrl: io.ktor.http.Url, cookie: Cookie) {
+    override suspend fun addCookie(requestUrl: Url, cookie: Cookie) {
         if (cookie.name == "refresh_token") {
             refreshToken = cookie.value
         }
@@ -362,7 +363,7 @@ private class RefreshTokenStorage : CookiesStorage {
 
     override fun close() {}
 
-    override suspend fun get(requestUrl: io.ktor.http.Url): List<Cookie> {
+    override suspend fun get(requestUrl: Url): List<Cookie> {
         return refreshToken?.let {
             listOf(Cookie(name = "refresh_token", value = it))
         } ?: emptyList()

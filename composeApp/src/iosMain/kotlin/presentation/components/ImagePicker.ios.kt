@@ -24,6 +24,11 @@ import platform.UIKit.UINavigationControllerDelegateProtocol
 import platform.UIKit.UIViewController
 import platform.UniformTypeIdentifiers.UTTypeImage
 import platform.darwin.NSObject
+import platform.darwin.dispatch_get_main_queue
+import platform.darwin.dispatch_group_create
+import platform.darwin.dispatch_group_enter
+import platform.darwin.dispatch_group_leave
+import platform.darwin.dispatch_group_notify
 
 @Composable
 actual fun rememberImagePicker(onImagePicked: (String?) -> Unit): ImagePickerLauncher {
@@ -134,14 +139,14 @@ private class IOSMultipleImagePickerDelegate(
         }
 
         val paths = mutableListOf<String>()
-        val group = platform.darwin.dispatch_group_create()
+        val group = dispatch_group_create()
         
         for (result in didFinishPicking) {
             val pickerResult = result as? PHPickerResult ?: continue
             val itemProvider = pickerResult.itemProvider
             
             if (itemProvider.hasItemConformingToTypeIdentifier(UTTypeImage.identifier)) {
-                platform.darwin.dispatch_group_enter(group)
+                dispatch_group_enter(group)
                 
                 itemProvider.loadDataRepresentationForTypeIdentifier(
                     typeIdentifier = UTTypeImage.identifier,
@@ -151,13 +156,13 @@ private class IOSMultipleImagePickerDelegate(
                                 paths.add(path)
                             }
                         }
-                        platform.darwin.dispatch_group_leave(group)
+                        dispatch_group_leave(group)
                     }
                 )
             }
         }
         
-        platform.darwin.dispatch_group_notify(group, platform.darwin.dispatch_get_main_queue()) {
+        dispatch_group_notify(group, dispatch_get_main_queue()) {
             onImagesPicked(paths.toList())
         }
     }

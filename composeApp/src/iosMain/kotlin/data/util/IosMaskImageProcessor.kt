@@ -1,6 +1,7 @@
 package data.util
 
 import androidx.compose.ui.unit.IntSize
+import kotlin.math.max
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.useContents
 import kotlinx.coroutines.Dispatchers
@@ -51,7 +52,7 @@ actual suspend fun applyMaskToImage(
 
     // Apply mask
     paths.forEach { brushPath ->
-        CGContextSetLineWidth(context, brushPath.brushSize * kotlin.math.max(scaleX, scaleY))
+        CGContextSetLineWidth(context, brushPath.brushSize * max(scaleX, scaleY))
         CGContextSetLineCap(context, CGLineCap.kCGLineCapRound)
         CGContextSetLineJoin(context, CGLineJoin.kCGLineJoinRound)
 

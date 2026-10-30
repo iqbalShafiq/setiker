@@ -15,6 +15,7 @@ import data.remote.AiUsageApiRepository
 import data.remote.LegalApiRepository
 import domain.error.onFailure
 import domain.error.onSuccess
+import domain.model.LegalSummary
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -389,7 +390,7 @@ class SettingsViewModel(
         }
     }
 
-    private fun openLegalUrl(selector: (domain.model.LegalSummary) -> String) {
+    private fun openLegalUrl(selector: (LegalSummary) -> String) {
         val summary = _state.value.legalSummary ?: return
         viewModelScope.launch {
             _effect.send(SettingsEffect.OpenUrl(selector(summary)))

@@ -6,6 +6,8 @@ import data.remote.json.ApiJson
 import data.remote.model.ApiSuccessEnvelope
 import data.remote.model.CloudStickerPack
 import data.remote.model.CreateStickerPackRequest
+import data.remote.model.ReorderStickersRequest
+import data.remote.model.StickerOrderItem
 import data.remote.model.SyncData
 import data.remote.model.UpdateStickerPackRequest
 import data.remote.model.UploadData
@@ -31,6 +33,7 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 
@@ -65,7 +68,7 @@ class CloudStickerRepository(
     private suspend fun withAuthRetry(request: suspend (String) -> HttpResponse): HttpResponse {
         val firstToken = resolveAccessToken() ?: throw ApiException(code = AppErrorCode.AuthNotAuthenticated)
         val firstResponse = request("Bearer $firstToken")
-        if (firstResponse.status != io.ktor.http.HttpStatusCode.Unauthorized) {
+        if (firstResponse.status != HttpStatusCode.Unauthorized) {
             return firstResponse
         }
 
@@ -89,13 +92,13 @@ class CloudStickerRepository(
                 .data ?: throw ApiException(code = AppErrorCode.CloudUpdateFailed)
         }
 
-    suspend fun reorderStickers(cloudPackId: String, stickerOrders: List<data.remote.model.StickerOrderItem>): EmptyResult<DataError.Network> =
+    suspend fun reorderStickers(cloudPackId: String, stickerOrders: List<StickerOrderItem>): EmptyResult<DataError.Network> =
         runApiCall(TAG) {
             val response = withAuthRetry { authHeader ->
                 client.put("$baseUrl/api/v1/sticker-packs/$cloudPackId/reorder") {
                     header(HttpHeaders.Authorization, authHeader)
                     contentType(ContentType.Application.Json)
-                    setBody(data.remote.model.ReorderStickersRequest(stickerOrders = stickerOrders))
+                    setBody(ReorderStickersRequest(stickerOrders = stickerOrders))
                 }
             }
             if (!response.status.isSuccess()) {

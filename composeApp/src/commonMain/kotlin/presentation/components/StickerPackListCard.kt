@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import domain.model.Sticker
 import domain.model.StickerPack
 import org.jetbrains.compose.resources.stringResource
 import presentation.theme.NeubrutalCardRadius
@@ -139,9 +140,9 @@ private fun StickerPackListCardPreview() {
         publisher = "CatLover",
         trayImageFile = "",
         stickers = listOf(
-            domain.model.Sticker(imageFile = ""),
-            domain.model.Sticker(imageFile = ""),
-            domain.model.Sticker(imageFile = "")
+            Sticker(imageFile = ""),
+            Sticker(imageFile = ""),
+            Sticker(imageFile = "")
         )
     )
     MaterialTheme {

@@ -7,6 +7,7 @@ import data.remote.model.ApiErrorEnvelope
 import data.remote.model.ApiImage
 import data.remote.model.ApiSuccessEnvelope
 import data.remote.model.ApiTextAsset
+import data.remote.model.ApiVideoStickerPackPlan
 import data.remote.model.GenerateData
 import data.remote.model.GridSplitTextAssetsData
 import data.remote.model.VideoStickerPackPlanData
@@ -25,11 +26,13 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLProtocol
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlinx.serialization.encodeToString
 
@@ -169,7 +172,7 @@ class SetikerApiService(
         maxStaticStickers: Int? = null,
         maxAnimatedStickers: Int? = null,
         reservationId: String? = null
-    ): data.remote.model.ApiVideoStickerPackPlan {
+    ): ApiVideoStickerPackPlan {
         val response = withAuthRetry { authHeader ->
             client.post("/api/v1/generate/video-sticker-pack") {
                 authHeader?.let { header(HttpHeaders.Authorization, it) }
@@ -258,7 +261,7 @@ class SetikerApiService(
                                 append(
                                     key = "images",
                                     value = bytes,
-                                    headers = io.ktor.http.Headers.build {
+                                    headers = Headers.build {
                                         append(HttpHeaders.ContentType, ContentType.Image.PNG.toString())
                                         append(
                                             HttpHeaders.ContentDisposition,
@@ -306,7 +309,7 @@ class SetikerApiService(
 
             if (attempt < 2) {
                 // Backend may return image URLs before the file is immediately readable.
-                delay(250L * (attempt + 1))
+                delay(250.milliseconds * (attempt + 1))
             }
         }
 
@@ -330,14 +333,14 @@ class SetikerApiService(
         append(
             key = key,
             value = bytes,
-            headers = io.ktor.http.Headers.build {
+            headers = Headers.build {
                 append(HttpHeaders.ContentType, ContentType.Image.Any.toString())
                 append(HttpHeaders.ContentDisposition, "filename=\"$filename\"")
             }
         )
     }
 
-    private fun io.ktor.client.request.HttpRequestBuilder.setMultipartBody(
+    private fun HttpRequestBuilder.setMultipartBody(
         imagePath: String
     ) {
         val imageBytes = readFileBytes(imagePath)
@@ -347,7 +350,7 @@ class SetikerApiService(
                     append(
                         key = "image",
                         value = imageBytes,
-                        headers = io.ktor.http.Headers.build {
+                        headers = Headers.build {
                             append(HttpHeaders.ContentType, ContentType.Image.Any.toString())
                             append(HttpHeaders.ContentDisposition, "filename=\"upload.png\"")
                         }

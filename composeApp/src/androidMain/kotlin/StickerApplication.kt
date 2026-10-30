@@ -8,9 +8,13 @@ import data.storage.ForegroundActivityProvider
 import data.sync.SyncWorker
 import di.appModule
 import di.platformModule
+import domain.repository.AiJobRepository
+import domain.repository.WorkspaceDraftRepository
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -36,12 +40,12 @@ class StickerApplication : Application() {
         notificationHelper.ensureChannel()
         val aiJobManager: AiJobManager by inject(AiJobManager::class.java)
         CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
-            kotlinx.coroutines.delay(300)
-            val draftRepository: domain.repository.WorkspaceDraftRepository by inject(
-                domain.repository.WorkspaceDraftRepository::class.java
+            delay(300.milliseconds)
+            val draftRepository: WorkspaceDraftRepository by inject(
+                WorkspaceDraftRepository::class.java
             )
-            val jobRepository: domain.repository.AiJobRepository by inject(
-                domain.repository.AiJobRepository::class.java
+            val jobRepository: AiJobRepository by inject(
+                AiJobRepository::class.java
             )
             val interrupted = aiJobManager.resumeOnStartup()
             AiJobNotificationSync.applyRecovery(

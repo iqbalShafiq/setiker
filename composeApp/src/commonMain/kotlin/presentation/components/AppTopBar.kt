@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.resources.stringResource
@@ -153,7 +154,7 @@ fun AppTopBar(
                         modifier = Modifier.padding(start = if (onBackClick != null) 12.dp else 0.dp),
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
-                            fontSize = androidx.compose.ui.unit.TextUnit.Unspecified
+                            fontSize = TextUnit.Unspecified
                         ),
                         fontSize = 28.sp,
                         color = MaterialTheme.colorScheme.onSurface,

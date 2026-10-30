@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import presentation.aijob.WorkspaceDraftFactory
+import presentation.videostickerpack.VideoStickerPackState
 import presentation.videostickerpack.selectionKey
 
 object ViewModelAiJobTestSupport {
@@ -174,7 +175,7 @@ object ViewModelAiJobTestSupport {
         updatedAt = now()
     )
 
-    fun applyVideoPlanSelection(state: presentation.videostickerpack.VideoStickerPackState, plan: ResolvedVideoStickerPackPlan) =
+    fun applyVideoPlanSelection(state: VideoStickerPackState, plan: ResolvedVideoStickerPackPlan) =
         state.copy(
             generatedPlan = plan,
             isProcessing = false,

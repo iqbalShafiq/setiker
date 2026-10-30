@@ -1,5 +1,7 @@
 package domain.model
 
+import kotlin.math.max
+
 object DecorationRenderSpec {
     const val MIN_SCALE = 0.3f
     const val MAX_SCALE = 4f
@@ -68,7 +70,7 @@ object DecorationRenderSpec {
             if (!layer.isFill) layer.strokeWidthPx else 0f
         } ?: 0f
         val layerOffsetPad = resolvedStyle.layers.maxOfOrNull { layer ->
-            kotlin.math.max(layer.offsetXPx, layer.offsetYPx)
+            max(layer.offsetXPx, layer.offsetYPx)
         } ?: 0f
         return strokePad * 2f + layerOffsetPad
     }
@@ -85,8 +87,8 @@ object DecorationRenderSpec {
         val baseWidth = textBoxWidthPx(decoration, canvasWidthPx, minDimPx, scale)
         val baseHeight = textBoxHeightPx(decoration, minDimPx, scale)
         val padding = textDecorationPaddingPx(resolvedStyle)
-        return kotlin.math.max(baseWidth, measuredTextWidthPx + padding) to
-            kotlin.math.max(baseHeight, measuredTextHeightPx + padding)
+        return max(baseWidth, measuredTextWidthPx + padding) to
+            max(baseHeight, measuredTextHeightPx + padding)
     }
 }
 

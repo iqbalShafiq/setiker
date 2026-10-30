@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -204,7 +205,7 @@ fun AiGenerateStickerPackBottomSheet(
                             contentScale = ContentScale.Crop
                         )
                     } else {
-                        androidx.compose.material3.Icon(
+                        Icon(
                             imageVector = Icons.Filled.Image,
                             contentDescription = pickContentDescription,
                             tint = neubrutalSubtleOnSurface()

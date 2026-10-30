@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -46,7 +47,7 @@ fun ProfileMenuItem(
     label: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    iconBackgroundColor: androidx.compose.ui.graphics.Color = NeubrutalWhite
+    iconBackgroundColor: Color = NeubrutalWhite
 ) {
     val borderColor = neubrutalBorderColor()
     val pressFeedback = rememberPressFeedback(

@@ -6,6 +6,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import domain.model.DecorationRenderSpec
 import domain.model.ResolvedTextDecorationStyle
 import domain.model.ResolvedTextEffectLayer
@@ -249,7 +250,7 @@ fun rememberTextDecorationBoxMetrics(
         fontFamily = decorationFontFamily(resolvedStyle.font, resolvedStyle.fontWeight),
         fontWeight = mapDecorationFontWeight(resolvedStyle.fontWeight),
         fontSize = with(density) { textSizePx.toSp() },
-        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        textAlign = TextAlign.Center
     )
 
     return remember(

@@ -4,6 +4,8 @@ import data.local.entity.StickerEntity
 import data.local.entity.StickerPackEntity
 import data.remote.model.CreateStickerPackRequest
 import data.remote.model.DeleteStickerSyncPayload
+import data.remote.model.ReorderStickersSyncPayload
+import data.remote.model.StickerOrderItem
 import data.remote.model.StickerPackStickerInput
 import data.remote.model.UpdateStickerPackRequest
 import domain.model.SyncOperation
@@ -82,7 +84,7 @@ fun createDeleteStickerSyncOperation(
 
 fun createReorderStickersSyncOperation(
     cloudPackId: String,
-    stickerOrders: List<data.remote.model.StickerOrderItem>,
+    stickerOrders: List<StickerOrderItem>,
     id: String,
     createdAt: Long,
 ): SyncOperation = SyncOperation(
@@ -90,7 +92,7 @@ fun createReorderStickersSyncOperation(
     type = SyncOperationType.REORDER_STICKERS,
     targetId = cloudPackId,
     payload = Json.encodeToString(
-        data.remote.model.ReorderStickersSyncPayload(
+        ReorderStickersSyncPayload(
             stickerPackId = cloudPackId,
             stickerOrders = stickerOrders,
         )

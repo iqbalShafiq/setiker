@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -28,11 +27,11 @@ import domain.billing.BillingProductUiModel
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
-import presentation.components.AppSnackbarHostState
 import presentation.components.AiQuotaSummary
 import presentation.components.AppIllustration
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppTopBar
 import presentation.components.ContentLoadLayout
 import presentation.components.NeubrutalSnackbarHost

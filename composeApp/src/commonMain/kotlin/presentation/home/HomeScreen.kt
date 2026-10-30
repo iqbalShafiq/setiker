@@ -28,7 +28,6 @@ import androidx.compose.material.icons.filled.Workspaces
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -48,9 +47,10 @@ import domain.model.Sticker
 import domain.model.StickerPack
 import org.jetbrains.compose.resources.stringResource
 import presentation.common.ContentStateAnimations
-import presentation.components.AppSnackbarHostState
 import presentation.components.AiGenerateStickerPackBottomSheet
 import presentation.components.AppIllustration
+import presentation.components.AppPrimaryButton
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppTopBar
 import presentation.components.AppTopBarBadgedActionIcon
 import presentation.components.EmptyState
@@ -265,7 +265,7 @@ fun HomeScreen(
                         .fillMaxSize()
                         .padding(innerPadding),
                     action = {
-                        presentation.components.AppPrimaryButton(
+                        AppPrimaryButton(
                             text = stringResource(Res.string.retry),
                             onClick = { onIntent(HomeIntent.RetryLoadPacks) }
                         )
@@ -281,7 +281,7 @@ fun HomeScreen(
                         .fillMaxSize()
                         .padding(innerPadding),
                     action = {
-                        presentation.components.AppPrimaryButton(
+                        AppPrimaryButton(
                             text = stringResource(Res.string.home_try_sample_pack),
                             onClick = { onIntent(HomeIntent.CreateNewPack) }
                         )

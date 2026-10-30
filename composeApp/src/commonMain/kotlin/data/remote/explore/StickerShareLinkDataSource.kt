@@ -22,6 +22,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
+import kotlinx.serialization.Serializable
 
 /**
  * Sticker-level sharing: links, direct share to users, and sticker collaborators.
@@ -125,5 +126,5 @@ internal class StickerShareLinkDataSource(
     }
 }
 
-@kotlinx.serialization.Serializable
+@Serializable
 internal data class RemovePackShareBody(val userId: String)

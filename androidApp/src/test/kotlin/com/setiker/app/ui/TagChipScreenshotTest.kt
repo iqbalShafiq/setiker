@@ -1,5 +1,6 @@
 package com.setiker.app.ui
 
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -38,7 +39,7 @@ import presentation.theme.SetikerTheme
 class TagChipScreenshotTest {
 
     @get:Rule
-    val composeTestRule = createAndroidComposeRule<androidx.activity.ComponentActivity>()
+    val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
     @OptIn(ExperimentalLayoutApi::class)
     @Test

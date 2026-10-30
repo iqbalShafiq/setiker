@@ -1,3 +1,5 @@
 package data.remote
 
-actual fun Throwable.isPlatformIoException(): Boolean = this is kotlinx.io.IOException
+import kotlinx.io.IOException
+
+actual fun Throwable.isPlatformIoException(): Boolean = this is IOException

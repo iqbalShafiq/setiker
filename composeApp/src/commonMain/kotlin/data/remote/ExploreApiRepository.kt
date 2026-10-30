@@ -31,6 +31,7 @@ import data.remote.model.PublicUserProfile
 import data.remote.model.SharePackWithUserRequest
 import data.remote.model.SharePreviewPackData
 import data.remote.model.SharePreviewStickerData
+import data.remote.model.StickerCollaborator
 import data.remote.model.UserFollowStateData
 import data.remote.model.UserNotificationItem
 import data.remote.model.UserSearchResult
@@ -369,7 +370,7 @@ class ExploreApiRepository(
     suspend fun removeStickerShare(stickerId: String, userId: String): EmptyResult<DataError.Network> =
         stickerShares.removeStickerShare(stickerId, userId)
 
-    suspend fun listStickerCollaborators(stickerId: String): Result<List<data.remote.model.StickerCollaborator>, DataError.Network> =
+    suspend fun listStickerCollaborators(stickerId: String): Result<List<StickerCollaborator>, DataError.Network> =
         stickerShares.listStickerCollaborators(stickerId)
 
     suspend fun getProcessingHistory(type: String? = null): Result<List<ProcessingHistoryItem>, DataError.Network> =

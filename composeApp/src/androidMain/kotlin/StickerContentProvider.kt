@@ -2,6 +2,7 @@ package com.setiker.app
 
 import android.content.ContentProvider
 import android.content.ContentValues
+import android.content.UriMatcher
 import android.content.res.AssetFileDescriptor
 import android.database.Cursor
 import android.database.MatrixCursor
@@ -51,7 +52,7 @@ class StickerContentProvider : ContentProvider() {
         private const val TAG = "StickerContentProvider"
     }
 
-    private lateinit var uriMatcher: android.content.UriMatcher
+    private lateinit var uriMatcher: UriMatcher
     private var database: StickerDatabase? = null
     private var fileStorage: StickerFileStorage? = null
 
@@ -79,7 +80,7 @@ class StickerContentProvider : ContentProvider() {
 
     override fun onCreate(): Boolean {
         val authority = "${context?.packageName}.stickercontentprovider"
-        uriMatcher = android.content.UriMatcher(android.content.UriMatcher.NO_MATCH).apply {
+        uriMatcher = UriMatcher(UriMatcher.NO_MATCH).apply {
             addURI(authority, METADATA, METADATA_CODE)
             addURI(authority, "$METADATA/*", METADATA_CODE_FOR_SINGLE_PACK)
             addURI(authority, "$STICKERS/*", STICKERS_CODE)

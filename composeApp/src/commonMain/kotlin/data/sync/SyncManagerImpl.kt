@@ -16,8 +16,10 @@ import domain.model.SyncReport
 import domain.model.SyncResult
 import domain.model.SyncStage
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,7 +49,7 @@ class SyncManagerImpl(
     private val pullProcessor =
         RemotePullProcessor(operationDao, packDao, stickerDao, fileStorage, cloudRepo, authManager, syncCursorStore)
 
-    private var monitoringJob: kotlinx.coroutines.Job? = null
+    private var monitoringJob: Job? = null
     private val syncRunGate = SyncRunGate()
 
     override val operationsFlow: Flow<List<SyncOperation>> =
@@ -215,7 +217,7 @@ class SyncManagerImpl(
                         }
                     }
                 }
-                delay(100)
+                delay(100.milliseconds)
             }
 
             val pullOutcome = if (skipPull) {

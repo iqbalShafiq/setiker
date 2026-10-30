@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import domain.model.TextDecoration
 import domain.model.TextDecorationStyle
 import domain.model.TextDecorationStyleRegistry
 import domain.model.resolveStyle
@@ -85,7 +86,7 @@ fun StylePresetChip(
     val preset = TextDecorationStyleRegistry.preset(style)
     val previewTextSizePx = 18f
     val resolved = preset.let {
-        domain.model.TextDecoration(
+        TextDecoration(
             id = "preview",
             text = "Aa",
             font = it.font,

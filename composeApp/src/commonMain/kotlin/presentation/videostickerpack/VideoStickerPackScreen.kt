@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,7 +28,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -49,14 +49,15 @@ import domain.model.AiQuotaOperation
 import domain.model.ResolvedVideoAnimatedSticker
 import domain.model.ResolvedVideoStickerPackPlan
 import domain.model.Sticker
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.stringResource
-import presentation.components.AppSnackbarHostState
 import presentation.components.AiQuotaSummary
 import presentation.components.AppIllustration
 import presentation.components.AppIllustrationImage
+import presentation.components.AppSnackbarHostState
 import presentation.components.AppTextField
 import presentation.components.AppTopBar
 import presentation.components.InteractionBlockedBox
@@ -116,7 +117,7 @@ fun VideoStickerPackScreen(
     modifier: Modifier = Modifier
 ) {
     Scaffold(
-        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             AppTopBar(
                 title = stringResource(Res.string.video_pack_title),
@@ -598,7 +599,7 @@ private fun AnimatedVideoStickerPreviewCard(
     var frameIndex by remember(animated) { mutableIntStateOf(0) }
     LaunchedEffect(animated, frameIndex) {
         val duration = animated.timeline.getOrNull(frameIndex)?.frame?.durationMs ?: 83L
-        delay(duration.coerceAtLeast(16L))
+        delay(duration.milliseconds.coerceAtLeast(16.milliseconds))
         frameIndex = if (animated.timeline.isEmpty()) 0 else (frameIndex + 1) % animated.timeline.size
     }
     val frame = animated.timeline.getOrNull(frameIndex) ?: return

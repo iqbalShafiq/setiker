@@ -4,6 +4,7 @@ import android.graphics.Canvas
 import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Shader
+import android.graphics.Typeface
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
@@ -29,7 +30,7 @@ internal object DecorationTextCanvasDrawer {
     fun measureFlatTextBoundsPx(
         text: String,
         textSize: Float,
-        typeface: android.graphics.Typeface,
+        typeface: Typeface,
         resolved: ResolvedTextDecorationStyle,
         maxLineWidthPx: Int? = null
     ): FlatTextBoundsPx {
@@ -61,7 +62,7 @@ internal object DecorationTextCanvasDrawer {
     fun measureArchedContentBoundsPx(
         text: String,
         textSize: Float,
-        typeface: android.graphics.Typeface,
+        typeface: Typeface,
         resolved: ResolvedTextDecorationStyle,
         arcIntensity: Float
     ): ArchedContentBoundsPx {
@@ -146,7 +147,7 @@ internal object DecorationTextCanvasDrawer {
         centerX: Float,
         centerY: Float,
         textSize: Float,
-        typeface: android.graphics.Typeface,
+        typeface: Typeface,
         resolved: ResolvedTextDecorationStyle
     ) {
         val metricsPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -176,7 +177,7 @@ internal object DecorationTextCanvasDrawer {
         boxWidth: Float,
         boxHeight: Float,
         textSize: Float,
-        typeface: android.graphics.Typeface,
+        typeface: Typeface,
         resolved: ResolvedTextDecorationStyle
     ) {
         val maxWidth = boxWidth.toInt().coerceAtLeast(1)
@@ -206,7 +207,7 @@ internal object DecorationTextCanvasDrawer {
         boxWidth: Float,
         boxHeight: Float,
         textSize: Float,
-        typeface: android.graphics.Typeface,
+        typeface: Typeface,
         resolved: ResolvedTextDecorationStyle,
         arcIntensity: Float
     ) {
@@ -307,7 +308,7 @@ internal object DecorationTextCanvasDrawer {
         maxWidth: Int,
         resolved: ResolvedTextDecorationStyle,
         textSize: Float,
-        typeface: android.graphics.Typeface
+        typeface: Typeface
     ) {
         resolved.layers.forEach { layer ->
             val layout = createStaticLayout(
@@ -325,7 +326,7 @@ internal object DecorationTextCanvasDrawer {
         text: String,
         maxWidth: Int,
         textSizePx: Float,
-        typeface: android.graphics.Typeface,
+        typeface: Typeface,
         resolved: ResolvedTextDecorationStyle
     ): Float {
         val fillLayer = resolved.layers.lastOrNull() ?: return textSizePx
@@ -356,7 +357,7 @@ internal object DecorationTextCanvasDrawer {
         centerX: Float,
         baselineY: Float,
         textSize: Float,
-        typeface: android.graphics.Typeface,
+        typeface: Typeface,
         layer: ResolvedTextEffectLayer
     ) {
         val paint = createPaint(textSize, typeface, layer)
@@ -366,7 +367,7 @@ internal object DecorationTextCanvasDrawer {
     private fun createStaticLayout(
         text: String,
         textSize: Float,
-        typeface: android.graphics.Typeface,
+        typeface: Typeface,
         layer: ResolvedTextEffectLayer,
         maxWidth: Int
     ): StaticLayout {
@@ -380,13 +381,13 @@ internal object DecorationTextCanvasDrawer {
 
     private fun createTextPaint(
         textSize: Float,
-        typeface: android.graphics.Typeface,
+        typeface: Typeface,
         layer: ResolvedTextEffectLayer
     ): TextPaint = TextPaint(createPaint(textSize, typeface, layer))
 
     private fun createPaint(
         textSize: Float,
-        typeface: android.graphics.Typeface,
+        typeface: Typeface,
         layer: ResolvedTextEffectLayer
     ): Paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = layer.colorArgb.toInt()

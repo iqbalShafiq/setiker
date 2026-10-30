@@ -44,10 +44,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import domain.model.User
@@ -485,7 +488,7 @@ fun ProfileScreen(
     }
 
     if (state.showSetPassword) {
-        androidx.compose.ui.window.Dialog(onDismissRequest = onDismissSetPassword) {
+        Dialog(onDismissRequest = onDismissSetPassword) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -540,9 +543,9 @@ fun ProfileScreen(
 private fun ProfileCard(
     user: User,
     showPremiumBadge: Boolean,
-    borderColor: androidx.compose.ui.graphics.Color,
-    shadowColor: androidx.compose.ui.graphics.Color,
-    cardSurface: androidx.compose.ui.graphics.Color,
+    borderColor: Color,
+    shadowColor: Color,
+    cardSurface: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -639,9 +642,9 @@ private fun StatsCard(
     stickersCount: Int,
     packsCount: Int,
     downloadsCount: Int,
-    borderColor: androidx.compose.ui.graphics.Color,
-    shadowColor: androidx.compose.ui.graphics.Color,
-    cardSurface: androidx.compose.ui.graphics.Color,
+    borderColor: Color,
+    shadowColor: Color,
+    cardSurface: Color,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -691,7 +694,7 @@ private fun StatsCard(
 
 @Composable
 private fun StatItem(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     count: String,
     label: String
 ) {
@@ -733,9 +736,9 @@ private fun SectionTitle(text: String) {
 
 @Composable
 private fun MenuCard(
-    borderColor: androidx.compose.ui.graphics.Color,
-    shadowColor: androidx.compose.ui.graphics.Color,
-    cardSurface: androidx.compose.ui.graphics.Color,
+    borderColor: Color,
+    shadowColor: Color,
+    cardSurface: Color,
     content: @Composable () -> Unit
 ) {
     Column(

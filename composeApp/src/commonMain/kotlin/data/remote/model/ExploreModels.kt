@@ -2,6 +2,7 @@ package data.remote.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 
 @Serializable
 data class ApiPaginationMeta(
@@ -191,7 +192,7 @@ data class ProcessingHistoryItem(
     val id: String,
     val userId: String,
     val type: String,
-    val inputData: kotlinx.serialization.json.JsonObject? = null,
+    val inputData: JsonObject? = null,
     val outputFiles: List<ProcessingHistoryOutputFile> = emptyList(),
     val expiresAt: String,
     val createdAt: String
@@ -252,7 +253,7 @@ data class UserNotificationItem(
     val type: String,
     val title: String,
     val body: String? = null,
-    val payload: kotlinx.serialization.json.JsonObject? = null,
+    val payload: JsonObject? = null,
     val readAt: String? = null,
     val createdAt: String
 )

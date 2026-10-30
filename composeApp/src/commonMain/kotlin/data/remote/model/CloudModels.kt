@@ -1,5 +1,6 @@
 package data.remote.model
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -69,9 +70,9 @@ data class CloudStickerPack(
     val saved: Boolean? = null,
     val downloaded: Boolean? = null,
     val following: Boolean? = null,
-    @kotlinx.serialization.SerialName("isLiked") val isLiked: Boolean? = null,
-    @kotlinx.serialization.SerialName("isSaved") val isSaved: Boolean? = null,
-    @kotlinx.serialization.SerialName("isFollowingOwner") val isFollowingOwner: Boolean? = null,
+    @SerialName("isLiked") val isLiked: Boolean? = null,
+    @SerialName("isSaved") val isSaved: Boolean? = null,
+    @SerialName("isFollowingOwner") val isFollowingOwner: Boolean? = null,
 )
 
 @Serializable

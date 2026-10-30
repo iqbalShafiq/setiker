@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -91,7 +92,8 @@ fun AiGenerateBottomSheet(
     quotaOperation: AiQuotaOperation = AiQuotaOperation.GENERATE,
     onOpenPresets: (() -> Unit)? = null
 ) {
-    val canAffordQuota = aiUsage == null || aiUsage.pointsRemaining >= aiUsage.costFor(quotaOperation)
+    val canAffordQuota =
+        aiUsage == null || aiUsage.pointsRemaining >= aiUsage.costFor(quotaOperation)
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -170,7 +172,7 @@ fun AiGenerateBottomSheet(
                             contentScale = ContentScale.Crop
                         )
                     } else {
-                        androidx.compose.material3.Icon(
+                        Icon(
                             imageVector = Icons.Filled.Image,
                             contentDescription = pickContentDescription,
                             tint = neubrutalSubtleOnSurface()
@@ -215,7 +217,9 @@ fun AiGenerateBottomSheet(
                 stringResource(Res.string.generating)
             } else {
                 val cost = aiUsage?.costFor(quotaOperation) ?: 0
-                if (cost > 0) "${stringResource(Res.string.generate)} (−$cost)" else stringResource(Res.string.generate)
+                if (cost > 0) "${stringResource(Res.string.generate)} (−$cost)" else stringResource(
+                    Res.string.generate
+                )
             }
             AppPrimaryButton(
                 text = generateLabel,
