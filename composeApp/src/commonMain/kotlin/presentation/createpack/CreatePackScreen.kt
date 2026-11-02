@@ -61,7 +61,6 @@ import presentation.components.AppSnackbarHostState
 import presentation.components.AppTextField
 import presentation.components.AppTopBar
 import presentation.components.BottomSheetScrollColumn
-import presentation.components.CelebrationBadge
 import presentation.components.ContentPolicyBottomSheet
 import presentation.components.ImproveConfirmDialog
 import presentation.components.InteractionBlockedBox
@@ -126,7 +125,6 @@ import setiker.composeapp.generated.resources.improve_confirm_message_pack
 import setiker.composeapp.generated.resources.improve_stickers
 import setiker.composeapp.generated.resources.pack_name_label
 import setiker.composeapp.generated.resources.pack_name_placeholder
-import setiker.composeapp.generated.resources.pack_saved
 import setiker.composeapp.generated.resources.processing
 import setiker.composeapp.generated.resources.publisher_label
 import setiker.composeapp.generated.resources.publisher_placeholder
@@ -159,7 +157,6 @@ fun CreatePackScreen(
     onNavigateToVideoTrim: (String) -> Unit = {},
     onPreviewPublicPack: (String) -> Unit = {},
     snackbarHostState: AppSnackbarHostState = remember { AppSnackbarHostState() },
-    showCelebration: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val trayIconPicker = rememberImagePicker { path ->
@@ -835,11 +832,6 @@ fun CreatePackScreen(
 
                 Spacer(modifier = Modifier.height(80.dp))
                 }
-                CelebrationBadge(
-                    visible = showCelebration,
-                    modifier = Modifier.align(Alignment.Center),
-                    contentDescription = stringResource(Res.string.pack_saved)
-                )
             }
         }
     }

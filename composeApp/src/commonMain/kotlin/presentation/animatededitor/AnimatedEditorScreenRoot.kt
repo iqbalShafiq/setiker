@@ -3,18 +3,20 @@ package presentation.animatededitor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveLocal
 import presentation.common.resolveOrDefault
 import presentation.components.AppSnackbarHostState
 import presentation.components.rememberAppHaptics
 import presentation.theme.SetikerMotion
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.sticker_saved
 
 @Composable
 fun AnimatedEditorScreenRoot(
@@ -27,7 +29,7 @@ fun AnimatedEditorScreenRoot(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { AppSnackbarHostState() }
     val haptics = rememberAppHaptics()
-    var showCelebration by remember { mutableStateOf(false) }
+    val stickerSavedMessage = stringResource(Res.string.sticker_saved)
 
     LaunchedEffect(packId) {
         viewModel.onIntent(AnimatedEditorIntent.SetPackId(packId))
@@ -43,9 +45,8 @@ fun AnimatedEditorScreenRoot(
                 is AnimatedEditorEffect.NavigateBack -> onBackClick()
                 is AnimatedEditorEffect.AnimatedDraftReady -> {
                     haptics.confirm()
-                    showCelebration = true
-                    delay(SetikerMotion.CELEBRATION_HOLD_MS.milliseconds)
-                    showCelebration = false
+                    launch { snackbarHostState.showMessage(stickerSavedMessage) }
+                    delay(SetikerMotion.CONFIRMATION_HOLD_MS.milliseconds)
                     onAnimatedDraftReady(effect)
                 }
                 is AnimatedEditorEffect.ShowError -> {
@@ -68,7 +69,6 @@ fun AnimatedEditorScreenRoot(
         state = state,
         onIntent = viewModel::onIntent,
         onBackClick = onBackClick,
-        snackbarHostState = snackbarHostState,
-        showCelebration = showCelebration
+        snackbarHostState = snackbarHostState
     )
 }

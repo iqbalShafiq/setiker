@@ -3,16 +3,19 @@ package presentation.editor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
 import presentation.components.AppSnackbarHostState
 import presentation.components.rememberAppHaptics
+import presentation.theme.SetikerMotion
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.sticker_saved
 import util.AppLog
 
 @Composable
@@ -28,8 +31,8 @@ fun EditorScreenRoot(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { AppSnackbarHostState() }
-    var showCelebration by remember { mutableStateOf(false) }
     val haptics = rememberAppHaptics()
+    val stickerSavedMessage = stringResource(Res.string.sticker_saved)
 
     // Always set packId and stickerIndex when entering the screen or recomposing.
     // This ensures both are set even when returning from crop
@@ -59,11 +62,12 @@ fun EditorScreenRoot(
         viewModel.effect.collect { effect ->
             when (effect) {
                 is EditorEffect.StickerSaved -> {
-                    // Let the celebration land before leaving: saving a sticker is the moment the
-                    // whole app has been building towards.
+                    // Let the confirmation land before leaving: saving a sticker is the moment the
+                    // whole app has been building towards. The snackbar owns the confirmation, so
+                    // the screen does not need a second, button-shaped overlay.
                     haptics.confirm()
-                    showCelebration = true
-                    delay(CELEBRATION_DURATION_MS.milliseconds)
+                    launch { snackbarHostState.showMessage(stickerSavedMessage) }
+                    delay(SetikerMotion.CONFIRMATION_HOLD_MS.milliseconds)
                     onStickerSaved()
                 }
                 is EditorEffect.NavigateBack -> onBackClick()
@@ -82,10 +86,6 @@ fun EditorScreenRoot(
         state = state,
         onIntent = viewModel::onIntent,
         onBackClick = onBackClick,
-        snackbarHostState = snackbarHostState,
-        showCelebration = showCelebration
+        snackbarHostState = snackbarHostState
     )
 }
-
-/** How long the save celebration stays on screen. */
-private const val CELEBRATION_DURATION_MS = 1200L

@@ -1,13 +1,10 @@
 package com.setiker.app.ui
 
 import androidx.activity.ComponentActivity
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onRoot
@@ -20,7 +17,6 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import presentation.components.AppPrimaryButton
-import presentation.components.CelebrationBadge
 import presentation.components.EmptyState
 import presentation.components.NeubrutalIconButton
 import presentation.components.NeubrutalCheckbox
@@ -30,7 +26,6 @@ import presentation.components.NeubrutalSelectableChip
 import presentation.components.NeubrutalSlider
 import presentation.components.PageIndicator
 import presentation.theme.SetikerTheme
-import presentation.theme.neubrutalScreenBackground
 
 /**
  * The screenshot tests.
@@ -187,27 +182,5 @@ class ScreenshotTest {
         }
 
         composeTestRule.onRoot().captureRoboImage("checked_checkbox.png")
-    }
-
-    @Test
-    fun celebrationBadge() {
-        composeTestRule.setContent {
-            SetikerTheme {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(neubrutalScreenBackground())
-                        .padding(24.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CelebrationBadge(
-                        visible = true,
-                        contentDescription = "Sticker saved"
-                    )
-                }
-            }
-        }
-
-        composeTestRule.onRoot().captureRoboImage("celebration_badge.png")
     }
 }

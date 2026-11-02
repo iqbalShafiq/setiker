@@ -72,7 +72,6 @@ import presentation.components.AppTopBar
 import presentation.components.AppTopBarActionIcon
 import presentation.components.BorderStyleBottomSheet
 import presentation.components.BottomSheetScrollColumn
-import presentation.components.CelebrationBadge
 import presentation.components.CheckerboardBackground
 import presentation.components.ColorPickerBottomSheet
 import presentation.components.DecorationActionChip
@@ -147,7 +146,6 @@ import setiker.composeapp.generated.resources.save_sticker
 import setiker.composeapp.generated.resources.saving
 import setiker.composeapp.generated.resources.select_image
 import setiker.composeapp.generated.resources.sticker_preview
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.tags_with_count
 import setiker.composeapp.generated.resources.use_result
 
@@ -158,7 +156,6 @@ fun EditorScreen(
     onIntent: (EditorIntent) -> Unit,
     onBackClick: () -> Unit,
     snackbarHostState: AppSnackbarHostState = remember { AppSnackbarHostState() },
-    showCelebration: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val selectedDecoration = state.decorations.firstOrNull { it.id == state.selectedDecorationId }
@@ -377,13 +374,6 @@ fun EditorScreen(
                                         onIntent(EditorIntent.BeginDecorationTransform)
                                     },
                                     modifier = Modifier.fillMaxSize()
-                                )
-                                CelebrationBadge(
-                                    visible = showCelebration,
-                                    modifier = Modifier
-                                        .align(Alignment.BottomCenter)
-                                        .padding(bottom = 16.dp),
-                                    contentDescription = stringResource(Res.string.sticker_saved)
                                 )
                             }
                         }

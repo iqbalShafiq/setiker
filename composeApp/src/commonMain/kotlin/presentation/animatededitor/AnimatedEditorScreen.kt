@@ -57,7 +57,6 @@ import presentation.components.AppSnackbarHostState
 import presentation.components.AppTextField
 import presentation.components.AppTopBar
 import presentation.components.BorderStyleBottomSheet
-import presentation.components.CelebrationBadge
 import presentation.components.ColorPickerBottomSheet
 import presentation.components.DecorationActionChip
 import presentation.components.DecorationPreviewLayer
@@ -110,7 +109,6 @@ import setiker.composeapp.generated.resources.loading_frames
 import setiker.composeapp.generated.resources.next_frame
 import setiker.composeapp.generated.resources.previous_frame
 import setiker.composeapp.generated.resources.save_sticker
-import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.tags_with_count
 import setiker.composeapp.generated.resources.this_frame_only
 import util.decodeImageBitmap
@@ -122,7 +120,6 @@ fun AnimatedEditorScreen(
     onIntent: (AnimatedEditorIntent) -> Unit,
     onBackClick: () -> Unit,
     snackbarHostState: AppSnackbarHostState = remember { AppSnackbarHostState() },
-    showCelebration: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     // Decoding a frame takes tens of milliseconds for full-size stickers, so it is done off the
@@ -337,13 +334,6 @@ fun AnimatedEditorScreen(
                                 onIntent(AnimatedEditorIntent.RemoveDecoration(id))
                             },
                             modifier = Modifier.fillMaxSize()
-                        )
-                        CelebrationBadge(
-                            visible = showCelebration,
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(bottom = 16.dp),
-                            contentDescription = stringResource(Res.string.sticker_saved)
                         )
                     }
                 }

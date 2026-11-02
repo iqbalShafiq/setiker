@@ -53,8 +53,8 @@ object SetikerMotion {
     /** The image shimmer band. Slow enough to read as light, not as a progress bar. */
     const val DURATION_SHIMMER_MS = 1100
 
-    /** How long a celebration badge stays on screen after it lands. */
-    const val CELEBRATION_HOLD_MS = 1200
+    /** How long a save confirmation is given before the screen moves on. */
+    const val CONFIRMATION_HOLD_MS = 1200
 
     /**
      * Press scales.

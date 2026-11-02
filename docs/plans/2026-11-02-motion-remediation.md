@@ -17,7 +17,7 @@
 | **M7** reduced motion | `rememberReduceMotion()` (Android: animator duration scale; iOS: `UIAccessibilityIsReduceMotionEnabled`). Loader, shimmer, skeleton, progress indeterminate, dan autoplay preview berhenti saat aktif. |
 | **M8** haptic | `rememberAppHaptics()` dipakai pada selection, long-press, save/publish, like/follow, delete dekorasi, dan AI job selesai. |
 | **M9** iOS splash | `IosAppEntryPoint` menampilkan splash bermerek + crossfade yang sama dengan Android. |
-| **M10** celebration | Celebration dipakai saat save pack, publish, save animated sticker, dan AI job selesai. |
+| **M10** celebration | Konfirmasi save pack, publish, save animated sticker, dan AI job selesai memakai snackbar yang sudah ada; haptic tetap dipakai. |
 | **M11** token drift | Semua durasi/curve/skala tekan memakai `SetikerMotion`; `EaseInOut` yang tidak terpakai dihapus; literal durasi di Home, document reveal, progress dialog, loader, dan shimmer dihilangkan. |
 | **M12** dua `NeubrutalIconButton` | Satu implementasi surface (`NeubrutalIconButton`), satu bare (`NeubrutalBareIconButton`), dan satu surface internal yang dipakai bottom bar. Dead code dihapus. |
 | **M13** dua bahasa loading | Semua `CircularProgressIndicator`/`LinearProgressIndicator` diganti brand dots atau `NeubrutalProgress`. |
@@ -75,14 +75,14 @@ reference visual regression yang baru.
   placeholder panjang tidak membuat field tumbuh dua baris. Override `singleLine = false` pada
   editor, report, dan legal dihapus.
 - Search field Home dan `NeubrutalSearchBar` memakai `ImeAction.Search`.
-- `CelebrationBadge` sekarang berupa pill berlabel (mis. "Sticker saved") dengan border coral, bukan
-  kotak centang solid yang terlihat seperti tombol kedua. Di editor dan animated editor pill berada
-  di bawah preview supaya tidak menutupi wajah stiker.
+- Konfirmasi save/publish/AI selesai sekarang memakai `AppSnackbarHostState` dan
+  `NeubrutalSnackbarHost` yang sudah ada, bukan overlay badge terpisah. Haptic tetap dipakai, dan
+  layar menahan sebentar sebelum navigasi supaya pesan sempat terbaca.
 
 ## Verifikasi
 
 - `:composeApp:testAndroidHostTest` — lulus.
-- `:androidApp:testDebugUnitTest` — lulus, termasuk screenshot baru `selected_chip.png`, `progress.png`, `slider.png`, `range_slider.png`, `checked_checkbox.png`, dan `celebration_badge.png`.
+- `:androidApp:testDebugUnitTest` — lulus, termasuk screenshot baru `selected_chip.png`, `progress.png`, `slider.png`, `range_slider.png`, dan `checked_checkbox.png`.
 - `:androidApp:verifyRoborazziDebug` — lulus.
 - `:composeApp:lint` — lulus.
 - `:androidApp:connectedUiTest` — 20 test instrumented lulus.

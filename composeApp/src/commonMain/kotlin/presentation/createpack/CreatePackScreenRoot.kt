@@ -3,19 +3,20 @@ package presentation.createpack
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
 import presentation.components.AppSnackbarHostState
 import presentation.components.rememberAppHaptics
 import presentation.theme.SetikerMotion
+import setiker.composeapp.generated.resources.Res
+import setiker.composeapp.generated.resources.pack_saved
 
 @Composable
 fun CreatePackScreenRoot(
@@ -39,7 +40,7 @@ fun CreatePackScreenRoot(
     val snackbarHostState = remember { AppSnackbarHostState() }
     val haptics = rememberAppHaptics()
     val snackbarScope = rememberCoroutineScope()
-    var showCelebration by remember { mutableStateOf(false) }
+    val packSavedMessage = stringResource(Res.string.pack_saved)
 
     LaunchedEffect(packId) {
         packId?.let { viewModel.onIntent(CreatePackIntent.LoadPack(it)) }
@@ -75,19 +76,14 @@ fun CreatePackScreenRoot(
             when (effect) {
                 is CreatePackEffect.PackSaved -> {
                     haptics.confirm()
-                    showCelebration = true
-                    delay(SetikerMotion.CELEBRATION_HOLD_MS.milliseconds)
-                    showCelebration = false
+                    snackbarScope.launch { snackbarHostState.showMessage(packSavedMessage) }
+                    delay(SetikerMotion.CONFIRMATION_HOLD_MS.milliseconds)
                     onPackSaved(effect.packId)
                 }
                 is CreatePackEffect.PackPublished -> {
                     haptics.confirm()
-                    showCelebration = true
-                    // The snackbar suspends until it is dismissed. It must not hold the celebration
-                    // on screen for its whole ten-second lifetime.
+                    // The snackbar suspends until it is dismissed, so it runs in its own scope.
                     snackbarScope.launch { snackbarHostState.showMessage(effect.message) }
-                    delay(SetikerMotion.CELEBRATION_HOLD_MS.milliseconds)
-                    showCelebration = false
                 }
                 is CreatePackEffect.NavigateToPublicPack -> onNavigateToPublicPack(effect.cloudPackId)
                 is CreatePackEffect.ShowSuccess -> snackbarHostState.showMessage(effect.message)
@@ -107,7 +103,6 @@ fun CreatePackScreenRoot(
         onNavigateToCropTray = onNavigateToCropTray,
         onNavigateToVideoTrim = onNavigateToVideoTrim,
         onPreviewPublicPack = onNavigateToPublicPack,
-        snackbarHostState = snackbarHostState,
-        showCelebration = showCelebration
+        snackbarHostState = snackbarHostState
     )
 }

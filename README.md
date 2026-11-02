@@ -26,7 +26,7 @@ iOS.
 </p>
 
 <p align="center">
-  <img src="docs/images/flow.gif" alt="The app in motion: the pack list, a pack opening, the sticker grid, the editor, and the coral 'Sticker saved' pill that pops in when a sticker is saved" width="300">
+  <img src="docs/images/flow.gif" alt="The app in motion: the pack list, a pack opening, the sticker grid, the editor, and the save confirmation snackbar that appears when a sticker is saved" width="300">
 </p>
 
 ## What it does
@@ -105,8 +105,8 @@ uses it.
 
 Motion has one home too, `SetikerMotion`: durations, curves and springs. Press feedback is a firm
 non-bouncy spring, because a button is pressed dozens of times a day and a wobble reads as
-sloppiness. The one place a bounce is allowed is a celebration, such as the badge that pops when a
-sticker is saved. Loading is part of the same language: brand dots, skeleton lists, hard-shadow
+sloppiness. The one place a bounce is allowed is a small celebration, such as the like or save
+feedback. Loading is part of the same language: brand dots, skeleton lists, hard-shadow
 progress bars and a pull-to-refresh pill, never a stock Material spinner. Haptics confirm a
 selection or a save, and reduced-motion mode stops the loops and the autoplay previews.
 

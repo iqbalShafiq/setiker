@@ -1,7 +1,6 @@
 package presentation.aijobs
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,8 +18,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -30,8 +29,7 @@ import domain.model.aijob.AiJob
 import domain.model.aijob.AiJobStatus
 import domain.model.aijob.WorkspaceDraft
 import domain.model.aijob.WorkspaceDraftStatus
-import kotlin.time.Duration.Companion.milliseconds
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -39,7 +37,6 @@ import presentation.common.resolveOrDefault
 import presentation.components.AppIllustration
 import presentation.components.AppSnackbarHostState
 import presentation.components.AppTopBar
-import presentation.components.CelebrationBadge
 import presentation.components.DraftJobListCard
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
@@ -48,7 +45,6 @@ import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
 import presentation.components.rememberAppHaptics
-import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import setiker.composeapp.generated.resources.Res
@@ -88,7 +84,8 @@ fun AiJobsScreenRoot(
 
     val snackbarHostState = remember { AppSnackbarHostState() }
     val haptics = rememberAppHaptics()
-    var showCelebration by remember { mutableStateOf(false) }
+    val snackbarScope = rememberCoroutineScope()
+    val readyMessage = stringResource(Res.string.ai_jobs_status_ready)
     var knownCompletedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var hasLoadedOnce by remember { mutableStateOf(false) }
 
@@ -101,17 +98,11 @@ fun AiJobsScreenRoot(
             val newlyCompleted = completedIds - knownCompletedIds
             if (newlyCompleted.isNotEmpty()) {
                 haptics.confirm()
-                showCelebration = true
+                snackbarScope.launch { snackbarHostState.showMessage(readyMessage) }
             }
         }
         knownCompletedIds = completedIds
         hasLoadedOnce = true
-    }
-
-    LaunchedEffect(showCelebration) {
-        if (!showCelebration) return@LaunchedEffect
-        delay(SetikerMotion.CELEBRATION_HOLD_MS.milliseconds)
-        showCelebration = false
     }
 
     LaunchedEffect(Unit) {
@@ -125,19 +116,12 @@ fun AiJobsScreenRoot(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        AiJobsScreen(
-            state = state,
-            onIntent = viewModel::onIntent,
-            onBackClick = onBackClick,
-            snackbarHostState = snackbarHostState
-        )
-        CelebrationBadge(
-            visible = showCelebration,
-            modifier = Modifier.align(Alignment.Center),
-            contentDescription = stringResource(Res.string.ai_jobs_status_ready)
-        )
-    }
+    AiJobsScreen(
+        state = state,
+        onIntent = viewModel::onIntent,
+        onBackClick = onBackClick,
+        snackbarHostState = snackbarHostState
+    )
 }
 
 
