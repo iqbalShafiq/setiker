@@ -75,11 +75,14 @@ reference visual regression yang baru.
   placeholder panjang tidak membuat field tumbuh dua baris. Override `singleLine = false` pada
   editor, report, dan legal dihapus.
 - Search field Home dan `NeubrutalSearchBar` memakai `ImeAction.Search`.
+- `CelebrationBadge` sekarang berupa pill berlabel (mis. "Sticker saved") dengan border coral, bukan
+  kotak centang solid yang terlihat seperti tombol kedua. Di editor dan animated editor pill berada
+  di bawah preview supaya tidak menutupi wajah stiker.
 
 ## Verifikasi
 
 - `:composeApp:testAndroidHostTest` — lulus.
-- `:androidApp:testDebugUnitTest` — lulus, termasuk screenshot baru `selected_chip.png`, `progress.png`, `slider.png`, `range_slider.png`, dan `checked_checkbox.png`.
+- `:androidApp:testDebugUnitTest` — lulus, termasuk screenshot baru `selected_chip.png`, `progress.png`, `slider.png`, `range_slider.png`, `checked_checkbox.png`, dan `celebration_badge.png`.
 - `:androidApp:verifyRoborazziDebug` — lulus.
 - `:composeApp:lint` — lulus.
 - `:androidApp:connectedUiTest` — 20 test instrumented lulus.

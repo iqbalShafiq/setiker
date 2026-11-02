@@ -380,7 +380,9 @@ fun EditorScreen(
                                 )
                                 CelebrationBadge(
                                     visible = showCelebration,
-                                    modifier = Modifier.align(Alignment.Center),
+                                    modifier = Modifier
+                                        .align(Alignment.BottomCenter)
+                                        .padding(bottom = 16.dp),
                                     contentDescription = stringResource(Res.string.sticker_saved)
                                 )
                             }

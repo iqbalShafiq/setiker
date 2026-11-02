@@ -26,7 +26,7 @@ iOS.
 </p>
 
 <p align="center">
-  <img src="docs/images/flow.gif" alt="The app in motion: the pack list, a pack opening, the sticker grid, the editor, and the coral check that pops in when a sticker is saved" width="300">
+  <img src="docs/images/flow.gif" alt="The app in motion: the pack list, a pack opening, the sticker grid, the editor, and the coral 'Sticker saved' pill that pops in when a sticker is saved" width="300">
 </p>
 
 ## What it does
