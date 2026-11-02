@@ -2,7 +2,6 @@ package presentation.crop
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,13 +18,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.RotateLeft
+import androidx.compose.material.icons.automirrored.filled.RotateRight
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Flip
+import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -50,16 +51,25 @@ import presentation.components.AppIllustrationImage
 import presentation.components.AppSnackbarHostState
 import presentation.components.AppTopBar
 import presentation.components.InteractionBlockedBox
+import presentation.components.NeubrutalRangeSlider
+import presentation.components.NeubrutalSlider
 import presentation.components.NeubrutalSnackbarHost
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
+import presentation.components.clickableNoRipple
+import presentation.components.pressScale
+import presentation.components.pressShadow
+import presentation.components.rememberAppHaptics
+import presentation.components.rememberPressFeedback
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalDialogRadius
+import presentation.theme.NeubrutalPressedShadowOffset
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.NeubrutalWhite
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
@@ -201,7 +211,7 @@ fun CropScreen(
                     color = neubrutalOnSurface()
                 )
 
-                Slider(
+                NeubrutalSlider(
                     value = state.scale,
                     onValueChange = { onIntent(CropIntent.UpdateScale(it)) },
                     valueRange = 0.5f..4f,
@@ -216,25 +226,25 @@ fun CropScreen(
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     NeubrutalToolButton(
-                        icon = Icons.Default.Refresh,
+                        icon = Icons.AutoMirrored.Filled.RotateLeft,
                         label = stringResource(Res.string.rotate_left),
                         isSelected = false,
                         onClick = { onIntent(CropIntent.RotateLeft) }
                     )
                     NeubrutalToolButton(
-                        icon = Icons.Default.Refresh,
+                        icon = Icons.AutoMirrored.Filled.RotateRight,
                         label = stringResource(Res.string.rotate_right),
                         isSelected = false,
                         onClick = { onIntent(CropIntent.RotateRight) }
                     )
                     NeubrutalToolButton(
-                        icon = Icons.Default.Refresh,
+                        icon = Icons.Default.Flip,
                         label = stringResource(Res.string.flip_horizontal),
                         isSelected = false,
                         onClick = { onIntent(CropIntent.FlipHorizontal) }
                     )
                     NeubrutalToolButton(
-                        icon = Icons.Default.Refresh,
+                        icon = Icons.Default.RestartAlt,
                         label = stringResource(Res.string.reset),
                         isSelected = false,
                         onClick = { onIntent(CropIntent.Reset) }
@@ -255,6 +265,11 @@ private fun NeubrutalToolButton(
     modifier: Modifier = Modifier
 ) {
     val border = neubrutalBorderColor()
+    val haptics = rememberAppHaptics()
+    val pressFeedback = rememberPressFeedback(
+        pressedScale = SetikerMotion.PRESS_SCALE_REGULAR,
+        label = "crop_tool_scale"
+    )
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -262,9 +277,11 @@ private fun NeubrutalToolButton(
         Box(
             modifier = Modifier
                 .size(48.dp)
-                .neubrutalShadow(
-                    offsetX = NeubrutalSmallShadowOffset,
-                    offsetY = NeubrutalSmallShadowOffset,
+                .pressScale(pressFeedback)
+                .pressShadow(
+                    feedback = pressFeedback,
+                    restOffset = NeubrutalSmallShadowOffset,
+                    pressedOffset = NeubrutalPressedShadowOffset,
                     cornerRadius = 24.dp,
                     color = neubrutalShadowColor()
                 )
@@ -278,7 +295,13 @@ private fun NeubrutalToolButton(
                         onFilledSurface = isSelected
                     )
                 )
-                .clickable(onClick = onClick),
+                .clickableNoRipple(
+                    interactionSource = pressFeedback.interactionSource,
+                    onClick = {
+                        haptics.selection()
+                        onClick()
+                    }
+                ),
             contentAlignment = Alignment.Center
         ) {
             Icon(

@@ -1,8 +1,6 @@
 package presentation.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -42,11 +39,9 @@ import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalSmallRadius
-import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
-import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
@@ -57,65 +52,6 @@ import setiker.composeapp.generated.resources.back_content_description
 import setiker.composeapp.generated.resources.my_stickers_title
 import setiker.composeapp.generated.resources.pack_details_title
 import setiker.composeapp.generated.resources.settings
-
-/**
- * Neubrutal-styled icon button for use in top/bottom bars.
- * Small shadow + border + press animation.
- */
-@Composable
-fun NeubrutalIconButton(
-    icon: ImageVector,
-    contentDescription: String?,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    iconTint: Color = neubrutalOnSurface()
-) {
-    val pressFeedback = rememberPressFeedback(
-        pressedScale = 0.92f,
-        enabled = enabled,
-        label = "icon_button_scale"
-    )
-
-    val border = neubrutalBorderColor()
-    val shadow = neubrutalShadowColor()
-    val shape = RoundedCornerShape(NeubrutalSmallRadius)
-    val shadowX = if (pressFeedback.isPressed && enabled) 1.dp else NeubrutalSmallShadowOffset
-    val shadowY = if (pressFeedback.isPressed && enabled) 1.dp else NeubrutalSmallShadowOffset
-
-    Box(
-        modifier = modifier
-            .size(40.dp)
-            .pressScale(pressFeedback)
-            .neubrutalShadow(
-                offsetX = shadowX,
-                offsetY = shadowY,
-                cornerRadius = NeubrutalSmallRadius,
-                color = shadow
-            )
-            .clip(shape)
-            .background(neubrutalCardSurface())
-            .neubrutalBorderWithGloss(
-                color = border,
-                cornerRadius = NeubrutalSmallRadius,
-                highlightColor = neubrutalGlossyHighlightColor()
-            )
-            .clickable(
-                interactionSource = pressFeedback.interactionSource,
-                indication = null,
-                enabled = enabled,
-                onClick = onClick
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            modifier = Modifier.size(22.dp),
-            tint = if (enabled) iconTint else iconTint.copy(alpha = 0.4f)
-        )
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -207,14 +143,16 @@ fun RowScope.AppTopBarActionIcon(
     contentDescription: String?,
     onClick: () -> Unit,
     enabled: Boolean = true,
-    iconTint: Color = neubrutalOnSurface()
+    iconTint: Color = neubrutalOnSurface(),
+    iconModifier: Modifier = Modifier
 ) {
     NeubrutalIconButton(
         icon = icon,
         contentDescription = contentDescription,
         onClick = onClick,
         enabled = enabled,
-        iconTint = iconTint
+        iconTint = iconTint,
+        iconModifier = iconModifier
     )
 }
 

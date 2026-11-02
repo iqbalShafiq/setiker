@@ -6,9 +6,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -84,13 +87,13 @@ fun AiGenerateStickerPackBottomSheet(
     onOpenPresets: (() -> Unit)? = null
 ) {
     val canAffordQuota = aiUsage == null || aiUsage.pointsRemaining >= aiUsage.costFor(AiQuotaOperation.GENERATE)
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ModalBottomSheet(
+    val sheetState = rememberAppSheetState()
+    AppModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = neubrutalScreenBackground(),
         scrimColor = NeubrutalScrim,
-        contentWindowInsets = { zeroBottomSheetWindowInsets() }
+        contentWindowInsets = { WindowInsets.navigationBars }
     ) {
         BottomSheetScrollColumn {
             Text(
@@ -114,7 +117,8 @@ fun AiGenerateStickerPackBottomSheet(
                 value = packName,
                 onValueChange = onPackNameChange,
                 label = stringResource(Res.string.pack_name_label),
-                placeholder = stringResource(Res.string.pack_name_placeholder)
+                placeholder = stringResource(Res.string.pack_name_placeholder),
+                imeAction = ImeAction.Next
             )
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -122,7 +126,8 @@ fun AiGenerateStickerPackBottomSheet(
                 value = publisher,
                 onValueChange = onPublisherChange,
                 label = stringResource(Res.string.publisher_label),
-                placeholder = stringResource(Res.string.publisher_placeholder)
+                placeholder = stringResource(Res.string.publisher_placeholder),
+                imeAction = ImeAction.Next
             )
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -131,6 +136,12 @@ fun AiGenerateStickerPackBottomSheet(
                 onValueChange = onPromptChange,
                 label = stringResource(Res.string.prompt_label),
                 placeholder = stringResource(Res.string.prompt_placeholder),
+                imeAction = ImeAction.Done,
+                onDone = {
+                    if (!isGenerating && prompt.isNotBlank() && canAffordQuota) {
+                        onGenerate()
+                    }
+                },
                 trailingIcon = onOpenPresets?.let { openPresets ->
                     { PromptPresetsTrailingIcon(onClick = openPresets) }
                 }
@@ -146,10 +157,10 @@ fun AiGenerateStickerPackBottomSheet(
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf("2x2", "3x3", "4x4").forEach { option ->
-                    FilterChip(
+                    NeubrutalSelectableChip(
+                        label = option,
                         selected = layout == option,
-                        onClick = { onLayoutChange(option) },
-                        label = { Text(option) }
+                        onClick = { onLayoutChange(option) }
                     )
                 }
             }

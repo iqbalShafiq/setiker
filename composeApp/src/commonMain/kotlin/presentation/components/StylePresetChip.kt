@@ -1,8 +1,9 @@
 package presentation.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -10,13 +11,16 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -29,6 +33,7 @@ import domain.model.resolveStyle
 import org.jetbrains.compose.resources.stringResource
 import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalSmallRadius
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
@@ -97,18 +102,44 @@ fun StylePresetChip(
     }
 
     val primary = MaterialTheme.colorScheme.primary
+    val haptics = rememberAppHaptics()
+    val pressFeedback = rememberPressFeedback(
+        pressedScale = SetikerMotion.PRESS_SCALE_REGULAR,
+        label = "style_preset_chip_scale"
+    )
+    val borderWidth by animateDpAsState(
+        targetValue = if (selected) NeubrutalBorderWidth * 1.5f else NeubrutalBorderWidth,
+        animationSpec = SetikerMotion.standard(SetikerMotion.DURATION_FAST_MS),
+        label = "style_preset_border_width"
+    )
+    val borderColor by animateColorAsState(
+        targetValue = if (selected) primary else neubrutalBorderColor(),
+        animationSpec = SetikerMotion.standard(SetikerMotion.DURATION_FAST_MS),
+        label = "style_preset_border_color"
+    )
+
     Box(
         modifier = modifier
             .width(76.dp)
             .height(54.dp)
+            .pressScale(pressFeedback)
             .clip(RoundedCornerShape(NeubrutalSmallRadius))
             .background(neubrutalScreenBackground())
             .border(
-                width = if (selected) NeubrutalBorderWidth * 1.5f else NeubrutalBorderWidth,
-                color = if (selected) primary else neubrutalBorderColor(),
+                width = borderWidth,
+                color = borderColor,
                 shape = RoundedCornerShape(NeubrutalSmallRadius)
             )
-            .clickable(onClick = onClick)
+            .selectable(
+                selected = selected,
+                interactionSource = pressFeedback.interactionSource,
+                indication = null,
+                role = Role.RadioButton,
+                onClick = {
+                    haptics.selection()
+                    onClick()
+                }
+            )
             .padding(4.dp),
         contentAlignment = Alignment.Center
     ) {

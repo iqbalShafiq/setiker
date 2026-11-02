@@ -158,6 +158,7 @@ fun ForgotPasswordScreen(
                 placeholder = stringResource(Res.string.login_email_placeholder),
                 keyboardType = KeyboardType.Email,
                 imeAction = ImeAction.Done,
+                onDone = { if (!state.isLoading) onSubmit() },
                 enabled = !state.isLoading,
                 modifier = Modifier.fillMaxWidth()
             )

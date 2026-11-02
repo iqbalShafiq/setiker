@@ -1,10 +1,6 @@
 package presentation.components
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,21 +22,21 @@ import domain.model.Sticker
 import org.jetbrains.compose.resources.stringResource
 import presentation.theme.ErrorRed
 import presentation.theme.NeubrutalCardRadius
+import presentation.theme.NeubrutalPressedShadowOffset
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalSmallRadius
 import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.NeubrutalWhite
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalGlossyHighlightColor
-import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.delete_sticker
 import setiker.composeapp.generated.resources.sticker_fallback
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun StickerCard(
     sticker: Sticker,
@@ -49,18 +45,30 @@ fun StickerCard(
     onLongClick: (() -> Unit)? = null,
     showDecorations: Boolean = false,
     fallbackContentDescription: String? = null,
+    lifted: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val border = neubrutalBorderColor()
     val cardShape = RoundedCornerShape(NeubrutalCardRadius)
     val innerShape = RoundedCornerShape(NeubrutalSmallRadius)
+    val haptics = rememberAppHaptics()
+    val pressFeedback = rememberPressFeedback(
+        pressedScale = SetikerMotion.PRESS_SCALE_REGULAR,
+        label = "sticker_card_scale"
+    )
+    val deleteFeedback = rememberPressFeedback(
+        pressedScale = SetikerMotion.PRESS_SCALE_TINY,
+        label = "sticker_card_delete_scale"
+    )
 
     Box(
         modifier = modifier
             .aspectRatio(1f)
-            .neubrutalShadow(
-                offsetX = NeubrutalShadowOffset,
-                offsetY = NeubrutalShadowOffset,
+            .pressScale(pressFeedback)
+            .pressShadow(
+                feedback = pressFeedback,
+                restOffset = if (lifted) 8.dp else NeubrutalShadowOffset,
+                pressedOffset = if (lifted) 4.dp else NeubrutalSmallShadowOffset,
                 cornerRadius = NeubrutalCardRadius,
                 color = neubrutalShadowColor()
             )
@@ -73,9 +81,19 @@ fun StickerCard(
             )
             .then(
                 if (onLongClick != null) {
-                    Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick)
+                    Modifier.combinedClickableNoRipple(
+                        interactionSource = pressFeedback.interactionSource,
+                        onClick = onClick,
+                        onLongClick = {
+                            haptics.longPress()
+                            onLongClick()
+                        }
+                    )
                 } else {
-                    Modifier.clickable(onClick = onClick)
+                    Modifier.clickableNoRipple(
+                        interactionSource = pressFeedback.interactionSource,
+                        onClick = onClick
+                    )
                 }
             )
             .padding(4.dp)
@@ -112,9 +130,11 @@ fun StickerCard(
                     .align(Alignment.TopEnd)
                     .padding(2.dp)
                     .size(28.dp)
-                    .neubrutalShadow(
-                        offsetX = NeubrutalSmallShadowOffset,
-                        offsetY = NeubrutalSmallShadowOffset,
+                    .pressScale(deleteFeedback)
+                    .pressShadow(
+                        feedback = deleteFeedback,
+                        restOffset = NeubrutalSmallShadowOffset,
+                        pressedOffset = NeubrutalPressedShadowOffset,
                         cornerRadius = 6.dp,
                         color = neubrutalShadowColor()
                     )
@@ -126,7 +146,13 @@ fun StickerCard(
                         cornerRadius = 6.dp,
                         highlightColor = neubrutalGlossyHighlightColor(onFilledSurface = true)
                     )
-                    .clickable(onClick = onDeleteClick),
+                    .clickableNoRipple(
+                        interactionSource = deleteFeedback.interactionSource,
+                        onClick = {
+                            haptics.selection()
+                            onDeleteClick()
+                        }
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(

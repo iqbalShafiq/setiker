@@ -8,8 +8,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import domain.model.DecorationFont
@@ -73,14 +76,14 @@ fun AddTextDecorationBottomSheet(
 ) {
     var text by remember { mutableStateOf("") }
     var selectedStyle by remember { mutableStateOf(TextDecorationStyle.ClassicOutline) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberAppSheetState()
 
-    ModalBottomSheet(
+    AppModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = neubrutalScreenBackground(),
         scrimColor = NeubrutalScrim,
-        contentWindowInsets = { zeroBottomSheetWindowInsets() }
+        contentWindowInsets = { WindowInsets.navigationBars }
     ) {
         BottomSheetScrollColumn {
             Text(
@@ -94,7 +97,9 @@ fun AddTextDecorationBottomSheet(
                 value = text,
                 onValueChange = { text = it },
                 label = stringResource(Res.string.add_text),
-                placeholder = stringResource(Res.string.text_decoration_placeholder)
+                placeholder = stringResource(Res.string.text_decoration_placeholder),
+                imeAction = ImeAction.Done,
+                onDone = { if (text.isNotBlank()) onAdd(text, selectedStyle) }
             )
             Spacer(modifier = Modifier.height(12.dp))
             StylePresetChipRow(selectedStyle = selectedStyle, onSelect = { selectedStyle = it })
@@ -121,20 +126,22 @@ fun EditTextDecorationBottomSheet(
     onDismiss: () -> Unit
 ) {
     var text by remember(initialText) { mutableStateOf(initialText) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ModalBottomSheet(
+    val sheetState = rememberAppSheetState()
+    AppModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = neubrutalScreenBackground(),
         scrimColor = NeubrutalScrim,
-        contentWindowInsets = { zeroBottomSheetWindowInsets() }
+        contentWindowInsets = { WindowInsets.navigationBars }
     ) {
         BottomSheetScrollColumn {
             AppTextField(
                 value = text,
                 onValueChange = { text = it },
                 label = stringResource(Res.string.edit_text_decoration),
-                placeholder = stringResource(Res.string.text_decoration_placeholder)
+                placeholder = stringResource(Res.string.text_decoration_placeholder),
+                imeAction = ImeAction.Done,
+                onDone = { if (text.isNotBlank()) onConfirm(text) }
             )
             Spacer(modifier = Modifier.height(12.dp))
             AppPrimaryButton(
@@ -166,8 +173,8 @@ fun StylePickerBottomSheet(
     onBorderWidthChange: (Float) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ModalBottomSheet(
+    val sheetState = rememberAppSheetState()
+    AppModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = neubrutalScreenBackground(),
@@ -228,7 +235,7 @@ fun StylePickerBottomSheet(
                     style = MaterialTheme.typography.labelLarge,
                     color = neubrutalOnSurface()
                 )
-                Slider(
+                NeubrutalSlider(
                     value = arcIntensity,
                     onValueChange = onArcIntensityChange,
                     valueRange = -1f..1f
@@ -256,7 +263,7 @@ fun StylePickerBottomSheet(
                     style = MaterialTheme.typography.labelLarge,
                     color = neubrutalOnSurface()
                 )
-                Slider(
+                NeubrutalSlider(
                     value = borderWidthRatio,
                     onValueChange = onBorderWidthChange,
                     valueRange = 0f..0.2f
@@ -307,13 +314,13 @@ fun ColorPickerBottomSheet(
     onSelect: (Long) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberAppSheetState()
     val initialHsv = remember(selectedColorArgb) { argbToHsv(selectedColorArgb.toInt()) }
     var hue by remember(selectedColorArgb) { mutableStateOf(initialHsv[0]) }
     var saturation by remember(selectedColorArgb) { mutableStateOf(initialHsv[1]) }
     var value by remember(selectedColorArgb) { mutableStateOf(initialHsv[2]) }
     val selectedColor = Color.hsv(hue = hue, saturation = saturation, value = value)
-    ModalBottomSheet(
+    AppModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = neubrutalScreenBackground(),
@@ -406,14 +413,14 @@ fun BorderStyleBottomSheet(
     onSelect: (Long, Float) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberAppSheetState()
     val initialHsv = remember(initialBorderColorArgb) { argbToHsv(initialBorderColorArgb.toInt()) }
     var hue by remember(initialBorderColorArgb) { mutableStateOf(initialHsv[0]) }
     var saturation by remember(initialBorderColorArgb) { mutableStateOf(initialHsv[1]) }
     var value by remember(initialBorderColorArgb) { mutableStateOf(initialHsv[2]) }
     val selectedColor = Color.hsv(hue = hue, saturation = saturation, value = value)
     var widthRatio by remember(initialWidthRatio) { mutableStateOf(initialWidthRatio.coerceIn(0f, 0.2f)) }
-    ModalBottomSheet(
+    AppModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = neubrutalScreenBackground(),
@@ -479,7 +486,7 @@ fun BorderStyleBottomSheet(
                 style = MaterialTheme.typography.labelLarge,
                 color = neubrutalOnSurface()
             )
-            Slider(
+            NeubrutalSlider(
                 value = widthRatio,
                 onValueChange = { widthRatio = it },
                 valueRange = 0f..0.2f
@@ -513,31 +520,16 @@ private fun FontChipRow(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DecorationSheetFilterChip(
     selected: Boolean,
     onClick: () -> Unit,
     label: @Composable () -> Unit
 ) {
-    val primary = MaterialTheme.colorScheme.primary
-    FilterChip(
+    NeubrutalFilterChip(
         selected = selected,
         onClick = onClick,
-        label = label,
-        colors = FilterChipDefaults.filterChipColors(
-            containerColor = neubrutalCardSurface(),
-            labelColor = neubrutalOnSurface(),
-            selectedContainerColor = primary,
-            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-        ),
-        border = FilterChipDefaults.filterChipBorder(
-            enabled = true,
-            selected = selected,
-            borderColor = neubrutalBorderColor(),
-            selectedBorderColor = primary,
-            disabledBorderColor = neubrutalBorderColor()
-        )
+        content = label
     )
 }
 
@@ -567,7 +559,7 @@ private fun ColorSliderRow(
                     highlightColor = neubrutalGlossyHighlightColor()
                 )
         )
-        Slider(
+        NeubrutalSlider(
             value = value,
             onValueChange = onValueChange,
             valueRange = valueRange

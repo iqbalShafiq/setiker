@@ -141,7 +141,7 @@ fun ShareLinksSheet(
                                     color = neubrutalOnSurface(),
                                     modifier = Modifier.weight(1f)
                                 )
-                                NeubrutalIconButton(
+                                NeubrutalBareIconButton(
                                     icon = Icons.Default.Check,
                                     contentDescription = stringResource(Res.string.cloud_links_copy),
                                     onClick = {
@@ -151,7 +151,7 @@ fun ShareLinksSheet(
                                     enabled = enabled,
                                     label = "share_link_copy_scale"
                                 )
-                                NeubrutalIconButton(
+                                NeubrutalBareIconButton(
                                     icon = Icons.Default.Edit,
                                     contentDescription = stringResource(Res.string.cloud_links_share),
                                     onClick = {
@@ -160,7 +160,7 @@ fun ShareLinksSheet(
                                     enabled = enabled,
                                     label = "share_link_share_scale"
                                 )
-                                NeubrutalIconButton(
+                                NeubrutalBareIconButton(
                                     icon = Icons.Default.Delete,
                                     contentDescription = stringResource(Res.string.cloud_links_revoke),
                                     onClick = { onRevoke(link.id) },

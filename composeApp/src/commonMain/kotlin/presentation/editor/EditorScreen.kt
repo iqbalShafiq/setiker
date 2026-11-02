@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,7 +35,6 @@ import androidx.compose.material.icons.filled.TagFaces
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -63,6 +63,7 @@ import presentation.components.AddTextDecorationBottomSheet
 import presentation.components.AiGenerateBottomSheet
 import presentation.components.AppIllustration
 import presentation.components.AppIllustrationImage
+import presentation.components.AppModalBottomSheet
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
 import presentation.components.AppSnackbarHostState
@@ -96,7 +97,6 @@ import presentation.components.StickerEmojiTagChip
 import presentation.components.StylePickerBottomSheet
 import presentation.components.rememberImagePicker
 import presentation.components.scaffoldBottomBarScroll
-import presentation.components.zeroBottomSheetWindowInsets
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalScrim
 import presentation.theme.neubrutalBorderColor
@@ -484,8 +484,6 @@ fun EditorScreen(
                     onValueChange = { onIntent(EditorIntent.UpdateAccessibilityText(it)) },
                     label = stringResource(Res.string.accessibility_text),
                     placeholder = stringResource(Res.string.accessibility_text_placeholder),
-                    singleLine = false,
-                    maxLines = 3,
                     enabled = !isOperationInProgress
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -666,12 +664,12 @@ fun EditorScreen(
         )
     ) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ModalBottomSheet(
+        AppModalBottomSheet(
             onDismissRequest = { onIntent(EditorIntent.DismissGeneratedResultsSheet) },
             sheetState = sheetState,
             containerColor = neubrutalScreenBackground(),
             scrimColor = NeubrutalScrim,
-            contentWindowInsets = { zeroBottomSheetWindowInsets() }
+            contentWindowInsets = { WindowInsets.navigationBars }
         ) {
             BottomSheetScrollColumn {
                 Text(
@@ -724,7 +722,7 @@ fun EditorScreen(
 
     if (state.isBackgroundRemoverSheetOpen) {
         val bgRemovalSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ModalBottomSheet(
+        AppModalBottomSheet(
             onDismissRequest = { onIntent(EditorIntent.DismissBackgroundRemoverSheet) },
             sheetState = bgRemovalSheetState,
             containerColor = neubrutalScreenBackground(),

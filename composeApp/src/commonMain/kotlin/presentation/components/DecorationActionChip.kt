@@ -1,7 +1,6 @@
 package presentation.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -20,12 +19,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalShadowOffset
+import presentation.theme.NeubrutalSmallShadowOffset
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalOnSurface
-import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 
 /**
@@ -38,12 +38,20 @@ fun DecorationActionChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val haptics = rememberAppHaptics()
+    val pressFeedback = rememberPressFeedback(
+        pressedScale = SetikerMotion.PRESS_SCALE_REGULAR,
+        label = "decoration_action_chip_scale"
+    )
+
     Row(
         modifier = modifier
-            .neubrutalShadow(
-                offsetX = NeubrutalShadowOffset,
-                offsetY = NeubrutalShadowOffset,
-                cornerRadius = 50.dp, // pill
+            .pressScale(pressFeedback)
+            .pressShadow(
+                feedback = pressFeedback,
+                restOffset = NeubrutalShadowOffset,
+                pressedOffset = NeubrutalSmallShadowOffset,
+                cornerRadius = 50.dp,
                 color = neubrutalShadowColor()
             )
             .clip(CircleShape)
@@ -54,7 +62,13 @@ fun DecorationActionChip(
                 shape = CircleShape,
                 highlightColor = neubrutalGlossyHighlightColor()
             )
-            .clickable(onClick = onClick)
+            .clickableNoRipple(
+                interactionSource = pressFeedback.interactionSource,
+                onClick = {
+                    haptics.selection()
+                    onClick()
+                }
+            )
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)

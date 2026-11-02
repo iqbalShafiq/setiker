@@ -1,8 +1,6 @@
 package presentation.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,7 +12,6 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,13 +28,14 @@ import presentation.aijobs.AiJobProgressMode
 import presentation.aijobs.shouldShowFailureDetail
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
+import presentation.theme.NeubrutalSmallShadowOffset
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
-import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.ai_jobs_cancel
@@ -62,13 +60,19 @@ fun DraftJobListCard(
     val surface = neubrutalCardSurface()
     val shadow = neubrutalShadowColor()
     val shape = RoundedCornerShape(NeubrutalCardRadius)
+    val pressFeedback = rememberPressFeedback(
+        pressedScale = SetikerMotion.PRESS_SCALE_SUBTLE,
+        label = "draft_job_card_scale"
+    )
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .neubrutalShadow(
-                offsetX = NeubrutalShadowOffset,
-                offsetY = NeubrutalShadowOffset,
+            .pressScale(pressFeedback)
+            .pressShadow(
+                feedback = pressFeedback,
+                restOffset = NeubrutalShadowOffset,
+                pressedOffset = NeubrutalSmallShadowOffset,
                 cornerRadius = NeubrutalCardRadius,
                 color = shadow
             )
@@ -79,7 +83,10 @@ fun DraftJobListCard(
                 cornerRadius = NeubrutalCardRadius,
                 highlightColor = neubrutalGlossyHighlightColor()
             )
-            .clickable(onClick = onOpen)
+            .clickableNoRipple(
+                interactionSource = pressFeedback.interactionSource,
+                onClick = onOpen
+            )
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
@@ -103,22 +110,16 @@ fun DraftJobListCard(
 
         if (progressMode == AiJobProgressMode.DETERMINATE) {
             latestJob?.progress?.let { progress ->
-                LinearProgressIndicator(
-                    progress = { progress.fraction.coerceIn(0f, 1f) },
-                    modifier = Modifier.fillMaxWidth()
+                NeubrutalProgress(
+                    progress = progress.fraction.coerceIn(0f, 1f),
+                    label = progress.stepLabel.takeIf { it.isNotBlank() },
+                    showPercentage = true
                 )
-                if (progress.stepLabel.isNotBlank()) {
-                    Text(
-                        text = progress.stepLabel,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = neubrutalMutedOnSurface()
-                    )
-                }
             }
         } else if (progressMode == AiJobProgressMode.INDETERMINATE) {
             // The job is running but the server has no progress payload yet. Keep an
             // indeterminate bar on screen so the user still sees that work is happening.
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            NeubrutalProgressBar(progress = null)
         }
 
         latestJob?.failureMessage

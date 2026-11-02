@@ -47,6 +47,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -509,6 +510,7 @@ fun ProfileScreen(
                     onValueChange = onUpdateNewPassword,
                     label = stringResource(Res.string.settings_set_password),
                     placeholder = stringResource(Res.string.settings_set_password),
+                    imeAction = ImeAction.Next,
                     enabled = !state.isLinkingAuth,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -517,6 +519,14 @@ fun ProfileScreen(
                     onValueChange = onUpdateConfirmPassword,
                     label = stringResource(Res.string.reset_password_confirm_label),
                     placeholder = stringResource(Res.string.settings_set_password),
+                    imeAction = ImeAction.Done,
+                    onDone = {
+                        if (state.newPassword.isNotBlank() && state.confirmPassword.isNotBlank() &&
+                            !state.isLinkingAuth
+                        ) {
+                            onSubmitSetPassword()
+                        }
+                    },
                     enabled = !state.isLinkingAuth,
                     modifier = Modifier.fillMaxWidth()
                 )

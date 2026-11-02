@@ -1,11 +1,9 @@
 package presentation.components
 
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,9 +23,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalDialogRadius
 import presentation.theme.NeubrutalShadowOffset
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
@@ -64,13 +61,12 @@ fun ProgressDialog(
     ) {
         val animated by animateFloatAsState(
             targetValue = progress.coerceIn(0f, 1f),
-            animationSpec = tween(durationMillis = 180),
+            animationSpec = SetikerMotion.standard(),
             label = "progress_dialog_value"
         )
         val border = neubrutalBorderColor()
         val shadow = neubrutalShadowColor()
         val shape = RoundedCornerShape(NeubrutalDialogRadius)
-        val barShape = RoundedCornerShape(NeubrutalShadowOffset)
 
         Column(
             modifier = modifier
@@ -98,36 +94,7 @@ fun ProgressDialog(
             )
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Progress bar with neubrutal frame around it.
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(18.dp)
-                    .neubrutalShadow(
-                        offsetX = NeubrutalShadowOffset,
-                        offsetY = NeubrutalShadowOffset,
-                        cornerRadius = NeubrutalShadowOffset,
-                        color = shadow
-                    )
-                    .clip(barShape)
-                    .background(neubrutalCardSurface())
-                    .neubrutalBorderWithGloss(
-                        color = border,
-                        cornerRadius = NeubrutalShadowOffset,
-                        highlightColor = neubrutalGlossyHighlightColor()
-                    )
-                    .padding(2.dp)
-            ) {
-                LinearProgressIndicator(
-                    progress = { animated },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(14.dp)
-                        .clip(barShape),
-                    color = AccentCoral,
-                    trackColor = neubrutalCardSurface()
-                )
-            }
+            NeubrutalProgressBar(progress = animated)
 
             Spacer(modifier = Modifier.height(8.dp))
             Row(

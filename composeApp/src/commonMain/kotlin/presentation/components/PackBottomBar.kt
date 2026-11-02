@@ -1,7 +1,6 @@
 package presentation.components
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,7 +19,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -31,9 +29,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import presentation.common.ContentStateAnimations
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalButtonRadius
@@ -41,13 +42,13 @@ import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalSmallRadius
 import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.NeubrutalWhite
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalBottomAppBarSurface
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalOnSurface
-import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 
 @Composable
@@ -87,6 +88,7 @@ fun PackBottomBar(
             ) {
                 AnimatedContent(
                     targetState = actionStatusText,
+                    transitionSpec = { ContentStateAnimations.fadeOnly() },
                     label = "bottom_bar_actions_content"
                 ) { statusText ->
                     if (statusText.isNullOrBlank()) {
@@ -136,49 +138,23 @@ fun PackBottomBarIconButton(
     onClick: () -> Unit,
     enabled: Boolean = true,
     containerColor: Color = neubrutalCardSurface(),
-    iconTint: Color = neubrutalOnSurface()
+    iconTint: Color = neubrutalOnSurface(),
+    iconModifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
-    val pressFeedback = rememberPressFeedback(
-        pressedScale = 0.92f,
+    NeubrutalSurfaceIcon(
+        modifier = modifier,
+        size = 44.dp,
         enabled = enabled,
-        label = "bottom_icon_scale"
-    )
-
-    val border = neubrutalBorderColor()
-    val shadow = neubrutalShadowColor()
-    val shape = RoundedCornerShape(NeubrutalSmallRadius)
-    val shadowX = if (pressFeedback.isPressed && enabled) 1.dp else NeubrutalSmallShadowOffset
-    val shadowY = if (pressFeedback.isPressed && enabled) 1.dp else NeubrutalSmallShadowOffset
-
-    Box(
-        modifier = Modifier
-            .size(44.dp)
-            .pressScale(pressFeedback)
-            .neubrutalShadow(
-                offsetX = shadowX,
-                offsetY = shadowY,
-                cornerRadius = NeubrutalSmallRadius,
-                color = shadow
-            )
-            .clip(shape)
-            .background(containerColor)
-            .neubrutalBorderWithGloss(
-                color = border,
-                cornerRadius = NeubrutalSmallRadius,
-                highlightColor = neubrutalGlossyHighlightColor()
-            )
-            .clickable(
-                interactionSource = pressFeedback.interactionSource,
-                indication = null,
-                enabled = enabled,
-                onClick = onClick
-            ),
-        contentAlignment = Alignment.Center
+        containerColor = containerColor,
+        pressedScale = SetikerMotion.PRESS_SCALE_SMALL,
+        label = "bottom_icon_scale",
+        onClick = onClick
     ) {
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            modifier = Modifier.size(22.dp),
+            modifier = Modifier.size(22.dp).then(iconModifier),
             tint = if (enabled) iconTint else iconTint.copy(alpha = 0.4f)
         )
     }
@@ -191,49 +167,23 @@ fun PackBottomBarIconButton(
     onClick: () -> Unit,
     enabled: Boolean = true,
     containerColor: Color = neubrutalCardSurface(),
-    iconTint: Color = neubrutalOnSurface()
+    iconTint: Color = neubrutalOnSurface(),
+    iconModifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
-    val pressFeedback = rememberPressFeedback(
-        pressedScale = 0.92f,
+    NeubrutalSurfaceIcon(
+        modifier = modifier,
+        size = 44.dp,
         enabled = enabled,
-        label = "bottom_painter_icon_scale"
-    )
-
-    val border = neubrutalBorderColor()
-    val shadow = neubrutalShadowColor()
-    val shape = RoundedCornerShape(NeubrutalSmallRadius)
-    val shadowX = if (pressFeedback.isPressed && enabled) 1.dp else NeubrutalSmallShadowOffset
-    val shadowY = if (pressFeedback.isPressed && enabled) 1.dp else NeubrutalSmallShadowOffset
-
-    Box(
-        modifier = Modifier
-            .size(44.dp)
-            .pressScale(pressFeedback)
-            .neubrutalShadow(
-                offsetX = shadowX,
-                offsetY = shadowY,
-                cornerRadius = NeubrutalSmallRadius,
-                color = shadow
-            )
-            .clip(shape)
-            .background(containerColor)
-            .neubrutalBorderWithGloss(
-                color = border,
-                cornerRadius = NeubrutalSmallRadius,
-                highlightColor = neubrutalGlossyHighlightColor()
-            )
-            .clickable(
-                interactionSource = pressFeedback.interactionSource,
-                indication = null,
-                enabled = enabled,
-                onClick = onClick
-            ),
-        contentAlignment = Alignment.Center
+        containerColor = containerColor,
+        pressedScale = SetikerMotion.PRESS_SCALE_SMALL,
+        label = "bottom_painter_icon_scale",
+        onClick = onClick
     ) {
         Icon(
             painter = painter,
             contentDescription = contentDescription,
-            modifier = Modifier.size(22.dp),
+            modifier = Modifier.size(22.dp).then(iconModifier),
             tint = if (enabled) iconTint else iconTint.copy(alpha = 0.4f)
         )
     }
@@ -248,30 +198,29 @@ fun PackBottomBarFab(
     enabled: Boolean = true,
     isLoading: Boolean = false,
     containerColor: Color = AccentCoral,
-    iconTint: Color = NeubrutalWhite
+    iconTint: Color = NeubrutalWhite,
+    iconModifier: Modifier = Modifier
 ) {
     val pressFeedback = rememberPressFeedback(
-        pressedScale = 0.95f,
+        pressedScale = SetikerMotion.PRESS_SCALE_COMPACT,
         enabled = enabled && !isLoading,
         label = "fab_scale"
     )
 
     val border = neubrutalBorderColor()
-    val shadow = neubrutalShadowColor()
     val shape = RoundedCornerShape(NeubrutalButtonRadius)
-    val shadowX = if (pressFeedback.isPressed && enabled && !isLoading) NeubrutalSmallShadowOffset else NeubrutalShadowOffset
-    val shadowY = if (pressFeedback.isPressed && enabled && !isLoading) NeubrutalSmallShadowOffset else NeubrutalShadowOffset
     val isClickable = enabled && !isLoading
 
     Box(
         modifier = modifier
             .size(56.dp)
             .pressScale(pressFeedback)
-            .neubrutalShadow(
-                offsetX = shadowX,
-                offsetY = shadowY,
+            .pressShadow(
+                feedback = pressFeedback,
+                restOffset = NeubrutalShadowOffset,
+                pressedOffset = NeubrutalSmallShadowOffset,
                 cornerRadius = NeubrutalButtonRadius,
-                color = shadow
+                color = neubrutalShadowColor()
             )
             .clip(shape)
             .background(
@@ -290,17 +239,24 @@ fun PackBottomBarFab(
             ),
         contentAlignment = Alignment.Center
     ) {
-        Crossfade(targetState = isLoading, label = "fab_loading_content") { loading ->
+        AnimatedContent(
+            targetState = isLoading,
+            transitionSpec = { ContentStateAnimations.fadeOnly() },
+            label = "fab_loading_content"
+        ) { loading ->
             if (loading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    strokeWidth = 3.dp,
-                    color = iconTint
+                LoadingDots(
+                    dotSize = 6.dp,
+                    color = iconTint,
+                    modifier = Modifier.semantics {
+                        this.contentDescription = contentDescription
+                    }
                 )
             } else {
                 Icon(
                     imageVector = icon,
                     contentDescription = contentDescription,
+                    modifier = iconModifier,
                     tint = if (enabled) iconTint else iconTint.copy(alpha = 0.5f)
                 )
             }

@@ -10,6 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import org.jetbrains.compose.resources.stringResource
@@ -70,6 +71,7 @@ fun DeleteAccountConfirmDialog(
                         onValueChange = onPasswordChange,
                         label = stringResource(Res.string.settings_delete_password_label),
                         placeholder = stringResource(Res.string.settings_delete_password_label),
+                        imeAction = ImeAction.Next,
                         enabled = !isLoading
                     )
                     Spacer(modifier = Modifier.height(12.dp))
@@ -79,6 +81,8 @@ fun DeleteAccountConfirmDialog(
                     onValueChange = onPhraseChange,
                     label = stringResource(Res.string.settings_delete_phrase_label),
                     placeholder = stringResource(Res.string.settings_delete_phrase_hint),
+                    imeAction = ImeAction.Done,
+                    onDone = { if (canConfirm) onConfirm() },
                     enabled = !isLoading,
                     isError = confirmPhrase.isNotBlank() && !phraseMatches,
                     errorText = if (confirmPhrase.isNotBlank() && !phraseMatches) {

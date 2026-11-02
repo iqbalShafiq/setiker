@@ -1,10 +1,13 @@
 package presentation.home
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
@@ -20,6 +23,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Close
@@ -35,11 +40,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -47,6 +56,7 @@ import domain.model.Sticker
 import domain.model.StickerPack
 import org.jetbrains.compose.resources.stringResource
 import presentation.common.ContentStateAnimations
+import presentation.common.ListLoadPhase
 import presentation.components.AiGenerateStickerPackBottomSheet
 import presentation.components.AppIllustration
 import presentation.components.AppPrimaryButton
@@ -55,12 +65,13 @@ import presentation.components.AppTopBar
 import presentation.components.AppTopBarBadgedActionIcon
 import presentation.components.EmptyState
 import presentation.components.HomeBottomBar
-import presentation.components.LoadingIndicator
+import presentation.components.LoadingDots
 import presentation.components.NeubrutalIconButton
 import presentation.components.NeubrutalSnackbarHost
 import presentation.components.OfflineBanner
 import presentation.components.ProcessingPackListCard
 import presentation.components.PromptPresetPickerSheet
+import presentation.components.SkeletonPackList
 import presentation.components.SortBottomSheet
 import presentation.components.StickerPackListCard
 import presentation.components.rememberImagePicker
@@ -77,6 +88,7 @@ import setiker.composeapp.generated.resources.error_load_packs_failed
 import setiker.composeapp.generated.resources.home_ai_jobs_cd
 import setiker.composeapp.generated.resources.home_hint
 import setiker.composeapp.generated.resources.home_try_sample_pack
+import setiker.composeapp.generated.resources.loading_pack
 import setiker.composeapp.generated.resources.my_stickers_title
 import setiker.composeapp.generated.resources.no_search_results_desc
 import setiker.composeapp.generated.resources.no_search_results_title
@@ -111,6 +123,7 @@ fun HomeScreen(
     var showSortSheet by remember { mutableStateOf(false) }
     var isSearchExpanded by remember { mutableStateOf(false) }
     val searchFocusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
 
     LaunchedEffect(isSearchExpanded) {
         if (isSearchExpanded) searchFocusRequester.requestFocus()
@@ -125,8 +138,18 @@ fun HomeScreen(
                         targetState = isSearchExpanded,
                         transitionSpec = {
                             ContentStateAnimations.contentTransform(
-                                fadeIn(animationSpec = tween(180)),
-                                fadeOut(animationSpec = tween(120))
+                                fadeIn(
+                                    animationSpec = tween(
+                                        durationMillis = SetikerMotion.DURATION_BASE_MS,
+                                        easing = SetikerMotion.EaseOut
+                                    )
+                                ),
+                                fadeOut(
+                                    animationSpec = tween(
+                                        durationMillis = SetikerMotion.DURATION_FAST_MS,
+                                        easing = SetikerMotion.EaseOut
+                                    )
+                                )
                             )
                         },
                         label = "home_topbar_title_transition"
@@ -145,6 +168,10 @@ fun HomeScreen(
                                 value = state.searchQuery,
                                 onValueChange = { onIntent(HomeIntent.SearchQueryChanged(it)) },
                                 singleLine = true,
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                                keyboardActions = KeyboardActions(
+                                    onSearch = { focusManager.clearFocus() }
+                                ),
                                 interactionSource = searchInteractionSource,
                                 textStyle = MaterialTheme.typography.titleMedium.copy(
                                     color = MaterialTheme.colorScheme.onSurface,
@@ -164,7 +191,10 @@ fun HomeScreen(
                                         Text(
                                             text = stringResource(Res.string.search_packs_placeholder),
                                             style = MaterialTheme.typography.titleMedium,
-                                            color = neubrutalMutedOnSurface()
+                                            color = neubrutalMutedOnSurface(),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            softWrap = false
                                         )
                                     }
                                     innerTextField()
@@ -247,23 +277,43 @@ fun HomeScreen(
         snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
-        when {
-            state.isLoading -> {
-                LoadingIndicator(
-                    modifier = modifier
+        val phase = when {
+            state.isLoading -> ListLoadPhase.Loading
+            state.loadFailed -> ListLoadPhase.Error
+            !state.hasListContent || state.hasSearchNoResults -> ListLoadPhase.Empty
+            else -> ListLoadPhase.Content
+        }
+
+        AnimatedContent(
+            targetState = phase,
+            transitionSpec = { with(ContentStateAnimations) { listLoad() } },
+            label = "home_content_phase",
+            modifier = modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) { currentPhase ->
+            when (currentPhase) {
+                ListLoadPhase.Loading -> Column(
+                    modifier = Modifier
                         .fillMaxSize()
-                        .padding(innerPadding),
-                    illustration = AppIllustration.LoadingState
-                )
-            }
-            state.loadFailed -> {
-                EmptyState(
+                        .screenContentHorizontalPadding()
+                        .padding(top = 12.dp)
+                ) {
+                    LoadingDots(
+                        dotSize = 8.dp,
+                        contentDescription = stringResource(Res.string.loading_pack),
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .padding(vertical = 16.dp)
+                    )
+                    SkeletonPackList()
+                }
+
+                ListLoadPhase.Error -> EmptyState(
                     title = stringResource(Res.string.error_load_packs_failed),
                     description = stringResource(Res.string.no_stickers_yet_desc),
                     illustration = AppIllustration.ErrorState,
-                    modifier = modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
+                    modifier = Modifier.fillMaxSize(),
                     action = {
                         AppPrimaryButton(
                             text = stringResource(Res.string.retry),
@@ -271,36 +321,66 @@ fun HomeScreen(
                         )
                     }
                 )
-            }
-            !state.hasListContent -> {
-                EmptyState(
-                    title = stringResource(Res.string.no_stickers_yet_title),
-                    description = stringResource(Res.string.no_stickers_yet_desc),
-                    illustration = AppIllustration.EmptyPack,
-                    modifier = modifier
+
+                ListLoadPhase.Empty -> if (state.hasSearchNoResults) {
+                    EmptyState(
+                        title = stringResource(Res.string.no_search_results_title),
+                        description = stringResource(Res.string.no_search_results_desc),
+                        illustration = AppIllustration.SearchEmpty,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    EmptyState(
+                        title = stringResource(Res.string.no_stickers_yet_title),
+                        description = stringResource(Res.string.no_stickers_yet_desc),
+                        illustration = AppIllustration.EmptyPack,
+                        modifier = Modifier.fillMaxSize(),
+                        action = {
+                            AppPrimaryButton(
+                                text = stringResource(Res.string.home_try_sample_pack),
+                                onClick = { onIntent(HomeIntent.CreateNewPack) }
+                            )
+                        }
+                    )
+                }
+
+                ListLoadPhase.Content -> Column(
+                    modifier = Modifier
                         .fillMaxSize()
-                        .padding(innerPadding),
-                    action = {
-                        AppPrimaryButton(
-                            text = stringResource(Res.string.home_try_sample_pack),
-                            onClick = { onIntent(HomeIntent.CreateNewPack) }
-                        )
-                    }
-                )
-            }
-            else -> {
-                Column(
-                    modifier = modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
                         .screenContentHorizontalPadding()
                         .padding(top = 12.dp)
                 ) {
-                    if (showOfflineBanner) {
-                        OfflineBanner(
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
+                    AnimatedVisibility(
+                        visible = showOfflineBanner,
+                        enter = fadeIn(
+                            animationSpec = tween(
+                                durationMillis = SetikerMotion.DURATION_BASE_MS,
+                                easing = SetikerMotion.EaseOut
+                            )
+                        ) + slideInVertically(
+                            animationSpec = tween(
+                                durationMillis = SetikerMotion.DURATION_BASE_MS,
+                                easing = SetikerMotion.EaseOut
+                            )
+                        ) { -it / 4 },
+                        exit = fadeOut(
+                            animationSpec = tween(
+                                durationMillis = SetikerMotion.DURATION_FAST_MS,
+                                easing = SetikerMotion.EaseOut
+                            )
+                        ) + slideOutVertically(
+                            animationSpec = tween(
+                                durationMillis = SetikerMotion.DURATION_FAST_MS,
+                                easing = SetikerMotion.EaseOut
+                            )
+                        ) { -it / 4 }
+                    ) {
+                        Column {
+                            OfflineBanner(
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
                     }
 
                     Text(
@@ -314,45 +394,33 @@ fun HomeScreen(
                         )
                     )
 
-                    val packsToShow = state.filteredPacks
-                    val processingPacksToShow = state.filteredProcessingPacks
-
-                    if (state.hasSearchNoResults) {
-                        EmptyState(
-                            title = stringResource(Res.string.no_search_results_title),
-                            description = stringResource(Res.string.no_search_results_desc),
-                            illustration = AppIllustration.SearchEmpty,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(
-                                top = 0.dp,
-                                bottom = 20.dp
-                            ),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(
-                                items = processingPacksToShow,
-                                key = { "processing_${it.draftId}" }
-                            ) { pack ->
-                                ProcessingPackListCard(
-                                    pack = pack,
-                                    onClick = { onIntent(HomeIntent.NavigateToAiJobs) },
-                                    modifier = Modifier.animateItem()
-                                )
-                            }
-                            items(
-                                items = packsToShow,
-                                key = { it.identifier }
-                            ) { pack ->
-                                StickerPackListCard(
-                                    pack = pack,
-                                    onClick = { onPackClick(pack.identifier) },
-                                    modifier = Modifier.animateItem()
-                                )
-                            }
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(
+                            top = 0.dp,
+                            bottom = 20.dp
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(
+                            items = state.filteredProcessingPacks,
+                            key = { "processing_${it.draftId}" }
+                        ) { pack ->
+                            ProcessingPackListCard(
+                                pack = pack,
+                                onClick = { onIntent(HomeIntent.NavigateToAiJobs) },
+                                modifier = Modifier.animateItem()
+                            )
+                        }
+                        items(
+                            items = state.filteredPacks,
+                            key = { it.identifier }
+                        ) { pack ->
+                            StickerPackListCard(
+                                pack = pack,
+                                onClick = { onPackClick(pack.identifier) },
+                                modifier = Modifier.animateItem()
+                            )
                         }
                     }
                 }

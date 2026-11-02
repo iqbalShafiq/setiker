@@ -1,6 +1,6 @@
 package co.ratmo.setiker
 
 import androidx.compose.ui.window.ComposeUIViewController
-import com.setiker.app.App
+import presentation.splash.IosAppEntryPoint
 
-fun MainViewController() = ComposeUIViewController { App() }
+fun MainViewController() = ComposeUIViewController { IosAppEntryPoint() }

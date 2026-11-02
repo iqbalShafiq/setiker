@@ -1,6 +1,9 @@
 package presentation.packdetail
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,10 +11,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -34,10 +39,8 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -63,6 +66,7 @@ import presentation.common.DetailLoadPhase
 import presentation.common.toShareLinkUi
 import presentation.components.AppDialog
 import presentation.components.AppIllustration
+import presentation.components.AppModalBottomSheet
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
 import presentation.components.AppSnackbarHostState
@@ -85,12 +89,14 @@ import presentation.components.ShareLinksSheet
 import presentation.components.ShareWithUsersSheet
 import presentation.components.StickerCard
 import presentation.components.SyncStatusIndicator
+import presentation.components.rememberAppHaptics
+import presentation.components.rememberAppSheetState
 import presentation.components.rememberMultipleImagePicker
-import presentation.components.zeroBottomSheetWindowInsets
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalScrim
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalSmallShadowOffset
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
@@ -187,11 +193,11 @@ fun PackDetailScreen(
         }
     }
 
-    val stickerImportSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val stickerImportSheetState = rememberAppSheetState()
     if (state.stickerImportQueue.isNotEmpty()) {
         val importPath = state.stickerImportQueue.first()
         val queueSize = state.stickerImportQueue.size
-        ModalBottomSheet(
+        AppModalBottomSheet(
             onDismissRequest = { onIntent(PackDetailIntent.DismissStickerImportSheet) },
             sheetState = stickerImportSheetState,
             containerColor = neubrutalScreenBackground(),
@@ -301,11 +307,11 @@ fun PackDetailScreen(
     }
 
     if (state.collaboratorsSheetOpen) {
-        ModalBottomSheet(
+        AppModalBottomSheet(
             onDismissRequest = { onIntent(PackDetailIntent.DismissCollaboratorsSheet) },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            sheetState = rememberAppSheetState(),
             containerColor = neubrutalScreenBackground(),
-            contentWindowInsets = { zeroBottomSheetWindowInsets() }
+            contentWindowInsets = { WindowInsets.navigationBars }
         ) {
             BottomSheetScrollColumn {
                 PackCollaboratorsSheet(
@@ -325,9 +331,9 @@ fun PackDetailScreen(
     }
 
     if (state.cloudShareSheetOpen) {
-        ModalBottomSheet(
+        AppModalBottomSheet(
             onDismissRequest = { onIntent(PackDetailIntent.DismissCloudShareSheet) },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            sheetState = rememberAppSheetState(),
             containerColor = neubrutalScreenBackground()
         ) {
             ShareLinksSheet(
@@ -346,9 +352,9 @@ fun PackDetailScreen(
     }
 
     if (state.stickerShareSheetOpen) {
-        ModalBottomSheet(
+        AppModalBottomSheet(
             onDismissRequest = { onIntent(PackDetailIntent.DismissStickerShareSheet) },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            sheetState = rememberAppSheetState(),
             containerColor = neubrutalScreenBackground()
         ) {
             Column(
@@ -725,6 +731,7 @@ private fun PackDetailContent(
             LaunchedEffect(pack.stickers) {
                 orderedStickers = pack.stickers
             }
+            val haptics = rememberAppHaptics()
             fun indexInPack(imageFile: String): Int =
                 pack.stickers.indexOfFirst { it.imageFile == imageFile }
             val lazyGridState = rememberLazyGridState()
@@ -753,9 +760,25 @@ private fun PackDetailContent(
                     ReorderableItem(
                         reorderableLazyGridState,
                         key = sticker.imageFile,
-                        enabled = enabled && orderedStickers.size > 1
-                    ) {
-                        Column {
+                        enabled = enabled && orderedStickers.size > 1,
+                        animateItemModifier = Modifier.animateItem(
+                            placementSpec = spring(
+                                dampingRatio = Spring.DampingRatioNoBouncy,
+                                stiffness = Spring.StiffnessMediumLow
+                            )
+                        )
+                    ) { isDragging ->
+                        val lift by animateFloatAsState(
+                            targetValue = if (isDragging) 1.06f else 1f,
+                            animationSpec = SetikerMotion.PressSpring,
+                            label = "reorder_item_lift"
+                        )
+                        Column(
+                            modifier = Modifier.graphicsLayer {
+                                scaleX = lift
+                                scaleY = lift
+                            }
+                        ) {
                             StickerCard(
                                 sticker = sticker,
                                 fallbackContentDescription = stringResource(
@@ -783,7 +806,7 @@ private fun PackDetailContent(
                                     null
                                 },
                                 showDecorations = false,
-                                modifier = Modifier.animateItem()
+                                lifted = isDragging
                             )
                             if (enabled && orderedStickers.size > 1) {
                                 Row(
@@ -809,7 +832,10 @@ private fun PackDetailContent(
                                         enabled = true,
                                         modifier = Modifier
                                             .weight(1f)
-                                            .draggableHandle()
+                                            .draggableHandle(
+                                                onDragStarted = { haptics.longPress() },
+                                                onDragStopped = { haptics.selection() }
+                                            )
                                     )
                                     ReorderIconButton(
                                         icon = Icons.Default.KeyboardArrowDown,

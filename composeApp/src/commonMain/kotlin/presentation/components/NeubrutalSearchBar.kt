@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
@@ -25,8 +27,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
@@ -53,6 +58,7 @@ fun NeubrutalSearchBar(
     placeholder: String = stringResource(Res.string.search_packs_placeholder),
     modifier: Modifier = Modifier
 ) {
+    val focusManager = LocalFocusManager.current
     val border = neubrutalBorderColor()
     val surface = neubrutalCardSurface()
     val shadow = neubrutalShadowColor()
@@ -103,6 +109,8 @@ fun NeubrutalSearchBar(
                 .weight(1f)
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
             textStyle = TextStyle(
                 color = onSurface,
                 fontSize = MaterialTheme.typography.bodyLarge.fontSize,
@@ -114,7 +122,10 @@ fun NeubrutalSearchBar(
                     Text(
                         text = placeholder,
                         style = MaterialTheme.typography.bodyLarge,
-                        color = neubrutalSubtleOnSurface()
+                        color = neubrutalSubtleOnSurface(),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        softWrap = false
                     )
                 }
                 innerTextField()
@@ -124,13 +135,13 @@ fun NeubrutalSearchBar(
         if (query.isNotEmpty()) {
             // 48 dp touch target with a 20 dp glyph: the old 32 dp box was well below the minimum
             // touch target, and it kept the Material ripple instead of the app's press language.
-            NeubrutalIconButton(
+            NeubrutalBareIconButton(
                 icon = Icons.Default.Clear,
                 contentDescription = stringResource(Res.string.clear),
                 onClick = { onQueryChange("") },
                 iconSize = 20.dp,
                 tint = neubrutalSubtleOnSurface(),
-                pressedScale = 0.88f,
+                pressedScale = SetikerMotion.PRESS_SCALE_TINY,
                 label = "search_clear_scale"
             )
         }

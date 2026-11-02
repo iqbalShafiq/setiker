@@ -11,9 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,7 +30,10 @@ import presentation.common.rememberErrorSnackbar
 import presentation.components.AppIllustration
 import presentation.components.AppIllustrationImage
 import presentation.components.AppPasswordTextField
+import presentation.components.AppPrimaryButton
+import presentation.components.AppSecondaryButton
 import presentation.components.AppTextField
+import presentation.components.AppTextLink
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalSubtleOnSurface
 import setiker.composeapp.generated.resources.Res
@@ -141,28 +142,22 @@ fun LoginScreen(
         }
 
         if (state.appleAvailable) {
-            OutlinedButton(
+            AppSecondaryButton(
+                text = stringResource(Res.string.login_apple),
                 onClick = { onIntent(LoginIntent.SignInWithApple) },
                 enabled = !state.isLoading,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-            ) {
-                Text(text = stringResource(Res.string.login_apple))
-            }
+                modifier = Modifier.fillMaxWidth()
+            )
             Spacer(modifier = Modifier.height(8.dp))
         }
 
         if (state.googleAvailable) {
-            OutlinedButton(
+            AppSecondaryButton(
+                text = stringResource(Res.string.login_google),
                 onClick = { onIntent(LoginIntent.SignInWithGoogle) },
                 enabled = !state.isLoading,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-            ) {
-                Text(text = stringResource(Res.string.login_google))
-            }
+                modifier = Modifier.fillMaxWidth()
+            )
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -208,18 +203,18 @@ fun LoginScreen(
                     { Text(stringResource(Res.string.login_password_invalid), color = MaterialTheme.colorScheme.error) }
                 } else null,
                 imeAction = ImeAction.Done,
+                onDone = { if (!state.isLoading) onIntent(LoginIntent.Submit) },
                 enabled = !state.isLoading,
                 modifier = Modifier.fillMaxWidth()
             )
         }
 
-        TextButton(
+        AppTextLink(
+            text = stringResource(Res.string.login_forgot_password),
             onClick = { onIntent(LoginIntent.NavigateToForgotPassword) },
             enabled = !state.isLoading,
             modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(stringResource(Res.string.login_forgot_password))
-        }
+        )
         Text(
             text = stringResource(Res.string.login_forgot_password_hint),
             style = MaterialTheme.typography.bodySmall,
@@ -298,19 +293,23 @@ private fun LinkPasswordDialog(
                 onValueChange = onPasswordChange,
                 label = stringResource(Res.string.login_password_label),
                 placeholder = stringResource(Res.string.login_password_placeholder),
+                imeAction = ImeAction.Done,
+                onDone = { if (password.isNotBlank() && !isLoading) onConfirm() },
                 enabled = !isLoading,
                 modifier = Modifier.fillMaxWidth()
             )
-            OutlinedButton(
+            AppPrimaryButton(
+                text = confirmLabel,
                 onClick = onConfirm,
                 enabled = password.isNotBlank() && !isLoading,
                 modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(confirmLabel)
-            }
-            TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(Res.string.cancel))
-            }
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            AppSecondaryButton(
+                text = stringResource(Res.string.cancel),
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }

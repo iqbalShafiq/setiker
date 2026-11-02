@@ -1,8 +1,6 @@
 package presentation.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -32,6 +30,7 @@ import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalSmallRadius
 import presentation.theme.NeubrutalSmallShadowOffset
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
@@ -54,13 +53,19 @@ fun StickerPackListCard(
     val shadow = neubrutalShadowColor()
     val shape = RoundedCornerShape(NeubrutalCardRadius)
     val thumbShape = RoundedCornerShape(NeubrutalSmallRadius)
+    val pressFeedback = rememberPressFeedback(
+        pressedScale = SetikerMotion.PRESS_SCALE_SUBTLE,
+        label = "sticker_pack_card_scale"
+    )
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .neubrutalShadow(
-                offsetX = NeubrutalShadowOffset,
-                offsetY = NeubrutalShadowOffset,
+            .pressScale(pressFeedback)
+            .pressShadow(
+                feedback = pressFeedback,
+                restOffset = NeubrutalShadowOffset,
+                pressedOffset = NeubrutalSmallShadowOffset,
                 cornerRadius = NeubrutalCardRadius,
                 color = shadow
             )
@@ -71,7 +76,10 @@ fun StickerPackListCard(
                 cornerRadius = NeubrutalCardRadius,
                 highlightColor = neubrutalGlossyHighlightColor()
             )
-            .clickable(onClick = onClick)
+            .clickableNoRipple(
+                interactionSource = pressFeedback.interactionSource,
+                onClick = onClick
+            )
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

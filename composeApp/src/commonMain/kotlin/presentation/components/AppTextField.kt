@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -18,13 +19,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
@@ -65,8 +69,10 @@ fun AppTextField(
     supportingText: @Composable (() -> Unit)? = null,
     keyboardType: KeyboardType = KeyboardType.Text,
     imeAction: ImeAction = ImeAction.Done,
+    onDone: (() -> Unit)? = null,
     enabled: Boolean = true
 ) {
+    val focusManager = LocalFocusManager.current
     val border = neubrutalBorderColor()
     val surface = neubrutalCardSurface()
     val onSurface = neubrutalOnSurface()
@@ -135,12 +141,38 @@ fun AppTextField(
                         imeAction = imeAction,
                         keyboardType = keyboardType
                     ),
+                    keyboardActions = KeyboardActions(
+                        onNext = {
+                            if (!focusManager.moveFocus(FocusDirection.Down)) {
+                                focusManager.clearFocus()
+                            }
+                        },
+                        onDone = {
+                            focusManager.clearFocus()
+                            onDone?.invoke()
+                        },
+                        onGo = {
+                            focusManager.clearFocus()
+                            onDone?.invoke()
+                        },
+                        onSend = {
+                            focusManager.clearFocus()
+                            onDone?.invoke()
+                        },
+                        onSearch = {
+                            focusManager.clearFocus()
+                            onDone?.invoke()
+                        }
+                    ),
                     decorationBox = { innerTextField ->
                         if (value.isEmpty() && placeholder.isNotEmpty()) {
                             Text(
                                 text = placeholder,
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = neubrutalSubtleOnSurface()
+                                color = neubrutalSubtleOnSurface(),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                softWrap = false
                             )
                         }
                         innerTextField()

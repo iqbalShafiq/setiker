@@ -66,7 +66,6 @@ import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalGlossyHighlightColor
-import presentation.theme.neubrutalPressable
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import setiker.composeapp.generated.resources.Res
@@ -366,15 +365,21 @@ fun NeubrutalSnackbarContent(
 
                 if (actionLabel != null) {
                     Spacer(modifier = Modifier.height(6.dp))
+                    val actionFeedback = rememberPressFeedback(
+                        pressedScale = SetikerMotion.PRESS_SCALE_COMPACT,
+                        label = "snackbar_action_scale"
+                    )
                     Text(
                         text = actionLabel,
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.neubrutalPressable(
-                            pressScale = 0.94f,
-                            onClick = onAction
-                        )
+                        modifier = Modifier
+                            .pressScale(actionFeedback)
+                            .clickableNoRipple(
+                                interactionSource = actionFeedback.interactionSource,
+                                onClick = onAction
+                            )
                     )
                 }
             }
@@ -409,12 +414,20 @@ private fun DismissTimerButton(
     modifier: Modifier = Modifier
 ) {
     val closeLabel = stringResource(Res.string.close)
+    val closeFeedback = rememberPressFeedback(
+        pressedScale = SetikerMotion.PRESS_SCALE_TINY,
+        label = "snackbar_close_scale"
+    )
 
     Box(
         modifier = modifier
             .size(DismissButtonSize)
             .drawDrainingOutline(timer, color)
-            .neubrutalPressable(pressScale = 0.88f, onClick = onClick)
+            .pressScale(closeFeedback)
+            .clickableNoRipple(
+                interactionSource = closeFeedback.interactionSource,
+                onClick = onClick
+            )
             .semantics { contentDescription = closeLabel },
         contentAlignment = Alignment.Center
     ) {

@@ -15,7 +15,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,6 +35,7 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.components.AppPrimaryButton
+import presentation.components.AppTextLink
 import presentation.components.PageIndicator
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
@@ -111,14 +111,13 @@ fun OnboardingScreen(
                 .padding(top = contentHorizontalPadding),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            TextButton(
+            AppTextLink(
+                text = stringResource(Res.string.onboarding_skip),
                 onClick = { onIntent(OnboardingIntent.Skip) },
                 modifier = Modifier
                     .align(Alignment.End)
                     .padding(horizontal = contentHorizontalPadding)
-            ) {
-                Text(stringResource(Res.string.onboarding_skip))
-            }
+            )
 
             HorizontalPager(
                 state = pagerState,

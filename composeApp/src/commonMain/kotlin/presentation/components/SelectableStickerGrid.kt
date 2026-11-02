@@ -1,8 +1,9 @@
 package presentation.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,13 +13,16 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -26,13 +30,14 @@ import org.jetbrains.compose.resources.stringResource
 import presentation.createpack.DraftSticker
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.NeubrutalPressedShadowOffset
 import presentation.theme.NeubrutalSmallRadius
 import presentation.theme.NeubrutalSmallShadowOffset
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalGlossyHighlight
 import presentation.theme.neubrutalGlossyHighlightColor
-import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.split_sticker_index
@@ -59,28 +64,55 @@ fun SelectableStickerGrid(
                 val innerShape = RoundedCornerShape(NeubrutalSmallRadius)
                 rowItems.forEachIndexed { itemIndex, draft ->
                     val index = (rowIndex * 4) + itemIndex
+                    val selected = selectedIndices.contains(index)
+                    val haptics = rememberAppHaptics()
+                    val pressFeedback = rememberPressFeedback(
+                        pressedScale = SetikerMotion.PRESS_SCALE_REGULAR,
+                        label = "selectable_sticker_scale"
+                    )
+                    val borderWidth by animateDpAsState(
+                        targetValue = if (selected) 3.dp else NeubrutalBorderWidth,
+                        animationSpec = SetikerMotion.standard(SetikerMotion.DURATION_FAST_MS),
+                        label = "selectable_sticker_border_width"
+                    )
+                    val borderColor by animateColorAsState(
+                        targetValue = if (selected) AccentCoral else border,
+                        animationSpec = SetikerMotion.standard(SetikerMotion.DURATION_FAST_MS),
+                        label = "selectable_sticker_border_color"
+                    )
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .aspectRatio(1f)
-                            .neubrutalShadow(
-                                offsetX = NeubrutalSmallShadowOffset,
-                                offsetY = NeubrutalSmallShadowOffset,
+                            .pressScale(pressFeedback)
+                            .pressShadow(
+                                feedback = pressFeedback,
+                                restOffset = NeubrutalSmallShadowOffset,
+                                pressedOffset = NeubrutalPressedShadowOffset,
                                 cornerRadius = NeubrutalSmallRadius,
                                 color = shadow
                             )
                             .clip(innerShape)
                             .background(surface)
                             .border(
-                                width = if (selectedIndices.contains(index)) 3.dp else NeubrutalBorderWidth,
-                                color = if (selectedIndices.contains(index)) AccentCoral else border,
+                                width = borderWidth,
+                                color = borderColor,
                                 shape = innerShape
                             )
                             .neubrutalGlossyHighlight(
                                 cornerRadius = NeubrutalSmallRadius,
                                 highlightColor = neubrutalGlossyHighlightColor()
                             )
-                            .clickable { onToggle(index) }
+                            .toggleable(
+                                value = selected,
+                                interactionSource = pressFeedback.interactionSource,
+                                indication = null,
+                                role = Role.Checkbox,
+                                onValueChange = {
+                                    haptics.selection()
+                                    onToggle(index)
+                                }
+                            )
                             .padding(2.dp),
                         contentAlignment = Alignment.TopEnd
                     ) {

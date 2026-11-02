@@ -8,10 +8,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -43,6 +45,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -51,17 +54,21 @@ import org.jetbrains.compose.resources.stringResource
 import presentation.aijob.AiResultSheetVisibility
 import presentation.components.AiGenerateBottomSheet
 import presentation.components.AppIllustration
+import presentation.components.AppModalBottomSheet
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSecondaryButton
 import presentation.components.AppSnackbarHostState
 import presentation.components.AppTextField
 import presentation.components.AppTopBar
 import presentation.components.BottomSheetScrollColumn
+import presentation.components.CelebrationBadge
 import presentation.components.ContentPolicyBottomSheet
 import presentation.components.ImproveConfirmDialog
 import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
+import presentation.components.NeubrutalBareIconButton
 import presentation.components.NeubrutalIconButton
+import presentation.components.NeubrutalProgress
 import presentation.components.NeubrutalSnackbarHost
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
@@ -71,11 +78,11 @@ import presentation.components.ReadOnlyDecorationOverlay
 import presentation.components.ReorderIconButton
 import presentation.components.ReportContentBottomSheet
 import presentation.components.SelectableStickerGrid
+import presentation.components.rememberAppSheetState
 import presentation.components.rememberImagePicker
 import presentation.components.rememberStickerImagePicker
 import presentation.components.rememberVideoPicker
 import presentation.components.scaffoldBottomBarScroll
-import presentation.components.zeroBottomSheetWindowInsets
 import presentation.theme.AccentCoral
 import presentation.theme.AccentCoralLight
 import presentation.theme.ErrorRed
@@ -119,6 +126,7 @@ import setiker.composeapp.generated.resources.improve_confirm_message_pack
 import setiker.composeapp.generated.resources.improve_stickers
 import setiker.composeapp.generated.resources.pack_name_label
 import setiker.composeapp.generated.resources.pack_name_placeholder
+import setiker.composeapp.generated.resources.pack_saved
 import setiker.composeapp.generated.resources.processing
 import setiker.composeapp.generated.resources.publisher_label
 import setiker.composeapp.generated.resources.publisher_placeholder
@@ -151,6 +159,7 @@ fun CreatePackScreen(
     onNavigateToVideoTrim: (String) -> Unit = {},
     onPreviewPublicPack: (String) -> Unit = {},
     snackbarHostState: AppSnackbarHostState = remember { AppSnackbarHostState() },
+    showCelebration: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val trayIconPicker = rememberImagePicker { path ->
@@ -184,10 +193,10 @@ fun CreatePackScreen(
         path?.let { onIntent(CreatePackIntent.UpdateGenerateInputImage(it)) }
     }
 
-    val generatedSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val gridSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val stickerImportSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val trayImportSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val generatedSheetState = rememberAppSheetState()
+    val gridSheetState = rememberAppSheetState()
+    val stickerImportSheetState = rememberAppSheetState()
+    val trayImportSheetState = rememberAppSheetState()
     val isOperationInProgress = state.isApiLoading || state.isSaving
     val canImprovePack = state.stickers.any { !it.isAnimated && it.imagePath.isNotBlank() } && !isOperationInProgress
     val bottomOperationLabel = when {
@@ -257,12 +266,12 @@ fun CreatePackScreen(
             isAiJobInProgress = state.isApiLoading
         )
     ) {
-        ModalBottomSheet(
+        AppModalBottomSheet(
             onDismissRequest = { onIntent(CreatePackIntent.DismissGeneratedResultsSheet) },
             sheetState = generatedSheetState,
             containerColor = neubrutalScreenBackground(),
             scrimColor = NeubrutalScrim,
-            contentWindowInsets = { zeroBottomSheetWindowInsets() }
+            contentWindowInsets = { WindowInsets.navigationBars }
         ) {
             BottomSheetScrollColumn {
                 Text(
@@ -334,12 +343,12 @@ fun CreatePackScreen(
     }
 
     if (state.gridSplitSheetPhase != GridSplitSheetPhase.Hidden) {
-        ModalBottomSheet(
+        AppModalBottomSheet(
             onDismissRequest = { onIntent(CreatePackIntent.DismissGridSheet) },
             sheetState = gridSheetState,
             containerColor = neubrutalScreenBackground(),
             scrimColor = NeubrutalScrim,
-            contentWindowInsets = { zeroBottomSheetWindowInsets() }
+            contentWindowInsets = { WindowInsets.navigationBars }
         ) {
             BottomSheetScrollColumn {
                 when (state.gridSplitSheetPhase) {
@@ -377,9 +386,8 @@ fun CreatePackScreen(
                         )
                         if (state.isApiLoading) {
                             Spacer(modifier = Modifier.height(12.dp))
-                            LinearProgressIndicator(
-                                progress = { state.backgroundJobProgress.coerceIn(0f, 1f) },
-                                modifier = Modifier.fillMaxWidth()
+                            NeubrutalProgress(
+                                progress = state.backgroundJobProgress.coerceIn(0f, 1f)
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
@@ -443,7 +451,7 @@ fun CreatePackScreen(
     }
 
     state.pendingStickerGalleryPath?.let { galleryPath ->
-        ModalBottomSheet(
+        AppModalBottomSheet(
             onDismissRequest = { onIntent(CreatePackIntent.DismissStickerGalleryCropPrompt) },
             sheetState = stickerImportSheetState,
             containerColor = neubrutalScreenBackground(),
@@ -506,7 +514,7 @@ fun CreatePackScreen(
     }
 
     state.pendingTrayGalleryPath?.let { galleryPath ->
-        ModalBottomSheet(
+        AppModalBottomSheet(
             onDismissRequest = { onIntent(CreatePackIntent.DismissTrayGalleryCropPrompt) },
             sheetState = trayImportSheetState,
             containerColor = neubrutalScreenBackground(),
@@ -663,6 +671,7 @@ fun CreatePackScreen(
                     onValueChange = { onIntent(CreatePackIntent.UpdateName(it)) },
                     label = stringResource(Res.string.pack_name_label),
                     placeholder = stringResource(Res.string.pack_name_placeholder),
+                    imeAction = ImeAction.Next,
                     enabled = !isOperationInProgress
                 )
 
@@ -673,6 +682,7 @@ fun CreatePackScreen(
                     onValueChange = { onIntent(CreatePackIntent.UpdatePublisher(it)) },
                     label = stringResource(Res.string.publisher_label),
                     placeholder = stringResource(Res.string.publisher_placeholder),
+                    imeAction = ImeAction.Done,
                     enabled = !isOperationInProgress
                 )
 
@@ -746,7 +756,7 @@ fun CreatePackScreen(
                         color = neubrutalOnSurface()
                     )
 
-                    NeubrutalIconButton(
+                    NeubrutalBareIconButton(
                         icon = Icons.Default.Add,
                         contentDescription = stringResource(Res.string.add_sticker),
                         onClick = { stickerPicker.launch() },
@@ -825,6 +835,11 @@ fun CreatePackScreen(
 
                 Spacer(modifier = Modifier.height(80.dp))
                 }
+                CelebrationBadge(
+                    visible = showCelebration,
+                    modifier = Modifier.align(Alignment.Center),
+                    contentDescription = stringResource(Res.string.pack_saved)
+                )
             }
         }
     }

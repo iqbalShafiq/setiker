@@ -28,10 +28,8 @@ import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.TagFaces
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -59,6 +57,7 @@ import presentation.components.AppSnackbarHostState
 import presentation.components.AppTextField
 import presentation.components.AppTopBar
 import presentation.components.BorderStyleBottomSheet
+import presentation.components.CelebrationBadge
 import presentation.components.ColorPickerBottomSheet
 import presentation.components.DecorationActionChip
 import presentation.components.DecorationPreviewLayer
@@ -68,6 +67,9 @@ import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
 import presentation.components.MediaPreviewBottomBar
 import presentation.components.NeubrutalAddTagPill
+import presentation.components.NeubrutalRangeSlider
+import presentation.components.NeubrutalSelectableChip
+import presentation.components.NeubrutalSlider
 import presentation.components.NeubrutalSnackbarHost
 import presentation.components.NeubrutalStickerPreviewFrame
 import presentation.components.PackBottomBar
@@ -108,6 +110,7 @@ import setiker.composeapp.generated.resources.loading_frames
 import setiker.composeapp.generated.resources.next_frame
 import setiker.composeapp.generated.resources.previous_frame
 import setiker.composeapp.generated.resources.save_sticker
+import setiker.composeapp.generated.resources.sticker_saved
 import setiker.composeapp.generated.resources.tags_with_count
 import setiker.composeapp.generated.resources.this_frame_only
 import util.decodeImageBitmap
@@ -119,6 +122,7 @@ fun AnimatedEditorScreen(
     onIntent: (AnimatedEditorIntent) -> Unit,
     onBackClick: () -> Unit,
     snackbarHostState: AppSnackbarHostState = remember { AppSnackbarHostState() },
+    showCelebration: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     // Decoding a frame takes tens of milliseconds for full-size stickers, so it is done off the
@@ -334,6 +338,11 @@ fun AnimatedEditorScreen(
                             },
                             modifier = Modifier.fillMaxSize()
                         )
+                        CelebrationBadge(
+                            visible = showCelebration,
+                            modifier = Modifier.align(Alignment.Center),
+                            contentDescription = stringResource(Res.string.sticker_saved)
+                        )
                     }
                 }
 
@@ -349,7 +358,7 @@ fun AnimatedEditorScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = neubrutalMutedOnSurface()
                     )
-                    Slider(
+                    NeubrutalSlider(
                         value = state.currentFrameIndex.toFloat(),
                         onValueChange = { onIntent(AnimatedEditorIntent.ScrubToFrame(it.toInt())) },
                         valueRange = 0f..(state.frames.size - 1).coerceAtLeast(1).toFloat(),
@@ -365,19 +374,19 @@ fun AnimatedEditorScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(
+                        NeubrutalSelectableChip(
+                            label = stringResource(Res.string.apply_all_frames),
                             selected = state.applyScope == DecorationApplyScope.AllFrames,
-                            onClick = { onIntent(AnimatedEditorIntent.SetApplyScope(DecorationApplyScope.AllFrames)) },
-                            label = { Text(stringResource(Res.string.apply_all_frames)) }
+                            onClick = { onIntent(AnimatedEditorIntent.SetApplyScope(DecorationApplyScope.AllFrames)) }
                         )
-                        FilterChip(
+                        NeubrutalSelectableChip(
+                            label = stringResource(Res.string.this_frame_only),
                             selected = state.applyScope == DecorationApplyScope.CurrentFrameOnly,
                             onClick = {
                                 onIntent(
                                     AnimatedEditorIntent.SetApplyScope(DecorationApplyScope.CurrentFrameOnly)
                                 )
-                            },
-                            label = { Text(stringResource(Res.string.this_frame_only)) }
+                            }
                         )
                     }
 
@@ -441,9 +450,7 @@ fun AnimatedEditorScreen(
                         value = state.accessibilityText,
                         onValueChange = { onIntent(AnimatedEditorIntent.UpdateAccessibilityText(it)) },
                         label = stringResource(Res.string.accessibility_text),
-                        placeholder = stringResource(Res.string.accessibility_text_placeholder),
-                        singleLine = false,
-                        maxLines = 3
+                        placeholder = stringResource(Res.string.accessibility_text_placeholder)
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))

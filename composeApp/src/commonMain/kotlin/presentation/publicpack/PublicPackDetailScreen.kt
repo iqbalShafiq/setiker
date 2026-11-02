@@ -1,6 +1,8 @@
 package presentation.publicpack
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,13 +29,12 @@ import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.Flag
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +52,7 @@ import data.remote.resolveApiUrl
 import org.jetbrains.compose.resources.stringResource
 import presentation.common.ContentStateAnimations
 import presentation.common.DetailLoadPhase
+import presentation.components.AppDialog
 import presentation.components.AppIllustration
 import presentation.components.AppPrimaryButton
 import presentation.components.AppSnackbarHostState
@@ -67,9 +69,11 @@ import presentation.components.PackBottomBarIconButton
 import presentation.components.ReportContentBottomSheet
 import presentation.components.ScreenSectionTitle
 import presentation.components.UnfollowConfirmDialog
+import presentation.components.rememberAppHaptics
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalSmallShadowOffset
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
@@ -111,6 +115,38 @@ fun PublicPackDetailScreen(
     modifier: Modifier = Modifier
 ) {
     var showUnfollowDialog by remember { mutableStateOf(false) }
+    val haptics = rememberAppHaptics()
+    val followPop = remember { Animatable(1f) }
+    val likePop = remember { Animatable(1f) }
+    var followAnimationReady by remember { mutableStateOf(false) }
+    var likeAnimationReady by remember { mutableStateOf(false) }
+    val followTint by animateColorAsState(
+        targetValue = if (state.isFollowingCreator) AccentCoral else neubrutalOnSurface(),
+        animationSpec = SetikerMotion.standard(SetikerMotion.DURATION_BASE_MS),
+        label = "public_pack_follow_tint"
+    )
+    val likeTint by animateColorAsState(
+        targetValue = if (state.isLiked) AccentCoral else neubrutalOnSurface(),
+        animationSpec = SetikerMotion.standard(SetikerMotion.DURATION_BASE_MS),
+        label = "public_pack_like_tint"
+    )
+
+    LaunchedEffect(state.isFollowingCreator) {
+        if (!followAnimationReady) {
+            followAnimationReady = true
+            return@LaunchedEffect
+        }
+        followPop.snapTo(1.24f)
+        followPop.animateTo(1f, SetikerMotion.DelightSpring)
+    }
+    LaunchedEffect(state.isLiked) {
+        if (!likeAnimationReady) {
+            likeAnimationReady = true
+            return@LaunchedEffect
+        }
+        likePop.snapTo(1.35f)
+        likePop.animateTo(1f, SetikerMotion.DelightSpring)
+    }
 
     val topBarActionsEnabled = !state.isImporting
 
@@ -141,6 +177,7 @@ fun PublicPackDetailScreen(
                                 stringResource(Res.string.creator_follow)
                             },
                             onClick = {
+                                haptics.selection()
                                 if (state.isFollowingCreator) {
                                     showUnfollowDialog = true
                                 } else {
@@ -148,7 +185,11 @@ fun PublicPackDetailScreen(
                                 }
                             },
                             enabled = topBarActionsEnabled,
-                            iconTint = if (state.isFollowingCreator) AccentCoral else neubrutalOnSurface()
+                            iconTint = followTint,
+                            iconModifier = Modifier.graphicsLayer {
+                                scaleX = followPop.value
+                                scaleY = followPop.value
+                            }
                         )
                     }
                 } else {
@@ -169,9 +210,16 @@ fun PublicPackDetailScreen(
                     PackBottomBarIconButton(
                         icon = if (state.isLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                         contentDescription = if (state.isLiked) "Unlike" else "Like",
-                        onClick = { onIntent(PublicPackDetailIntent.ToggleLike) },
+                        onClick = {
+                            haptics.selection()
+                            onIntent(PublicPackDetailIntent.ToggleLike)
+                        },
                         enabled = !state.isImporting,
-                        iconTint = if (state.isLiked) AccentCoral else neubrutalOnSurface()
+                        iconTint = likeTint,
+                        iconModifier = Modifier.graphicsLayer {
+                            scaleX = likePop.value
+                            scaleY = likePop.value
+                        }
                     )
                     PackBottomBarIconButton(
                         icon = if (state.isSaved) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder,
@@ -289,6 +337,7 @@ fun PublicPackDetailScreen(
                                     val sticker = relation.sticker
                                     Row(
                                         modifier = Modifier
+                                            .animateItem()
                                             .fillMaxWidth()
                                             .neubrutalShadow(
                                                 offsetX = NeubrutalSmallShadowOffset,
@@ -326,15 +375,14 @@ fun PublicPackDetailScreen(
     }
 
     state.errorDialogMessage?.let { errorMessage ->
-        AlertDialog(
-            onDismissRequest = { onIntent(PublicPackDetailIntent.DismissErrorDialog) },
-            title = { Text(stringResource(Res.string.error_dialog_title)) },
-            text = { Text(errorMessage) },
-            confirmButton = {
-                TextButton(onClick = { onIntent(PublicPackDetailIntent.DismissErrorDialog) }) {
-                    Text(stringResource(Res.string.close))
-                }
-            }
+        AppDialog(
+            title = stringResource(Res.string.error_dialog_title),
+            message = errorMessage,
+            confirmText = stringResource(Res.string.close),
+            onConfirm = { onIntent(PublicPackDetailIntent.DismissErrorDialog) },
+            onDismiss = { onIntent(PublicPackDetailIntent.DismissErrorDialog) },
+            isDanger = false,
+            showDismissButton = false
         )
     }
 
@@ -353,40 +401,27 @@ fun PublicPackDetailScreen(
     }
 
     if (state.showImportDialog) {
-        AlertDialog(
-            onDismissRequest = { onIntent(PublicPackDetailIntent.DismissImportDialog) },
-            title = { Text(stringResource(Res.string.public_pack_import_title)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        stringResource(
-                            Res.string.public_pack_import_body,
-                            state.importPointCost,
-                            state.pointsRemaining
-                        )
-                    )
-                    if (state.importOwnerCredit > 0) {
-                        Text(
-                            stringResource(
-                                Res.string.public_pack_import_owner_credit,
-                                state.importOwnerCredit
-                            ),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = neubrutalMutedOnSurface()
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { onIntent(PublicPackDetailIntent.ConfirmImport) }) {
-                    Text(stringResource(Res.string.public_pack_import_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { onIntent(PublicPackDetailIntent.DismissImportDialog) }) {
-                    Text(stringResource(Res.string.public_pack_import_cancel))
-                }
-            }
+        val importBody = stringResource(
+            Res.string.public_pack_import_body,
+            state.importPointCost,
+            state.pointsRemaining
+        )
+        val ownerCredit = if (state.importOwnerCredit > 0) {
+            stringResource(
+                Res.string.public_pack_import_owner_credit,
+                state.importOwnerCredit
+            )
+        } else {
+            null
+        }
+        AppDialog(
+            title = stringResource(Res.string.public_pack_import_title),
+            message = if (ownerCredit == null) importBody else "$importBody\n\n$ownerCredit",
+            confirmText = stringResource(Res.string.public_pack_import_confirm),
+            onConfirm = { onIntent(PublicPackDetailIntent.ConfirmImport) },
+            onDismiss = { onIntent(PublicPackDetailIntent.DismissImportDialog) },
+            dismissText = stringResource(Res.string.public_pack_import_cancel),
+            isDanger = false
         )
     }
 

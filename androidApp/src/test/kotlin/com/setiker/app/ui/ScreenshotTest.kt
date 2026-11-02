@@ -1,9 +1,13 @@
 package com.setiker.app.ui
 
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.onRoot
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule
@@ -15,6 +19,11 @@ import org.robolectric.annotation.GraphicsMode
 import presentation.components.AppPrimaryButton
 import presentation.components.EmptyState
 import presentation.components.NeubrutalIconButton
+import presentation.components.NeubrutalCheckbox
+import presentation.components.NeubrutalProgress
+import presentation.components.NeubrutalRangeSlider
+import presentation.components.NeubrutalSelectableChip
+import presentation.components.NeubrutalSlider
 import presentation.components.PageIndicator
 import presentation.theme.SetikerTheme
 
@@ -98,5 +107,80 @@ class ScreenshotTest {
         }
 
         composeTestRule.onRoot().captureRoboImage("icon_button.png")
+    }
+
+    @Test
+    fun selectedChip() {
+        composeTestRule.setContent {
+            SetikerTheme {
+                NeubrutalSelectableChip(
+                    label = "Cats",
+                    selected = true,
+                    onClick = {}
+                )
+            }
+        }
+
+        composeTestRule.onRoot().captureRoboImage("selected_chip.png")
+    }
+
+    @Test
+    fun progress() {
+        composeTestRule.setContent {
+            SetikerTheme {
+                NeubrutalProgress(
+                    progress = 0.42f,
+                    label = "Encoding",
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+
+        composeTestRule.onRoot().captureRoboImage("progress.png")
+    }
+
+    @Test
+    fun slider() {
+        composeTestRule.setContent {
+            SetikerTheme {
+                NeubrutalSlider(
+                    value = 0.42f,
+                    onValueChange = {},
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp)
+                )
+            }
+        }
+
+        composeTestRule.onRoot().captureRoboImage("slider.png")
+    }
+
+    @Test
+    fun rangeSlider() {
+        composeTestRule.setContent {
+            SetikerTheme {
+                NeubrutalRangeSlider(
+                    value = 0.2f..0.7f,
+                    onValueChange = {},
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp)
+                )
+            }
+        }
+
+        composeTestRule.onRoot().captureRoboImage("range_slider.png")
+    }
+
+    @Test
+    fun checkedCheckbox() {
+        composeTestRule.setContent {
+            SetikerTheme {
+                NeubrutalCheckbox(checked = true)
+            }
+        }
+
+        composeTestRule.onRoot().captureRoboImage("checked_checkbox.png")
     }
 }

@@ -1,23 +1,12 @@
 package presentation.theme
 
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -25,6 +14,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
@@ -67,6 +57,9 @@ val NeubrutalShadowOffset = 4.dp
 
 /** Small shadow offset. */
 val NeubrutalSmallShadowOffset = 2.dp
+
+/** Shadow offset while a control is pressed: the surface sits almost on the page. */
+val NeubrutalPressedShadowOffset = 1.dp
 
 /** Large shadow offset (dialogs). */
 val NeubrutalLargeShadowOffset = 6.dp
@@ -130,22 +123,32 @@ fun Modifier.neubrutalShadow(
     color: Color = NeubrutalBlack
 ): Modifier = this.then(
     drawBehind {
-        val radiusPx = cornerRadius.toPx()
-        val offsetXPx = offsetX.toPx()
-        val offsetYPx = offsetY.toPx()
-
-        // Draw the hard shadow as a solid rounded rect behind the content.
-        drawRoundRect(
-            color = color,
-            topLeft = Offset(offsetXPx, offsetYPx),
-            size = Size(
-                width = size.width,
-                height = size.height
-            ),
-            cornerRadius = CornerRadius(radiusPx, radiusPx)
+        drawNeubrutalShadow(
+            offsetX = offsetX.toPx(),
+            offsetY = offsetY.toPx(),
+            cornerRadius = cornerRadius.toPx(),
+            color = color
         )
     }
 )
+
+/**
+ * Draws the hard offset shadow. Shared with the press-feedback shadow, which animates the
+ * offset in the draw phase instead of recomposing the control on every frame.
+ */
+internal fun DrawScope.drawNeubrutalShadow(
+    offsetX: Float,
+    offsetY: Float,
+    cornerRadius: Float,
+    color: Color
+) {
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(offsetX, offsetY),
+        size = Size(width = size.width, height = size.height),
+        cornerRadius = CornerRadius(cornerRadius, cornerRadius)
+    )
+}
 
 /* ============================================
  * Glossy Inner Highlight (top-left bevel)
@@ -311,74 +314,4 @@ fun Modifier.neubrutalBorderWithGloss(
     .neubrutalGlossyHighlight(
         cornerRadius = cornerRadius,
         highlightColor = highlightColor
-    )
-
-/* ============================================
- * Press Scale Animation
- * ============================================ */
-
-/**
- * Press scale animation with spring physics.
- * Includes optional [onClick].
- */
-fun Modifier.neubrutalPressable(
-    enabled: Boolean = true,
-    pressScale: Float = 0.97f,
-    onClick: (() -> Unit)? = null
-): Modifier = composed {
-    if (!enabled) {
-        if (onClick != null) clickable(onClick = onClick) else this
-    } else {
-        val interactionSource = remember { MutableInteractionSource() }
-        val isPressed by interactionSource.collectIsPressedAsState()
-        val scale by animateFloatAsState(
-            targetValue = if (isPressed) pressScale else 1f,
-            animationSpec = spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessMedium
-            ),
-            label = "neubrutal_press_scale"
-        )
-
-        this
-            .scale(scale)
-            .then(
-                if (onClick != null) {
-                    clickable(
-                        interactionSource = interactionSource,
-                        indication = null,
-                        onClick = onClick
-                    )
-                } else {
-                    Modifier
-                }
-            )
-    }
-}
-
-/* ============================================
- * Combined Card + Pressable
- * ============================================ */
-
-/**
- * Combines neubrutal hard shadow + pressable behaviour for interactive cards.
- */
-fun Modifier.neubrutalInteractiveCard(
-    cornerRadius: Dp = NeubrutalCardRadius,
-    shadowColor: Color = NeubrutalBlack,
-    shadowOffsetX: Dp = NeubrutalShadowOffset,
-    shadowOffsetY: Dp = NeubrutalShadowOffset,
-    pressScale: Float = 0.97f,
-    onClick: (() -> Unit)? = null
-): Modifier = this
-    .neubrutalShadow(
-        offsetX = shadowOffsetX,
-        offsetY = shadowOffsetY,
-        cornerRadius = cornerRadius,
-        color = shadowColor
-    )
-    .neubrutalPressable(
-        enabled = onClick != null,
-        pressScale = pressScale,
-        onClick = onClick
     )

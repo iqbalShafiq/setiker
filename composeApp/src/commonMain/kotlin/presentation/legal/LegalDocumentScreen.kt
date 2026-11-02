@@ -3,6 +3,7 @@ package presentation.legal
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.MaterialTheme
@@ -21,7 +23,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -38,10 +42,15 @@ import presentation.components.AppTextField
 import presentation.components.AppTopBar
 import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
+import presentation.components.NeubrutalCheckbox
 import presentation.components.ScaffoldBottomBarLazyColumn
+import presentation.components.pressScale
+import presentation.components.rememberAppHaptics
+import presentation.components.rememberPressFeedback
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalSmallShadowOffset
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
@@ -161,6 +170,12 @@ private fun AccountDeletionRequestForm(
 ) {
     val border = neubrutalBorderColor()
     val shadow = neubrutalShadowColor()
+    val haptics = rememberAppHaptics()
+    val confirmFeedback = rememberPressFeedback(
+        pressedScale = SetikerMotion.PRESS_SCALE_SUBTLE,
+        enabled = !state.isSubmittingDeletion,
+        label = "deletion_confirm_scale"
+    )
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -191,6 +206,7 @@ private fun AccountDeletionRequestForm(
             label = stringResource(Res.string.account_deletion_email_label),
             placeholder = stringResource(Res.string.account_deletion_email_placeholder),
             keyboardType = KeyboardType.Email,
+            imeAction = ImeAction.Next,
             enabled = !state.isSubmittingDeletion
         )
         AppTextField(
@@ -198,27 +214,31 @@ private fun AccountDeletionRequestForm(
             onValueChange = { onIntent(LegalDocumentIntent.UpdateDeletionReason(it)) },
             label = stringResource(Res.string.account_deletion_reason_label),
             placeholder = stringResource(Res.string.account_deletion_reason_placeholder),
-            singleLine = false,
-            maxLines = 4,
+            imeAction = ImeAction.Next,
             enabled = !state.isSubmittingDeletion
         )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(enabled = !state.isSubmittingDeletion) {
-                    onIntent(LegalDocumentIntent.SetDeletionConfirmed(!state.deletionConfirmed))
-                },
+                .pressScale(confirmFeedback)
+                .focusable()
+                .toggleable(
+                    value = state.deletionConfirmed,
+                    interactionSource = confirmFeedback.interactionSource,
+                    indication = null,
+                    enabled = !state.isSubmittingDeletion,
+                    role = Role.Checkbox,
+                    onValueChange = { checked ->
+                        haptics.selection()
+                        onIntent(LegalDocumentIntent.SetDeletionConfirmed(checked))
+                    }
+                ),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Checkbox(
+            NeubrutalCheckbox(
                 checked = state.deletionConfirmed,
-                onCheckedChange = { onIntent(LegalDocumentIntent.SetDeletionConfirmed(it)) },
-                enabled = !state.isSubmittingDeletion,
-                colors = CheckboxDefaults.colors(
-                    checkedColor = AccentCoral,
-                    checkmarkColor = neubrutalOnSurface()
-                )
+                enabled = !state.isSubmittingDeletion
             )
             Text(
                 text = stringResource(Res.string.account_deletion_confirm_label),

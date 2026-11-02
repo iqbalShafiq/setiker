@@ -12,6 +12,7 @@ import kotlinx.coroutines.delay
 import org.koin.compose.viewmodel.koinViewModel
 import presentation.common.resolveOrDefault
 import presentation.components.AppSnackbarHostState
+import presentation.components.rememberAppHaptics
 import util.AppLog
 
 @Composable
@@ -28,6 +29,7 @@ fun EditorScreenRoot(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { AppSnackbarHostState() }
     var showCelebration by remember { mutableStateOf(false) }
+    val haptics = rememberAppHaptics()
 
     // Always set packId and stickerIndex when entering the screen or recomposing.
     // This ensures both are set even when returning from crop
@@ -59,6 +61,7 @@ fun EditorScreenRoot(
                 is EditorEffect.StickerSaved -> {
                     // Let the celebration land before leaving: saving a sticker is the moment the
                     // whole app has been building towards.
+                    haptics.confirm()
                     showCelebration = true
                     delay(CELEBRATION_DURATION_MS.milliseconds)
                     onStickerSaved()

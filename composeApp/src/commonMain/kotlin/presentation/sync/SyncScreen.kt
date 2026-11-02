@@ -1,7 +1,6 @@
 package presentation.sync
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,15 +19,11 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -49,10 +44,13 @@ import org.jetbrains.compose.resources.stringResource
 import presentation.common.ContentStateAnimations
 import presentation.common.ListLoadPhase
 import presentation.components.AppIllustration
+import presentation.components.AppTextLink
 import presentation.components.AppTopBar
 import presentation.components.EmptyState
 import presentation.components.InteractionBlockedBox
+import presentation.components.LoadingDots
 import presentation.components.LoadingIndicator
+import presentation.components.NeubrutalCard
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
@@ -256,20 +254,11 @@ private fun SyncStatusCard(
     pendingCount: Int,
     failedCount: Int
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = neubrutalCardSurface()
-        ),
-        border = BorderStroke(2.dp, neubrutalBorderColor())
-    ) {
+    NeubrutalCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (isSyncing) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        strokeWidth = 2.dp
-                    )
+                    LoadingDots(dotSize = 6.dp)
                 } else {
                     Icon(
                         imageVector = if (pendingCount > 0 || failedCount > 0) {
@@ -370,13 +359,7 @@ private fun SyncOperationItem(
     onRetry: () -> Unit,
     onCancel: () -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = neubrutalCardSurface()
-        ),
-        border = BorderStroke(1.dp, neubrutalBorderColor())
-    ) {
+    NeubrutalCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -412,19 +395,25 @@ private fun SyncOperationItem(
                 when (operation.status) {
                     SyncOperationStatus.FAILED -> {
                         Row {
-                            TextButton(onClick = onRetry) {
-                                Text(stringResource(Res.string.retry), color = MaterialTheme.colorScheme.primary)
-                            }
-                            TextButton(onClick = onCancel) {
-                                Text(stringResource(Res.string.sync_remove), color = MaterialTheme.colorScheme.error)
-                            }
+                            AppTextLink(
+                                text = stringResource(Res.string.retry),
+                                onClick = onRetry,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            AppTextLink(
+                                text = stringResource(Res.string.sync_remove),
+                                onClick = onCancel,
+                                color = MaterialTheme.colorScheme.error
+                            )
                         }
                     }
 
                     SyncOperationStatus.PENDING -> {
-                        TextButton(onClick = onCancel) {
-                            Text(stringResource(Res.string.cancel), color = MaterialTheme.colorScheme.error)
-                        }
+                        AppTextLink(
+                            text = stringResource(Res.string.cancel),
+                            onClick = onCancel,
+                            color = MaterialTheme.colorScheme.error
+                        )
                     }
 
                     else -> {}

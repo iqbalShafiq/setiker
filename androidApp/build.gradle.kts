@@ -90,6 +90,7 @@ dependencies {
 
     // --- UI and accessibility tests: on a device or an emulator -----------------------------------
     androidTestImplementation(project(":composeApp"))
+    androidTestImplementation(libs.androidx.compose.foundation)
     androidTestImplementation(libs.androidx.compose.ui.test)
     androidTestImplementation(libs.androidx.compose.ui.test.accessibility)
     androidTestImplementation(libs.androidx.test.ext.junit)

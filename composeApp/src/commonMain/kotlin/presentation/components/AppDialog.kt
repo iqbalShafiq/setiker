@@ -1,5 +1,10 @@
 package presentation.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -14,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,6 +31,7 @@ import androidx.compose.ui.window.Dialog
 import org.jetbrains.compose.resources.stringResource
 import presentation.theme.NeubrutalDialogRadius
 import presentation.theme.NeubrutalLargeShadowOffset
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
@@ -73,66 +80,89 @@ fun AppDialog(
     modifier: Modifier = Modifier,
     dismissText: String? = null,
     isDanger: Boolean = true,
-    confirmEnabled: Boolean = true
+    confirmEnabled: Boolean = true,
+    showDismissButton: Boolean = true
 ) {
     val resolvedDismissText = dismissText ?: stringResource(Res.string.cancel)
     val border = neubrutalBorderColor()
     val shadow = neubrutalShadowColor()
     val shape = RoundedCornerShape(NeubrutalDialogRadius)
 
+    val visibleState = remember {
+        MutableTransitionState(false).apply { targetState = true }
+    }
+
     Dialog(onDismissRequest = onDismiss) {
         AppDialogWidthContainer {
-            Column(
-                modifier = modifier
-                    .fillMaxWidth()
-                    .neubrutalShadow(
-                        offsetX = NeubrutalLargeShadowOffset,
-                        offsetY = NeubrutalLargeShadowOffset,
-                        cornerRadius = NeubrutalDialogRadius,
-                        color = shadow
+            AnimatedVisibility(
+                visibleState = visibleState,
+                enter = fadeIn(
+                    animationSpec = tween(
+                        durationMillis = SetikerMotion.DURATION_FAST_MS,
+                        easing = SetikerMotion.EaseOut
                     )
-                    .clip(shape)
-                    .background(neubrutalCardSurface())
-                    .neubrutalBorderWithGloss(
-                        color = border,
-                        cornerRadius = NeubrutalDialogRadius,
-                        highlightColor = neubrutalGlossyHighlightColor()
+                ) + scaleIn(
+                    initialScale = 0.94f,
+                    animationSpec = tween(
+                        durationMillis = SetikerMotion.DURATION_FAST_MS,
+                        easing = SetikerMotion.EaseOut
                     )
-                    .padding(28.dp)
+                )
             ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = neubrutalOnSurface()
-            )
+                Column(
+                    modifier = modifier
+                        .fillMaxWidth()
+                        .neubrutalShadow(
+                            offsetX = NeubrutalLargeShadowOffset,
+                            offsetY = NeubrutalLargeShadowOffset,
+                            cornerRadius = NeubrutalDialogRadius,
+                            color = shadow
+                        )
+                        .clip(shape)
+                        .background(neubrutalCardSurface())
+                        .neubrutalBorderWithGloss(
+                            color = border,
+                            cornerRadius = NeubrutalDialogRadius,
+                            highlightColor = neubrutalGlossyHighlightColor()
+                        )
+                        .padding(28.dp)
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = neubrutalOnSurface()
+                    )
 
-            Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = neubrutalMutedOnSurface(),
-                textAlign = TextAlign.Start
-            )
+                    Text(
+                        text = message,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = neubrutalMutedOnSurface(),
+                        textAlign = TextAlign.Start
+                    )
 
-            Spacer(modifier = Modifier.height(28.dp))
+                    Spacer(modifier = Modifier.height(28.dp))
 
-            AppPrimaryButton(
-                text = confirmText,
-                onClick = onConfirm,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = confirmEnabled
-            )
+                    AppPrimaryButton(
+                        text = confirmText,
+                        onClick = onConfirm,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = confirmEnabled
+                    )
 
-            Spacer(modifier = Modifier.height(10.dp))
+                    if (showDismissButton) {
+                        Spacer(modifier = Modifier.height(10.dp))
 
-            AppSecondaryButton(
-                text = resolvedDismissText,
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
+                        AppSecondaryButton(
+                            text = resolvedDismissText,
+                            onClick = onDismiss,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
         }
     }
 }

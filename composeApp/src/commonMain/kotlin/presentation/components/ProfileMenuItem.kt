@@ -33,6 +33,7 @@ import presentation.theme.NeubrutalDark
 import presentation.theme.NeubrutalSmallRadius
 import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.NeubrutalWhite
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalGlossyHighlightColor
@@ -51,7 +52,7 @@ fun ProfileMenuItem(
 ) {
     val borderColor = neubrutalBorderColor()
     val pressFeedback = rememberPressFeedback(
-        pressedScale = 0.98f,
+        pressedScale = SetikerMotion.PRESS_SCALE_SUBTLE,
         label = "menu_item_scale"
     )
 

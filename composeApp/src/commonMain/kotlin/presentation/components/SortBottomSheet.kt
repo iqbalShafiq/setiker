@@ -3,13 +3,13 @@ package presentation.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -36,15 +36,15 @@ fun SortBottomSheet(
     onSortSelected: (SortOrder) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberAppSheetState()
     val options = SortOrder.entries
 
-    ModalBottomSheet(
+    AppModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = neubrutalScreenBackground(),
         scrimColor = NeubrutalScrim,
-        contentWindowInsets = { zeroBottomSheetWindowInsets() }
+        contentWindowInsets = { WindowInsets.navigationBars }
     ) {
         BottomSheetScrollColumn {
             Text(
@@ -57,12 +57,13 @@ fun SortBottomSheet(
             Spacer(modifier = Modifier.height(14.dp))
 
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                options.forEach { option ->
+                options.forEachIndexed { index, option ->
                     val isSelected = option == currentSort
                     BottomSheetOptionRow(
                         label = stringResource(option.toLabelRes()),
                         selected = isSelected,
-                        onClick = { onSortSelected(option); onDismiss() }
+                        onClick = { onSortSelected(option); onDismiss() },
+                        index = index
                     )
                 }
             }

@@ -39,6 +39,9 @@ python tools/memory_check.py
 
 # The frame times of the app, on the sticker grid
 python tools/frame_stats.py
+
+# The end-to-end motion journey (signed-in device, API reachable)
+python tools/motion_e2e.py
 ```
 
 The device tests need the app on the device and the API reachable from it:
@@ -61,6 +64,10 @@ adb reverse tcp:7845 tcp:7845
 - the icon buttons are labelled and clickable;
 - and the accessibility checks run over the empty state and the icon button
   (`enableAccessibilityChecks()` from `androidx.compose.ui:ui-test-junit4-accessibility`).
+
+`androidApp/src/androidTest/.../MotionIntegrationTest.kt` covers the motion surfaces that a
+screenshot cannot hold: the branded loader, the animated progress value, selection semantics, the
+sheet row, the list-load phase transition, and the skeleton's accessibility tree.
 
 `androidApp/src/androidTest/.../ErrorSemanticsTest.kt` holds the two properties that a screen
 reader needs and nobody sees:
@@ -105,6 +112,14 @@ regression fails the run.
 
 The `hero.png` and the flow in `flow.gif` are the images the README uses; they are not part of the
 comparison.
+
+## The end-to-end motion journey
+
+`tools/motion_e2e.py` drives the installed app on a device with the `android` CLI and `adb`:
+Home → Explore → public pack → Like → Unlike → back. It is idempotent, so a previous run that
+left the pack liked does not fail the next one. It writes a screenshot for each stage to
+`build/motion-e2e/`. The device has to be signed in; if it is not, the script says so instead of
+failing midway through the journey.
 
 ## The memory check
 

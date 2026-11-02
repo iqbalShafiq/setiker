@@ -1,7 +1,6 @@
 package presentation.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
@@ -21,6 +20,8 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalShadowOffset
+import presentation.theme.NeubrutalSmallShadowOffset
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
@@ -75,14 +76,14 @@ fun StickerEmojiTagChip(
             style = MaterialTheme.typography.bodyMedium,
             color = neubrutalOnSurface()
         )
-        NeubrutalIconButton(
+        NeubrutalBareIconButton(
             icon = Icons.Default.Close,
             contentDescription = stringResource(Res.string.remove_emoji),
             onClick = onRemove,
             size = TagRemoveTarget,
             iconSize = 13.dp,
             tint = neubrutalSubtleOnSurface(),
-            pressedScale = 0.85f,
+            pressedScale = SetikerMotion.PRESS_SCALE_TINY,
             label = "emoji_remove_scale"
         )
     }
@@ -95,13 +96,22 @@ fun NeubrutalAddTagPill(
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
+    val haptics = rememberAppHaptics()
+    val pressFeedback = rememberPressFeedback(
+        pressedScale = SetikerMotion.PRESS_SCALE_REGULAR,
+        enabled = enabled,
+        label = "add_tag_pill_scale"
+    )
+
     Box(
         modifier = modifier
             .height(TagChipHeight)
-            .neubrutalShadow(
-                offsetX = NeubrutalShadowOffset,
-                offsetY = NeubrutalShadowOffset,
-                cornerRadius = 50.dp, // pill
+            .pressScale(pressFeedback)
+            .pressShadow(
+                feedback = pressFeedback,
+                restOffset = NeubrutalShadowOffset,
+                pressedOffset = NeubrutalSmallShadowOffset,
+                cornerRadius = 50.dp,
                 color = neubrutalShadowColor()
             )
             .clip(CircleShape)
@@ -112,7 +122,14 @@ fun NeubrutalAddTagPill(
                 shape = CircleShape,
                 highlightColor = neubrutalGlossyHighlightColor()
             )
-            .clickable(enabled = enabled, onClick = onClick)
+            .clickableNoRipple(
+                interactionSource = pressFeedback.interactionSource,
+                enabled = enabled,
+                onClick = {
+                    haptics.selection()
+                    onClick()
+                }
+            )
             .padding(horizontal = 12.dp),
         contentAlignment = Alignment.Center
     ) {

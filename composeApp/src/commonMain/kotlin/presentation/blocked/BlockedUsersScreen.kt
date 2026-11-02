@@ -16,7 +16,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PersonRemove
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -40,6 +39,7 @@ import presentation.components.AppDialog
 import presentation.components.AppSnackbarHostState
 import presentation.components.AppTopBar
 import presentation.components.ContentLoadLayout
+import presentation.components.LoadingDots
 import presentation.components.NeubrutalSnackbarHost
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalCardRadius
@@ -211,11 +211,7 @@ private fun BlockedUserRow(
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             if (isUnblocking) {
-                CircularProgressIndicator(
-                    modifier = Modifier.height(16.dp),
-                    strokeWidth = 2.dp,
-                    color = AccentCoral
-                )
+                LoadingDots(dotSize = 5.dp, color = AccentCoral)
             } else {
                 Icon(
                     imageVector = Icons.Default.PersonRemove,

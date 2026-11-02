@@ -106,7 +106,9 @@ uses it.
 Motion has one home too, `SetikerMotion`: durations, curves and springs. Press feedback is a firm
 non-bouncy spring, because a button is pressed dozens of times a day and a wobble reads as
 sloppiness. The one place a bounce is allowed is a celebration, such as the badge that pops when a
-sticker is saved.
+sticker is saved. Loading is part of the same language: brand dots, skeleton lists, hard-shadow
+progress bars and a pull-to-refresh pill, never a stock Material spinner. Haptics confirm a
+selection or a save, and reduced-motion mode stops the loops and the autoplay previews.
 
 ## Development
 
@@ -125,7 +127,9 @@ Issues and pull requests are welcome. Open a branch from `main`, keep the change
 what you ran.
 
 The [UI/UX and motion audit](docs/plans/2026-10-19-ui-ux-motion-audit.md) is a good model for what
-a change should come with: the finding, the evidence on a device, and the measurement after.
+a change should come with: the finding, the evidence on a device, and the measurement after. The
+[motion remediation](docs/plans/2026-11-02-motion-remediation.md) tracks how the findings were
+closed.
 
 ## License
 

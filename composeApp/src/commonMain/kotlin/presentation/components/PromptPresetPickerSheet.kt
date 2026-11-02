@@ -8,10 +8,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,6 +28,7 @@ import domain.error.onSuccess
 import domain.model.PromptPreset
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalSubtleOnSurface
 import setiker.composeapp.generated.resources.Res
@@ -42,14 +41,14 @@ fun PromptPresetsTrailingIcon(
     onClick: () -> Unit,
     enabled: Boolean = true
 ) {
-    NeubrutalIconButton(
+    NeubrutalBareIconButton(
         icon = Icons.AutoMirrored.Filled.MenuBook,
         contentDescription = stringResource(Res.string.prompt_presets_open),
         onClick = onClick,
         enabled = enabled,
         iconSize = 20.dp,
         tint = neubrutalSubtleOnSurface(),
-        pressedScale = 0.88f,
+        pressedScale = SetikerMotion.PRESS_SCALE_TINY,
         label = "prompt_presets_scale"
     )
 }
@@ -84,7 +83,11 @@ fun PromptPresetPickerSheet(
             }
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    val sheetState = rememberAppSheetState()
+    AppModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState
+    ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -95,7 +98,10 @@ fun PromptPresetPickerSheet(
             )
             when {
                 isLoading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                    LoadingDots(
+                        dotSize = 8.dp,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
                 }
                 loadError != null -> {
                     Text(

@@ -2,8 +2,6 @@ package presentation.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -13,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
@@ -28,7 +27,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
@@ -37,11 +38,13 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import presentation.theme.ErrorRed
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
@@ -68,8 +71,10 @@ fun AppPasswordTextField(
     errorText: String? = null,
     supportingText: @Composable (() -> Unit)? = null,
     imeAction: ImeAction = ImeAction.Done,
+    onDone: (() -> Unit)? = null,
     enabled: Boolean = true
 ) {
+    val focusManager = LocalFocusManager.current
     var passwordVisible by remember { mutableStateOf(false) }
 
     val border = neubrutalBorderColor()
@@ -132,19 +137,51 @@ fun AppPasswordTextField(
                     imeAction = imeAction,
                     keyboardType = KeyboardType.Password
                 ),
+                keyboardActions = KeyboardActions(
+                    onNext = {
+                        if (!focusManager.moveFocus(FocusDirection.Down)) {
+                            focusManager.clearFocus()
+                        }
+                    },
+                    onDone = {
+                        focusManager.clearFocus()
+                        onDone?.invoke()
+                    },
+                    onGo = {
+                        focusManager.clearFocus()
+                        onDone?.invoke()
+                    },
+                    onSend = {
+                        focusManager.clearFocus()
+                        onDone?.invoke()
+                    },
+                    onSearch = {
+                        focusManager.clearFocus()
+                        onDone?.invoke()
+                    }
+                ),
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 decorationBox = { innerTextField ->
                     if (value.isEmpty() && placeholder.isNotEmpty()) {
                         Text(
                             text = placeholder,
                             style = MaterialTheme.typography.bodyLarge,
-                            color = neubrutalSubtleOnSurface()
+                            color = neubrutalSubtleOnSurface(),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            softWrap = false
                         )
                     }
                     innerTextField()
                 }
             )
 
+            val haptics = rememberAppHaptics()
+            val visibilityFeedback = rememberPressFeedback(
+                pressedScale = SetikerMotion.PRESS_SCALE_TINY,
+                enabled = enabled,
+                label = "password_visibility_scale"
+            )
             Icon(
                 imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                 contentDescription = if (passwordVisible) "Hide password" else "Show password",
@@ -152,10 +189,15 @@ fun AppPasswordTextField(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
                     .size(20.dp)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { if (enabled) passwordVisible = !passwordVisible }
+                    .pressScale(visibilityFeedback)
+                    .clickableNoRipple(
+                        interactionSource = visibilityFeedback.interactionSource,
+                        enabled = enabled,
+                        onClick = {
+                            haptics.selection()
+                            passwordVisible = !passwordVisible
+                        }
+                    )
             )
         }
 

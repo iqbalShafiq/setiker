@@ -8,11 +8,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -31,6 +29,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import presentation.components.AppIllustration
 import presentation.components.AppTopBar
 import presentation.components.ContentLoadLayout
+import presentation.components.LoadingDots
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
@@ -116,11 +115,7 @@ fun PurchaseHistoryScreen(
                                 .padding(vertical = 12.dp),
                             horizontalArrangement = Arrangement.Center
                         ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(22.dp),
-                                strokeWidth = 2.dp,
-                                color = AccentCoral
-                            )
+                            LoadingDots(dotSize = 6.dp, color = AccentCoral)
                         }
                     }
                 } else if (state.hasMore) {

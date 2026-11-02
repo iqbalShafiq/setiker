@@ -191,6 +191,7 @@ fun ResetPasswordScreen(
                 placeholder = stringResource(Res.string.login_password_placeholder),
                 enabled = !state.isLoading,
                 imeAction = ImeAction.Done,
+                onDone = { if (!state.isLoading) onSubmit() },
                 modifier = Modifier.fillMaxWidth()
             )
             AppPrimaryButton(

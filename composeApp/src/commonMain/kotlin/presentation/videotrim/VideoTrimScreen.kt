@@ -17,9 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,6 +42,9 @@ import presentation.components.AppTopBar
 import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
 import presentation.components.MediaPreviewBottomBar
+import presentation.components.NeubrutalRangeSlider
+import presentation.components.NeubrutalSelectableChip
+import presentation.components.NeubrutalSlider
 import presentation.components.NeubrutalSnackbarHost
 import presentation.components.NeubrutalStickerPreviewFrame
 import presentation.components.ScreenSectionTitle
@@ -220,7 +221,7 @@ fun VideoTrimScreen(
                 )
                 if (state.videoDurationMs > 0) {
                     val rangeMax = state.videoDurationMs.toFloat()
-                    RangeSlider(
+                    NeubrutalRangeSlider(
                         value = state.trimStartMs.toFloat()..state.trimEndMs.toFloat(),
                         onValueChange = { range ->
                             onIntent(VideoTrimIntent.UpdateTrimStart(range.start.toLong()))
@@ -244,10 +245,10 @@ fun VideoTrimScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     VideoTrimState.FPS_OPTIONS.forEach { fps ->
-                        FilterChip(
+                        NeubrutalSelectableChip(
+                            label = "$fps fps",
                             selected = state.fps == fps,
-                            onClick = { onIntent(VideoTrimIntent.UpdateFps(fps)) },
-                            label = { Text("$fps fps") }
+                            onClick = { onIntent(VideoTrimIntent.UpdateFps(fps)) }
                         )
                     }
                 }
@@ -257,10 +258,10 @@ fun VideoTrimScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     VideoTrimState.SPEED_OPTIONS.forEach { speed ->
-                        FilterChip(
+                        NeubrutalSelectableChip(
+                            label = "${formatSpeed(speed)}x",
                             selected = state.speed == speed,
-                            onClick = { onIntent(VideoTrimIntent.UpdateSpeed(speed)) },
-                            label = { Text("${formatSpeed(speed)}x") }
+                            onClick = { onIntent(VideoTrimIntent.UpdateSpeed(speed)) }
                         )
                     }
                 }

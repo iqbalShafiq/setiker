@@ -10,7 +10,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,6 +29,7 @@ import presentation.common.rememberErrorSnackbar
 import presentation.components.AppIllustration
 import presentation.components.AppIllustrationImage
 import presentation.components.AppPasswordTextField
+import presentation.components.AppSecondaryButton
 import presentation.components.AppTextField
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalSubtleOnSurface
@@ -133,28 +133,22 @@ fun RegisterScreen(
             }
 
             if (state.appleAvailable) {
-                OutlinedButton(
+                AppSecondaryButton(
+                    text = stringResource(Res.string.login_apple),
                     onClick = { onIntent(RegisterIntent.SignInWithApple) },
                     enabled = !state.isLoading,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                ) {
-                    Text(text = stringResource(Res.string.login_apple))
-                }
+                    modifier = Modifier.fillMaxWidth()
+                )
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
             if (state.googleAvailable) {
-                OutlinedButton(
+                AppSecondaryButton(
+                    text = stringResource(Res.string.login_google),
                     onClick = { onIntent(RegisterIntent.SignInWithGoogle) },
                     enabled = !state.isLoading,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                ) {
-                    Text(text = stringResource(Res.string.login_google))
-                }
+                    modifier = Modifier.fillMaxWidth()
+                )
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
@@ -224,6 +218,7 @@ fun RegisterScreen(
                     label = stringResource(Res.string.register_confirm_password_label),
                     placeholder = stringResource(Res.string.register_confirm_password_placeholder),
                     imeAction = ImeAction.Done,
+                    onDone = { if (!state.isLoading) onIntent(RegisterIntent.Submit) },
                     enabled = !state.isLoading,
                     modifier = Modifier.fillMaxWidth()
                 )

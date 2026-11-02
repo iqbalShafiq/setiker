@@ -1,9 +1,9 @@
 package presentation.components
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
@@ -55,6 +56,7 @@ import org.jetbrains.compose.resources.stringResource
 import presentation.theme.AccentCoral
 import presentation.theme.ErrorRed
 import presentation.theme.NeubrutalBorderWidth
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalGlossyHighlightColor
@@ -93,6 +95,16 @@ fun DecorationPreviewLayer(
             val latestCenterX by rememberUpdatedState(decoration.centerX)
             val latestCenterY by rememberUpdatedState(decoration.centerY)
             val latestScale by rememberUpdatedState(decoration.scale)
+            val haptics = rememberAppHaptics()
+            val selectionColor by animateColorAsState(
+                targetValue = if (selectedDecorationId == decoration.id) {
+                    AccentCoral
+                } else {
+                    Color.Transparent
+                },
+                animationSpec = SetikerMotion.standard(SetikerMotion.DURATION_FAST_MS),
+                label = "decoration_selection_border"
+            )
             val scale = decoration.scale.coerceIn(DecorationRenderSpec.MIN_SCALE, DecorationRenderSpec.MAX_SCALE)
             val itemSizePx = when (decoration) {
                 is TextDecoration -> minDim * DecorationRenderSpec.TEXT_BOX_RATIO * scale
@@ -124,6 +136,7 @@ fun DecorationPreviewLayer(
             var renderCenter by remember(decoration.id) {
                 mutableStateOf(Offset(decoration.centerX, decoration.centerY))
             }
+            var isManipulating by remember(decoration.id) { mutableStateOf(false) }
             LaunchedEffect(decoration.centerX, decoration.centerY) {
                 renderCenter = Offset(decoration.centerX, decoration.centerY)
             }
@@ -141,6 +154,11 @@ fun DecorationPreviewLayer(
                         width = with(density) { itemWidth.toDp() },
                         height = with(density) { itemHeight.toDp() }
                     )
+                    .graphicsLayer {
+                        val lift = if (isManipulating) 1.03f else 1f
+                        scaleX = lift
+                        scaleY = lift
+                    }
                     .clip(RoundedCornerShape(8.dp))
                     .pointerInput(decoration.id) {
                         var startCenterX = decoration.centerX
@@ -151,10 +169,13 @@ fun DecorationPreviewLayer(
                                 startCenterX = latestCenterX
                                 startCenterY = latestCenterY
                                 fixedScale = latestScale
+                                isManipulating = true
+                                haptics.longPress()
                                 onSelectDecoration(decoration.id)
                                 onDecorationTransformStart(decoration.id)
                             },
                             onDragEnd = {
+                                isManipulating = false
                                 // One commit per gesture: undo history gets a single entry and the
                                 // editor recomposes once instead of on every pointer event.
                                 onUpdateDecoration(
@@ -169,6 +190,7 @@ fun DecorationPreviewLayer(
                             },
                             onDragCancel = {
                                 // Aborted gesture: drop the local preview, keep the state untouched.
+                                isManipulating = false
                                 renderCenter = Offset(latestCenterX, latestCenterY)
                             }
                         ) { change, dragAmount ->
@@ -179,14 +201,19 @@ fun DecorationPreviewLayer(
                         }
                     }
                     .pointerInput(decoration.id) {
-                        detectTapGestures(onTap = { onSelectDecoration(decoration.id) })
+                        detectTapGestures(
+                            onTap = {
+                                haptics.selection()
+                                onSelectDecoration(decoration.id)
+                            }
+                        )
                     }
                     .then(
                         Modifier.border(
                             width = NeubrutalBorderWidth,
                             // Accent rather than plain black/white: the outline sits on top of arbitrary
                             // artwork, where a theme-dependent stroke is invisible on one of the two.
-                            color = if (selectedDecorationId == decoration.id) AccentCoral else Color.Transparent,
+                            color = selectionColor,
                             shape = RoundedCornerShape(8.dp)
                         )
                     )
@@ -235,11 +262,16 @@ fun DecorationPreviewLayer(
                     // accessibility services: the badge only had a tap detector and the handle only a
                     // drag detector, so neither was announced or reachable.
                     val removeLabel = stringResource(Res.string.remove_decoration)
+                    val deleteFeedback = rememberPressFeedback(
+                        pressedScale = SetikerMotion.PRESS_SCALE_TINY,
+                        label = "decoration_delete_scale"
+                    )
                     Box(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .offset(x = (-2).dp, y = 2.dp)
                             .size(18.dp)
+                            .pressScale(deleteFeedback)
                             .clip(CircleShape)
                             .background(ErrorRed)
                             .neubrutalBorderWithGloss(
@@ -249,7 +281,13 @@ fun DecorationPreviewLayer(
                                 highlightColor = neubrutalGlossyHighlightColor(onFilledSurface = true)
                             )
                             .semantics { contentDescription = removeLabel }
-                            .clickable(onClick = { onDeleteDecoration(decoration.id) })
+                            .clickableNoRipple(
+                                interactionSource = deleteFeedback.interactionSource,
+                                onClick = {
+                                    haptics.confirm()
+                                    onDeleteDecoration(decoration.id)
+                                }
+                            )
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
@@ -282,9 +320,13 @@ fun DecorationPreviewLayer(
                                         startScale = latestScale
                                         fixedCenterX = latestCenterX
                                         fixedCenterY = latestCenterY
+                                        isManipulating = true
+                                        haptics.longPress()
                                         onSelectDecoration(decoration.id)
                                         onDecorationTransformStart(decoration.id)
-                                    }
+                                    },
+                                    onDragEnd = { isManipulating = false },
+                                    onDragCancel = { isManipulating = false }
                                 ) { change, dragAmount ->
                                     change.consume()
                                     startScale += (dragAmount.x + dragAmount.y) / minDim

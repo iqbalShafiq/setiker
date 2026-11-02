@@ -25,7 +25,6 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,6 +54,8 @@ import presentation.components.AppTopBar
 import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
 import presentation.components.MediaPreviewBottomBar
+import presentation.components.NeubrutalRangeSlider
+import presentation.components.NeubrutalSlider
 import presentation.components.NeubrutalSnackbarHost
 import presentation.components.NeubrutalStickerPreviewFrame
 import presentation.components.ProgressDialog
@@ -202,7 +203,7 @@ fun VideoCropScreen(
                 style = MaterialTheme.typography.labelLarge,
                 color = neubrutalMutedOnSurface()
             )
-            Slider(
+            NeubrutalSlider(
                 value = state.transform.scale,
                 onValueChange = { onIntent(VideoCropIntent.UpdateScale(it)) },
                 valueRange = CropTransform.MIN_SCALE..CropTransform.MAX_SCALE,

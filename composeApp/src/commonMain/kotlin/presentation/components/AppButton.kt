@@ -23,6 +23,7 @@ import presentation.theme.NeubrutalButtonRadius
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.NeubrutalWhite
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
@@ -42,7 +43,7 @@ fun AppPrimaryButton(
     enabled: Boolean = true
 ) {
     val pressFeedback = rememberPressFeedback(
-        pressedScale = 0.97f,
+        pressedScale = SetikerMotion.PRESS_SCALE_REGULAR,
         enabled = enabled,
         label = "primary_button_scale"
     )
@@ -99,7 +100,7 @@ fun AppSecondaryButton(
     enabled: Boolean = true
 ) {
     val pressFeedback = rememberPressFeedback(
-        pressedScale = 0.97f,
+        pressedScale = SetikerMotion.PRESS_SCALE_REGULAR,
         enabled = enabled,
         label = "secondary_button_scale"
     )

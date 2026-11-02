@@ -15,6 +15,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -103,6 +104,7 @@ fun EditProfileScreen(
                     value = state.displayName,
                     onValueChange = { onIntent(EditProfileIntent.UpdateDisplayName(it)) },
                     label = stringResource(Res.string.edit_profile_display_name),
+                    imeAction = ImeAction.Next,
                     enabled = !state.isSaving,
                     isError = state.displayNameError != null,
                 errorText = state.displayNameError?.resolveLocal(),
@@ -116,6 +118,8 @@ fun EditProfileScreen(
                     value = state.username,
                     onValueChange = { onIntent(EditProfileIntent.UpdateUsername(it)) },
                     label = stringResource(Res.string.edit_profile_username),
+                    imeAction = ImeAction.Done,
+                    onDone = { if (!state.isSaving) onIntent(EditProfileIntent.Save) },
                     enabled = !state.isSaving,
                     isError = state.usernameError != null,
                 errorText = state.usernameError?.resolveLocal(),

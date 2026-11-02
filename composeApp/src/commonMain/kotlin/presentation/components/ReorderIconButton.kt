@@ -1,6 +1,5 @@
 package presentation.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -14,6 +13,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 
@@ -34,6 +34,13 @@ fun ReorderIconButton(
     enabled: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val haptics = rememberAppHaptics()
+    val pressFeedback = rememberPressFeedback(
+        pressedScale = SetikerMotion.PRESS_SCALE_SMALL,
+        enabled = enabled,
+        label = "reorder_icon_scale"
+    )
+
     Box(
         modifier = modifier.height(44.dp),
         contentAlignment = Alignment.Center
@@ -42,7 +49,15 @@ fun ReorderIconButton(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(44.dp)
-                .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+                .clickableNoRipple(
+                    interactionSource = pressFeedback.interactionSource,
+                    enabled = enabled,
+                    role = Role.Button,
+                    onClick = {
+                        haptics.selection()
+                        onClick()
+                    }
+                ),
             contentAlignment = Alignment.Center
         ) {
             // The visible circle stays small; the tap target uses the whole cell so the control
@@ -50,6 +65,7 @@ fun ReorderIconButton(
             Box(
                 modifier = Modifier
                     .size(32.dp)
+                    .pressScale(pressFeedback)
                     .clip(CircleShape),
                 contentAlignment = Alignment.Center
             ) {

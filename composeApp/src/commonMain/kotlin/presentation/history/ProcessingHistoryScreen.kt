@@ -43,13 +43,13 @@ import presentation.components.AppSnackbarHostState
 import presentation.components.AppTopBar
 import presentation.components.EmptyState
 import presentation.components.InteractionBlockedBox
-import presentation.components.LoadingIndicator
 import presentation.components.NeubrutalSelectableChip
 import presentation.components.NeubrutalSnackbarHost
 import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
 import presentation.components.ReportContentBottomSheet
+import presentation.components.SkeletonPackList
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.neubrutalBorderColor
@@ -193,9 +193,9 @@ fun ProcessingHistoryScreen(
                         .padding(top = 12.dp)
                 ) { current ->
                     when (current) {
-                        ListLoadPhase.Loading -> LoadingIndicator(
+                        ListLoadPhase.Loading -> SkeletonPackList(
                             modifier = Modifier.fillMaxSize(),
-                            illustration = AppIllustration.LoadingState
+                            rows = 4
                         )
                         ListLoadPhase.Error -> EmptyState(
                             title = stringResource(Res.string.history_none_title),
@@ -224,6 +224,7 @@ fun ProcessingHistoryScreen(
                             items(state.items, key = { it.id }) { item ->
                                 Row(
                                     modifier = Modifier
+                                        .animateItem()
                                         .fillMaxWidth()
                                         .neubrutalShadow(
                                             offsetX = NeubrutalSmallShadowOffset,

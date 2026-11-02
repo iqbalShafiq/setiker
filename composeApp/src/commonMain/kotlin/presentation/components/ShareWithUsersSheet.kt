@@ -10,6 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import data.remote.model.UserSearchResult
 import org.jetbrains.compose.resources.stringResource
@@ -62,7 +63,8 @@ fun ShareWithUsersSheet(
             value = searchQuery,
             onValueChange = onSearchQueryChange,
             label = stringResource(Res.string.share_with_users_search_label),
-            placeholder = stringResource(Res.string.share_with_users_search_placeholder)
+            placeholder = stringResource(Res.string.share_with_users_search_placeholder),
+            imeAction = ImeAction.Search
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             NeubrutalSelectableChip(

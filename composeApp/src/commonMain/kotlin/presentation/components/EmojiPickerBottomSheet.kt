@@ -11,18 +11,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.SheetState
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -75,7 +73,7 @@ fun EmojiPickerBottomSheet(
     onEmojiSelected: (String) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
-    sheetState: SheetState = rememberModalBottomSheetState()
+    sheetState: SheetState = rememberAppSheetState()
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
 
@@ -91,7 +89,7 @@ fun EmojiPickerBottomSheet(
     val surface = neubrutalCardSurface()
     val onSurface = neubrutalOnSurface()
     val muted = neubrutalMutedOnSurface()
-    ModalBottomSheet(
+    AppModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         modifier = modifier,
@@ -113,24 +111,16 @@ fun EmojiPickerBottomSheet(
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
             )
 
-            SecondaryTabRow(
-                selectedTabIndex = selectedTab,
+            LazyRow(
                 modifier = Modifier.fillMaxWidth(),
-                containerColor = bg,
-                contentColor = AccentCoral
+                contentPadding = PaddingValues(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                categories.forEachIndexed { index, (title, _) ->
-                    Tab(
+                itemsIndexed(categories) { index, (title, _) ->
+                    NeubrutalSelectableChip(
+                        label = title,
                         selected = selectedTab == index,
-                        onClick = { selectedTab = index },
-                        text = {
-                            Text(
-                                title,
-                                maxLines = 1,
-                                style = MaterialTheme.typography.labelLarge,
-                                color = if (selectedTab == index) AccentCoral else muted
-                            )
-                        }
+                        onClick = { selectedTab = index }
                     )
                 }
             }

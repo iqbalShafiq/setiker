@@ -146,6 +146,7 @@
     <string name="select_image">Select an image</string>
     <string name="sticker_preview">Sticker preview</string>
     <string name="sticker_saved">Sticker saved</string>
+    <string name="pack_saved">Pack saved</string>
     <string name="remove_emoji">Remove emoji</string>
     <string name="decorations">Decorations</string>
     <string name="decoration_hint">Tap item to select, drag to move, and drag handle to resize.</string>

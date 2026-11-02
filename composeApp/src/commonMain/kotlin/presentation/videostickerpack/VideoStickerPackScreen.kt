@@ -42,6 +42,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import data.remote.readFileBytes
@@ -54,6 +55,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.stringResource
+import presentation.common.rememberReduceMotion
 import presentation.components.AiQuotaSummary
 import presentation.components.AppIllustration
 import presentation.components.AppIllustrationImage
@@ -62,6 +64,9 @@ import presentation.components.AppTextField
 import presentation.components.AppTopBar
 import presentation.components.InteractionBlockedBox
 import presentation.components.LoadingIndicator
+import presentation.components.NeubrutalProgress
+import presentation.components.NeubrutalRangeSlider
+import presentation.components.NeubrutalSlider
 import presentation.components.NeubrutalSnackbarHost
 import presentation.components.NeubrutalStickerPreviewFrame
 import presentation.components.PackBottomBar
@@ -268,6 +273,7 @@ private fun VideoStickerPackContent(
             onValueChange = { onIntent(VideoStickerPackIntent.UpdatePrompt(it)) },
             label = stringResource(Res.string.video_pack_prompt_label),
             placeholder = stringResource(Res.string.video_pack_prompt_placeholder),
+            imeAction = ImeAction.Next,
             enabled = contentEnabled
         )
 
@@ -276,6 +282,7 @@ private fun VideoStickerPackContent(
             onValueChange = { onIntent(VideoStickerPackIntent.UpdatePackName(it)) },
             label = stringResource(Res.string.pack_name_label),
             placeholder = stringResource(Res.string.pack_name_placeholder),
+            imeAction = ImeAction.Next,
             enabled = contentEnabled
         )
 
@@ -284,6 +291,7 @@ private fun VideoStickerPackContent(
             onValueChange = { onIntent(VideoStickerPackIntent.UpdatePublisher(it)) },
             label = stringResource(Res.string.publisher_label),
             placeholder = stringResource(Res.string.publisher_placeholder),
+            imeAction = ImeAction.Done,
             enabled = contentEnabled
         )
 
@@ -321,7 +329,7 @@ private fun VideoPreviewSection(
         label = "Selected clip range",
         supportingText = "${formatMs(state.selectedStartMs)} -> ${formatMs(state.selectedEndMs)}"
     ) {
-        RangeSlider(
+        NeubrutalRangeSlider(
             value = state.selectedStartMs.toFloat()..state.selectedEndMs.toFloat(),
             onValueChange = { range ->
                 onIntent(VideoStickerPackIntent.UpdateStart(range.start.toLong()))
@@ -338,7 +346,7 @@ private fun VideoPreviewSection(
             label = "Preview position",
             supportingText = "${formatMs(relativePreviewMs)} / ${formatMs(state.selectedDurationMs)}"
         ) {
-            Slider(
+            NeubrutalSlider(
                 value = state.currentPreviewIndex.toFloat(),
                 onValueChange = { onIntent(VideoStickerPackIntent.ScrubPreviewTo(it.toInt())) },
                 valueRange = 0f..(state.activePreviewFrames.size - 1).coerceAtLeast(1).toFloat(),
@@ -438,10 +446,7 @@ private fun VideoSourcePreview(
 private fun VideoProcessingSection(
     state: VideoStickerPackState
 ) {
-    LinearProgressIndicator(
-        progress = { state.processingProgress.coerceIn(0f, 1f) },
-        modifier = Modifier.fillMaxWidth()
-    )
+    NeubrutalProgress(progress = state.processingProgress.coerceIn(0f, 1f))
     val processingLabel = state.backgroundJobMessage ?: state.processingStep?.toUiLabel().orEmpty()
     if (processingLabel.isNotBlank()) {
         Text(
@@ -597,7 +602,9 @@ private fun AnimatedVideoStickerPreviewCard(
     modifier: Modifier = Modifier
 ) {
     var frameIndex by remember(animated) { mutableIntStateOf(0) }
-    LaunchedEffect(animated, frameIndex) {
+    val reduceMotion = rememberReduceMotion()
+    LaunchedEffect(animated, frameIndex, reduceMotion) {
+        if (reduceMotion) return@LaunchedEffect
         val duration = animated.timeline.getOrNull(frameIndex)?.frame?.durationMs ?: 83L
         delay(duration.milliseconds.coerceAtLeast(16.milliseconds))
         frameIndex = if (animated.timeline.isEmpty()) 0 else (frameIndex + 1) % animated.timeline.size

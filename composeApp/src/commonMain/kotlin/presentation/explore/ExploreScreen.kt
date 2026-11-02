@@ -1,6 +1,8 @@
 package presentation.explore
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,12 +26,10 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -59,8 +60,9 @@ import presentation.components.AppSnackbarHostState
 import presentation.components.AppTopBar
 import presentation.components.EmptyState
 import presentation.components.ExploreSortBottomSheet
-import presentation.components.LoadingIndicator
-import presentation.components.NeubrutalIconButton
+import presentation.components.LoadingDots
+import presentation.components.NeubrutalBareIconButton
+import presentation.components.NeubrutalPullToRefreshBox
 import presentation.components.NeubrutalSearchBar
 import presentation.components.NeubrutalSelectableChip
 import presentation.components.NeubrutalSnackbarHost
@@ -69,9 +71,12 @@ import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
 import presentation.components.ScreenContentHorizontalScrollRow
 import presentation.components.ScreenSectionTitle
+import presentation.components.SkeletonPackList
+import presentation.components.rememberAppHaptics
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
@@ -107,6 +112,7 @@ import setiker.composeapp.generated.resources.explore_sort
 import setiker.composeapp.generated.resources.explore_title
 import setiker.composeapp.generated.resources.no_search_results_desc
 import setiker.composeapp.generated.resources.no_search_results_title
+import setiker.composeapp.generated.resources.processing
 import setiker.composeapp.generated.resources.retry
 import setiker.composeapp.generated.resources.social_counts
 
@@ -157,7 +163,7 @@ fun ExploreScreen(
         snackbarHost = { NeubrutalSnackbarHost(snackbarHostState) },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
-        PullToRefreshBox(
+        NeubrutalPullToRefreshBox(
             isRefreshing = state.isRefreshing,
             onRefresh = { onIntent(ExploreIntent.Refresh) },
             modifier = modifier
@@ -250,11 +256,11 @@ fun ExploreScreen(
                                     )
                                 }
                             )
-                            ExploreBodyPhase.Loading -> LoadingIndicator(
+                            ExploreBodyPhase.Loading -> SkeletonPackList(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(240.dp),
-                                illustration = AppIllustration.LoadingState
+                                    .padding(horizontal = 20.dp),
+                                rows = 2
                             )
                             ExploreBodyPhase.Error -> EmptyState(
                                 title = stringResource(Res.string.error_load_explore_failed),
@@ -300,7 +306,9 @@ fun ExploreScreen(
                                             },
                                             onToggleLike = { onIntent(ExploreIntent.ToggleLike(pack.id)) },
                                             onToggleSave = { onIntent(ExploreIntent.ToggleSave(pack.id)) },
-                                            modifier = Modifier.fillMaxWidth()
+                                            modifier = Modifier
+                                                .animateItem()
+                                                .fillMaxWidth()
                                         )
                                     }
                                     if (state.isLoadingMore) {
@@ -310,10 +318,10 @@ fun ExploreScreen(
                                                 .padding(vertical = 12.dp),
                                             horizontalArrangement = Arrangement.Center
                                         ) {
-                                            CircularProgressIndicator(
-                                                modifier = Modifier.size(22.dp),
-                                                strokeWidth = 2.dp,
-                                                color = AccentCoral
+                                            LoadingDots(
+                                                dotSize = 6.dp,
+                                                color = AccentCoral,
+                                                contentDescription = stringResource(Res.string.processing)
                                             )
                                         }
                                     } else if (state.canLoadMore) {
@@ -370,6 +378,38 @@ private fun PublicPackCard(
     val saved = pack.userHasSaved()
     val border = neubrutalBorderColor()
     val shadow = neubrutalShadowColor()
+    val haptics = rememberAppHaptics()
+    val likePop = remember { Animatable(1f) }
+    val savePop = remember { Animatable(1f) }
+    var likeAnimationReady by remember { mutableStateOf(false) }
+    var saveAnimationReady by remember { mutableStateOf(false) }
+    val likeTint by animateColorAsState(
+        targetValue = if (liked) AccentCoral else neubrutalMutedOnSurface(),
+        animationSpec = SetikerMotion.standard(SetikerMotion.DURATION_BASE_MS),
+        label = "explore_like_tint"
+    )
+    val saveTint by animateColorAsState(
+        targetValue = if (saved) AccentCoral else neubrutalMutedOnSurface(),
+        animationSpec = SetikerMotion.standard(SetikerMotion.DURATION_BASE_MS),
+        label = "explore_save_tint"
+    )
+
+    LaunchedEffect(liked) {
+        if (!likeAnimationReady) {
+            likeAnimationReady = true
+            return@LaunchedEffect
+        }
+        likePop.snapTo(1.35f)
+        likePop.animateTo(1f, SetikerMotion.DelightSpring)
+    }
+    LaunchedEffect(saved) {
+        if (!saveAnimationReady) {
+            saveAnimationReady = true
+            return@LaunchedEffect
+        }
+        savePop.snapTo(1.28f)
+        savePop.animateTo(1f, SetikerMotion.DelightSpring)
+    }
 
     Row(
         modifier = modifier
@@ -449,25 +489,39 @@ private fun PublicPackCard(
                         horizontalArrangement = Arrangement.spacedBy(2.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        NeubrutalIconButton(
+                        NeubrutalBareIconButton(
                             icon = if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                             contentDescription = null,
-                            onClick = onToggleLike,
+                            onClick = {
+                                haptics.selection()
+                                onToggleLike()
+                            },
                             size = socialButtonSize,
                             iconSize = socialIconSize,
-                            tint = if (liked) AccentCoral else neubrutalMutedOnSurface(),
-                            pressedScale = 0.86f,
-                            label = "explore_like_scale"
+                            tint = likeTint,
+                            pressedScale = SetikerMotion.PRESS_SCALE_TINY,
+                            label = "explore_like_scale",
+                            iconModifier = Modifier.graphicsLayer {
+                                scaleX = likePop.value
+                                scaleY = likePop.value
+                            }
                         )
-                        NeubrutalIconButton(
+                        NeubrutalBareIconButton(
                             icon = if (saved) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder,
                             contentDescription = null,
-                            onClick = onToggleSave,
+                            onClick = {
+                                haptics.selection()
+                                onToggleSave()
+                            },
                             size = socialButtonSize,
                             iconSize = socialIconSize,
-                            tint = if (saved) AccentCoral else neubrutalMutedOnSurface(),
-                            pressedScale = 0.86f,
-                            label = "explore_save_scale"
+                            tint = saveTint,
+                            pressedScale = SetikerMotion.PRESS_SCALE_TINY,
+                            label = "explore_save_scale",
+                            iconModifier = Modifier.graphicsLayer {
+                                scaleX = savePop.value
+                                scaleY = savePop.value
+                            }
                         )
                     }
                 }

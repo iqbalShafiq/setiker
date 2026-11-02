@@ -265,6 +265,8 @@ fun SettingsScreen(
                         placeholder = stringResource(Res.string.settings_confirm_password),
                         isError = state.changePasswordError != null,
                         errorText = state.changePasswordError?.resolveLocal(),
+                        imeAction = ImeAction.Done,
+                        onDone = { onIntent(SettingsIntent.SubmitChangePassword) },
                         supportingText = state.changePasswordError?.let { error ->
                             { Text(text = error.resolveLocal()) }
                         }
@@ -294,6 +296,8 @@ fun SettingsScreen(
                         label = stringResource(Res.string.settings_confirm_password),
                         placeholder = stringResource(Res.string.settings_confirm_password),
                         isError = state.changePasswordError != null,
+                        imeAction = ImeAction.Done,
+                        onDone = { onIntent(SettingsIntent.SubmitSetPassword) },
                         supportingText = state.changePasswordError?.let { error ->
                             { Text(text = error.resolveLocal()) }
                         }

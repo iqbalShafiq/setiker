@@ -410,7 +410,7 @@ class CreatePackViewModel(
                         )
                     )
                 } else {
-                    _effect.send(CreatePackEffect.ShowSuccess("Published to Explore"))
+                    _effect.send(CreatePackEffect.PackPublished("Published to Explore"))
                 }
             } catch (e: Exception) {
                 _state.update { it.copy(isPublishing = false) }

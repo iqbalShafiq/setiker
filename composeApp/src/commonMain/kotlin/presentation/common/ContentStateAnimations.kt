@@ -93,8 +93,17 @@ object ContentStateAnimations {
         return when {
             targetState == DocumentLoadPhase.Ready ->
                 contentTransform(
-                    fadeIn(animationSpec = tween(220)) +
-                        slideInVertically(animationSpec = tween(220)) { it / 24 },
+                    fadeIn(
+                        animationSpec = tween(
+                            durationMillis = SetikerMotion.DURATION_DOCUMENT_MS,
+                            easing = SetikerMotion.EaseOut
+                        )
+                    ) + slideInVertically(
+                        animationSpec = tween(
+                            durationMillis = SetikerMotion.DURATION_DOCUMENT_MS,
+                            easing = SetikerMotion.EaseOut
+                        )
+                    ) { it / 24 },
                     fadeOut(animationSpec = tween(EXIT_MS))
                 )
             else -> fadeSwap()

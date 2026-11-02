@@ -1,7 +1,5 @@
 package presentation.components
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,6 +29,7 @@ import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalMutedOnSurface
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.ai_quota_costs_info_cd
@@ -120,16 +119,24 @@ private fun AiQuotaCompactRow(
             modifier = Modifier.weight(1f)
         )
         if (showInfoIcon) {
+            val haptics = rememberAppHaptics()
+            val pressFeedback = rememberPressFeedback(
+                pressedScale = SetikerMotion.PRESS_SCALE_TINY,
+                label = "ai_quota_info_scale"
+            )
             Icon(
                 imageVector = Icons.Outlined.Info,
                 contentDescription = stringResource(Res.string.ai_quota_costs_info_cd),
                 tint = neubrutalMutedOnSurface(),
                 modifier = Modifier
                     .size(iconSize)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onInfoClick
+                    .pressScale(pressFeedback)
+                    .clickableNoRipple(
+                        interactionSource = pressFeedback.interactionSource,
+                        onClick = {
+                            haptics.selection()
+                            onInfoClick()
+                        }
                     )
             )
         }

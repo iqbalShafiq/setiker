@@ -10,8 +10,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -19,8 +17,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import data.remote.model.UserNotificationItem
 import org.jetbrains.compose.resources.stringResource
+import presentation.components.AppTextLink
 import presentation.components.AppTopBar
 import presentation.components.ContentLoadLayout
+import presentation.components.NeubrutalPullToRefreshBox
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
@@ -54,16 +54,17 @@ fun NotificationsScreen(
                 onBackClick = onBackClick,
                 actions = {
                     if (state.unreadCount > 0 && !state.isLoading) {
-                        TextButton(onClick = onMarkAllRead) {
-                            Text(stringResource(Res.string.notifications_mark_all_read))
-                        }
+                        AppTextLink(
+                            text = stringResource(Res.string.notifications_mark_all_read),
+                            onClick = onMarkAllRead
+                        )
                     }
                 }
             )
         },
         containerColor = neubrutalScreenBackground()
     ) { innerPadding ->
-        PullToRefreshBox(
+        NeubrutalPullToRefreshBox(
             isRefreshing = state.isLoading && state.items.isNotEmpty(),
             onRefresh = onRefresh,
             modifier = modifier

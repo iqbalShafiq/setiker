@@ -1,14 +1,6 @@
 package presentation.components
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -16,8 +8,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import coil3.compose.AsyncImagePainter
@@ -77,7 +67,10 @@ fun NeubrutalAsyncImage(
 
     Box(modifier = modifier) {
         if (isLoading) {
-            Shimmer(base = placeholderColor)
+            ShimmerPlaceholder(
+                modifier = Modifier.fillMaxSize(),
+                baseColor = placeholderColor
+            )
         }
         Image(
             painter = painter,
@@ -87,47 +80,5 @@ fun NeubrutalAsyncImage(
                 .fillMaxSize()
                 .then(sizeResolver)
         )
-    }
-}
-
-/**
- * The loading shimmer.
- *
- * The infinite animation only exists while an image is actually loading, so a screen full of
- * already-loaded images does not keep a per-frame animation alive.
- */
-@Composable
-private fun Shimmer(
-    base: Color,
-    modifier: Modifier = Modifier
-) {
-    val transition = rememberInfiniteTransition(label = "image_shimmer")
-    val progress by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1100, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "image_shimmer_progress"
-    )
-
-    Box(modifier = modifier.background(base)) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val band = size.width * 0.6f
-            val travel = size.width + band
-            val start = -band + progress * travel
-            drawRect(
-                brush = Brush.linearGradient(
-                    colors = listOf(
-                        base,
-                        base.copy(alpha = 0.45f),
-                        base
-                    ),
-                    start = Offset(start, 0f),
-                    end = Offset(start + band, size.height)
-                )
-            )
-        }
     }
 }

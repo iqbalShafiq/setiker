@@ -5,8 +5,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -16,6 +18,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import presentation.theme.neubrutalOnSurface
@@ -66,11 +69,11 @@ fun ReportContentBottomSheet(
 ) {
     if (!visible) return
     val reasons = rememberReportReasonOptions()
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ModalBottomSheet(
+    val sheetState = rememberAppSheetState()
+    AppModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        contentWindowInsets = { zeroBottomSheetWindowInsets() }
+        contentWindowInsets = { WindowInsets.navigationBars }
     ) {
         Column(
             modifier = Modifier
@@ -110,8 +113,12 @@ fun ReportContentBottomSheet(
                 onValueChange = onDetailsChange,
                 label = stringResource(Res.string.report_content_details_hint),
                 placeholder = stringResource(Res.string.report_content_details_hint),
-                singleLine = false,
-                maxLines = 4
+                imeAction = ImeAction.Done,
+                onDone = {
+                    if (!selectedReason.isNullOrBlank() && !isSubmitting) {
+                        onSubmit()
+                    }
+                }
             )
             Spacer(modifier = Modifier.height(20.dp))
             AppPrimaryButton(
