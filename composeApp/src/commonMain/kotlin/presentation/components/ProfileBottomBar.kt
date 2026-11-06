@@ -1,11 +1,11 @@
 package presentation.components
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import org.jetbrains.compose.resources.stringResource
+import presentation.icons.SetikerIcons
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.back_content_description
 import setiker.composeapp.generated.resources.logout
@@ -20,7 +20,7 @@ fun ProfileBottomBar(
     PackBottomBar(
         actions = {
             PackBottomBarIconButton(
-                icon = Icons.AutoMirrored.Filled.ArrowBack,
+                icon = SetikerIcons.Back,
                 contentDescription = stringResource(Res.string.back_content_description),
                 onClick = onBackClick
             )

@@ -39,6 +39,7 @@ import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.ai_quota_costs_dialog_message
 import setiker.composeapp.generated.resources.ai_quota_costs_dialog_title
@@ -79,7 +80,7 @@ fun AiQuotaCostsDialog(
                             color = shadow
                         )
                         .clip(shape)
-                        .background(neubrutalCardSurface())
+                        .neubrutalFill(color = neubrutalCardSurface(), cornerRadius = NeubrutalDialogRadius)
                         .neubrutalBorderWithGloss(
                             color = border,
                             cornerRadius = NeubrutalDialogRadius,
@@ -141,7 +142,7 @@ private fun AiQuotaCostRow(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(NeubrutalCardRadius))
-            .background(neubrutalCardSurface())
+            .neubrutalFill(color = neubrutalCardSurface(), cornerRadius = NeubrutalCardRadius)
             .neubrutalBorderWithGloss(
                 color = neubrutalBorderColor(),
                 cornerRadius = NeubrutalCardRadius,

@@ -53,6 +53,7 @@ import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.blocked_users_empty_desc
 import setiker.composeapp.generated.resources.blocked_users_empty_title
@@ -172,7 +173,7 @@ private fun BlockedUserRow(
                 color = shadowColor
             )
             .clip(RoundedCornerShape(NeubrutalCardRadius))
-            .background(neubrutalCardSurface())
+            .neubrutalFill(color = neubrutalCardSurface(), cornerRadius = NeubrutalCardRadius)
             .neubrutalBorderWithGloss(
                 color = borderColor,
                 cornerRadius = NeubrutalCardRadius,
@@ -199,7 +200,7 @@ private fun BlockedUserRow(
             modifier = Modifier
                 .heightIn(min = 44.dp)
                 .clip(RoundedCornerShape(NeubrutalCardRadius))
-                .background(AccentCoral.copy(alpha = 0.12f))
+                .neubrutalFill(color = AccentCoral.copy(alpha = 0.12f), cornerRadius = NeubrutalCardRadius)
                 .neubrutalBorderWithGloss(
                     color = borderColor,
                     cornerRadius = NeubrutalCardRadius,

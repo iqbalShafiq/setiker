@@ -33,9 +33,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import presentation.theme.ErrorRed
+import presentation.theme.NeubrutalBorderRole
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalBorderFor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalGlossyHighlightColor
@@ -43,6 +45,7 @@ import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import presentation.theme.neubrutalSubtleOnSurface
+import presentation.theme.neubrutalFill
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.pack_name_label
 import setiker.composeapp.generated.resources.pack_name_placeholder
@@ -94,12 +97,22 @@ fun AppTextField(
                     offsetX = NeubrutalShadowOffset,
                     offsetY = NeubrutalShadowOffset,
                     cornerRadius = NeubrutalCardRadius,
-                    color = neubrutalShadowColor()
+                    color = if (enabled) {
+                        neubrutalShadowColor()
+                    } else {
+                        neubrutalShadowColor().copy(alpha = 0.4f)
+                    }
                 )
                 .clip(shape)
-                .background(surface)
+                .neubrutalFill(color = surface, cornerRadius = NeubrutalCardRadius)
                 .neubrutalBorderWithGloss(
-                    color = if (isError) ErrorRed else border,
+                    color = neubrutalBorderFor(
+                        when {
+                            !enabled -> NeubrutalBorderRole.Disabled
+                            isError -> NeubrutalBorderRole.Error
+                            else -> NeubrutalBorderRole.Container
+                        }
+                    ),
                     cornerRadius = NeubrutalCardRadius,
                     highlightColor = neubrutalGlossyHighlightColor()
                 )

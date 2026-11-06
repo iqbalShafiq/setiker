@@ -41,6 +41,7 @@ import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
 
 @Composable
 fun LoadingIndicator(
@@ -157,7 +158,7 @@ private fun LoadingDot(
                 color = shadow
             )
             .clip(CircleShape)
-            .background(color)
+            .neubrutalFill(color = color, cornerRadius = 99.dp)
             .neubrutalBorderWithGloss(
                 color = border,
                 width = if (dotSize >= 10.dp) NeubrutalThinBorderWidth * 1.6f else NeubrutalThinBorderWidth,

@@ -1,0 +1,181 @@
+{
+  "schema": 1,
+  "id": "pack-published",
+  "name": "Pack Published",
+  "collection": "celebrations",
+  "tags": [
+    "sparkle",
+    "celebration",
+    "one-shot"
+  ],
+  "notes": "Plays once when a pack becomes public. One-shot on purpose: a celebration that loops stops being a celebration and becomes decoration. The 140 ms spring pop leads, the two stars trail behind it, and the whole beat is over before the user's finger has left the button.",
+  "canvas": {
+    "width": 512,
+    "height": 512,
+    "background": "#fdf3e3"
+  },
+  "fps": 15,
+  "durationMs": 726,
+  "loop": false,
+  "layers": [
+    {
+      "id": "sparkle-main",
+      "kind": "emoji",
+      "emoji": "✨",
+      "text": "",
+      "sizePx": 168,
+      "color": "#1b1b1b",
+      "borderColor": "#ffffff",
+      "borderWidthRatio": 0.08,
+      "font": "Fredoka",
+      "weight": "Bold",
+      "keyframes": [
+        {
+          "t": 0,
+          "x": 0.5,
+          "y": 0.47,
+          "scale": 0.12,
+          "rotate": -18,
+          "opacity": 0,
+          "ease": "spring"
+        },
+        {
+          "t": 140,
+          "x": 0.5,
+          "y": 0.47,
+          "scale": 1.14,
+          "rotate": 8,
+          "opacity": 1,
+          "ease": "ease-in-out"
+        },
+        {
+          "t": 300,
+          "x": 0.5,
+          "y": 0.47,
+          "scale": 1,
+          "rotate": 0,
+          "opacity": 1,
+          "ease": "ease-in"
+        },
+        {
+          "t": 520,
+          "x": 0.5,
+          "y": 0.47,
+          "scale": 1.06,
+          "rotate": -4,
+          "opacity": 1,
+          "ease": "ease-in"
+        },
+        {
+          "t": 720,
+          "x": 0.5,
+          "y": 0.47,
+          "scale": 0.28,
+          "rotate": 0,
+          "opacity": 0,
+          "ease": "linear"
+        }
+      ]
+    },
+    {
+      "id": "sparkle-left",
+      "kind": "emoji",
+      "emoji": "⭐",
+      "text": "",
+      "sizePx": 104,
+      "color": "#1b1b1b",
+      "borderColor": "#ffffff",
+      "borderWidthRatio": 0.08,
+      "font": "Fredoka",
+      "weight": "Bold",
+      "keyframes": [
+        {
+          "t": 60,
+          "x": 0.24,
+          "y": 0.3,
+          "scale": 0.1,
+          "rotate": -40,
+          "opacity": 0,
+          "ease": "bounce"
+        },
+        {
+          "t": 240,
+          "x": 0.24,
+          "y": 0.3,
+          "scale": 1,
+          "rotate": -14,
+          "opacity": 1,
+          "ease": "ease-in"
+        },
+        {
+          "t": 460,
+          "x": 0.24,
+          "y": 0.3,
+          "scale": 0.9,
+          "rotate": 10,
+          "opacity": 1,
+          "ease": "ease-in"
+        },
+        {
+          "t": 720,
+          "x": 0.24,
+          "y": 0.3,
+          "scale": 0.2,
+          "rotate": 30,
+          "opacity": 0,
+          "ease": "linear"
+        }
+      ]
+    },
+    {
+      "id": "sparkle-right",
+      "kind": "emoji",
+      "emoji": "🌟",
+      "text": "",
+      "sizePx": 84,
+      "color": "#1b1b1b",
+      "borderColor": "#ffffff",
+      "borderWidthRatio": 0.08,
+      "font": "Fredoka",
+      "weight": "Bold",
+      "keyframes": [
+        {
+          "t": 120,
+          "x": 0.76,
+          "y": 0.62,
+          "scale": 0.1,
+          "rotate": 30,
+          "opacity": 0,
+          "ease": "bounce"
+        },
+        {
+          "t": 320,
+          "x": 0.76,
+          "y": 0.62,
+          "scale": 1,
+          "rotate": 12,
+          "opacity": 1,
+          "ease": "ease-in"
+        },
+        {
+          "t": 520,
+          "x": 0.76,
+          "y": 0.62,
+          "scale": 0.86,
+          "rotate": -8,
+          "opacity": 1,
+          "ease": "ease-in"
+        },
+        {
+          "t": 720,
+          "x": 0.76,
+          "y": 0.62,
+          "scale": 0.2,
+          "rotate": -26,
+          "opacity": 0,
+          "ease": "linear"
+        }
+      ]
+    }
+  ]
+}

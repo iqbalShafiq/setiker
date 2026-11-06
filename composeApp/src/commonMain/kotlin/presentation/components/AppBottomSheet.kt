@@ -27,6 +27,7 @@ import presentation.theme.NeubrutalScrim
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
+import presentation.theme.neubrutalFill
 
 /**
  * The sheet state every app sheet uses.
@@ -98,7 +99,7 @@ fun AppSheetDragHandle() {
                     .width(16.dp)
                     .height(2.dp)
                     .clip(CircleShape)
-                    .background(AccentCoral)
+                    .neubrutalFill(color = AccentCoral, cornerRadius = 99.dp)
             )
         }
     }

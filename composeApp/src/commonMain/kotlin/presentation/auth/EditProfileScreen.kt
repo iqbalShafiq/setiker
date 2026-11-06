@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -28,6 +27,7 @@ import presentation.common.resolveOrDefault
 import presentation.components.AppSnackbarHostState
 import presentation.components.AppTextField
 import presentation.components.LoadingIndicator
+import presentation.icons.SetikerIcons
 import presentation.theme.neubrutalMutedOnSurface
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.back
@@ -88,7 +88,7 @@ fun EditProfileScreen(
                 primaryFabIcon = Icons.Default.Check,
                 primaryFabContentDescription = stringResource(Res.string.edit_profile_save),
                 onSecondaryAction = { onIntent(EditProfileIntent.NavigateBack) },
-                secondaryActionIcon = Icons.AutoMirrored.Filled.ArrowBack,
+                secondaryActionIcon = SetikerIcons.Back,
                 secondaryActionContentDescription = stringResource(Res.string.back),
                 modifier = Modifier.fillMaxSize()
             ) {

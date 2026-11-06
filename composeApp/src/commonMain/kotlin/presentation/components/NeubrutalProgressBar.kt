@@ -47,6 +47,7 @@ import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
 
 private val ProgressBarHeight = 18.dp
 private val ProgressBarShape = RoundedCornerShape(NeubrutalSmallRadius)
@@ -97,7 +98,7 @@ fun NeubrutalProgressBar(
                 color = neubrutalShadowColor()
             )
             .clip(ProgressBarShape)
-            .background(neubrutalCardSurface())
+            .neubrutalFill(color = neubrutalCardSurface(), cornerRadius = NeubrutalSmallRadius)
             .neubrutalBorderWithGloss(
                 color = neubrutalBorderColor(),
                 width = NeubrutalSmallShadowOffset,
@@ -117,7 +118,7 @@ fun NeubrutalProgressBar(
                     .fillMaxWidth(animatedProgress)
                     .fillMaxHeight()
                     .clip(ProgressBarShape)
-                    .background(fillColor)
+                    .neubrutalFill(color = fillColor, cornerRadius = NeubrutalSmallRadius)
             )
         }
     }

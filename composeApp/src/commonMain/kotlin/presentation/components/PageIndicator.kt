@@ -26,6 +26,7 @@ import presentation.theme.AccentCoral
 import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalFill
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.page_indicator_cd
 
@@ -71,7 +72,7 @@ fun PageIndicator(
                     scaleY = dotScale
                 }
                 .clip(CircleShape)
-                .background(dotColor)
+                .neubrutalFill(color = dotColor, cornerRadius = 99.dp)
                 .border(
                     width = 1.dp,
                     color = if (selected) neubrutalBorderColor() else MaterialTheme.colorScheme.outline.copy(alpha = 0.42f),

@@ -25,6 +25,7 @@ import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
 
 /**
  * Square sticker preview frame used across Editor, animated editor, and video trim.
@@ -55,7 +56,7 @@ fun NeubrutalStickerPreviewFrame(
                 color = shadow
             )
             .clip(shape)
-            .background(surface)
+            .neubrutalFill(color = surface, cornerRadius = cornerRadius)
             .neubrutalBorderWithGloss(
                 color = border,
                 cornerRadius = cornerRadius,

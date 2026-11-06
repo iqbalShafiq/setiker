@@ -16,16 +16,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.BorderColor
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FontDownload
 import androidx.compose.material.icons.filled.FormatColorText
-import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material.icons.filled.TagFaces
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -80,6 +76,7 @@ import presentation.components.StickerEmojiTagChip
 import presentation.components.StylePickerBottomSheet
 import presentation.components.rememberImagePicker
 import presentation.components.scaffoldBottomBarScroll
+import presentation.icons.SetikerIcons
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalScreenBackground
@@ -208,7 +205,7 @@ fun AnimatedEditorScreen(
                         actionStatusText = bottomOperationLabel,
                         actions = {
                             PackBottomBarIconButton(
-                                icon = Icons.AutoMirrored.Filled.ArrowBack,
+                                icon = SetikerIcons.Back,
                                 contentDescription = stringResource(Res.string.back),
                                 onClick = { onIntent(AnimatedEditorIntent.SelectDecoration(null)) },
                                 enabled = !state.isSaving
@@ -216,7 +213,7 @@ fun AnimatedEditorScreen(
                             when (selectedDecoration) {
                                 is TextDecoration -> {
                                     PackBottomBarIconButton(
-                                        icon = Icons.Filled.Edit,
+                                        icon = SetikerIcons.Edit,
                                         contentDescription = stringResource(Res.string.edit_text_decoration),
                                         onClick = { isEditTextSheetOpen = true },
                                         enabled = !state.isSaving
@@ -236,7 +233,7 @@ fun AnimatedEditorScreen(
                                 }
                                 is EmojiDecoration -> {
                                     PackBottomBarIconButton(
-                                        icon = Icons.Filled.TagFaces,
+                                        icon = SetikerIcons.TagFaces,
                                         contentDescription = stringResource(Res.string.change_emoji),
                                         onClick = {
                                             onIntent(
@@ -256,7 +253,7 @@ fun AnimatedEditorScreen(
                                 }
                                 is ImageDecoration -> {
                                     PackBottomBarIconButton(
-                                        icon = Icons.Filled.Image,
+                                        icon = SetikerIcons.Image,
                                         contentDescription = stringResource(Res.string.change_image),
                                         onClick = { replaceDecorationImagePicker.launch() },
                                         enabled = !state.isSaving
@@ -397,12 +394,12 @@ fun AnimatedEditorScreen(
                             onClick = { onIntent(AnimatedEditorIntent.ShowTextDecorationSheet) }
                         )
                         DecorationActionChip(
-                            icon = Icons.Default.TagFaces,
+                            icon = SetikerIcons.TagFaces,
                             label = stringResource(Res.string.add_emoji),
                             onClick = { onIntent(AnimatedEditorIntent.ShowDecorationEmojiPicker()) }
                         )
                         DecorationActionChip(
-                            icon = Icons.Default.Image,
+                            icon = SetikerIcons.Image,
                             label = stringResource(Res.string.add_image),
                             onClick = { decorationImagePicker.launch() }
                         )
@@ -432,7 +429,8 @@ fun AnimatedEditorScreen(
                         if (state.emojis.size < Sticker.MAX_EMOJIS) {
                             NeubrutalAddTagPill(
                                 label = stringResource(Res.string.add),
-                                onClick = { onIntent(AnimatedEditorIntent.ShowEmojiPicker) }
+                                onClick = { onIntent(AnimatedEditorIntent.ShowEmojiPicker) },
+                                enabled = !state.isSaving
                             )
                         }
                     }

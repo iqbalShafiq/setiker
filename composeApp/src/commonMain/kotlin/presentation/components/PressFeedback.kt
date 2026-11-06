@@ -6,18 +6,33 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.composed
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
+import presentation.theme.NeubrutalSmallRadius
+import presentation.theme.neubrutalOnSurface
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalBlack
+import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalSmallShadowOffset
@@ -104,6 +119,62 @@ fun Modifier.pressShadow(
 }
 
 /**
+ * The focus ring itself, drawn from an explicit flag.
+ *
+ * Pure drawing on purpose: the focus system cannot be driven from a screenshot test, so the ring
+ * is rendered by passing `focused = true`, and the wiring is left to Compose's focus contract.
+ *
+ * It is drawn *inside* the surface rather than outside. These controls are composed as
+ * `clip(...)` and then the click modifier, so anything drawn beyond the bounds is clipped away:
+ * an outer ring, the web `outline` behaviour, silently never appeared. Inside the frame it is
+ * visible wherever the click modifier sits in the chain, and the accent ink separates it from the
+ * black outline that is already there.
+ */
+fun Modifier.neubrutalFocusRing(
+    focused: Boolean,
+    cornerRadius: Dp = NeubrutalSmallRadius,
+    color: Color = AccentCoral
+): Modifier = if (!focused) {
+    this
+} else {
+    drawWithContent {
+        drawContent()
+        val inset = NeubrutalBorderWidth.toPx()
+        drawRoundRect(
+            color = color,
+            topLeft = Offset(inset, inset),
+            size = Size(
+                width = (size.width - inset * 2f).coerceAtLeast(0f),
+                height = (size.height - inset * 2f).coerceAtLeast(0f)
+            ),
+            cornerRadius = CornerRadius(
+                (cornerRadius.toPx() - inset).coerceAtLeast(0f),
+                (cornerRadius.toPx() - inset).coerceAtLeast(0f)
+            ),
+            style = Stroke(width = 2.dp.toPx())
+        )
+    }
+}
+
+/**
+ * Tracks focus for a control that removed its ripple.
+ *
+ * `onFocusChanged` sits before the click modifier so it observes the focus target that modifier
+ * installs. Collecting `FocusInteraction` from the interaction source was tried first and did not
+ * work: a `MutableInteractionSource` drops events emitted before its collector has started, which
+ * is exactly the order a focus request arrives in.
+ */
+fun Modifier.neubrutalFocusRingFor(
+    cornerRadius: Dp = NeubrutalSmallRadius,
+    enabled: Boolean = true,
+    color: Color = AccentCoral
+): Modifier = composed {
+    var focused by remember { mutableStateOf(false) }
+    this
+        .onFocusChanged { focused = it.isFocused }
+        .neubrutalFocusRing(focused = focused && enabled, cornerRadius = cornerRadius, color = color)
+}
+/**
  * A clickable without the Material ripple.
  *
  * Every control in this app shows its press state with a scale + shadow change. Leaving the
@@ -113,8 +184,11 @@ fun Modifier.clickableNoRipple(
     interactionSource: MutableInteractionSource,
     enabled: Boolean = true,
     role: Role? = null,
+    focusRingColor: Color = AccentCoral,
     onClick: () -> Unit
-): Modifier = clickable(
+): Modifier = this
+    .neubrutalFocusRingFor(enabled = enabled, color = focusRingColor)
+    .clickable(
     interactionSource = interactionSource,
     indication = null,
     enabled = enabled,
@@ -128,13 +202,43 @@ fun Modifier.combinedClickableNoRipple(
     interactionSource: MutableInteractionSource,
     enabled: Boolean = true,
     role: Role? = null,
+    focusRingColor: Color = AccentCoral,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null
-): Modifier = combinedClickable(
+): Modifier = this
+    .neubrutalFocusRingFor(enabled = enabled, color = focusRingColor)
+    .combinedClickable(
     interactionSource = interactionSource,
     indication = null,
     enabled = enabled,
     role = role,
     onClick = onClick,
     onLongClick = onLongClick
+)
+
+/**
+ * [toggleable] with the same no-ripple press language.
+ *
+ * Used instead of [clickableNoRipple] wherever a control's state *is* a boolean — a like, a save,
+ * play/pause. The difference is not cosmetic: `toggleable` makes Compose derive `ToggleableState`
+ * and a spoken "checked / not checked", so a screen reader announces the state and a test can ask
+ * for it with `assertIsOn()`. A `clickable` plus a hand-written `stateDescription` says the same
+ * words but carries none of that structure.
+ */
+fun Modifier.toggleableNoRipple(
+    interactionSource: MutableInteractionSource,
+    value: Boolean,
+    enabled: Boolean = true,
+    role: Role? = null,
+    focusRingColor: Color = AccentCoral,
+    onValueChange: (Boolean) -> Unit
+): Modifier = this
+    .neubrutalFocusRingFor(enabled = enabled, color = focusRingColor)
+    .toggleable(
+    value = value,
+    interactionSource = interactionSource,
+    indication = null,
+    enabled = enabled,
+    role = role,
+    onValueChange = onValueChange
 )

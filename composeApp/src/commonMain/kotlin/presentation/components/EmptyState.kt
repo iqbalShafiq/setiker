@@ -1,5 +1,10 @@
 package presentation.components
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,19 +20,22 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ErrorOutline
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import kotlin.math.sin
 import org.jetbrains.compose.resources.stringResource
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import setiker.composeapp.generated.resources.Res
@@ -39,6 +47,37 @@ import setiker.composeapp.generated.resources.no_stickers_yet_title
  * The illustration must never dominate the screen: an empty state is a message, not a poster.
  */
 private val EmptyStateIllustrationHeight = 180.dp
+
+/**
+ * A slow float, so an empty screen is not a dead one.
+ *
+ * The phase is read inside `graphicsLayer`, which defers the read to the draw phase: the frame
+ * loop redraws the illustration and never recomposes it. A bounce is deliberately not used —
+ * [SetikerMotion] keeps bounce for a celebration, and an empty state is the opposite of one.
+ */
+@Composable
+private fun Modifier.idleBreath(): Modifier {
+    val transition = rememberInfiniteTransition(label = "empty_state_breath")
+    val phase by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = SetikerMotion.DURATION_BREATH_MS,
+                easing = LinearEasing
+            )
+        ),
+        label = "empty_state_breath_phase"
+    )
+    return graphicsLayer {
+        translationY = sin(phase * TwoPi) * IdleBreathLift.toPx()
+    }
+}
+
+/** One full sine over the breath: the illustration rises, settles, and falls by the same amount. */
+private const val TwoPi = 6.2831855f
+
+private val IdleBreathLift = 3.dp
 
 /**
  * Whether the empty state can be scrolled.
@@ -113,6 +152,7 @@ fun EmptyState(
                 modifier = Modifier
                     .height(EmptyStateIllustrationHeight)
                     .padding(horizontal = 6.dp)
+                    .then(if (isError) Modifier else Modifier.idleBreath())
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -125,11 +165,11 @@ fun EmptyState(
                         .background(MaterialTheme.colorScheme.error),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.ErrorOutline,
+                    AppIcon(
+                        glyph = Icons.Default.ErrorOutline,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onError,
-                        modifier = Modifier.size(26.dp)
+                        size = 26.dp
                     )
                 }
 
@@ -185,3 +225,12 @@ private fun EmptyStateWithActionPreview() {
         )
     }
 }
+
+
+
+
+
+
+
+
+

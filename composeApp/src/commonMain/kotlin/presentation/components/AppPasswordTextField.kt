@@ -13,10 +13,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
@@ -41,6 +38,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import presentation.icons.SetikerMorphs
 import presentation.theme.ErrorRed
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
@@ -53,6 +51,9 @@ import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import presentation.theme.neubrutalSubtleOnSurface
+import presentation.theme.neubrutalFill
+import presentation.theme.NeubrutalBorderRole
+import presentation.theme.neubrutalBorderFor
 
 @Composable
 fun AppPasswordTextField(
@@ -98,12 +99,22 @@ fun AppPasswordTextField(
                     offsetX = NeubrutalShadowOffset,
                     offsetY = NeubrutalShadowOffset,
                     cornerRadius = NeubrutalCardRadius,
-                    color = neubrutalShadowColor()
+                    color = if (enabled) {
+                        neubrutalShadowColor()
+                    } else {
+                        neubrutalShadowColor().copy(alpha = 0.4f)
+                    }
                 )
                 .clip(shape)
-                .background(surface)
+                .neubrutalFill(color = surface, cornerRadius = NeubrutalCardRadius)
                 .neubrutalBorderWithGloss(
-                    color = if (isError) ErrorRed else border,
+                    color = neubrutalBorderFor(
+                        when {
+                            !enabled -> NeubrutalBorderRole.Disabled
+                            isError -> NeubrutalBorderRole.Error
+                            else -> NeubrutalBorderRole.Container
+                        }
+                    ),
                     cornerRadius = NeubrutalCardRadius,
                     highlightColor = neubrutalGlossyHighlightColor()
                 )
@@ -182,10 +193,7 @@ fun AppPasswordTextField(
                 enabled = enabled,
                 label = "password_visibility_scale"
             )
-            Icon(
-                imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                contentDescription = if (passwordVisible) "Hide password" else "Show password",
-                tint = neubrutalSubtleOnSurface(),
+            Box(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
                     .size(20.dp)
@@ -198,7 +206,19 @@ fun AppPasswordTextField(
                             passwordVisible = !passwordVisible
                         }
                     )
-            )
+                    .semantics {
+                        contentDescription =
+                            if (passwordVisible) "Hide password" else "Show password"
+                    }
+            ) {
+                MorphGlyphIcon(
+                    morph = SetikerMorphs.Eye,
+                    checked = passwordVisible,
+                    size = 20.dp,
+                    tint = neubrutalSubtleOnSurface(),
+                    enabled = enabled
+                )
+            }
         }
 
         if (isError && supportingText != null) {
@@ -221,3 +241,6 @@ private fun AppPasswordTextFieldPreview() {
         )
     }
 }
+
+
+

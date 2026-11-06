@@ -181,6 +181,8 @@
     <string name="profile">Profile</string>
     <string name="login">Login</string>
     <string name="sync">Sync</string>
+    <string name="like">Like</string>
+    <string name="save_pack_action">Save</string>
     <string name="delete_sticker">Delete sticker</string>
     <string name="split_sticker_index">Split sticker %1$d</string>
     <string name="sticker_fallback">Sticker</string>
@@ -682,6 +684,7 @@
     <string name="video_pack_title">Video to Sticker Pack</string>
     <string name="video_pack_subtitle">Pick the best minute. AI will choose clear, unique frames and turn them into a sticker pack.</string>
     <string name="video_pack_max_duration">Max selected duration: 60s</string>
+  <string name="preview_position">Preview position</string>
     <string name="video_pack_find_frames">Finding clear frames</string>
     <string name="video_pack_build_grids">Building candidate grids</string>
     <string name="video_pack_ask_ai">Asking AI Agent</string>

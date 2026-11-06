@@ -19,9 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -82,6 +80,7 @@ import presentation.components.rememberImagePicker
 import presentation.components.rememberStickerImagePicker
 import presentation.components.rememberVideoPicker
 import presentation.components.scaffoldBottomBarScroll
+import presentation.icons.SetikerIcons
 import presentation.theme.AccentCoral
 import presentation.theme.AccentCoralLight
 import presentation.theme.ErrorRed
@@ -100,6 +99,7 @@ import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.add_sticker
 import setiker.composeapp.generated.resources.add_to_pack
@@ -365,7 +365,7 @@ fun CreatePackScreen(
                                     .size(160.dp)
                                     .neubrutalShadow(3.dp, 3.dp, 16.dp, neubrutalShadowColor())
                                     .clip(RoundedCornerShape(NeubrutalCardRadius))
-                                    .background(neubrutalCardSurface())
+                                    .neubrutalFill(color = neubrutalCardSurface(), cornerRadius = NeubrutalCardRadius)
                                     .neubrutalBorderWithGloss(
                                         color = neubrutalBorderColor(),
                                         cornerRadius = NeubrutalCardRadius,
@@ -478,7 +478,7 @@ fun CreatePackScreen(
                         .fillMaxWidth()
                         .aspectRatio(1f)
                         .clip(RoundedCornerShape(NeubrutalCardRadius))
-                        .background(neubrutalCardSurface())
+                        .neubrutalFill(color = neubrutalCardSurface(), cornerRadius = NeubrutalCardRadius)
                         .neubrutalBorderWithGloss(
                                         color = neubrutalBorderColor(),
                                         cornerRadius = NeubrutalCardRadius,
@@ -541,7 +541,7 @@ fun CreatePackScreen(
                         .fillMaxWidth()
                         .aspectRatio(1f)
                         .clip(RoundedCornerShape(NeubrutalCardRadius))
-                        .background(neubrutalCardSurface())
+                        .neubrutalFill(color = neubrutalCardSurface(), cornerRadius = NeubrutalCardRadius)
                         .neubrutalBorderWithGloss(
                                         color = neubrutalBorderColor(),
                                         cornerRadius = NeubrutalCardRadius,
@@ -585,13 +585,13 @@ fun CreatePackScreen(
                 actionStatusText = bottomOperationLabel,
                 actions = {
                     PackBottomBarIconButton(
-                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        icon = SetikerIcons.Back,
                         contentDescription = stringResource(Res.string.back),
                         onClick = onBackClick,
                         enabled = !isOperationInProgress
                     )
                     PackBottomBarIconButton(
-                        icon = Icons.Filled.AutoAwesome,
+                        icon = SetikerIcons.Sparkle,
                         contentDescription = stringResource(Res.string.generate_ai),
                         onClick = {
                             if (state.generatedPreview.isNotEmpty() && !isOperationInProgress) {
@@ -857,7 +857,7 @@ private fun TrayIconSelector(
                     color = shadow
                 )
                 .clip(RoundedCornerShape(NeubrutalCardRadius))
-                .background(neubrutalCardSurface())
+                .neubrutalFill(color = neubrutalCardSurface(), cornerRadius = NeubrutalCardRadius)
                 .neubrutalBorderWithGloss(
                     color = border,
                     cornerRadius = NeubrutalCardRadius,
@@ -884,7 +884,7 @@ private fun TrayIconSelector(
                     color = shadow
                 )
                 .clip(RoundedCornerShape(NeubrutalCardRadius))
-                .background(AccentCoralLight)
+                .neubrutalFill(color = AccentCoralLight, cornerRadius = NeubrutalCardRadius)
                 .neubrutalBorderWithGloss(
                     color = border,
                     cornerRadius = NeubrutalCardRadius,
@@ -924,7 +924,7 @@ private fun StickerPreviewItem(
                     color = neubrutalShadowColor()
                 )
                 .clip(RoundedCornerShape(NeubrutalSmallRadius))
-                .background(neubrutalCardSurface())
+                .neubrutalFill(color = neubrutalCardSurface(), cornerRadius = NeubrutalSmallRadius)
                 .neubrutalBorderWithGloss(
                     color = border,
                     cornerRadius = NeubrutalSmallRadius,
@@ -950,7 +950,7 @@ private fun StickerPreviewItem(
                 .padding(2.dp)
                 .size(22.dp)
                 .clip(RoundedCornerShape(6.dp))
-                .background(ErrorRed)
+                .neubrutalFill(color = ErrorRed, cornerRadius = 6.dp)
                 .neubrutalBorderWithGloss(
                     color = border,
                     width = 1.5.dp,

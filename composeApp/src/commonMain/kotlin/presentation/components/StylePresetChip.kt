@@ -37,6 +37,10 @@ import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
+import presentation.theme.neubrutalFill
+import presentation.theme.NeubrutalBorderRole
+import presentation.theme.neubrutalBorderFor
+import presentation.theme.neubrutalBorderWidthFor
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.style_bubble
 import setiker.composeapp.generated.resources.style_caption
@@ -108,12 +112,16 @@ fun StylePresetChip(
         label = "style_preset_chip_scale"
     )
     val borderWidth by animateDpAsState(
-        targetValue = if (selected) NeubrutalBorderWidth * 1.5f else NeubrutalBorderWidth,
+        targetValue = neubrutalBorderWidthFor(
+            if (selected) NeubrutalBorderRole.Selected else NeubrutalBorderRole.Container
+        ),
         animationSpec = SetikerMotion.standard(SetikerMotion.DURATION_FAST_MS),
         label = "style_preset_border_width"
     )
     val borderColor by animateColorAsState(
-        targetValue = if (selected) primary else neubrutalBorderColor(),
+        targetValue = neubrutalBorderFor(
+            if (selected) NeubrutalBorderRole.Selected else NeubrutalBorderRole.Container
+        ),
         animationSpec = SetikerMotion.standard(SetikerMotion.DURATION_FAST_MS),
         label = "style_preset_border_color"
     )
@@ -124,7 +132,7 @@ fun StylePresetChip(
             .height(54.dp)
             .pressScale(pressFeedback)
             .clip(RoundedCornerShape(NeubrutalSmallRadius))
-            .background(neubrutalScreenBackground())
+            .neubrutalFill(color = neubrutalScreenBackground(), cornerRadius = NeubrutalSmallRadius)
             .border(
                 width = borderWidth,
                 color = borderColor,
@@ -166,3 +174,4 @@ fun StylePresetChip(
         )
     }
 }
+

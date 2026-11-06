@@ -21,6 +21,7 @@ import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.offline_banner_message
 
@@ -54,7 +55,7 @@ fun AppInlineBanner(
                 color = neubrutalShadowColor()
             )
             .clip(shape)
-            .background(containerColor)
+            .neubrutalFill(color = containerColor, cornerRadius = NeubrutalCardRadius)
             .neubrutalBorderWithGloss(
                 color = neubrutalBorderColor(),
                 cornerRadius = NeubrutalCardRadius,

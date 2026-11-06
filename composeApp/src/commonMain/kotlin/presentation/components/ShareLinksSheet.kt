@@ -16,7 +16,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,6 +31,7 @@ import presentation.common.ContentStateAnimations
 import presentation.common.ShareLinksBodyPhase
 import presentation.common.rememberCopyToClipboardAction
 import presentation.common.rememberShareTextAction
+import presentation.icons.SetikerIcons
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
@@ -39,6 +39,7 @@ import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
+import presentation.theme.neubrutalFill
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.cloud_links_copy
 import setiker.composeapp.generated.resources.cloud_links_create
@@ -126,7 +127,7 @@ fun ShareLinksSheet(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(NeubrutalCardRadius))
-                                    .background(neubrutalCardSurface())
+                                    .neubrutalFill(color = neubrutalCardSurface(), cornerRadius = NeubrutalCardRadius)
                                     .neubrutalBorderWithGloss(
                                         color = neubrutalBorderColor(),
                                         cornerRadius = NeubrutalCardRadius,
@@ -152,7 +153,7 @@ fun ShareLinksSheet(
                                     label = "share_link_copy_scale"
                                 )
                                 NeubrutalBareIconButton(
-                                    icon = Icons.Default.Edit,
+                                    icon = SetikerIcons.Edit,
                                     contentDescription = stringResource(Res.string.cloud_links_share),
                                     onClick = {
                                         shareText(link.preferredShareText())

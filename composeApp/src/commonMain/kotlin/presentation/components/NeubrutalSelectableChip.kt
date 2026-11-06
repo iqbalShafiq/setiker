@@ -26,6 +26,7 @@ import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
 
 @Composable
 fun NeubrutalSelectableChip(
@@ -98,7 +99,7 @@ internal fun NeubrutalChip(
                 color = neubrutalShadowColor()
             )
             .clip(CircleShape)
-            .background(backgroundColor)
+            .neubrutalFill(color = backgroundColor, cornerRadius = 99.dp)
             .neubrutalBorderWithGloss(
                 color = neubrutalBorderColor(),
                 cornerRadius = 99.dp,

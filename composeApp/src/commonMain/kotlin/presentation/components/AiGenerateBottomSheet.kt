@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +35,7 @@ import coil3.compose.AsyncImage
 import domain.model.AiQuotaOperation
 import domain.model.AiUsage
 import org.jetbrains.compose.resources.stringResource
+import presentation.icons.SetikerIcons
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalScrim
 import presentation.theme.neubrutalBorderColor
@@ -176,7 +176,7 @@ fun AiGenerateBottomSheet(
                         )
                     } else {
                         Icon(
-                            imageVector = Icons.Filled.Image,
+                            imageVector = SetikerIcons.Image,
                             contentDescription = pickContentDescription,
                             tint = neubrutalSubtleOnSurface()
                         )

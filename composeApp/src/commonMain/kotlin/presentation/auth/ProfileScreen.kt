@@ -25,10 +25,8 @@ import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Feedback
-import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
@@ -69,6 +67,7 @@ import presentation.components.EmptyState
 import presentation.components.LoadingIndicator
 import presentation.components.ProfileBottomBar
 import presentation.components.ProfileMenuItem
+import presentation.icons.SetikerIcons
 import presentation.theme.AccentCoral
 import presentation.theme.AccentCoralLight
 import presentation.theme.NeubrutalCardRadius
@@ -89,6 +88,7 @@ import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import presentation.theme.neubrutalSubtleOnSurface
+import presentation.theme.neubrutalFill
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.about_app
 import setiker.composeapp.generated.resources.account_section
@@ -335,14 +335,14 @@ fun ProfileScreen(
                                 Spacer(modifier = Modifier.height(8.dp))
                                 MenuCard(borderColor = borderColor, shadowColor = shadowColor, cardSurface = cardSurface) {
                                     ProfileMenuItem(
-                                        icon = Icons.Default.Edit,
+                                        icon = SetikerIcons.Edit,
                                         label = stringResource(Res.string.edit_profile_title),
                                         iconBackgroundColor = PastelPurple,
                                         onClick = onEditProfile
                                     )
                                     MenuDivider()
                                     ProfileMenuItem(
-                                        icon = Icons.Default.Image,
+                                        icon = SetikerIcons.Image,
                                         label = stringResource(Res.string.my_stickers_title),
                                         iconBackgroundColor = PastelYellow,
                                         onClick = onNavigateHome
@@ -564,7 +564,7 @@ private fun ProfileCard(
             .fillMaxWidth()
             .neubrutalShadow(offsetX = NeubrutalShadowOffset, offsetY = NeubrutalShadowOffset, cornerRadius = NeubrutalCardRadius, color = shadowColor)
             .clip(RoundedCornerShape(NeubrutalCardRadius))
-            .background(cardSurface)
+            .neubrutalFill(color = cardSurface, cornerRadius = NeubrutalCardRadius)
             .neubrutalBorderWithGloss(
                 color = borderColor,
                 cornerRadius = NeubrutalCardRadius,
@@ -579,7 +579,7 @@ private fun ProfileCard(
             modifier = Modifier
                 .size(64.dp)
                 .clip(CircleShape)
-                .background(AccentCoralLight)
+                .neubrutalFill(color = AccentCoralLight, cornerRadius = 99.dp)
                 .neubrutalBorderWithGloss(
                     color = borderColor,
                     cornerRadius = 32.dp,
@@ -625,7 +625,7 @@ private fun ProfileCard(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
-                        .background(AccentCoral)
+                        .neubrutalFill(color = AccentCoral, cornerRadius = 8.dp)
                         .padding(horizontal = 10.dp, vertical = 3.dp)
                 ) {
                     Text(
@@ -662,7 +662,7 @@ private fun StatsCard(
             .fillMaxWidth()
             .neubrutalShadow(offsetX = NeubrutalShadowOffset, offsetY = NeubrutalShadowOffset, cornerRadius = NeubrutalCardRadius, color = shadowColor)
             .clip(RoundedCornerShape(NeubrutalCardRadius))
-            .background(cardSurface)
+            .neubrutalFill(color = cardSurface, cornerRadius = NeubrutalCardRadius)
             .neubrutalBorderWithGloss(
                 color = borderColor,
                 cornerRadius = NeubrutalCardRadius,
@@ -673,7 +673,7 @@ private fun StatsCard(
         verticalAlignment = Alignment.CenterVertically
     ) {
         StatItem(
-            icon = Icons.Default.Image,
+            icon = SetikerIcons.Image,
             count = formatCount(stickersCount),
             label = stringResource(Res.string.stickers_label)
         )
@@ -756,7 +756,7 @@ private fun MenuCard(
             .fillMaxWidth()
             .neubrutalShadow(offsetX = NeubrutalShadowOffset, offsetY = NeubrutalShadowOffset, cornerRadius = NeubrutalCardRadius, color = shadowColor)
             .clip(RoundedCornerShape(NeubrutalCardRadius))
-            .background(cardSurface)
+            .neubrutalFill(color = cardSurface, cornerRadius = NeubrutalCardRadius)
             .neubrutalBorderWithGloss(
                 color = borderColor,
                 cornerRadius = NeubrutalCardRadius,

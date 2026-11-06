@@ -42,6 +42,7 @@ import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
+import presentation.theme.neubrutalFill
 
 /** Converts a Unicode code point (e.g. `0x1F600`) into a Kotlin string, surrogate pair included. */
 private fun emojiForCodePoint(codePoint: Int): String =
@@ -150,7 +151,7 @@ fun EmojiPickerBottomSheet(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(surface)
+                                .neubrutalFill(color = surface, cornerRadius = 10.dp)
                                 .neubrutalBorderWithGloss(
                                     color = border,
                                     width = 2.dp,

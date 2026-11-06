@@ -40,6 +40,7 @@ import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.cancel
 import setiker.composeapp.generated.resources.delete
@@ -119,7 +120,7 @@ fun AppDialog(
                             color = shadow
                         )
                         .clip(shape)
-                        .background(neubrutalCardSurface())
+                        .neubrutalFill(color = neubrutalCardSurface(), cornerRadius = NeubrutalDialogRadius)
                         .neubrutalBorderWithGloss(
                             color = border,
                             cornerRadius = NeubrutalDialogRadius,

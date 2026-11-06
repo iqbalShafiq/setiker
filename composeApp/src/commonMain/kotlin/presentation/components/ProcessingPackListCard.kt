@@ -27,6 +27,7 @@ import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
 
 @Composable
 fun ProcessingPackListCard(
@@ -56,7 +57,7 @@ fun ProcessingPackListCard(
                 color = shadow
             )
             .clip(shape)
-            .background(surface)
+            .neubrutalFill(color = surface, cornerRadius = NeubrutalCardRadius)
             .neubrutalBorderWithGloss(
                 color = border,
                 cornerRadius = NeubrutalCardRadius,

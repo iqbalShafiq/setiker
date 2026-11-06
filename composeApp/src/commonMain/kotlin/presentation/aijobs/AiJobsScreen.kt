@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -45,6 +44,7 @@ import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
 import presentation.components.rememberAppHaptics
+import presentation.icons.SetikerIcons
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import setiker.composeapp.generated.resources.Res
@@ -171,7 +171,7 @@ fun AiJobsScreen(
 
                 actions = {
                     PackBottomBarIconButton(
-                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        icon = SetikerIcons.Back,
                         contentDescription = stringResource(Res.string.back_content_description),
                         onClick = onBackClick
                     )

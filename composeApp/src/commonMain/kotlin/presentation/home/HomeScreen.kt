@@ -26,10 +26,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Sort
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Workspaces
+import androidx.compose.material.icons.outlined.Workspaces
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -63,6 +60,7 @@ import presentation.components.AppPrimaryButton
 import presentation.components.AppSnackbarHostState
 import presentation.components.AppTopBar
 import presentation.components.AppTopBarBadgedActionIcon
+import presentation.components.AppTopBarMorphActionIcon
 import presentation.components.EmptyState
 import presentation.components.HomeBottomBar
 import presentation.components.LoadingDots
@@ -76,6 +74,8 @@ import presentation.components.SortBottomSheet
 import presentation.components.StickerPackListCard
 import presentation.components.rememberImagePicker
 import presentation.components.rememberVideoPicker
+import presentation.icons.SetikerIcons
+import presentation.icons.SetikerMorphs
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalSmallRadius
 import presentation.theme.SetikerMotion
@@ -211,27 +211,28 @@ fun HomeScreen(
                     }
                 },
                 actions = {
-                    NeubrutalIconButton(
-                        icon = if (isSearchExpanded) Icons.Default.Close else Icons.Default.Search,
+                    AppTopBarMorphActionIcon(
+                        morph = SetikerMorphs.SearchClose,
+                        checked = isSearchExpanded,
                         contentDescription = stringResource(
                             if (isSearchExpanded) Res.string.cancel_search else Res.string.search
                         ),
-                        onClick = {
-                            if (isSearchExpanded) {
+                        onCheckedChange = { expanded ->
+                            if (expanded) {
+                                isSearchExpanded = true
+                            } else {
                                 isSearchExpanded = false
                                 onIntent(HomeIntent.SearchQueryChanged(""))
-                            } else {
-                                isSearchExpanded = true
                             }
                         }
                     )
                     NeubrutalIconButton(
-                        icon = Icons.AutoMirrored.Filled.Sort,
+                        icon = SetikerIcons.Sort,
                         contentDescription = stringResource(Res.string.sort_content_description),
                         onClick = { showSortSheet = true }
                     )
                     AppTopBarBadgedActionIcon(
-                        icon = Icons.Default.Workspaces,
+                        icon = Icons.Outlined.Workspaces,
                         contentDescription = stringResource(Res.string.home_ai_jobs_cd),
                         badgeCount = state.aiJobsBadgeCount,
                         onClick = { onIntent(HomeIntent.NavigateToAiJobsFromTopBar) }
@@ -545,3 +546,5 @@ private fun HomeScreenSearchNoResultsPreview() {
         )
     }
 }
+
+

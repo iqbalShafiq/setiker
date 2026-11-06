@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import org.jetbrains.compose.resources.stringResource
+import presentation.icons.SetikerMorphs
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.cancel
 import setiker.composeapp.generated.resources.pause_preview
@@ -59,11 +60,10 @@ fun MediaPreviewBottomBar(
             )
             if (onTogglePlay != null) {
                 PackBottomBarIconButton(
-                    icon = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = stringResource(
-                        if (isPlaying) Res.string.pause_preview else Res.string.play_preview
-                    ),
-                    onClick = onTogglePlay,
+                    glyphMorph = SetikerMorphs.PlayPause,
+                    checked = isPlaying,
+                    contentDescription = stringResource(Res.string.play_preview),
+                    onCheckedChange = { onTogglePlay() },
                     enabled = playEnabled
                 )
             }

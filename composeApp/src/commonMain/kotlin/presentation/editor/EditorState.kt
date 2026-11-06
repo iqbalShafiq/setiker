@@ -10,6 +10,14 @@ data class EditorState(
     val accessibilityText: String = "",
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
+    /**
+     * The last save succeeded and its confirmation is still on screen.
+     *
+     * [isSaving] is only true *while* saving, so it cannot drive a "finished" state: by the time
+     * the write returns, the screen is already on its way out. This flag is what lets the save
+     * button show a tick instead of silently swapping back to its idle glyph.
+     */
+    val isSaveConfirmed: Boolean = false,
     val error: String? = null,
     val showEmojiPicker: Boolean = false,
     val recentEmojis: List<String> = emptyList(),

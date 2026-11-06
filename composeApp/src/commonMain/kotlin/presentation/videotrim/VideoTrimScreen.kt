@@ -55,6 +55,7 @@ import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalSubtleOnSurface
+import presentation.theme.neubrutalFill
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.animated_error_decode_failed
 import setiker.composeapp.generated.resources.animation_duration_cap
@@ -170,7 +171,7 @@ fun VideoTrimScreen(
                                     color = NeubrutalWhite,
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(8.dp))
-                                        .background(NeubrutalBlack)
+                                        .neubrutalFill(color = NeubrutalBlack, cornerRadius = 8.dp)
                                         .clickable {
                                             onIntent(VideoTrimIntent.RetryPreviewExtraction)
                                         }
@@ -196,7 +197,7 @@ fun VideoTrimScreen(
                             .align(Alignment.BottomStart)
                             .padding(8.dp)
                             .clip(RoundedCornerShape(8.dp))
-                            .background(NeubrutalBlack.copy(alpha = 0.6f))
+                            .neubrutalFill(color = NeubrutalBlack.copy(alpha = 0.6f), cornerRadius = 8.dp)
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         // Just the chosen animation duration — the slider already shows

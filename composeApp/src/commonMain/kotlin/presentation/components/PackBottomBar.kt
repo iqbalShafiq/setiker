@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -18,8 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,11 +30,17 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import presentation.common.ContentStateAnimations
+import presentation.icons.GlyphMorph
+import presentation.icons.MorphIcon
+import presentation.icons.SetikerMorphs
+import presentation.icons.SetikerIcons
 import presentation.theme.AccentCoral
+import presentation.theme.AppIconSize
 import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalButtonRadius
 import presentation.theme.NeubrutalShadowOffset
@@ -47,9 +52,13 @@ import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalBottomAppBarSurface
 import presentation.theme.neubrutalCardSurface
+import presentation.theme.neubrutalFill
 import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.NeubrutalBorderRole
+import presentation.theme.neubrutalBorderFor
+import presentation.theme.neubrutalDisabledFill
 
 @Composable
 fun PackBottomBar(
@@ -118,7 +127,7 @@ private fun PackBottomBarStatusText(
         text = text,
         modifier = modifier
             .clip(RoundedCornerShape(NeubrutalSmallRadius))
-            .background(neubrutalCardSurface())
+            .neubrutalFill(color = neubrutalCardSurface(), cornerRadius = NeubrutalSmallRadius)
             .neubrutalBorderWithGloss(
                 color = neubrutalBorderColor(),
                 cornerRadius = NeubrutalSmallRadius,
@@ -151,15 +160,88 @@ fun PackBottomBarIconButton(
         label = "bottom_icon_scale",
         onClick = onClick
     ) {
-        Icon(
-            imageVector = icon,
+        AppIcon(
+            glyph = icon,
             contentDescription = contentDescription,
-            modifier = Modifier.size(22.dp).then(iconModifier),
-            tint = if (enabled) iconTint else iconTint.copy(alpha = 0.4f)
+            modifier = iconModifier,
+            tint = iconTint,
+            enabled = enabled
         )
     }
 }
 
+/**
+ * A bar button whose glyph has two states.
+ *
+ * The icon keeps the surface, the press spring and the hard shadow of every other bar button; only
+ * the ink changes. It is a real toggle, so the state is announced by Compose rather than by a
+ * hand-written description that could drift away from the value it claims to describe.
+ */
+@Composable
+fun PackBottomBarIconButton(
+    morph: MorphIcon,
+    checked: Boolean,
+    contentDescription: String,
+    onCheckedChange: (Boolean) -> Unit,
+    enabled: Boolean = true,
+    containerColor: Color = neubrutalCardSurface(),
+    modifier: Modifier = Modifier
+) {
+    NeubrutalSurfaceToggle(
+        checked = checked,
+        onCheckedChange = onCheckedChange,
+        modifier = modifier.semantics { this.contentDescription = contentDescription },
+        size = 44.dp,
+        enabled = enabled,
+        containerColor = containerColor,
+        pressedScale = SetikerMotion.PRESS_SCALE_SMALL,
+        label = "bottom_morph_toggle_scale"
+    ) {
+        StatefulIcon(
+            icon = morph,
+            checked = checked,
+            enabled = enabled
+        )
+    }
+}
+
+/**
+ * A bar button whose glyph *changes shape* rather than filling - play to pause, for example.
+ *
+ * Separate from the [MorphIcon] overload because the two mechanisms differ: that one keeps one
+ * silhouette and wipes ink into it, this one interpolates between two silhouettes.
+ */
+@Composable
+fun PackBottomBarIconButton(
+    glyphMorph: GlyphMorph,
+    checked: Boolean,
+    contentDescription: String,
+    onCheckedChange: (Boolean) -> Unit,
+    enabled: Boolean = true,
+    containerColor: Color = neubrutalCardSurface(),
+    modifier: Modifier = Modifier
+) {
+    NeubrutalSurfaceToggle(
+        checked = checked,
+        onCheckedChange = onCheckedChange,
+        modifier = modifier.semantics { this.contentDescription = contentDescription },
+        size = 44.dp,
+        enabled = enabled,
+        containerColor = containerColor,
+        pressedScale = SetikerMotion.PRESS_SCALE_SMALL,
+        label = "bottom_glyph_morph_toggle_scale"
+    ) {
+        MorphGlyphIcon(
+            morph = glyphMorph,
+            checked = checked,
+            enabled = enabled
+        )
+    }
+}
+/**
+ * Painter variant, for the WhatsApp brand mark. Kept as a second overload rather than a second
+ * render path: it shares the same surface, the same press spring and the same [AppIcon] door.
+ */
 @Composable
 fun PackBottomBarIconButton(
     painter: Painter,
@@ -180,11 +262,12 @@ fun PackBottomBarIconButton(
         label = "bottom_painter_icon_scale",
         onClick = onClick
     ) {
-        Icon(
+        AppIcon(
             painter = painter,
             contentDescription = contentDescription,
-            modifier = Modifier.size(22.dp).then(iconModifier),
-            tint = if (enabled) iconTint else iconTint.copy(alpha = 0.4f)
+            modifier = iconModifier,
+            tint = iconTint,
+            enabled = enabled
         )
     }
 }
@@ -197,9 +280,109 @@ fun PackBottomBarFab(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     isLoading: Boolean = false,
+    /** The action finished successfully: the busy dots become a tick. */
+    isComplete: Boolean = false,
     containerColor: Color = AccentCoral,
     iconTint: Color = NeubrutalWhite,
     iconModifier: Modifier = Modifier
+) {
+    NeubrutalFabSurface(
+        contentDescription = contentDescription,
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        isLoading = isLoading,
+        containerColor = containerColor
+    ) {
+        val glyph = when {
+            isComplete -> FabGlyph.Complete
+            isLoading -> FabGlyph.Busy
+            else -> FabGlyph.Idle
+        }
+        AnimatedContent(
+            targetState = glyph,
+            transitionSpec = { ContentStateAnimations.fadeOnly() },
+            label = "fab_loading_content"
+        ) { current ->
+            when (current) {
+                FabGlyph.Busy -> LoadingDots(dotSize = 6.dp, color = iconTint)
+
+                // The busy dots collapse into one pip, and that pip becomes the tick. `playOnEnter`
+                // is what makes it animate: this branch is mounted *because* the work finished.
+                FabGlyph.Complete -> MorphGlyphIcon(
+                    morph = SetikerMorphs.Loaded,
+                    checked = true,
+                    playOnEnter = true,
+                    size = AppIconSize.Fab,
+                    tint = iconTint
+                )
+
+                FabGlyph.Idle -> AppIcon(
+                    glyph = icon,
+                    contentDescription = null,
+                    modifier = iconModifier,
+                    tint = iconTint,
+                    size = AppIconSize.Fab,
+                    enabled = enabled
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The same primary action, showing a glyph that morphs with its state.
+ *
+ * Follow is the case: the tick arrives by folding the plus away, so the button reports what
+ * changed instead of swapping two unrelated icons.
+ */
+@Composable
+fun PackBottomBarMorphFab(
+    morph: GlyphMorph,
+    checked: Boolean,
+    contentDescription: String,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    containerColor: Color = AccentCoral,
+    iconTint: Color = NeubrutalWhite,
+    iconModifier: Modifier = Modifier
+) {
+    NeubrutalFabSurface(
+        contentDescription = contentDescription,
+        onClick = { onCheckedChange(!checked) },
+        modifier = modifier,
+        enabled = enabled,
+        isLoading = false,
+        containerColor = containerColor
+    ) {
+        MorphGlyphIcon(
+            morph = morph,
+            checked = checked,
+            modifier = iconModifier,
+            size = AppIconSize.Fab,
+            tint = iconTint,
+            enabled = enabled
+        )
+    }
+}
+
+/**
+ * The round action surface, without an opinion about the glyph inside it.
+ *
+ * Both FABs share this so the border, the shadow, the focus ring and the disabled treatment stay
+ * one implementation. The label lives here too: it belongs to the control, not to whichever
+ * branch happens to be showing.
+ */
+@Composable
+private fun NeubrutalFabSurface(
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier,
+    enabled: Boolean,
+    isLoading: Boolean,
+    containerColor: Color,
+    content: @Composable BoxScope.() -> Unit
 ) {
     val pressFeedback = rememberPressFeedback(
         pressedScale = SetikerMotion.PRESS_SCALE_COMPACT,
@@ -207,9 +390,10 @@ fun PackBottomBarFab(
         label = "fab_scale"
     )
 
-    val border = neubrutalBorderColor()
+    val border = neubrutalBorderFor(
+        if (enabled || isLoading) NeubrutalBorderRole.Container else NeubrutalBorderRole.Disabled
+    )
     val shape = RoundedCornerShape(NeubrutalButtonRadius)
-    val isClickable = enabled && !isLoading
 
     Box(
         modifier = modifier
@@ -220,49 +404,44 @@ fun PackBottomBarFab(
                 restOffset = NeubrutalShadowOffset,
                 pressedOffset = NeubrutalSmallShadowOffset,
                 cornerRadius = NeubrutalButtonRadius,
-                color = neubrutalShadowColor()
+                // A raised shadow on a disabled control promises a press it cannot deliver.
+                color = if (enabled || isLoading) {
+                    neubrutalShadowColor()
+                } else {
+                    neubrutalShadowColor().copy(alpha = 0.4f)
+                }
             )
             .clip(shape)
-            .background(
-                if (enabled || isLoading) containerColor else containerColor.copy(alpha = 0.4f)
+            .neubrutalFill(
+                // Alpha here would let the black shadow show through and turn a disabled coral
+                // FAB brown; compositing against the surface keeps it a muted coral.
+                color = if (enabled || isLoading) {
+                    containerColor
+                } else {
+                    neubrutalDisabledFill(containerColor)
+                },
+                cornerRadius = NeubrutalButtonRadius
             )
             .neubrutalBorderWithGloss(
                 color = border,
                 cornerRadius = NeubrutalButtonRadius,
                 highlightColor = neubrutalGlossyHighlightColor(onFilledSurface = true)
             )
-            .clickable(
+            .clickableNoRipple(
                 interactionSource = pressFeedback.interactionSource,
-                indication = null,
-                enabled = isClickable,
+                enabled = enabled && !isLoading,
+                // Coral on a coral fill is invisible, so a filled action takes the light ring.
+                focusRingColor = NeubrutalWhite,
                 onClick = onClick
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        AnimatedContent(
-            targetState = isLoading,
-            transitionSpec = { ContentStateAnimations.fadeOnly() },
-            label = "fab_loading_content"
-        ) { loading ->
-            if (loading) {
-                LoadingDots(
-                    dotSize = 6.dp,
-                    color = iconTint,
-                    modifier = Modifier.semantics {
-                        this.contentDescription = contentDescription
-                    }
-                )
-            } else {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = contentDescription,
-                    modifier = iconModifier,
-                    tint = if (enabled) iconTint else iconTint.copy(alpha = 0.5f)
-                )
-            }
-        }
-    }
+            )
+            .semantics { this.contentDescription = contentDescription },
+        contentAlignment = Alignment.Center,
+        content = content
+    )
 }
+
+/** What the primary action currently shows. */
+private enum class FabGlyph { Idle, Busy, Complete }
 
 // MARK: - Previews
 @Preview
@@ -272,12 +451,12 @@ private fun PackBottomBarPreview() {
         PackBottomBar(
             actions = {
                 PackBottomBarIconButton(
-                    icon = Icons.Default.Edit,
+                    icon = SetikerIcons.Edit,
                     contentDescription = "Edit",
                     onClick = {}
                 )
                 PackBottomBarIconButton(
-                    icon = Icons.Default.Edit,
+                    icon = SetikerIcons.Edit,
                     contentDescription = "Edit 2",
                     onClick = {}
                 )
@@ -298,7 +477,7 @@ private fun PackBottomBarPreview() {
 private fun PackBottomBarIconButtonPreview() {
     MaterialTheme {
         PackBottomBarIconButton(
-            icon = Icons.Default.Edit,
+            icon = SetikerIcons.Edit,
             contentDescription = "Edit",
             onClick = {}
         )
@@ -316,3 +495,5 @@ private fun PackBottomBarFabPreview() {
         )
     }
 }
+
+

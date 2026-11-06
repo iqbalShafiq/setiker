@@ -894,7 +894,7 @@ class EditorViewModel(
             }
 
             try {
-                _state.update { it.copy(isSaving = true) }
+                _state.update { it.copy(isSaving = true, isSaveConfirmed = false) }
                 AppLog.d("EditorViewModel", "Saving sticker with packId: '$effectivePackId'")
                 
                 // Save editable base image and flattened preview image separately
@@ -937,7 +937,7 @@ class EditorViewModel(
                     repository.addStickerToPack(effectivePackId, sticker)
                     AppLog.d("EditorViewModel", "Added new sticker")
                 }
-                _state.update { it.copy(isSaving = false) }
+                _state.update { it.copy(isSaving = false, isSaveConfirmed = true) }
                 _effect.send(EditorEffect.StickerSaved)
             } catch (e: Exception) {
                 _state.update { it.copy(isSaving = false) }

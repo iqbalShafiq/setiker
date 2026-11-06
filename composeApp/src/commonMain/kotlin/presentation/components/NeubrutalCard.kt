@@ -17,6 +17,7 @@ import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
 
 /**
  * The app's card surface: hard shadow, thick border, glossy bevel.
@@ -39,7 +40,7 @@ fun NeubrutalCard(
                 color = neubrutalShadowColor()
             )
             .clip(RoundedCornerShape(cornerRadius))
-            .background(containerColor)
+            .neubrutalFill(color = containerColor, cornerRadius = cornerRadius)
             .neubrutalBorderWithGloss(
                 color = neubrutalBorderColor(),
                 cornerRadius = cornerRadius,

@@ -9,9 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import domain.model.Sticker
 import domain.model.StickerPack
 import org.jetbrains.compose.resources.stringResource
+import presentation.icons.SetikerIcons
+import presentation.theme.AppIconSize
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalSmallRadius
@@ -39,6 +38,7 @@ import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.stickers_with_count
 
@@ -70,7 +70,7 @@ fun StickerPackListCard(
                 color = shadow
             )
             .clip(shape)
-            .background(surface)
+            .neubrutalFill(color = surface, cornerRadius = NeubrutalCardRadius)
             .neubrutalBorderWithGloss(
                 color = border,
                 cornerRadius = NeubrutalCardRadius,
@@ -96,7 +96,7 @@ fun StickerPackListCard(
                     color = shadow
                 )
                 .clip(thumbShape)
-                .background(surface)
+                .neubrutalFill(color = surface, cornerRadius = NeubrutalSmallRadius)
                 .neubrutalBorderWithGloss(
                     color = border,
                     cornerRadius = NeubrutalSmallRadius,
@@ -129,10 +129,11 @@ fun StickerPackListCard(
         Spacer(modifier = Modifier.width(8.dp))
 
         // Chevron
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+        AppIcon(
+            glyph = SetikerIcons.Chevron,
             contentDescription = null,
-            tint = neubrutalMutedOnSurface()
+            tint = neubrutalMutedOnSurface(),
+            size = AppIconSize.Compact
         )
     }
 }

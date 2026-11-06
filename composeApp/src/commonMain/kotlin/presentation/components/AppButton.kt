@@ -34,6 +34,9 @@ import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
+import presentation.theme.NeubrutalBorderRole
+import presentation.theme.neubrutalBorderFor
 
 @Composable
 fun AppPrimaryButton(
@@ -48,7 +51,9 @@ fun AppPrimaryButton(
         label = "primary_button_scale"
     )
 
-    val border = if (enabled) neubrutalBorderColor() else neubrutalDisabledBorder()
+    val border = neubrutalBorderFor(
+        if (enabled) NeubrutalBorderRole.Container else NeubrutalBorderRole.Disabled
+    )
     val shadow = neubrutalShadowColor()
     val shadowX = if (pressFeedback.isPressed && enabled) NeubrutalSmallShadowOffset else NeubrutalShadowOffset
     val shadowY = if (pressFeedback.isPressed && enabled) NeubrutalSmallShadowOffset else NeubrutalShadowOffset
@@ -68,7 +73,7 @@ fun AppPrimaryButton(
                 color = shadow
             )
             .clip(shape)
-            .background(color = fill)
+            .neubrutalFill(color = fill, cornerRadius = NeubrutalButtonRadius)
             .neubrutalBorderWithGloss(
                 color = border,
                 cornerRadius = NeubrutalButtonRadius,
@@ -105,7 +110,9 @@ fun AppSecondaryButton(
         label = "secondary_button_scale"
     )
 
-    val border = if (enabled) neubrutalBorderColor() else neubrutalDisabledBorder()
+    val border = neubrutalBorderFor(
+        if (enabled) NeubrutalBorderRole.Container else NeubrutalBorderRole.Disabled
+    )
     val shadow = neubrutalShadowColor()
     val surface = neubrutalCardSurface()
     val onSurface = neubrutalOnSurface()
@@ -126,7 +133,7 @@ fun AppSecondaryButton(
                 color = shadow
             )
             .clip(shape)
-            .background(color = fill)
+            .neubrutalFill(color = fill, cornerRadius = NeubrutalButtonRadius)
             .neubrutalBorderWithGloss(
                 color = border,
                 cornerRadius = NeubrutalButtonRadius,
@@ -181,3 +188,4 @@ private fun AppButtonsCombinedPreview() {
         }
     }
 }
+

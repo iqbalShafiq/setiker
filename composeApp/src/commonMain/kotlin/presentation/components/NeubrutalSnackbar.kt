@@ -68,6 +68,9 @@ import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
+import presentation.theme.NeubrutalBorderRole
+import presentation.theme.neubrutalBorderFor
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.close
 
@@ -277,7 +280,9 @@ fun NeubrutalSnackbarContent(
 
     val surface = if (isError) MaterialTheme.colorScheme.errorContainer else neubrutalCardSurface()
     val content = if (isError) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurface
-    val border = if (isError) MaterialTheme.colorScheme.error else neubrutalBorderColor()
+    val border = neubrutalBorderFor(
+        if (isError) NeubrutalBorderRole.Error else NeubrutalBorderRole.Container
+    )
 
     // The timer is one animation: it drains the square of the close button and, when it is
     // done, the snackbar goes away. Reading the value in the draw phase keeps the frame work out
@@ -305,7 +310,7 @@ fun NeubrutalSnackbarContent(
                 color = neubrutalShadowColor()
             )
             .clip(RoundedCornerShape(NeubrutalCardRadius))
-            .background(surface)
+            .neubrutalFill(color = surface, cornerRadius = NeubrutalCardRadius)
             .neubrutalBorderWithGloss(
                 color = border,
                 cornerRadius = NeubrutalCardRadius,
@@ -329,7 +334,7 @@ fun NeubrutalSnackbarContent(
                             color = neubrutalShadowColor()
                         )
                         .clip(RoundedCornerShape(NeubrutalSmallRadius))
-                        .background(MaterialTheme.colorScheme.error)
+                        .neubrutalFill(color = MaterialTheme.colorScheme.error, cornerRadius = NeubrutalSmallRadius)
                         .neubrutalBorderWithGloss(
                             color = neubrutalBorderColor(),
                             cornerRadius = NeubrutalSmallRadius,
@@ -552,3 +557,4 @@ private fun roundedSquareOutline(
         close()
     }
 }
+

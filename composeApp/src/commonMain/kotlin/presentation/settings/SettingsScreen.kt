@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.School
@@ -44,6 +43,7 @@ import presentation.components.PackBottomBar
 import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
 import presentation.components.ScaffoldBottomBarLazyColumn
+import presentation.icons.SetikerIcons
 import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
@@ -140,7 +140,7 @@ fun SettingsScreen(
             PackBottomBar(
                 actions = {
                     PackBottomBarIconButton(
-                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        icon = SetikerIcons.Back,
                         contentDescription = stringResource(Res.string.back_content_description),
                         onClick = { onIntent(SettingsIntent.NavigateBack) },
                         enabled = !state.isChangingPassword && !state.isDeletingAccount

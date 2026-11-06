@@ -10,9 +10,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -21,7 +18,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.dp
+import presentation.icons.SetikerIcons
 import presentation.theme.AccentCoral
+import presentation.theme.AppIconSize
 import presentation.theme.NeubrutalSmallRadius
 import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.SetikerMotion
@@ -31,6 +30,9 @@ import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
+import presentation.theme.NeubrutalBorderRole
+import presentation.theme.neubrutalBorderFor
 
 /**
  * The app's checkbox: a hard-shadow square that fills with coral and pops the tick in.
@@ -60,9 +62,11 @@ fun NeubrutalCheckbox(
                 color = if (enabled) neubrutalShadowColor() else neubrutalShadowColor().copy(alpha = 0.4f)
             )
             .clip(shape)
-            .background(lerp(neubrutalCardSurface(), AccentCoral, fill))
+            .neubrutalFill(color = lerp(neubrutalCardSurface(), AccentCoral, fill), cornerRadius = NeubrutalSmallRadius)
             .neubrutalBorderWithGloss(
-                color = if (enabled) neubrutalBorderColor() else neubrutalBorderColor().copy(alpha = 0.4f),
+                color = neubrutalBorderFor(
+                    if (enabled) NeubrutalBorderRole.Container else NeubrutalBorderRole.Disabled
+                ),
                 cornerRadius = NeubrutalSmallRadius,
                 highlightColor = neubrutalGlossyHighlightColor(onFilledSurface = checked)
             ),
@@ -78,12 +82,13 @@ fun NeubrutalCheckbox(
             exit = fadeOut(SetikerMotion.out(SetikerMotion.DURATION_FAST_MS)) +
                 scaleOut(targetScale = 0.6f)
         ) {
-            Icon(
-                imageVector = Icons.Default.Check,
+            AppIcon(
+                glyph = SetikerIcons.Check,
                 contentDescription = null,
-                modifier = Modifier.size(18.dp),
-                tint = Color.White
+                tint = Color.White,
+                size = AppIconSize.Inline
             )
         }
     }
 }
+

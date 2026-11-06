@@ -1,8 +1,6 @@
 package presentation.explore
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,13 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Sort
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.outlined.Bookmark
-import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -39,7 +31,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -61,7 +52,6 @@ import presentation.components.AppTopBar
 import presentation.components.EmptyState
 import presentation.components.ExploreSortBottomSheet
 import presentation.components.LoadingDots
-import presentation.components.NeubrutalBareIconButton
 import presentation.components.NeubrutalPullToRefreshBox
 import presentation.components.NeubrutalSearchBar
 import presentation.components.NeubrutalSelectableChip
@@ -72,7 +62,9 @@ import presentation.components.PackBottomBarIconButton
 import presentation.components.ScreenContentHorizontalScrollRow
 import presentation.components.ScreenSectionTitle
 import presentation.components.SkeletonPackList
+import presentation.components.StatefulIconToggle
 import presentation.components.rememberAppHaptics
+import presentation.icons.SetikerIcons
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
@@ -87,6 +79,7 @@ import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import presentation.theme.screenContentHorizontalPadding
+import presentation.theme.neubrutalFill
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.error_load_explore_failed
 import setiker.composeapp.generated.resources.error_load_explore_failed_desc
@@ -110,10 +103,12 @@ import setiker.composeapp.generated.resources.explore_sign_in_desc
 import setiker.composeapp.generated.resources.explore_sign_in_title
 import setiker.composeapp.generated.resources.explore_sort
 import setiker.composeapp.generated.resources.explore_title
+import setiker.composeapp.generated.resources.like
 import setiker.composeapp.generated.resources.no_search_results_desc
 import setiker.composeapp.generated.resources.no_search_results_title
 import setiker.composeapp.generated.resources.processing
 import setiker.composeapp.generated.resources.retry
+import setiker.composeapp.generated.resources.save_pack_action
 import setiker.composeapp.generated.resources.social_counts
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -141,19 +136,19 @@ fun ExploreScreen(
             PackBottomBar(
                 actions = {
                     PackBottomBarIconButton(
-                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        icon = SetikerIcons.Back,
                         contentDescription = stringResource(Res.string.explore_back),
                         onClick = { onIntent(ExploreIntent.NavigateBack) }
                     )
                     PackBottomBarIconButton(
-                        icon = Icons.Default.History,
+                        icon = Icons.Outlined.History,
                         contentDescription = stringResource(Res.string.explore_history),
                         onClick = { onIntent(ExploreIntent.NavigateHistory) }
                     )
                 },
                 floatingActionButton = {
                     PackBottomBarFab(
-                        icon = Icons.AutoMirrored.Filled.Sort,
+                        icon = SetikerIcons.Sort,
                         contentDescription = stringResource(Res.string.explore_sort),
                         onClick = { showSortSheet = true }
                     )
@@ -379,37 +374,6 @@ private fun PublicPackCard(
     val border = neubrutalBorderColor()
     val shadow = neubrutalShadowColor()
     val haptics = rememberAppHaptics()
-    val likePop = remember { Animatable(1f) }
-    val savePop = remember { Animatable(1f) }
-    var likeAnimationReady by remember { mutableStateOf(false) }
-    var saveAnimationReady by remember { mutableStateOf(false) }
-    val likeTint by animateColorAsState(
-        targetValue = if (liked) AccentCoral else neubrutalMutedOnSurface(),
-        animationSpec = SetikerMotion.standard(SetikerMotion.DURATION_BASE_MS),
-        label = "explore_like_tint"
-    )
-    val saveTint by animateColorAsState(
-        targetValue = if (saved) AccentCoral else neubrutalMutedOnSurface(),
-        animationSpec = SetikerMotion.standard(SetikerMotion.DURATION_BASE_MS),
-        label = "explore_save_tint"
-    )
-
-    LaunchedEffect(liked) {
-        if (!likeAnimationReady) {
-            likeAnimationReady = true
-            return@LaunchedEffect
-        }
-        likePop.snapTo(1.35f)
-        likePop.animateTo(1f, SetikerMotion.DelightSpring)
-    }
-    LaunchedEffect(saved) {
-        if (!saveAnimationReady) {
-            saveAnimationReady = true
-            return@LaunchedEffect
-        }
-        savePop.snapTo(1.28f)
-        savePop.animateTo(1f, SetikerMotion.DelightSpring)
-    }
 
     Row(
         modifier = modifier
@@ -421,7 +385,7 @@ private fun PublicPackCard(
                 color = shadow
             )
             .clip(RoundedCornerShape(NeubrutalCardRadius))
-            .background(neubrutalCardSurface())
+            .neubrutalFill(color = neubrutalCardSurface(), cornerRadius = NeubrutalCardRadius)
             .neubrutalBorderWithGloss(
                 color = border,
                 cornerRadius = NeubrutalCardRadius,
@@ -437,7 +401,7 @@ private fun PublicPackCard(
             modifier = Modifier
                 .size(imageSize)
                 .clip(RoundedCornerShape(12.dp))
-                .background(neubrutalScreenBackground())
+                .neubrutalFill(color = neubrutalScreenBackground(), cornerRadius = 12.dp)
                 .neubrutalBorderWithGloss(
                     color = border,
                     cornerRadius = 12.dp,
@@ -489,39 +453,31 @@ private fun PublicPackCard(
                         horizontalArrangement = Arrangement.spacedBy(2.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        NeubrutalBareIconButton(
-                            icon = if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                            contentDescription = null,
-                            onClick = {
+                        StatefulIconToggle(
+                            icon = SetikerIcons.HeartMorph,
+                            checked = liked,
+                            onCheckedChange = {
                                 haptics.selection()
                                 onToggleLike()
                             },
+                            contentDescription = stringResource(Res.string.like),
                             size = socialButtonSize,
                             iconSize = socialIconSize,
-                            tint = likeTint,
                             pressedScale = SetikerMotion.PRESS_SCALE_TINY,
-                            label = "explore_like_scale",
-                            iconModifier = Modifier.graphicsLayer {
-                                scaleX = likePop.value
-                                scaleY = likePop.value
-                            }
+                            label = "explore_like_scale"
                         )
-                        NeubrutalBareIconButton(
-                            icon = if (saved) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder,
-                            contentDescription = null,
-                            onClick = {
+                        StatefulIconToggle(
+                            icon = SetikerIcons.BookmarkMorph,
+                            checked = saved,
+                            onCheckedChange = {
                                 haptics.selection()
                                 onToggleSave()
                             },
+                            contentDescription = stringResource(Res.string.save_pack_action),
                             size = socialButtonSize,
                             iconSize = socialIconSize,
-                            tint = saveTint,
                             pressedScale = SetikerMotion.PRESS_SCALE_TINY,
-                            label = "explore_save_scale",
-                            iconModifier = Modifier.graphicsLayer {
-                                scaleX = savePop.value
-                                scaleY = savePop.value
-                            }
+                            label = "explore_save_scale"
                         )
                     }
                 }
@@ -541,3 +497,4 @@ private fun ExploreScreenPreview() {
         )
     }
 }
+

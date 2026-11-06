@@ -25,11 +25,9 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DragHandle
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -72,6 +70,7 @@ import presentation.components.AppSecondaryButton
 import presentation.components.AppSnackbarHostState
 import presentation.components.AppTopBar
 import presentation.components.AppTopBarActionIcon
+import presentation.components.AppTopBarMorphActionIcon
 import presentation.components.BottomSheetScrollColumn
 import presentation.components.ContentPolicyBottomSheet
 import presentation.components.DuplicatePackConfirmDialog
@@ -92,6 +91,8 @@ import presentation.components.SyncStatusIndicator
 import presentation.components.rememberAppHaptics
 import presentation.components.rememberAppSheetState
 import presentation.components.rememberMultipleImagePicker
+import presentation.icons.SetikerIcons
+import presentation.icons.SetikerMorphs
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalScrim
 import presentation.theme.NeubrutalShadowOffset
@@ -106,6 +107,7 @@ import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.add_to_whatsapp
 import setiker.composeapp.generated.resources.back
@@ -231,7 +233,7 @@ fun PackDetailScreen(
                         .fillMaxWidth()
                         .aspectRatio(1f)
                         .clip(RoundedCornerShape(NeubrutalCardRadius))
-                        .background(neubrutalCardSurface())
+                        .neubrutalFill(color = neubrutalCardSurface(), cornerRadius = NeubrutalCardRadius)
                         .neubrutalBorderWithGloss(
                             color = neubrutalBorderColor(),
                             cornerRadius = NeubrutalCardRadius,
@@ -437,19 +439,21 @@ fun PackDetailScreen(
                         onClick = { onIntent(PackDetailIntent.OpenCollaboratorsSheet) },
                         enabled = topBarActionsEnabled && !state.pack.cloudId.isNullOrBlank()
                     )
-                    AppTopBarActionIcon(
-                        icon = if (isPublicPack) Icons.Default.VisibilityOff else Icons.Default.Public,
+                    AppTopBarMorphActionIcon(
+                        morph = SetikerMorphs.Eye,
+                        checked = isPublicPack,
                         contentDescription = stringResource(
                             if (isPublicPack) Res.string.pack_unpublish else Res.string.pack_make_public
                         ),
-                        onClick = {
+                        onCheckedChange = {
                             if (isPublicPack) {
                                 onIntent(PackDetailIntent.RequestUnpublish)
                             } else {
                                 onIntent(PackDetailIntent.RequestMakePublic)
                             }
                         },
-                        enabled = topBarActionsEnabled
+                        enabled = topBarActionsEnabled,
+                        celebration = true
                     )
                     AppTopBarActionIcon(
                         icon = Icons.Default.ContentCopy,
@@ -465,7 +469,7 @@ fun PackDetailScreen(
                 actionStatusText = bottomOperationLabel,
                 actions = {
                     PackBottomBarIconButton(
-                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        icon = SetikerIcons.Back,
                         contentDescription = stringResource(Res.string.back),
                         onClick = onBackClick,
                         enabled = !state.isLoading && !isOperationInProgress
@@ -495,7 +499,7 @@ fun PackDetailScreen(
                 },
                 floatingActionButton = {
                     PackBottomBarFab(
-                        icon = Icons.Default.Edit,
+                        icon = SetikerIcons.Edit,
                         contentDescription = stringResource(Res.string.edit_pack),
                         onClick = onEditPack,
                         enabled = !state.isLoading && !isOperationInProgress
@@ -617,7 +621,7 @@ private fun PackDetailContent(
                     color = shadow
                 )
                 .clip(RoundedCornerShape(NeubrutalCardRadius))
-                .background(surface)
+                .neubrutalFill(color = surface, cornerRadius = NeubrutalCardRadius)
                 .neubrutalBorderWithGloss(
                     color = border,
                     cornerRadius = NeubrutalCardRadius,
@@ -638,7 +642,7 @@ private fun PackDetailContent(
                         color = shadow
                     )
                     .clip(RoundedCornerShape(NeubrutalCardRadius))
-                    .background(surface)
+                    .neubrutalFill(color = surface, cornerRadius = NeubrutalCardRadius)
                     .neubrutalBorderWithGloss(
                         color = border,
                         cornerRadius = NeubrutalCardRadius,
@@ -650,7 +654,7 @@ private fun PackDetailContent(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Edit,
+                            imageVector = SetikerIcons.Edit,
                             contentDescription = stringResource(Res.string.tray_icon_content_description),
                             tint = neubrutalMutedOnSurface()
                         )

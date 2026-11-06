@@ -8,15 +8,10 @@ import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,7 +30,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
+import presentation.icons.SetikerIcons
 import presentation.theme.AccentCoral
+import presentation.theme.AppIconSize
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.SetikerMotion
@@ -47,6 +44,7 @@ import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import presentation.theme.neubrutalSubtleOnSurface
+import presentation.theme.neubrutalFill
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.clear
 import setiker.composeapp.generated.resources.search_packs_placeholder
@@ -84,7 +82,7 @@ fun NeubrutalSearchBar(
                 color = shadow
             )
             .clip(shape)
-            .background(surface)
+            .neubrutalFill(color = surface, cornerRadius = NeubrutalCardRadius)
             .neubrutalBorderWithGloss(
                 color = border,
                 cornerRadius = NeubrutalCardRadius,
@@ -94,11 +92,11 @@ fun NeubrutalSearchBar(
             .padding(horizontal = 12.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = Icons.Default.Search,
+        AppIcon(
+            glyph = SetikerIcons.Search,
             contentDescription = null,
-            modifier = Modifier.size(20.dp),
-            tint = neubrutalSubtleOnSurface()
+            tint = neubrutalSubtleOnSurface(),
+            size = AppIconSize.Compact
         )
 
         BasicTextField(
@@ -136,10 +134,10 @@ fun NeubrutalSearchBar(
             // 48 dp touch target with a 20 dp glyph: the old 32 dp box was well below the minimum
             // touch target, and it kept the Material ripple instead of the app's press language.
             NeubrutalBareIconButton(
-                icon = Icons.Default.Clear,
+                icon = SetikerIcons.Close,
                 contentDescription = stringResource(Res.string.clear),
                 onClick = { onQueryChange("") },
-                iconSize = 20.dp,
+                iconSize = AppIconSize.Compact,
                 tint = neubrutalSubtleOnSurface(),
                 pressedScale = SetikerMotion.PRESS_SCALE_TINY,
                 label = "search_clear_scale"

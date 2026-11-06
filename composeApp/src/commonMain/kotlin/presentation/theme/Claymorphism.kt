@@ -55,8 +55,15 @@ val NeubrutalThinBorderWidth = 1.5.dp
 /** Standard shadow offset. */
 val NeubrutalShadowOffset = 4.dp
 
-/** Small shadow offset. */
-val NeubrutalSmallShadowOffset = 2.dp
+/**
+ * Shadow offset for small controls.
+ *
+ * It has to stay *wider* than [NeubrutalBorderWidth]. At 2 dp the offset was thinner than the
+ * 2.5 dp outline, so the copied shape could not be read as a separate layer: the bottom-right edge
+ * just looked thicker than the other three, which is why the corners of an icon button felt uneven.
+ * Above the border weight the second surface becomes legible again.
+ */
+val NeubrutalSmallShadowOffset = 3.dp
 
 /** Shadow offset while a control is pressed: the surface sits almost on the page. */
 val NeubrutalPressedShadowOffset = 1.dp
@@ -147,6 +154,37 @@ internal fun DrawScope.drawNeubrutalShadow(
         topLeft = Offset(offsetX, offsetY),
         size = Size(width = size.width, height = size.height),
         cornerRadius = CornerRadius(cornerRadius, cornerRadius)
+    )
+}
+
+/**
+ * A surface fill that stops half a pixel short of its own outline.
+ *
+ * [androidx.compose.foundation.background] paints right up to the clipped edge, and that edge is
+ * only partially covered. Over a hard offset shadow the remaining coverage shows the black through,
+ * so the last pixel composites to grey: on a 40 dp icon button it reads as a notch in the
+ * bottom-right corner, and it is the only corner it can happen in, because it is the only one the
+ * shadow is not hidden behind.
+ *
+ * Pulling the fill inside the border means the border owns that pixel outright and the edge is a
+ * single anti-aliased one.
+ */
+fun Modifier.neubrutalFill(
+    color: Color,
+    cornerRadius: Dp
+): Modifier = drawBehind {
+    val inset = 0.5.dp.toPx()
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(inset, inset),
+        size = Size(
+            width = (size.width - inset * 2f).coerceAtLeast(0f),
+            height = (size.height - inset * 2f).coerceAtLeast(0f)
+        ),
+        cornerRadius = CornerRadius(
+            (cornerRadius.toPx() - inset).coerceAtLeast(0f),
+            (cornerRadius.toPx() - inset).coerceAtLeast(0f)
+        )
     )
 }
 
@@ -302,6 +340,9 @@ private fun buildGlossGeometry(
 
 /**
  * Thick neubrutal border plus the matching glossy highlight in one chain.
+ *
+ * The bevel keeps its 1 dp inset: it deliberately tucks under the outline so the top-left reads as
+ * a soft sheen rather than a second, lighter frame.
  */
 fun Modifier.neubrutalBorderWithGloss(
     color: Color,

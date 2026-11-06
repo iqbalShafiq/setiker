@@ -2,6 +2,7 @@ package presentation.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.unit.Dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
@@ -127,3 +128,35 @@ fun neubrutalGlossyHighlightColor(onFilledSurface: Boolean = false): Color =
     } else {
         NeubrutalGlossyHighlightLight
     }
+
+/**
+ * What a border is *for*.
+ *
+ * The canon rule is that an outline should communicate something — container, interactive,
+ * selected, or error — and that anything purely decorative should be removed. Naming the role here
+ * keeps that decision in one place instead of being re-derived as a colour literal per screen.
+ *
+ * A selected surface is accent ink plus one and a half times the stroke: two channels, colour and
+ * weight, so the state survives a greyscale screenshot. A selected *chip* does not use it — its
+ * fill already carries the state, and a second signal would be the same word twice.
+ */
+enum class NeubrutalBorderRole { Container, Selected, Error, Disabled }
+
+/** The ink for [role]. */
+@Composable
+fun neubrutalBorderFor(role: NeubrutalBorderRole): Color = when (role) {
+    NeubrutalBorderRole.Container -> neubrutalBorderColor()
+    NeubrutalBorderRole.Selected -> AccentCoral
+    NeubrutalBorderRole.Error -> ErrorRed
+    NeubrutalBorderRole.Disabled -> neubrutalDisabledBorder()
+}
+/**
+ * The stroke weight for [role].
+ *
+ * Selection is the one role that also changes weight: colour alone is a single channel, and a
+ * selected tile has to survive a greyscale screenshot and a colour-blind reader.
+ */
+fun neubrutalBorderWidthFor(role: NeubrutalBorderRole): Dp = when (role) {
+    NeubrutalBorderRole.Selected -> NeubrutalBorderWidth * 1.5f
+    else -> NeubrutalBorderWidth
+}

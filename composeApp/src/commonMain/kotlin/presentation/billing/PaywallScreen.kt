@@ -46,6 +46,7 @@ import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.paywall_buy
 import setiker.composeapp.generated.resources.paywall_empty_desc
@@ -186,7 +187,7 @@ private fun PaywallProductCard(
                 color = neubrutalShadowColor()
             )
             .clip(RoundedCornerShape(NeubrutalCardRadius))
-            .background(neubrutalCardSurface())
+            .neubrutalFill(color = neubrutalCardSurface(), cornerRadius = NeubrutalCardRadius)
             .neubrutalBorderWithGloss(
                 color = neubrutalBorderColor(),
                 cornerRadius = NeubrutalCardRadius,

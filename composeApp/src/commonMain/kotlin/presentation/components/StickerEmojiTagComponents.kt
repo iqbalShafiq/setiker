@@ -30,6 +30,10 @@ import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import presentation.theme.neubrutalSubtleOnSurface
+import presentation.theme.neubrutalFill
+import presentation.theme.NeubrutalBorderRole
+import presentation.theme.neubrutalBorderFor
+import presentation.theme.neubrutalDisabledFill
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.remove_emoji
 
@@ -61,7 +65,7 @@ fun StickerEmojiTagChip(
                 color = neubrutalShadowColor()
             )
             .clip(CircleShape)
-            .background(neubrutalCardSurface())
+            .neubrutalFill(color = neubrutalCardSurface(), cornerRadius = 99.dp)
             .neubrutalBorderWithGloss(
                 color = neubrutalBorderColor(),
                 cornerRadius = 50.dp,
@@ -112,12 +116,21 @@ fun NeubrutalAddTagPill(
                 restOffset = NeubrutalShadowOffset,
                 pressedOffset = NeubrutalSmallShadowOffset,
                 cornerRadius = 50.dp,
-                color = neubrutalShadowColor()
+                color = if (enabled) {
+                    neubrutalShadowColor()
+                } else {
+                    neubrutalShadowColor().copy(alpha = 0.4f)
+                }
             )
             .clip(CircleShape)
-            .background(neubrutalCardSurface())
+            .neubrutalFill(
+                color = if (enabled) neubrutalCardSurface() else neubrutalDisabledFill(neubrutalCardSurface()),
+                cornerRadius = 99.dp
+            )
             .neubrutalBorderWithGloss(
-                color = neubrutalBorderColor(),
+                color = neubrutalBorderFor(
+                    if (enabled) NeubrutalBorderRole.Container else NeubrutalBorderRole.Disabled
+                ),
                 cornerRadius = 50.dp,
                 shape = CircleShape,
                 highlightColor = neubrutalGlossyHighlightColor()
@@ -164,3 +177,4 @@ private fun NeubrutalAddTagPillPreview() {
         )
     }
 }
+

@@ -53,6 +53,13 @@ object SetikerMotion {
     /** The image shimmer band. Slow enough to read as light, not as a progress bar. */
     const val DURATION_SHIMMER_MS = 1100
 
+    /**
+     * One breath of an idle illustration.
+     *
+     * Long on purpose: an empty screen is watched, not glanced at, and anything faster turns a
+     * calm illustration into a fidgeting one.
+     */
+    const val DURATION_BREATH_MS = 3200
     /** How long a save confirmation is given before the screen moves on. */
     const val CONFIRMATION_HOLD_MS = 1200
 
@@ -71,6 +78,40 @@ object SetikerMotion {
 
     /** A stagger step for revealing a short list inside a sheet. */
     const val STAGGER_STEP_MS = 40
+
+    /**
+     * The glyph beat: how far an icon overshoots, and how far it twists, when the state it stands
+     * for has landed (a like, a save, a follow).
+     *
+     * This is deliberately **not** press feedback. A bar icon is pressed tens of times a day, and
+     * motion at that frequency stops being personality and becomes latency. The beat fires on the
+     * *result* — which happens rarely — and the press itself stays the container's scale-and-shadow
+     * language. One settled overshoot, no loop, no second bounce.
+     */
+    const val ICON_BEAT_SCALE = 1.22f
+
+    /** The twist that unwinds with the overshoot. Small enough to read as personality, not error. */
+    const val ICON_BEAT_ROTATION_DEGREES = 4f
+
+    /**
+     * Stateful icon: how long the ink takes to fill an outline, and how long it takes to drain.
+     *
+     * Asymmetric on purpose. Filling is the moment worth watching; draining is someone undoing a
+     * like and already wanting to move on.
+     */
+    const val ICON_FILL_MS = 200
+
+    /** Filled to outline. Faster than [ICON_FILL_MS]: undoing never deserves as much time. */
+    const val ICON_DRAIN_MS = 160
+
+    /**
+     * The particle burst around a glyph that just switched on.
+     *
+     * This is the only value in this file that outlives the 300 ms UI ceiling once added to
+     * [ICON_FILL_MS]. It blocks nothing: the new state is already legible from the fill, and the
+     * particles are pure decay.
+     */
+    const val ICON_BURST_MS = 320
 
     /** Strong ease-out for entrances and exits. */
     val EaseOut: CubicBezierEasing = CubicBezierEasing(0.23f, 1f, 0.32f, 1f)

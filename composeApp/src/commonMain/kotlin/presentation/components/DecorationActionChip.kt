@@ -27,6 +27,7 @@ import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
 
 /**
  * Neubrutal pill used for "add text / emoji / image" actions on editor surfaces.
@@ -55,7 +56,7 @@ fun DecorationActionChip(
                 color = neubrutalShadowColor()
             )
             .clip(CircleShape)
-            .background(neubrutalCardSurface())
+            .neubrutalFill(color = neubrutalCardSurface(), cornerRadius = 99.dp)
             .neubrutalBorderWithGloss(
                 color = neubrutalBorderColor(),
                 cornerRadius = 50.dp,

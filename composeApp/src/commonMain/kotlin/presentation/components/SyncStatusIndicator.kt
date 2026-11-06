@@ -15,6 +15,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import presentation.theme.ErrorRed
@@ -29,10 +31,18 @@ import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
 
 /**
  * Sync status indicator badge that shows the current sync state of an item.
- * Uses Neubrutal design with bold borders, hard shadow and solid colors.
+ *
+ * Uses Neubrutal design with bold borders, hard shadow and solid colors. The label sits on the
+ * badge rather than on the glyph, so the state is announced even though the glyph itself changes.
+ *
+ * These four glyphs are deliberately *not* morphed. A stroked cloud plus a tick has no room to
+ * breathe at the 16 dp this badge uses: the first attempt read as a blob, and the same pair at
+ * 44 dp only turned the blob into a muffin. A morph needs a surface with room for two silhouettes,
+ * so this component keeps distinct drawings until it grows or the pair gets simpler.
  */
 @Composable
 fun SyncStatusIndicator(
@@ -51,6 +61,7 @@ fun SyncStatusIndicator(
     Box(
         modifier = modifier
             .size(28.dp)
+            .semantics { contentDescription = "Sync status: $syncState" }
             .neubrutalShadow(
                 offsetX = NeubrutalSmallShadowOffset,
                 offsetY = NeubrutalSmallShadowOffset,
@@ -58,7 +69,7 @@ fun SyncStatusIndicator(
                 color = neubrutalShadowColor()
             )
             .clip(CircleShape)
-            .background(color)
+            .neubrutalFill(color = color, cornerRadius = 99.dp)
             .neubrutalBorderWithGloss(
                 color = neubrutalBorderColor(),
                 cornerRadius = 14.dp,
@@ -69,7 +80,7 @@ fun SyncStatusIndicator(
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = "Sync status: $syncState",
+            contentDescription = null,
             tint = contentColor,
             modifier = Modifier.size(16.dp)
         )

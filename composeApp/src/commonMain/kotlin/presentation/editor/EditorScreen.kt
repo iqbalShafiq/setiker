@@ -18,20 +18,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.BorderColor
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Crop
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FontDownload
 import androidx.compose.material.icons.filled.FormatColorText
-import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.LayersClear
-import androidx.compose.material.icons.filled.TagFaces
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -96,6 +91,7 @@ import presentation.components.StickerEmojiTagChip
 import presentation.components.StylePickerBottomSheet
 import presentation.components.rememberImagePicker
 import presentation.components.scaffoldBottomBarScroll
+import presentation.icons.SetikerIcons
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalScrim
 import presentation.theme.neubrutalBorderColor
@@ -106,6 +102,7 @@ import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalSubtleOnSurface
+import presentation.theme.neubrutalFill
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.accessibility_text
 import setiker.composeapp.generated.resources.accessibility_text_example
@@ -215,7 +212,7 @@ fun EditorScreen(
                     actionStatusText = bottomOperationLabel,
                     actions = {
                         PackBottomBarIconButton(
-                            icon = Icons.AutoMirrored.Filled.ArrowBack,
+                            icon = SetikerIcons.Back,
                             contentDescription = stringResource(Res.string.back),
                             onClick = onBackClick,
                             enabled = !isOperationInProgress
@@ -234,7 +231,7 @@ fun EditorScreen(
                                 enabled = state.imagePath.isNotBlank() && !isOperationInProgress
                             )
                             PackBottomBarIconButton(
-                                icon = Icons.Filled.AutoAwesome,
+                                icon = SetikerIcons.Sparkle,
                                 contentDescription = stringResource(Res.string.generate_ai),
                                 onClick = {
                                     if (state.generatedPreview.isNotEmpty() && !isOperationInProgress) {
@@ -255,7 +252,7 @@ fun EditorScreen(
                         when (selectedDecoration) {
                             is TextDecoration -> {
                                 PackBottomBarIconButton(
-                                    icon = Icons.Filled.Edit,
+                                    icon = SetikerIcons.Edit,
                                     contentDescription = stringResource(Res.string.edit_text_decoration),
                                     onClick = { isEditTextSheetOpen = true },
                                     enabled = !isOperationInProgress
@@ -276,7 +273,7 @@ fun EditorScreen(
 
                             is EmojiDecoration -> {
                                 PackBottomBarIconButton(
-                                    icon = Icons.Filled.TagFaces,
+                                    icon = SetikerIcons.TagFaces,
                                     contentDescription = stringResource(Res.string.change_emoji),
                                     onClick = {
                                         onIntent(EditorIntent.ShowDecorationEmojiPicker(selectedDecoration.id))
@@ -293,7 +290,7 @@ fun EditorScreen(
 
                             is ImageDecoration -> {
                                 PackBottomBarIconButton(
-                                    icon = Icons.Filled.Image,
+                                    icon = SetikerIcons.Image,
                                     contentDescription = stringResource(Res.string.change_image),
                                     onClick = { replaceDecorationImagePicker.launch() },
                                     enabled = !isOperationInProgress
@@ -309,7 +306,8 @@ fun EditorScreen(
                             contentDescription = stringResource(Res.string.save_sticker),
                             onClick = { onIntent(EditorIntent.SaveSticker) },
                             enabled = !isOperationInProgress,
-                            isLoading = state.isSaving
+                            isLoading = state.isSaving,
+                            isComplete = state.isSaveConfirmed
                         )
                     }
                 )
@@ -417,12 +415,12 @@ fun EditorScreen(
                         onClick = { onIntent(EditorIntent.ShowTextDecorationSheet) }
                     )
                     DecorationActionChip(
-                        icon = Icons.Default.TagFaces,
+                        icon = SetikerIcons.TagFaces,
                         label = stringResource(Res.string.add_emoji),
                         onClick = { onIntent(EditorIntent.ShowDecorationEmojiPicker()) }
                     )
                     DecorationActionChip(
-                        icon = Icons.Default.Image,
+                        icon = SetikerIcons.Image,
                         label = stringResource(Res.string.add_image),
                         onClick = { decorationImagePicker.launch() }
                     )
@@ -747,7 +745,7 @@ fun EditorScreen(
                             .fillMaxWidth()
                             .aspectRatio(1f)
                             .clip(RoundedCornerShape(NeubrutalCardRadius))
-                            .background(neubrutalCardSurface())
+                            .neubrutalFill(color = neubrutalCardSurface(), cornerRadius = NeubrutalCardRadius)
                             .neubrutalBorderWithGloss(
                                 color = neubrutalBorderColor(),
                                 cornerRadius = NeubrutalCardRadius,
@@ -779,7 +777,7 @@ fun EditorScreen(
                                 .fillMaxWidth()
                                 .aspectRatio(1f)
                                 .clip(RoundedCornerShape(NeubrutalCardRadius))
-                                .background(neubrutalCardSurface())
+                                .neubrutalFill(color = neubrutalCardSurface(), cornerRadius = NeubrutalCardRadius)
                                 .neubrutalBorderWithGloss(
                                 color = neubrutalBorderColor(),
                                 cornerRadius = NeubrutalCardRadius,

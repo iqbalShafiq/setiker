@@ -25,6 +25,7 @@ import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
 
 /**
  * A skeleton of the pack list, shown while the first page is loading.
@@ -65,7 +66,7 @@ private fun SkeletonPackRow(
                 color = neubrutalShadowColor()
             )
             .clip(shape)
-            .background(neubrutalCardSurface())
+            .neubrutalFill(color = neubrutalCardSurface(), cornerRadius = NeubrutalCardRadius)
             .neubrutalBorderWithGloss(
                 color = neubrutalBorderColor(),
                 cornerRadius = NeubrutalCardRadius,

@@ -15,8 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,17 +28,23 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.resources.stringResource
+import presentation.icons.GlyphMorph
+import presentation.icons.SetikerIcons
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalBorderWidth
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.NeubrutalSmallRadius
 import presentation.theme.NeubrutalWhite
+import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalGlossyHighlightColor
@@ -47,6 +52,7 @@ import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import presentation.theme.neubrutalTopAppBarSurface
+import presentation.theme.neubrutalFill
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.back_content_description
 import setiker.composeapp.generated.resources.my_stickers_title
@@ -103,7 +109,7 @@ fun AppTopBar(
                 if (onBackClick != null) {
                     Box(modifier = Modifier.padding(start = 8.dp)) {
                         NeubrutalIconButton(
-                            icon = Icons.AutoMirrored.Filled.ArrowBack,
+                            icon = SetikerIcons.Back,
                             contentDescription = stringResource(Res.string.back_content_description),
                             onClick = onBackClick
                         )
@@ -154,6 +160,55 @@ fun RowScope.AppTopBarActionIcon(
         iconTint = iconTint,
         iconModifier = iconModifier
     )
+}
+
+/**
+ * A top-bar action whose glyph morphs between two shapes.
+ *
+ * Same surface and press language as [AppTopBarActionIcon]; only the ink differs. The state is
+ * announced explicitly because this is a plain clickable, not a toggleable.
+ */
+@Composable
+fun RowScope.AppTopBarMorphActionIcon(
+    morph: GlyphMorph,
+    checked: Boolean,
+    contentDescription: String,
+    onCheckedChange: (Boolean) -> Unit,
+    enabled: Boolean = true,
+    iconTint: Color = neubrutalOnSurface(),
+    iconModifier: Modifier = Modifier,
+    /**
+     * Throw a burst when the action switches on.
+     *
+     * Off by default: most top-bar toggles are navigation, and a burst on a menu button is noise.
+     * A pack becoming public is the one that earns it.
+     */
+    celebration: Boolean = false,
+    /**
+     * The ring's spread when [celebration] is on. 1.25 keeps the widest part of the ring just
+     * inside the 40 dp surface's clip; a larger value gets cut by the border.
+     */
+    celebrationSpread: Float = 1.25f
+) {
+    NeubrutalSurfaceToggle(
+        checked = checked,
+        onCheckedChange = onCheckedChange,
+        modifier = Modifier.semantics { this.contentDescription = contentDescription },
+        size = 40.dp,
+        enabled = enabled,
+        pressedScale = SetikerMotion.PRESS_SCALE_SMALL,
+        label = "top_morph_toggle_scale"
+    ) {
+        MorphGlyphIcon(
+            morph = morph,
+            checked = checked,
+            modifier = iconModifier,
+            tint = iconTint,
+            enabled = enabled,
+            burstEnabled = celebration,
+            burstSpread = celebrationSpread
+        )
+    }
 }
 
 /**
@@ -208,7 +263,7 @@ fun NeubrutalCounterBadge(
                 color = shadow
             )
             .clip(shape)
-            .background(AccentCoral)
+            .neubrutalFill(color = AccentCoral, cornerRadius = NeubrutalSmallRadius)
             .neubrutalBorderWithGloss(
                 color = border,
                 cornerRadius = NeubrutalSmallRadius,
@@ -255,7 +310,7 @@ private fun AppTopBarWithActionsPreview() {
             onBackClick = {},
             actions = {
                 NeubrutalIconButton(
-                    icon = Icons.Default.Settings,
+                    icon = Icons.Outlined.Settings,
                     contentDescription = null,
                     onClick = {}
                 )
@@ -269,7 +324,7 @@ private fun AppTopBarWithActionsPreview() {
 private fun NeubrutalIconButtonPreview() {
     MaterialTheme {
         NeubrutalIconButton(
-            icon = Icons.Default.Settings,
+            icon = Icons.Outlined.Settings,
             contentDescription = "Settings",
             onClick = {}
         )

@@ -39,6 +39,10 @@ import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalGlossyHighlight
 import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
+import presentation.theme.NeubrutalBorderRole
+import presentation.theme.neubrutalBorderFor
+import presentation.theme.neubrutalBorderWidthFor
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.split_sticker_index
 
@@ -71,12 +75,16 @@ fun SelectableStickerGrid(
                         label = "selectable_sticker_scale"
                     )
                     val borderWidth by animateDpAsState(
-                        targetValue = if (selected) 3.dp else NeubrutalBorderWidth,
+                        targetValue = neubrutalBorderWidthFor(
+                            if (selected) NeubrutalBorderRole.Selected else NeubrutalBorderRole.Container
+                        ),
                         animationSpec = SetikerMotion.standard(SetikerMotion.DURATION_FAST_MS),
                         label = "selectable_sticker_border_width"
                     )
                     val borderColor by animateColorAsState(
-                        targetValue = if (selected) AccentCoral else border,
+                        targetValue = neubrutalBorderFor(
+                            if (selected) NeubrutalBorderRole.Selected else NeubrutalBorderRole.Container
+                        ),
                         animationSpec = SetikerMotion.standard(SetikerMotion.DURATION_FAST_MS),
                         label = "selectable_sticker_border_color"
                     )
@@ -93,7 +101,7 @@ fun SelectableStickerGrid(
                                 color = shadow
                             )
                             .clip(innerShape)
-                            .background(surface)
+                            .neubrutalFill(color = surface, cornerRadius = NeubrutalSmallRadius)
                             .border(
                                 width = borderWidth,
                                 color = borderColor,
@@ -155,3 +163,4 @@ private fun SelectableStickerGridPreview() {
         )
     }
 }
+

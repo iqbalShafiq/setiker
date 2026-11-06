@@ -33,6 +33,7 @@ import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.delete_sticker
 import setiker.composeapp.generated.resources.sticker_fallback
@@ -73,7 +74,7 @@ fun StickerCard(
                 color = neubrutalShadowColor()
             )
             .clip(cardShape)
-            .background(neubrutalCardSurface())
+            .neubrutalFill(color = neubrutalCardSurface(), cornerRadius = NeubrutalCardRadius)
             .neubrutalBorderWithGloss(
                 color = border,
                 cornerRadius = NeubrutalCardRadius,
@@ -139,7 +140,7 @@ fun StickerCard(
                         color = neubrutalShadowColor()
                     )
                     .clip(deleteShape)
-                    .background(ErrorRed)
+                    .neubrutalFill(color = ErrorRed, cornerRadius = 6.dp)
                     .neubrutalBorderWithGloss(
                         color = border,
                         width = NeubrutalSmallShadowOffset,

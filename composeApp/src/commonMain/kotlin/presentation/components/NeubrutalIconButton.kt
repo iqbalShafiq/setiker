@@ -1,17 +1,16 @@
 package presentation.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import presentation.theme.NeubrutalPressedShadowOffset
@@ -19,12 +18,15 @@ import presentation.theme.NeubrutalSmallRadius
 import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalFill
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalGlossyHighlightColor
-import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.NeubrutalBorderRole
+import presentation.theme.neubrutalBorderFor
+import presentation.theme.neubrutalDisabledFill
 
 /**
  * The surface icon button used in top and bottom bars: a bordered square with a hard shadow.
@@ -54,11 +56,13 @@ fun NeubrutalIconButton(
         label = label,
         onClick = onClick
     ) {
-        Icon(
-            imageVector = icon,
+        AppIcon(
+            glyph = icon,
             contentDescription = contentDescription,
-            modifier = Modifier.size(iconSize).then(iconModifier),
-            tint = if (enabled) iconTint else neubrutalMutedOnSurface()
+            modifier = iconModifier,
+            tint = iconTint,
+            size = iconSize,
+            enabled = enabled
         )
     }
 }
@@ -102,11 +106,13 @@ fun NeubrutalBareIconButton(
             ),
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector = icon,
+        AppIcon(
+            glyph = icon,
             contentDescription = contentDescription,
-            modifier = Modifier.size(iconSize).then(iconModifier),
-            tint = if (enabled) tint else neubrutalMutedOnSurface()
+            modifier = iconModifier,
+            tint = tint,
+            size = iconSize,
+            enabled = enabled
         )
     }
 }
@@ -114,16 +120,20 @@ fun NeubrutalBareIconButton(
 /**
  * The shared bordered surface. It keeps the press scale and the shadow shrink in one place so
  * every icon button in a bar behaves the same way.
+ *
+ * [interaction] is the only thing that differs between a plain action and a toggle, so it is the
+ * one thing a caller supplies: the shell, the shadow, the gloss and the press spring stay identical
+ * no matter whether the control reports a click or a boolean state.
  */
 @Composable
-internal fun NeubrutalSurfaceIcon(
+internal fun NeubrutalSurface(
     modifier: Modifier = Modifier,
     size: Dp = 40.dp,
     enabled: Boolean = true,
     containerColor: Color = neubrutalCardSurface(),
     pressedScale: Float = SetikerMotion.PRESS_SCALE_SMALL,
     label: String = "surface_icon_scale",
-    onClick: () -> Unit,
+    interaction: (PressFeedback) -> Modifier,
     content: @Composable BoxScope.() -> Unit
 ) {
     val pressFeedback = rememberPressFeedback(
@@ -142,23 +152,99 @@ internal fun NeubrutalSurfaceIcon(
                 restOffset = NeubrutalSmallShadowOffset,
                 pressedOffset = NeubrutalPressedShadowOffset,
                 cornerRadius = NeubrutalSmallRadius,
-                color = neubrutalShadowColor()
+                color = if (enabled) {
+                    neubrutalShadowColor()
+                } else {
+                    neubrutalShadowColor().copy(alpha = 0.4f)
+                }
             )
             .clip(shape)
-            .background(containerColor)
+            .neubrutalFill(
+                color = if (enabled) containerColor else neubrutalDisabledFill(containerColor),
+                cornerRadius = NeubrutalSmallRadius
+            )
             .neubrutalBorderWithGloss(
-                color = neubrutalBorderColor(),
+                color = neubrutalBorderFor(
+                    if (enabled) NeubrutalBorderRole.Container else NeubrutalBorderRole.Disabled
+                ),
                 cornerRadius = NeubrutalSmallRadius,
                 highlightColor = neubrutalGlossyHighlightColor(
                     onFilledSurface = containerColor != neubrutalCardSurface()
                 )
             )
-            .clickableNoRipple(
-                interactionSource = pressFeedback.interactionSource,
-                enabled = enabled,
-                onClick = onClick
-            ),
+            .then(interaction(pressFeedback)),
         contentAlignment = Alignment.Center,
         content = content
     )
 }
+
+/** A bordered surface that acts as a button. */
+@Composable
+internal fun NeubrutalSurfaceIcon(
+    modifier: Modifier = Modifier,
+    size: Dp = 40.dp,
+    enabled: Boolean = true,
+    containerColor: Color = neubrutalCardSurface(),
+    pressedScale: Float = SetikerMotion.PRESS_SCALE_SMALL,
+    label: String = "surface_icon_scale",
+    onClick: () -> Unit,
+    content: @Composable BoxScope.() -> Unit
+) {
+    NeubrutalSurface(
+        modifier = modifier,
+        size = size,
+        enabled = enabled,
+        containerColor = containerColor,
+        pressedScale = pressedScale,
+        label = label,
+        interaction = { feedback ->
+            Modifier.clickableNoRipple(
+                interactionSource = feedback.interactionSource,
+                enabled = enabled,
+                onClick = onClick
+            )
+        },
+        content = content
+    )
+}
+
+/**
+ * A bordered surface that acts as a switch.
+ *
+ * The state comes from `toggleable`, so a reader hears "checked / not checked" and a test can ask
+ * for it directly. Nothing here writes a `stateDescription` by hand — the point of the toggle is
+ * that it cannot drift out of sync with the value it renders.
+ */
+@Composable
+internal fun NeubrutalSurfaceToggle(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    size: Dp = 40.dp,
+    enabled: Boolean = true,
+    role: Role = Role.Checkbox,
+    containerColor: Color = neubrutalCardSurface(),
+    pressedScale: Float = SetikerMotion.PRESS_SCALE_SMALL,
+    label: String = "surface_toggle_scale",
+    content: @Composable BoxScope.() -> Unit
+) {
+    NeubrutalSurface(
+        modifier = modifier,
+        size = size,
+        enabled = enabled,
+        containerColor = containerColor,
+        pressedScale = pressedScale,
+        label = label,
+        interaction = { feedback ->
+            Modifier.toggleableNoRipple(
+                interactionSource = feedback.interactionSource,
+                value = checked,
+                enabled = enabled,
+                role = role,
+                onValueChange = onCheckedChange
+            )
+        },
+        content = content
+    )
+}
+

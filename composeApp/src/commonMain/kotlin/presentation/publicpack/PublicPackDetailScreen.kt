@@ -2,7 +2,6 @@ package presentation.publicpack
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,15 +18,8 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.HowToReg
-import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.outlined.Block
-import androidx.compose.material.icons.outlined.Bookmark
-import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -58,6 +50,7 @@ import presentation.components.AppPrimaryButton
 import presentation.components.AppSnackbarHostState
 import presentation.components.AppTopBar
 import presentation.components.AppTopBarActionIcon
+import presentation.components.AppTopBarMorphActionIcon
 import presentation.components.BlockCreatorConfirmDialog
 import presentation.components.EmptyState
 import presentation.components.InteractionBlockedBox
@@ -69,7 +62,11 @@ import presentation.components.PackBottomBarIconButton
 import presentation.components.ReportContentBottomSheet
 import presentation.components.ScreenSectionTitle
 import presentation.components.UnfollowConfirmDialog
+import presentation.components.iconBeat
 import presentation.components.rememberAppHaptics
+import presentation.components.rememberIconBeat
+import presentation.icons.SetikerIcons
+import presentation.icons.SetikerMorphs
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalSmallShadowOffset
@@ -84,6 +81,7 @@ import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import presentation.theme.screenContentHorizontalPadding
+import presentation.theme.neubrutalFill
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.back_content_description
 import setiker.composeapp.generated.resources.close
@@ -116,37 +114,12 @@ fun PublicPackDetailScreen(
 ) {
     var showUnfollowDialog by remember { mutableStateOf(false) }
     val haptics = rememberAppHaptics()
-    val followPop = remember { Animatable(1f) }
-    val likePop = remember { Animatable(1f) }
-    var followAnimationReady by remember { mutableStateOf(false) }
-    var likeAnimationReady by remember { mutableStateOf(false) }
+    val followBeat = rememberIconBeat(trigger = state.isFollowingCreator)
     val followTint by animateColorAsState(
         targetValue = if (state.isFollowingCreator) AccentCoral else neubrutalOnSurface(),
         animationSpec = SetikerMotion.standard(SetikerMotion.DURATION_BASE_MS),
         label = "public_pack_follow_tint"
     )
-    val likeTint by animateColorAsState(
-        targetValue = if (state.isLiked) AccentCoral else neubrutalOnSurface(),
-        animationSpec = SetikerMotion.standard(SetikerMotion.DURATION_BASE_MS),
-        label = "public_pack_like_tint"
-    )
-
-    LaunchedEffect(state.isFollowingCreator) {
-        if (!followAnimationReady) {
-            followAnimationReady = true
-            return@LaunchedEffect
-        }
-        followPop.snapTo(1.24f)
-        followPop.animateTo(1f, SetikerMotion.DelightSpring)
-    }
-    LaunchedEffect(state.isLiked) {
-        if (!likeAnimationReady) {
-            likeAnimationReady = true
-            return@LaunchedEffect
-        }
-        likePop.snapTo(1.35f)
-        likePop.animateTo(1f, SetikerMotion.DelightSpring)
-    }
 
     val topBarActionsEnabled = !state.isImporting
 
@@ -169,27 +142,25 @@ fun PublicPackDetailScreen(
                             onClick = { onIntent(PublicPackDetailIntent.ShowBlockCreatorConfirm) },
                             enabled = topBarActionsEnabled
                         )
-                        AppTopBarActionIcon(
-                            icon = if (state.isFollowingCreator) Icons.Filled.HowToReg else Icons.Default.PersonAdd,
+                        AppTopBarMorphActionIcon(
+                            morph = SetikerMorphs.Follow,
+                            checked = state.isFollowingCreator,
                             contentDescription = if (state.isFollowingCreator) {
                                 stringResource(Res.string.creator_following)
                             } else {
                                 stringResource(Res.string.creator_follow)
                             },
-                            onClick = {
+                            onCheckedChange = { follow ->
                                 haptics.selection()
-                                if (state.isFollowingCreator) {
-                                    showUnfollowDialog = true
-                                } else {
+                                if (follow) {
                                     onIntent(PublicPackDetailIntent.ToggleFollowCreator)
+                                } else {
+                                    showUnfollowDialog = true
                                 }
                             },
                             enabled = topBarActionsEnabled,
                             iconTint = followTint,
-                            iconModifier = Modifier.graphicsLayer {
-                                scaleX = followPop.value
-                                scaleY = followPop.value
-                            }
+                            iconModifier = Modifier.iconBeat(followBeat)
                         )
                     }
                 } else {
@@ -202,31 +173,30 @@ fun PublicPackDetailScreen(
                 actionStatusText = if (state.isImporting) stringResource(Res.string.processing) else null,
                 actions = {
                     PackBottomBarIconButton(
-                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        icon = SetikerIcons.Back,
                         contentDescription = stringResource(Res.string.back_content_description),
                         onClick = { onIntent(PublicPackDetailIntent.NavigateBack) },
                         enabled = !state.isImporting
                     )
                     PackBottomBarIconButton(
-                        icon = if (state.isLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                        contentDescription = if (state.isLiked) "Unlike" else "Like",
-                        onClick = {
+                        morph = SetikerIcons.HeartMorph,
+                        checked = state.isLiked,
+                        contentDescription = "Like",
+                        onCheckedChange = {
                             haptics.selection()
                             onIntent(PublicPackDetailIntent.ToggleLike)
                         },
-                        enabled = !state.isImporting,
-                        iconTint = likeTint,
-                        iconModifier = Modifier.graphicsLayer {
-                            scaleX = likePop.value
-                            scaleY = likePop.value
-                        }
+                        enabled = !state.isImporting
                     )
                     PackBottomBarIconButton(
-                        icon = if (state.isSaved) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder,
-                        contentDescription = if (state.isSaved) "Unsave" else "Save",
-                        onClick = { onIntent(PublicPackDetailIntent.ToggleSave) },
-                        enabled = !state.isImporting,
-                        iconTint = if (state.isSaved) AccentCoral else neubrutalOnSurface()
+                        morph = SetikerIcons.BookmarkMorph,
+                        checked = state.isSaved,
+                        contentDescription = "Save",
+                        onCheckedChange = {
+                            haptics.selection()
+                            onIntent(PublicPackDetailIntent.ToggleSave)
+                        },
+                        enabled = !state.isImporting
                     )
                 },
                 floatingActionButton = if (!state.isOwnPack) {
@@ -346,7 +316,7 @@ fun PublicPackDetailScreen(
                                                 color = neubrutalShadowColor()
                                             )
                                             .clip(RoundedCornerShape(NeubrutalCardRadius))
-                                            .background(neubrutalCardSurface())
+                                            .neubrutalFill(color = neubrutalCardSurface(), cornerRadius = NeubrutalCardRadius)
                                             .neubrutalBorderWithGloss(
                                                 color = neubrutalBorderColor(),
                                                 cornerRadius = NeubrutalCardRadius,
@@ -457,3 +427,5 @@ private fun PublicPackDetailScreenPreview() {
         )
     }
 }
+
+

@@ -50,6 +50,7 @@ import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
 
 @Composable
 fun BottomSheetOptionRow(
@@ -101,7 +102,7 @@ fun BottomSheetOptionRow(
                 color = neubrutalShadowColor()
             )
             .clip(shape)
-            .background(backgroundColor)
+            .neubrutalFill(color = backgroundColor, cornerRadius = NeubrutalCardRadius)
             .neubrutalBorderWithGloss(
                 color = neubrutalBorderColor(),
                 cornerRadius = NeubrutalCardRadius,
@@ -153,7 +154,7 @@ fun BottomSheetOptionRow(
                     color = if (selected) neubrutalShadowColor() else neubrutalShadowColor().copy(alpha = 0.45f)
                 )
                 .clip(RoundedCornerShape(NeubrutalSmallRadius))
-                .background(checkBackground)
+                .neubrutalFill(color = checkBackground, cornerRadius = NeubrutalSmallRadius)
                 .neubrutalBorderWithGloss(
                     color = checkBorder,
                     cornerRadius = NeubrutalSmallRadius,
@@ -178,7 +179,7 @@ fun BottomSheetOptionRow(
                         modifier = Modifier
                             .size(8.dp)
                             .clip(RoundedCornerShape(99.dp))
-                            .background(neubrutalMutedOnSurface().copy(alpha = 0.55f))
+                            .neubrutalFill(color = neubrutalMutedOnSurface().copy(alpha = 0.55f), cornerRadius = 99.dp)
                     )
                 }
             }

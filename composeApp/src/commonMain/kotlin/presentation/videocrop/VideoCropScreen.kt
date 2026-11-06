@@ -71,6 +71,7 @@ import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import presentation.theme.neubrutalSubtleOnSurface
+import presentation.theme.neubrutalFill
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.apply
 import setiker.composeapp.generated.resources.encoding_progress_title
@@ -407,7 +408,7 @@ private fun CropToolButton(
                 .size(48.dp)
                 .neubrutalShadow(2.dp, 2.dp, 24.dp, shadow)
                 .clip(CircleShape)
-                .background(surface)
+                .neubrutalFill(color = surface, cornerRadius = 99.dp)
                 .neubrutalBorderWithGloss(
                     color = border,
                     cornerRadius = 24.dp,

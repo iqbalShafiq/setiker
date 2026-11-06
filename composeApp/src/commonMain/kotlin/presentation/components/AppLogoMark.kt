@@ -19,6 +19,7 @@ import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalDark
 import presentation.theme.NeubrutalWhite
 import presentation.theme.neubrutalBorderColor
+import presentation.theme.neubrutalFill
 
 /**
  * Neubrutal app logo mark matching the launcher icon (offset stacked squares).
@@ -46,7 +47,7 @@ fun AppLogoMark(
                 .size(tileSize)
                 .offset(x = shadowOffset, y = shadowOffset)
                 .clip(tileShape)
-                .background(shadowTileColor)
+                .neubrutalFill(color = shadowTileColor, cornerRadius = NeubrutalCardRadius)
                 .border(width = 2.dp, color = borderColor, shape = tileShape)
         )
 
@@ -54,7 +55,7 @@ fun AppLogoMark(
             modifier = Modifier
                 .size(tileSize)
                 .clip(tileShape)
-                .background(if (isDark) NeubrutalDark else NeubrutalBg)
+                .neubrutalFill(color = if (isDark) NeubrutalDark else NeubrutalBg, cornerRadius = NeubrutalCardRadius)
                 .border(width = 2.dp, color = borderColor, shape = tileShape)
         )
     }

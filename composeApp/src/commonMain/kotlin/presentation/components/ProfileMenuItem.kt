@@ -13,10 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +25,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import presentation.icons.SetikerIcons
+import presentation.theme.AppIconSize
 import presentation.theme.NeubrutalButtonRadius
 import presentation.theme.NeubrutalDark
 import presentation.theme.NeubrutalSmallRadius
@@ -41,6 +40,7 @@ import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
 
 @Composable
 fun ProfileMenuItem(
@@ -82,7 +82,7 @@ fun ProfileMenuItem(
                         color = neubrutalShadowColor()
                     )
                     .clip(RoundedCornerShape(NeubrutalSmallRadius))
-                    .background(iconBackgroundColor)
+                    .neubrutalFill(color = iconBackgroundColor, cornerRadius = NeubrutalSmallRadius)
                     .neubrutalBorderWithGloss(
                         color = borderColor,
                         cornerRadius = NeubrutalSmallRadius,
@@ -90,11 +90,11 @@ fun ProfileMenuItem(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = icon,
+                AppIcon(
+                    glyph = icon,
                     contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = NeubrutalDark
+                    tint = NeubrutalDark,
+                    size = AppIconSize.Compact
                 )
             }
 
@@ -108,11 +108,11 @@ fun ProfileMenuItem(
             )
         }
 
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+        AppIcon(
+            glyph = SetikerIcons.Chevron,
             contentDescription = null,
-            modifier = Modifier.size(16.dp),
-            tint = neubrutalMutedOnSurface()
+            tint = neubrutalMutedOnSurface(),
+            size = AppIconSize.Inline
         )
     }
 }
@@ -139,7 +139,7 @@ private fun ProfileMenuItemPreview() {
                 .clip(RoundedCornerShape(NeubrutalButtonRadius))
         ) {
             ProfileMenuItem(
-                icon = Icons.Filled.Image,
+                icon = SetikerIcons.Image,
                 label = "My Stickers",
                 onClick = {}
             )

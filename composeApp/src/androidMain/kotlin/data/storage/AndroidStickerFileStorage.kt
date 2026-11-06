@@ -223,7 +223,12 @@ actual class StickerFileStorage(private val context: Context) {
             retriever.setDataSource(videoPath)
             val rawFrame = retriever.getFrameAtTime(
                 atMs.coerceAtLeast(0L) * 1000L,
-                MediaMetadataRetriever.OPTION_CLOSEST_SYNC
+                // `OPTION_CLOSEST_SYNC` does not mean "the frame nearest this time" — it means "the
+                // keyframe nearest this time". A short clip often has a single keyframe, so every
+                // timestamp came back as the *same* picture (24 identical 86684-byte files on a 7.4s
+                // recording) and playback looked frozen. `OPTION_CLOSEST` decodes to the requested
+                // position, which is what a scrubber, a timeline strip and a preview all need.
+                MediaMetadataRetriever.OPTION_CLOSEST
             ) ?: return@withContext null
             // Downscale to a preview-friendly size so we can keep dozens of decoded
             // frames in memory for smooth playback without OOMing on 1080p+ sources.

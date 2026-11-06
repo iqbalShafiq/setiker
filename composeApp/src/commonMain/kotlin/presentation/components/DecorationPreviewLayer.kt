@@ -60,6 +60,7 @@ import presentation.theme.SetikerMotion
 import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalBorderWithGloss
 import presentation.theme.neubrutalGlossyHighlightColor
+import presentation.theme.neubrutalFill
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.remove_decoration
 import setiker.composeapp.generated.resources.resize_decoration
@@ -273,7 +274,7 @@ fun DecorationPreviewLayer(
                             .size(18.dp)
                             .pressScale(deleteFeedback)
                             .clip(CircleShape)
-                            .background(ErrorRed)
+                            .neubrutalFill(color = ErrorRed, cornerRadius = 99.dp)
                             .neubrutalBorderWithGloss(
                                 color = neubrutalBorderColor(),
                                 cornerRadius = 9.dp,
@@ -303,7 +304,7 @@ fun DecorationPreviewLayer(
                             .align(Alignment.BottomEnd)
                             .size(handleSize)
                             .clip(CircleShape)
-                            .background(Color.White)
+                            .neubrutalFill(color = Color.White, cornerRadius = 99.dp)
                             .neubrutalBorderWithGloss(
                                 color = Color.Black,
                                 cornerRadius = 10.dp,

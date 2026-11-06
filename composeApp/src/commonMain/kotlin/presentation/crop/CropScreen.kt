@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.RotateLeft
 import androidx.compose.material.icons.automirrored.filled.RotateRight
 import androidx.compose.material.icons.filled.Check
@@ -62,6 +61,7 @@ import presentation.components.pressScale
 import presentation.components.pressShadow
 import presentation.components.rememberAppHaptics
 import presentation.components.rememberPressFeedback
+import presentation.icons.SetikerIcons
 import presentation.theme.AccentCoral
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalDialogRadius
@@ -80,6 +80,7 @@ import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import presentation.theme.neubrutalSubtleOnSurface
+import presentation.theme.neubrutalFill
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.back
 import setiker.composeapp.generated.resources.crop_image_title
@@ -118,7 +119,7 @@ fun CropScreen(
                 },
                 actions = {
                     PackBottomBarIconButton(
-                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        icon = SetikerIcons.Back,
                         contentDescription = stringResource(Res.string.back),
                         onClick = onBackClick,
                         enabled = !state.isProcessing
@@ -162,7 +163,7 @@ fun CropScreen(
                             color = neubrutalShadowColor()
                         )
                         .clip(RoundedCornerShape(NeubrutalDialogRadius))
-                        .background(neubrutalCardSurface())
+                        .neubrutalFill(color = neubrutalCardSurface(), cornerRadius = NeubrutalDialogRadius)
                         .neubrutalBorderWithGloss(
                             color = border,
                             cornerRadius = NeubrutalDialogRadius,
@@ -286,7 +287,7 @@ private fun NeubrutalToolButton(
                     color = neubrutalShadowColor()
                 )
                 .clip(CircleShape)
-                .background(if (isSelected) AccentCoral else neubrutalCardSurface())
+                .neubrutalFill(color = if (isSelected) AccentCoral else neubrutalCardSurface(), cornerRadius = 99.dp)
                 .neubrutalBorderWithGloss(
                     color = border,
                     cornerRadius = 24.dp,

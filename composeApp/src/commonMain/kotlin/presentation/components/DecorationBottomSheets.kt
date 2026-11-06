@@ -53,6 +53,7 @@ import presentation.theme.neubrutalGlossyHighlight
 import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalScreenBackground
+import presentation.theme.neubrutalFill
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.add_decoration
 import setiker.composeapp.generated.resources.add_text
@@ -343,7 +344,7 @@ fun ColorPickerBottomSheet(
                     .fillMaxWidth()
                     .height(56.dp)
                     .clip(RoundedCornerShape(NeubrutalSmallRadius))
-                    .background(selectedColor)
+                    .neubrutalFill(color = selectedColor, cornerRadius = NeubrutalSmallRadius)
                     .neubrutalBorderWithGloss(
                         color = neubrutalBorderColor(),
                         cornerRadius = NeubrutalSmallRadius,
@@ -443,7 +444,7 @@ fun BorderStyleBottomSheet(
                     .fillMaxWidth()
                     .height(56.dp)
                     .clip(RoundedCornerShape(NeubrutalSmallRadius))
-                    .background(selectedColor)
+                    .neubrutalFill(color = selectedColor, cornerRadius = NeubrutalSmallRadius)
                     .neubrutalBorderWithGloss(
                         color = neubrutalBorderColor(),
                         cornerRadius = NeubrutalSmallRadius,

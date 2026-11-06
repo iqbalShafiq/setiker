@@ -26,6 +26,7 @@ import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalGlossyHighlightColor
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
 
 /**
  * Pull-to-refresh with the app's own indicator.
@@ -74,7 +75,7 @@ fun NeubrutalPullToRefreshBox(
                             color = neubrutalShadowColor()
                         )
                         .clip(CircleShape)
-                        .background(neubrutalCardSurface())
+                        .neubrutalFill(color = neubrutalCardSurface(), cornerRadius = 99.dp)
                         .neubrutalBorderWithGloss(
                             color = neubrutalBorderColor(),
                             cornerRadius = 99.dp,

@@ -22,7 +22,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material3.MaterialTheme
@@ -62,6 +61,7 @@ import presentation.components.PackBottomBarIconButton
 import presentation.components.ScreenContentHorizontalScrollRow
 import presentation.components.ScreenSectionTitle
 import presentation.components.UnfollowConfirmDialog
+import presentation.icons.SetikerIcons
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalShadowOffset
 import presentation.theme.neubrutalBorderColor
@@ -74,6 +74,7 @@ import presentation.theme.neubrutalScreenBackground
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
 import presentation.theme.screenContentHorizontalPadding
+import presentation.theme.neubrutalFill
 import setiker.composeapp.generated.resources.Res
 import setiker.composeapp.generated.resources.creator_block
 import setiker.composeapp.generated.resources.creator_follow
@@ -117,7 +118,7 @@ fun CreatorProfileScreen(
                 PackBottomBar(
                     actions = {
                         PackBottomBarIconButton(
-                            icon = Icons.AutoMirrored.Filled.ArrowBack,
+                            icon = SetikerIcons.Back,
                             contentDescription = "Back",
                             onClick = { onIntent(CreatorProfileIntent.NavigateBack) }
                         )
@@ -152,7 +153,7 @@ fun CreatorProfileScreen(
                 PackBottomBar(
                     actions = {
                         PackBottomBarIconButton(
-                            icon = Icons.AutoMirrored.Filled.ArrowBack,
+                            icon = SetikerIcons.Back,
                             contentDescription = "Back",
                             onClick = { onIntent(CreatorProfileIntent.NavigateBack) }
                         )
@@ -276,7 +277,7 @@ fun CreatorProfileScreen(
                                             color = neubrutalShadowColor()
                                         )
                                         .clip(RoundedCornerShape(NeubrutalCardRadius))
-                                        .background(neubrutalCardSurface())
+                                        .neubrutalFill(color = neubrutalCardSurface(), cornerRadius = NeubrutalCardRadius)
                                         .neubrutalBorderWithGloss(
                                             color = neubrutalBorderColor(),
                                             cornerRadius = NeubrutalCardRadius,

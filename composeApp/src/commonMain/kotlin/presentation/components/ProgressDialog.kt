@@ -34,6 +34,7 @@ import presentation.theme.neubrutalMutedOnSurface
 import presentation.theme.neubrutalOnSurface
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
 
 /**
  * Reusable Neubrutal progress dialog. Used by long-running work like:
@@ -78,7 +79,7 @@ fun ProgressDialog(
                     color = shadow
                 )
                 .clip(shape)
-                .background(neubrutalCardSurface())
+                .neubrutalFill(color = neubrutalCardSurface(), cornerRadius = NeubrutalDialogRadius)
                 .neubrutalBorderWithGloss(
                     color = border,
                     cornerRadius = NeubrutalDialogRadius,

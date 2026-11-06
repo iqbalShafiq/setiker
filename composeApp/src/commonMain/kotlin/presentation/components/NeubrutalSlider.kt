@@ -36,6 +36,7 @@ import presentation.theme.neubrutalBorderColor
 import presentation.theme.neubrutalCardSurface
 import presentation.theme.neubrutalShadow
 import presentation.theme.neubrutalShadowColor
+import presentation.theme.neubrutalFill
 
 /**
  * The app's slider: a hard-shadow track and a chunky, bordered thumb.
@@ -156,7 +157,7 @@ private fun NeubrutalSliderThumb(
                 color = neubrutalShadowColor()
             )
             .clip(CircleShape)
-            .background(AccentCoral.copy(alpha = if (enabled) 1f else 0.4f))
+            .neubrutalFill(color = AccentCoral.copy(alpha = if (enabled) 1f else 0.4f), cornerRadius = 99.dp)
             .border(
                 width = NeubrutalBorderWidth,
                 color = border.copy(alpha = if (enabled) 1f else 0.4f),
@@ -168,7 +169,7 @@ private fun NeubrutalSliderThumb(
             modifier = Modifier
                 .size(8.dp)
                 .clip(CircleShape)
-                .background(NeubrutalWhite.copy(alpha = if (enabled) 1f else 0.4f))
+                .neubrutalFill(color = NeubrutalWhite.copy(alpha = if (enabled) 1f else 0.4f), cornerRadius = 99.dp)
         )
     }
 }

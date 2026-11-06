@@ -16,7 +16,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Flag
@@ -50,6 +49,7 @@ import presentation.components.PackBottomBarFab
 import presentation.components.PackBottomBarIconButton
 import presentation.components.ReportContentBottomSheet
 import presentation.components.SkeletonPackList
+import presentation.icons.SetikerIcons
 import presentation.theme.NeubrutalCardRadius
 import presentation.theme.NeubrutalSmallShadowOffset
 import presentation.theme.neubrutalBorderColor
@@ -100,7 +100,7 @@ fun ProcessingHistoryScreen(
                 actionStatusText = if (state.isClearing) stringResource(Res.string.deleting) else null,
                 actions = {
                     PackBottomBarIconButton(
-                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        icon = SetikerIcons.Back,
                         contentDescription = "Back",
                         onClick = { onIntent(ProcessingHistoryIntent.NavigateBack) },
                         enabled = !state.isClearing
